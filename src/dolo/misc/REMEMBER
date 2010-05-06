@@ -1,0 +1,1 @@
+- after "from daredare import *", some variables are imported from sympy, for instance I
