@@ -359,12 +359,12 @@ def solve_decision_rule( model, order=2, derivs=None):
     #return DR( [,[g_y,g_u],[g_yy,g_yu,g_uu]] , correc_s = g_ss)
 
 def multidot(ten,mats):
-'''
-Implements tensor operation : tensor-times-matrices.
-If last dimensions of ten represent multilinear operations of the type : [X1,...,Xk]->B[X1,...,Xk]
-and mats contains matrices or vectors [A1,...Ak] the function returns an array representing operators : 
-[X1,...,Xk]->B[A1 X1,...,Ak Xk]
-'''
+    '''
+    Implements tensor operation : tensor-times-matrices.
+    If last dimensions of ten represent multilinear operations of the type : [X1,...,Xk]->B[X1,...,Xk]
+    and mats contains matrices or vectors [A1,...Ak] the function returns an array representing operators : 
+    [X1,...,Xk]->B[A1 X1,...,Ak Xk]
+    '''
     resp = ten
     n_d = ten.ndim
     n_m = len(mats)
