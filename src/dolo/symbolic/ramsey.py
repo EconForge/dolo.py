@@ -27,6 +27,7 @@ class RamseyModel(Model):
         context = dict()
         for v in self.variables_ordering + self.parameters_ordering + self.shocks_ordering:
             context[v.name] = v
+        context['exp'] = sympy.exp
         return sympy.sympify( eval(string,context) )
 
     def build_lagrangian(self):
