@@ -748,6 +748,7 @@ M_.exo_det_length = 0; % parrot
             txt += "    g.append(g{order})\n".format(order=current_order)
         txt += "    return g\n"
         txt = txt.replace('^','**')
+        print txt
         exec txt
         return dynamic_gaps
 
