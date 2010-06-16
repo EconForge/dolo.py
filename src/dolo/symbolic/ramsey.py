@@ -2,8 +2,8 @@
 # and open the template in the editor.
 
 
-from dolo.model.model import Model
-from dolo.model.symbolic import Variable,Equation
+from dolo.symbolic.model import Model
+from dolo.symbolic.symbolic import Variable,Equation
 import sympy
 
 class RamseyModel(Model):
@@ -38,8 +38,8 @@ class RamseyModel(Model):
             self.variables_ordering.append(v)
             lambdas.append(v)
         t_cur = self.objective + sum( [self.equations[i].gap * lambdas[i] for i in range(n_eq)] )
-        t_fut = time_shift(t_cur,-1)
-        t_past = time_shift(t_cur,+1)
+        t_fut = time_shift(t_cur,+1)
+        t_past = time_shift(t_cur,-1)
         beta = self.discount
         lagrangian = 1/beta * t_past + t_cur + beta * t_fut
         self.lagrangian = lagrangian

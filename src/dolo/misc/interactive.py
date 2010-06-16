@@ -1,6 +1,6 @@
-from dolo.model.symbolic import *
-from dolo.model.symbolic_interactive import *
-from dolo.model.model import *
+from dolo.symbolic.symbolic import *
+from dolo.symbolic.symbolic_interactive import *
+from dolo.symbolic.model import *
 
 from sympy import exp,log,sin,cos,tan,Matrix,zeros,pi,atan
 #from solver.solver import *
@@ -26,7 +26,6 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     # - optional blocks (like endval, shocks) 
     #    seperated by free matlab instructions in any order;
     # - all other instructions are ignored
-    
 
     otxt = txt
     otxt = otxt.replace("\r\n","\n")
