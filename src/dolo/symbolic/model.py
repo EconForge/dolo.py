@@ -63,30 +63,46 @@ class Model:
         self.tags.update(h)
         return(self)
     
-    def check_all(self,verbose=False):
+    def check_all(self,verbose=True):
         print_info = verbose
         print_eq_info = verbose
-        for i in range(len(self.equations)):
-            self.equations[i].infos['n'] = i+1
-            self.set_info(self.equations[i])
-        info = {}
-        if print_eq_info:
-            for eq in self.equations:
-                print("Eq (" + str(eq.n) +") : " + str(eq.info) )
-        def multiunion(list_of_sets):
-            res = set([])
-            for s in list_of_sets:
-                res = res.union(s)
-            return res
 
-        tv = list( multiunion( [ eq.info['vars'] for eq in self.equations ] ) )
-        ts = list( multiunion( [ eq.info['shocks'] for eq in self.equations ] ) )
-        tp = list( multiunion( [ eq.info['params'] for eq in self.equations ] ) )
+        all_dyn_vars = set([])
+        all_dyn_shocks = set([])
+        all_parameters = set([])
+        for i in range(len(self.equations)):
+            eq = self.equations[i]
+            eq.infos['n'] = i+1
+            atoms = eq.atoms()
+            vs = [a for a in atoms if isinstance(a,Variable)]
+            ss = [a for a in atoms if isinstance(a,Shock)]
+            ps = [a for a in atoms if isinstance(a,Parameter)]
+            all_dyn_vars.update(vs)
+            all_dyn_shocks.update(ss)
+            all_parameters.update(ps)
+        tv = [v.P for v in all_dyn_vars]
+        ts = [s.P for s in all_dyn_shocks]
+        tp = [p for p in all_parameters]
+#        for i in range(len(self.equations)):
+#            self.equations[i].infos['n'] = i+1
+#            self.set_info(self.equations[i])
+#        info = {}
+#        if print_eq_info:
+#            for eq in self.equations:
+#                print("Eq (" + str(eq.n) +") : " + str(eq.info) )
+#        def multiunion(list_of_sets):
+#            res = set([])
+#            for s in list_of_sets:
+#                res = res.union(s)
+#            return res
+#
+#        tv = list( multiunion( [ eq.info['vars'] for eq in self.equations ] ) )
+#        ts = list( multiunion( [ eq.info['shocks'] for eq in self.equations ] ) )
+#        tp = list( multiunion( [ eq.info['params'] for eq in self.equations ] ) )
 
         self.variables = self.reorder(tv,self.variables_ordering)
         self.shocks = self.reorder(ts,self.shocks_ordering)
         self.parameters = self.reorder(tp,self.parameters_ordering)
-
 
         info = {
                 "n_variables" : len(self.variables),
@@ -95,7 +111,7 @@ class Model:
                 "n_equations" : len(self.equations)
         }
         self.info = info
-        if True:
+        if verbose:
             print("Model check : " + self.fname)
             for k in info:
                 print("\t"+k+"\t\t"+str(info[k]))
@@ -225,25 +241,27 @@ class Model:
 
     def reorder(self, vars, variables_order):
         arg = list(vars)
-        res = []
-        for v in variables_order:
-            if isinstance(v,IndexedSymbol):
-                name = v.basename
-                l = []
-                for h in vars:
-                    if h in arg and name == h.father:
-                        l.append(h)
-                        arg.remove(h)
-                l.sort()
-                res.extend(l)
-            else:
-                name = v.name
-                for h in vars:
-                    if h in arg and h == v:
-                        res.append(h)
-                        arg.remove(h)
-        for h in arg:
-            res.append(h)
+        res = [v for v in variables_order if v in vars]
+#        arg = list(vars)
+#        res = []
+#        for v in variables_order:
+#            if isinstance(v,IndexedSymbol):
+#                name = v.basename
+#                l = []
+#                for h in vars:
+#                    if h in arg and name == h.father:
+#                        l.append(h)
+#                        arg.remove(h)
+#                l.sort()
+#                res.extend(l)
+#            else:
+#                name = v.name
+#                for h in vars:
+#                    if h in arg and h == v:
+#                        res.append(h)
+#                        arg.remove(h)
+#        for h in arg:
+#            res.append(h)
         return res
 
     def dss_equations(self):
