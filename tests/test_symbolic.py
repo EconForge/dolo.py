@@ -2,7 +2,7 @@
 # and open the template in the editor.
 
 import unittest
-from dolo.model.symbolic import Variable,Parameter,TSymbol
+from dolo.symbolic.symbolic import Variable,Parameter,TSymbol
 import sympy
 
 class  FormalCalculusTestCase(unittest.TestCase):
@@ -10,7 +10,7 @@ class  FormalCalculusTestCase(unittest.TestCase):
     def test_classes(self):
         from sympy import Symbol
         v = Variable('v',0)
-        p = Parameter('p',0)
+        p = Parameter('p')
         s = Variable('v',0)
         symbs = [v,p,s]
         for i in symbs:
@@ -37,6 +37,14 @@ class  FormalCalculusTestCase(unittest.TestCase):
         # x and y denote the same formal variables but are in two different instances
         y = Variable('x',0)
         assert(y == x)
+        #
+
+    def test_derivative(self):
+        y = Variable('y',0)
+        z = Variable('z',0)
+        eq = y + 3*y(1)
+        print eq.diff(y)
+        assert( eq.diff(y) == 1)
 
     def test_present_value(self):
         # present operator should not depend on the initial lag
@@ -52,13 +60,13 @@ class  FormalCalculusTestCase(unittest.TestCase):
     def test_parameter(self):
         # we test initialization
         from sympy import Symbol
-        p = Parameter('p',0)
+        p = Parameter('p')
         assert( isinstance(p,Parameter) )
         assert( isinstance(p,Symbol))
         assert( p.__latex__() == 'p')
         # greek letters are translated by sympy
-        beta = Parameter('beta',0)
-        delta = Parameter('delta',0,latex_name='d')
+        beta = Parameter('beta')
+        delta = Parameter('delta')
         assert( beta.__latex__() == "\\beta")
         assert( delta.__latex__() == "d")
 

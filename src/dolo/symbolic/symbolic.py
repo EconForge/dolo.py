@@ -53,7 +53,7 @@ class TSymbol(sympy.Symbol):
 
     latex_names = {}
 
-    def __init__(self, name, date =0):
+    def __init__(self, name, date):
         super(TSymbol,self).__init__()
         self.date = date
         self.name = name
@@ -73,8 +73,9 @@ class TSymbol(sympy.Symbol):
         if self.lag == 'S':
             raise Exception,"lags are not allowed on steady state variable"
         else:
-            newdate = self.date + lead
-            v = type(self)(self.name,newdate)
+            newdate = int(self.date) + lead
+            newname = str(self.name)
+            v = type(self)(newname,newdate)
             return v
 
     @property
