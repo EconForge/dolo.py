@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sympy
 #from scipy import *
-from dolo.model.symbolic import *
+from dolo.symbolic.symbolic import *
 #import dolo.extern.qz
 import copy
 

@@ -8,7 +8,7 @@ import sympy
 
 class RamseyModel(Model):
 
-    def __init__(self, base_model, objective, discount):
+    def __init__(self, base_model, objective=None, discount=None):
         self.base_model = base_model
         self.variables_ordering = list(base_model.variables_ordering)
         self.parameters_ordering = list(base_model.parameters_ordering)
@@ -18,9 +18,25 @@ class RamseyModel(Model):
         self.covariances = base_model.covariances # should be copied instead
         self.init_values = dict(base_model.init_values)
         self.parameters_values = dict(base_model.parameters_values)
+        if objective==None or discount==None:
+            # parameters must be specified in the model
+            ins_eq = [eq for eq in base_model.equations if eq.tags.has_key("ramsey_instrument")]
+            if len(ins_eq)==0:
+                raise Exception('Some parameters for the policy must be specified in the modfile or the function call.')
+            if len(ins_eq)>1:
+                raise Exception('Ramsey policy not implemented for many objectives.')
+            else:
+                ins_eq = ins_eq[0]
+            self.instrument_equation = ins_eq
+        if ins_eq.tags.has_key('ramsey_objective'):
+            objective = ins_eq.tags['ramsey_objective']
+        if ins_eq.tags.has_key('ramsey_discount'):
+            discount = ins_eq.tags['ramsey_discount']
         self.objective = objective if not isinstance(objective,str) else self.eval_string(objective)
         self.discount = discount if not isinstance(objective,str) else self.eval_string(discount)
+        
         self.build_lagrangian()
+        self.fname = self.base_model.fname + '_ramsey'
 
     def eval_string(self,string):
         # rather generic method (should be defined for any model with dictionary updated accordingly
@@ -31,6 +47,14 @@ class RamseyModel(Model):
         return sympy.sympify( eval(string,context) )
 
     def build_lagrangian(self):
+        vars = list(self.base_model.variables)
+
+        if self.instrument_equation!=None and self.instrument_equation.tags.has_key('ramsey_instrument'):
+            ramsey_instrument = [v for v in vars if v.name == self.instrument_equation.tags['ramsey_instrument']]
+            ramsey_instrument = ramsey_instrument[0]
+            self.equations.remove(self.instrument_equation)
+            vars.remove(ramsey_instrument)
+            
         # first we create one multiplicator by equation
         n_eq = len(self.equations)
         lambdas = []
@@ -44,14 +68,27 @@ class RamseyModel(Model):
         beta = self.discount
         lagrangian = 1/beta * t_past + t_cur + beta * t_fut
         self.lagrangian = lagrangian
-        for v in self.base_model.variables:
+
+        
+        print 'There are ' + str(len(self.equations)) + 'equations'
+        print 'There are ' + str(len(vars)) + 'variables'
+
+        if self.instrument_equation!=None and self.instrument_equation.tags.has_key('ramsey_instrument'):
+#            vars = [ramsey_instrument] + vars
+            eq = lagrangian.diff(ramsey_instrument)
+            eq = Equation(eq,0).tag( name='Derivative of lagrangian w.r.t : ' + str(ramsey_instrument) )
+            eq.tags.update( self.instrument_equation.tags )
+            self.equations.append(eq)
+
+        for v in vars:
+            print 'differentiating w.r.t. ' + str(v)
             eq = lagrangian.diff(v)
             eq = Equation(eq,0).tag(name='Derivative of lagrangian w.r.t : ' + str(v) )
             self.equations.append(eq)
 
 def time_shift(expr,n):
     from dolo.misc.misc import map_function_to_expression
-    from dolo.model.symbolic import Variable,Shock
+    from dolo.symbolic.symbolic import Variable,Shock
     def f(e):
         if isinstance(e,(Variable,Shock)):
             return e(n)

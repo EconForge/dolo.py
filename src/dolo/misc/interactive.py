@@ -251,6 +251,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     for ig in model_block[1:-1]:
         if ig.instruction != '':
             teq = ig.instruction.replace('^',"**")
+            print teq
             teqlhs,teqrhs = teq.split("=")
             eqlhs = eval(teqlhs)
             eqrhs = eval(teqrhs)
