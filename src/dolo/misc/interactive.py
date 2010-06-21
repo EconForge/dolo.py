@@ -85,7 +85,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
                 #print(g.groups())
                 matches = [i for i in range(len(g)) if g[i]!=None]
                 if len(matches) !=1 :
-                    raise Exception, "Parsing error"
+                    raise Exception( "Parsing error" )
                 else:
                     i = matches[0]
                 if i == 0:
@@ -175,8 +175,9 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         if ig.instruction != '':
             m = init_regex.match(ig.instruction)
             if not m:
-                raise "Unexpected instruction in init block"
+                raise Exception("Unexpected instruction in init block : " + str(ig.instruction))
             if m.group(1) == '':
+                print m.group(2)
                 [lhs,rhs] = m.group(2).split("=")
                 lhs = lhs.strip()
                 rhs = rhs.strip()
@@ -194,7 +195,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
                     if not n in dest:
                         dest.append(n)
                     else:
-                        raise("symbol %s has already been defined")
+                        raise Exception("symbol %s has already been defined".format(n))
 
     # the following instruction set the variables "variables","shocks","parameters"
 
@@ -285,7 +286,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         for ig in shocks_block[1:-1]:
             m = regex1.match(ig.instruction)
             if not m:
-                raise(Exception("unrecognized instruction in block shocks : " + str(ig.instruction)))
+                raise Exception("unrecognized instruction in block shocks : " + str(ig.instruction))
             if m.group(1) != None:
                 varname1 = m.group(1).strip()
                 varname2 = m.group(2).strip()
