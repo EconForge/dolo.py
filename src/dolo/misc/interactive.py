@@ -177,7 +177,6 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
             if not m:
                 raise Exception("Unexpected instruction in init block : " + str(ig.instruction))
             if m.group(1) == '':
-                print m.group(2)
                 [lhs,rhs] = m.group(2).split("=")
                 lhs = lhs.strip()
                 rhs = rhs.strip()
@@ -252,7 +251,6 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     for ig in model_block[1:-1]:
         if ig.instruction != '':
             teq = ig.instruction.replace('^',"**")
-            print teq
             teqlhs,teqrhs = teq.split("=")
             eqlhs = eval(teqlhs)
             eqrhs = eval(teqrhs)
