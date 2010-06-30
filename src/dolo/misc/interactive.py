@@ -2,7 +2,7 @@ from dolo.symbolic.symbolic import *
 from dolo.symbolic.symbolic_interactive import *
 from dolo.symbolic.model import *
 
-from sympy import exp,log,sin,cos,tan,Matrix,zeros,pi,atan
+from sympy import exp,log,sin,cos,tan,Matrix,zeros,pi,atan,sqrt
 #from solver.solver import *
 import re
 import inspect
