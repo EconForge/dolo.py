@@ -1,4 +1,5 @@
-from dolo.model.symbolic import sympy,Variable,Parameter
+import sympy
+from dolo.symbolic.symbolic import Variable,Parameter
 
 
 def send_to_matlab(model,interactive=True,rmtemp=False,append=""):

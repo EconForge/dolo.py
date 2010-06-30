@@ -90,7 +90,8 @@ class Compiler:
         columns = dict()
         model = self.model
         for eq in self.model.equations:
-            for e in eq.info['all_vars']:
+            all_vars = [a for a in eq.atoms() if isinstance(a,Variable)]
+            for e in all_vars:
                 if not e.lag in columns.keys():
                     columns[e.lag] = set()
                 columns[e.lag].add(e)

@@ -16,101 +16,101 @@ from TensorLib.tensor import tensor
 import scipy.io as matio
 import os
 import time
-
-def list_worksheets_with_data_dir(dir):
-    import os
-    l = os.listdir(dir)
-    l.remove('history.sobj')
-    resp = []
-    for d in l:
-        f = file(dir + d + '/worksheet.txt')
-        txt = f.readlines()[0].strip()
-        datadir = dir + d + '/data/'
-        if os.path.isdir(datadir):
-            resp.append([ d, txt, datadir ])
-        else:
-            resp.append([ d, txt, None ])            
-    return resp
-    
-#def get_results_from_matlab(context):
-#    wk = matio.loadmat(DATA + 'results.mat',struct_as_record=True)
-#    new_dr = convert_struct_to_dict(wk['new_dr'])
-#    return new_dr
-  #new_dr0 = convert_struct_to_dict(wk['new_dr0'])
-  
-def retrieve_from_matlab(mlab,name,tname=None):
-    import scipy.io as matio
-    pwd = str(mlab.pwd())
-    tname = name + '_' + str(time.time())
-    cmd = "save('{0}','{1}')".format(tname,name)
-    mlab.execute(cmd)
-    fname = pwd + '/' + tname
-    s = matio.loadmat(fname,struct_as_record=True)[name]
-    os.remove(fname)
-    return s
-    
-def upload_to_matlab(mlab,obj,name,tname=None):
-    import scipy.io as matio
-    pwd = str(mlab.pwd())
-    tname = name + '_' + str(time.time())
-    fname = pwd + '/' + tname + '.mat'
-    matio.savemat( fname, {name: obj} )
-    cmd = "load('{0}.mat')".format(tname)
-    mlab.execute(cmd)
-    
-    os.remove(fname)
-    return None
-    
-
-def simulate(dr,Sigma,periods=100,seed=None):
-    g_0 = dr.g[0]
-    n_s = Sigma.shape[0] #number of shocks
-    n_s_v = dr.g[1].shape[1] - n_s # number of state variables
-    n_v = g_0.shape[0]
-    
-    g_1 = dr.g[1][:,0:n_s_v]
-    g_u = dr.g[1][:,n_s_v:]
-    
-    # simulate the exogenous process
-    np.random.seed(seed)
-    exo_pr = np.random.multivariate_normal(np.zeros(n_s), Sigma, periods).T
-    print exo_pr[:,3]
-    exo_pr_eff = np.dot( g_u, exo_pr )
-    
-    # simulate the variables
-    res = np.zeros((n_v, periods + 1))
-    for i in range(periods):
-        res[:,i+1] = np.dot( g_1, res[0:n_s_v,i] ) + exo_pr_eff[:,i]
-    x = np.atleast_2d(g_0).T.repeat(periods + 1,axis=1) 
-
-    return res + x
-
-def inject_symbols(ll):
-    import inspect
-    frame = inspect.currentframe().f_back
-    for l in ll:
-        frame.f_globals[l.name] = l
-    del frame
-
-def compute_residuals(model):
-    from dolo.misc.calculus import solve_triangular_system
-    dvars = dict()
-    dvars.update(model.parameters_values)
-    dvars.update(model.init_values)
-    values = solve_triangular_system(dvars)[0]
-    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
-    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
-    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
-    residuals = [ eq.subs(values) for eq in stateq ]
-    return residuals
-
-def print_model(model, print_residuals=True):
-    if print_residuals:
-        res = compute_residuals(model)
-        html.table([(i+1,model.equations[i],"%.4f" %float(res[i])) for i in range(len(model.equations))])
-    else:
-        html.table([(i+1,model.equations[i]) for i in range(len(model.equations))])
-
+#
+#def list_worksheets_with_data_dir(dir):
+#    import os
+#    l = os.listdir(dir)
+#    l.remove('history.sobj')
+#    resp = []
+#    for d in l:
+#        f = file(dir + d + '/worksheet.txt')
+#        txt = f.readlines()[0].strip()
+#        datadir = dir + d + '/data/'
+#        if os.path.isdir(datadir):
+#            resp.append([ d, txt, datadir ])
+#        else:
+#            resp.append([ d, txt, None ])
+#    return resp
+#
+##def get_results_from_matlab(context):
+##    wk = matio.loadmat(DATA + 'results.mat',struct_as_record=True)
+##    new_dr = convert_struct_to_dict(wk['new_dr'])
+##    return new_dr
+#  #new_dr0 = convert_struct_to_dict(wk['new_dr0'])
+#
+#def retrieve_from_matlab(mlab,name,tname=None):
+#    import scipy.io as matio
+#    pwd = str(mlab.pwd())
+#    tname = name + '_' + str(time.time())
+#    cmd = "save('{0}','{1}')".format(tname,name)
+#    mlab.execute(cmd)
+#    fname = pwd + '/' + tname
+#    s = matio.loadmat(fname,struct_as_record=True)[name]
+#    os.remove(fname)
+#    return s
+#
+#def upload_to_matlab(mlab,obj,name,tname=None):
+#    import scipy.io as matio
+#    pwd = str(mlab.pwd())
+#    tname = name + '_' + str(time.time())
+#    fname = pwd + '/' + tname + '.mat'
+#    matio.savemat( fname, {name: obj} )
+#    cmd = "load('{0}.mat')".format(tname)
+#    mlab.execute(cmd)
+#
+#    os.remove(fname)
+#    return None
+#
+#
+#def simulate(dr,Sigma,periods=100,seed=None):
+#    g_0 = dr.g[0]
+#    n_s = Sigma.shape[0] #number of shocks
+#    n_s_v = dr.g[1].shape[1] - n_s # number of state variables
+#    n_v = g_0.shape[0]
+#
+#    g_1 = dr.g[1][:,0:n_s_v]
+#    g_u = dr.g[1][:,n_s_v:]
+#
+#    # simulate the exogenous process
+#    np.random.seed(seed)
+#    exo_pr = np.random.multivariate_normal(np.zeros(n_s), Sigma, periods).T
+#    print exo_pr[:,3]
+#    exo_pr_eff = np.dot( g_u, exo_pr )
+#
+#    # simulate the variables
+#    res = np.zeros((n_v, periods + 1))
+#    for i in range(periods):
+#        res[:,i+1] = np.dot( g_1, res[0:n_s_v,i] ) + exo_pr_eff[:,i]
+#    x = np.atleast_2d(g_0).T.repeat(periods + 1,axis=1)
+#
+#    return res + x
+#
+#def inject_symbols(ll):
+#    import inspect
+#    frame = inspect.currentframe().f_back
+#    for l in ll:
+#        frame.f_globals[l.name] = l
+#    del frame
+#
+#def compute_residuals(model):
+#    from dolo.misc.calculus import solve_triangular_system
+#    dvars = dict()
+#    dvars.update(model.parameters_values)
+#    dvars.update(model.init_values)
+#    values = solve_triangular_system(dvars)[0]
+#    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
+#    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
+#    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
+#    residuals = [ eq.subs(values) for eq in stateq ]
+#    return residuals
+#
+#def print_model(model, print_residuals=True):
+#    if print_residuals:
+#        res = compute_residuals(model)
+#        html.table([(i+1,model.equations[i],"%.4f" %float(res[i])) for i in range(len(model.equations))])
+#    else:
+#        html.table([(i+1,model.equations[i]) for i in range(len(model.equations))])
+#
 
 def compute_steadystate_values(model):
     from dolo.misc.calculus import solve_triangular_system

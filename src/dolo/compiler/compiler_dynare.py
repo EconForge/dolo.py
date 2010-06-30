@@ -332,7 +332,9 @@ M_.exo_det_length = 0; % parrot
             return None
 
 
-    def compute_dynamic_mfile(self,max_order=1):
+    def compute_dynamic_mfile(self,max_order=2):
+
+        print "Computing dynamic .m file at order {0}.".format(max_order)
 
         NonDecreasingTree.symbol_type = TSymbol
 
@@ -343,7 +345,7 @@ M_.exo_det_length = 0; % parrot
         # TODO create a log system
         t = []
         t.append(time.time())
-        print('compute derivatives ...')
+        print(' - compute derivatives ...')
         sols = []
         i = 0
         for eq in model.equations:
@@ -353,11 +355,11 @@ M_.exo_det_length = 0; % parrot
             sols.append(ndt)
 
         t.append(time.time())
-        print('done ' + str(t[-1] - t[-2]))
+        print('   done ' + str(t[-1] - t[-2]))
 
         self.dynamic_derivatives = sols
 
-        dyn_subs_dict = self.dynamic_substitution_list
+        dyn_subs_dict = self.dynamic_substitution_list()
         dyn_printer = DicPrinter(dyn_subs_dict)
 
         txt = """function [residual, {gs}] = {fname}_dynamic(y, x, params, it_)
@@ -376,7 +378,7 @@ M_.exo_det_length = 0; % parrot
         gs = str.join(', ',[('g'+str(i)) for i in range(1,(max_order+1))])
         txt = txt.format(gs=gs,fname=model.fname,neq=len(model.equations))
 
-        print('writing equations ...')
+        print(' - writing equations ...')
         t.append(time.time())
         for i in range(len(sols)):
             ndt = sols[i]
@@ -384,7 +386,7 @@ M_.exo_det_length = 0; % parrot
             rhs = dyn_printer.doprint_matlab(eq)
             txt += '    residual({0}) = {1};\n'.format(i+1,rhs )
         t.append(time.time())
-        print('done ' + str(t[-1] - t[-2]))
+        print('   done ' + str(t[-1] - t[-2]))
         
         for current_order in range(1,(max_order+1)):
             if current_order == 1:
@@ -405,11 +407,11 @@ M_.exo_det_length = 0; % parrot
                 txt.format(matrix_name="Hessian")
             elif current_order == 1:
                 txt.format(matrix_name="Jacobian")
-            print 'printing {0}th order derivatives'.format(current_order)
+            print ' - printing {0}th order derivatives'.format(current_order)
             t.append(time.time())
 
             nnzd = self.NNZDerivatives(current_order)
-            print "{0} derivatives are going to be written".format(nnzd)
+            print "     {0} derivatives are going to be written".format(nnzd)
             if True: # we write full matrices ...
                 txt += "        v{order} = zeros({nnzd}, 3);\n".format(order=current_order, nnzd=nnzd)
                 i = 0
@@ -436,14 +438,16 @@ M_.exo_det_length = 0; % parrot
     end
 """
         t.append(time.time())
-        print('done ' + str(t[-1] - t[-2]))
+        print(' done ' + str(t[-1] - t[-2]))
         f = file(model.fname + '_dynamic.m','w')
         f.write(txt)
         f.close()
         return txt
 
 
-    def compute_static_mfile(self,max_order):
+    def compute_static_mfile(self,max_order=1):
+
+        print "Computing static .m file at order {0}.".format(max_order)
 
         NonDecreasingTree.symbol_type = Variable
 
@@ -467,6 +471,7 @@ M_.exo_det_length = 0; % parrot
         self.static_derivatives = sols
 
         stat_subs_dict = self.static_substitution_list()
+        
         stat_printer = DicPrinter(stat_subs_dict)
 
         txt = """function [residual, {gs}] = {fname}_static(y, x, params, it_)
@@ -748,7 +753,6 @@ M_.exo_det_length = 0; % parrot
             txt += "    g.append(g{order})\n".format(order=current_order)
         txt += "    return g\n"
         txt = txt.replace('^','**')
-        print txt
         exec txt
         return dynamic_gaps
 

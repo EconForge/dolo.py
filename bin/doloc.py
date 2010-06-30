@@ -22,11 +22,10 @@ if __name__ == "__main__":
             print("not enough argument")
             sys.exit(2)
 
-
         # Read options
-        options = {"check":False,"ramsey":False,"portfolio":False}
+        options = {"check":False,"ramsey":False,"portfolio":False, "static-order":2, "dynamic-order":1}
         short_arg_dict = "hcdpr"
-        long_arg_dict = ["help","check","dynare","portfolio","ramsey"]
+        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","portfolio","ramsey"]
         try:
             opts, args = getopt.getopt(argv, short_arg_dict, long_arg_dict)
         except getopt.GetoptError:
@@ -44,6 +43,10 @@ if __name__ == "__main__":
                 options["portfolio"] = True
             if opt in ("-r","--ramsey"):
                 options["ramsey"] = True
+            if opt in ("--static-order",):
+                options["static-order"] = int(arg)
+            if opt in ("--dynamic-order",):
+                options["dynamic-order"] = int(arg)
 
         # determine filename type
         if args == []:
@@ -84,22 +87,30 @@ if __name__ == "__main__":
         f.close()
         
     def process_modfile(filename_trunc,options):
+        from dolo.compiler.compiler_dynare import DynareCompiler
         import time
 
         t0 = time.time()
         '''read mod file ; write xml file'''
         #from misc.interactive import dynare_import
         filename = filename_trunc + ".mod"
-        resp = dynare_import(filename)
-        model = resp['model']
-        model.fname = filename_trunc
+
+        fname = re.compile('.*/(.*)').match(filename_trunc).group(1)
+        
+        model = dynare_import(filename)
+
+        model.fname = fname
+
+        #model = resp['model']
 
         model.check()
+
         comp = DynareCompiler(model)
-        comp.export_infos()
-        write_file(model.fname + '_dynamic.m', comp.compute_dynamic_mfile(max_order=2))
-        write_file(model.fname + '_static.m', comp.compute_static_mfile(max_order=1))
-        write_file(model.fname + '.m',  comp.compute_main_file() )
+        #comp.export_infos()
+        
+        write_file(model.fname + '_dynamic.m', comp.compute_dynamic_mfile(max_order=options["dynamic-order"]))
+        write_file(model.fname + '_static.m', comp.compute_static_mfile(max_order=options["static-order"]))
+        #write_file(model.fname + '.m',  comp.compute_main_file() )
         print('Modfile preprocessing finished in {0} seconds'.format(time.time() - t0))
 #        if options["check"]:
 #            model.check_all(print_info=True,print_eq_info=True)
@@ -136,12 +147,14 @@ if __name__ == "__main__":
 
         The file argument defining a model can be in Dynare format or in XML format. Its extension determines its type.
 	Available options are :
-				  without option DareDare does nothing
-	-h      --help            print this message
-        -c      --check           model is checked for consistency
-	-o      --outpout=OUTPUT  the output model is written to OUTPUT file (not implemented)
-        -p      --portfolio       model's equations are expanded so as to solve portfolio problems
-	-r	--ramsey          model's equations defining Ramsey's optimal policy are added (not implemented)
+				  	without option Dolo does nothing
+	-h      --help            	print this message
+        -c      --check           	model is checked for consistency
+	-o      --outpout=OUTPUT  	the output model is written to OUTPUT file (not implemented)
+        -p      --portfolio       	model's equations are expanded so as to solve portfolio problems
+	-r	--ramsey          	model's equations defining Ramsey's optimal policy are added (not implemented)
+		--compute-static=order  _static.m file is written at given order
+		--compute-dynamic=order	_dynamic.m file is written at given order
 	'''
 	print(help_text)
 
