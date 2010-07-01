@@ -352,7 +352,7 @@ def solve_decision_rule( model, order=2, derivs=None):
     if derivs == None:
         return DDR( [y,[g_y,g_u],[g_yy,g_yu,g_uu]], correc_s = g_ss )
     else:
-        return [[g_y,g_u],[g_yy,g_yu,g_uu]]
+        return [[g_y,g_u],[g_yy,g_yu,g_uu],g_ss]
         
 
 
