@@ -439,13 +439,13 @@ class DDR():
         return 'Decision rule'
 
 
-def retrieve_DDR_from_matlab(mlab,name):
+def retrieve_DDR_from_matlab(name,mlab):
     mlab.execute( 'drn = reorder_dr({0});'.format(name) )
-    rdr = retrieve_from_matlab(matlab,'drn')
+    rdr = retrieve_from_matlab('drn',mlab)
     ys =  rdr['ys'][0,0]
     ghx = rdr['ghx'][0,0]
     ghu = rdr['ghu'][0,0]
-    ghxx = rdr['ghx'][0,0]
+    ghxx = rdr['ghxx'][0,0]
     ghxu = rdr['ghxu'][0,0]
     ghuu = rdr['ghuu'][0,0]
     ghs2 = rdr['ghs2'][0,0]
