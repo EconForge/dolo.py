@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+### does this code really depends on Sage ?
+
 import dolo
 from dolo import *
 import numpy as np
@@ -16,100 +19,6 @@ from TensorLib.tensor import tensor
 import scipy.io as matio
 import os
 import time
-#
-#def list_worksheets_with_data_dir(dir):
-#    import os
-#    l = os.listdir(dir)
-#    l.remove('history.sobj')
-#    resp = []
-#    for d in l:
-#        f = file(dir + d + '/worksheet.txt')
-#        txt = f.readlines()[0].strip()
-#        datadir = dir + d + '/data/'
-#        if os.path.isdir(datadir):
-#            resp.append([ d, txt, datadir ])
-#        else:
-#            resp.append([ d, txt, None ])
-#    return resp
-#
-##def get_results_from_matlab(context):
-##    wk = matio.loadmat(DATA + 'results.mat',struct_as_record=True)
-##    new_dr = convert_struct_to_dict(wk['new_dr'])
-##    return new_dr
-#  #new_dr0 = convert_struct_to_dict(wk['new_dr0'])
-#
-#def retrieve_from_matlab(mlab,name,tname=None):
-#    import scipy.io as matio
-#    pwd = str(mlab.pwd())
-#    tname = name + '_' + str(time.time())
-#    cmd = "save('{0}','{1}')".format(tname,name)
-#    mlab.execute(cmd)
-#    fname = pwd + '/' + tname
-#    s = matio.loadmat(fname,struct_as_record=True)[name]
-#    os.remove(fname)
-#    return s
-#
-#def upload_to_matlab(mlab,obj,name,tname=None):
-#    import scipy.io as matio
-#    pwd = str(mlab.pwd())
-#    tname = name + '_' + str(time.time())
-#    fname = pwd + '/' + tname + '.mat'
-#    matio.savemat( fname, {name: obj} )
-#    cmd = "load('{0}.mat')".format(tname)
-#    mlab.execute(cmd)
-#
-#    os.remove(fname)
-#    return None
-#
-#
-#def simulate(dr,Sigma,periods=100,seed=None):
-#    g_0 = dr.g[0]
-#    n_s = Sigma.shape[0] #number of shocks
-#    n_s_v = dr.g[1].shape[1] - n_s # number of state variables
-#    n_v = g_0.shape[0]
-#
-#    g_1 = dr.g[1][:,0:n_s_v]
-#    g_u = dr.g[1][:,n_s_v:]
-#
-#    # simulate the exogenous process
-#    np.random.seed(seed)
-#    exo_pr = np.random.multivariate_normal(np.zeros(n_s), Sigma, periods).T
-#    print exo_pr[:,3]
-#    exo_pr_eff = np.dot( g_u, exo_pr )
-#
-#    # simulate the variables
-#    res = np.zeros((n_v, periods + 1))
-#    for i in range(periods):
-#        res[:,i+1] = np.dot( g_1, res[0:n_s_v,i] ) + exo_pr_eff[:,i]
-#    x = np.atleast_2d(g_0).T.repeat(periods + 1,axis=1)
-#
-#    return res + x
-#
-#def inject_symbols(ll):
-#    import inspect
-#    frame = inspect.currentframe().f_back
-#    for l in ll:
-#        frame.f_globals[l.name] = l
-#    del frame
-#
-#def compute_residuals(model):
-#    from dolo.misc.calculus import solve_triangular_system
-#    dvars = dict()
-#    dvars.update(model.parameters_values)
-#    dvars.update(model.init_values)
-#    values = solve_triangular_system(dvars)[0]
-#    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
-#    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
-#    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
-#    residuals = [ eq.subs(values) for eq in stateq ]
-#    return residuals
-#
-#def print_model(model, print_residuals=True):
-#    if print_residuals:
-#        res = compute_residuals(model)
-#        html.table([(i+1,model.equations[i],"%.4f" %float(res[i])) for i in range(len(model.equations))])
-#    else:
-#        html.table([(i+1,model.equations[i]) for i in range(len(model.equations))])
 #
 
 def compute_steadystate_values(model):
@@ -206,7 +115,7 @@ def second_order_solver(FF,GG,HH):
 
     return [Xi_sortval[Xi_select],PP.A]
 
-def solve_decision_rule( model, order=2, derivs=None):
+def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     
     if order>3:
         raise Exception('Order > 3 not implemented yet')
@@ -238,6 +147,18 @@ def solve_decision_rule( model, order=2, derivs=None):
             [f_0,f_1] = derivs
         elif order ==2:
             [f_0,f_1,f_2] = derivs
+    
+    
+    if use_dynare:
+        comp = DynareCompiler(model)
+        lli = comp.lead_lag_incidence_matrix()
+        from mlabwrap import mlab
+        mlab.addpath('/home/pablo/Programmation/mini_dynare/')
+        resp = mlab.dr3(f1,f2,0,lli,nout=1)
+        print 'Solve for decision rule using Dynare'
+        
+        return None
+    
     
     n_v = model.info['n_variables']
     n_s = model.info['n_shocks']
@@ -404,9 +325,12 @@ def solve_sylvester(A,B,C,D,insist=False):
 
 class DDR():
     # this class represent a dynare decision rule
-    def __init__(self,g,correc_s=None):
+    def __init__(self,g,ghs2=None,correc_s=None):
         self.g = g
-        self.correc_s = correc_s
+        if correc_s !=None:
+            self.correc_s = correc_s
+        if ghs2 !=None:
+            self.ghs2 = ghs2
 
     @property
     def ys(self):
@@ -431,9 +355,23 @@ class DDR():
     @property        
     def ghuu(self):
         return self.g[2][2]
+        
+    @property        
+    def ghs2(self):
+        return self.ghs2
+     
      
     def ys_c(self,Sigma_e):
         return self.g[0] + 0.5*np.tensordot( self.correc_s , Sigma_e, axes = ((1,2),(0,1)) )
+
+    def __call__(self, x, e, Sigma_e):
+        # evaluates y_t, given y_{t-1} and e_t
+        resp = self.ys + np.dot( self.ghx, x ) +  np.dot( self.ghu, e )
+        resp += 0.5*np.tensordot( self.ghxx, np.outer(x,x) ) 
+        resp += 0.5*np.tensordot( self.ghxu, np.outer(x,u) )
+        resp += 0.5*np.tensordot( self.ghuu, np.outer(u,u) )
+        resp += 0.5*self.ghs2
+        return resp
           
     def __str__(self):
         return 'Decision rule'
@@ -442,12 +380,14 @@ class DDR():
 def retrieve_DDR_from_matlab(name,mlab):
     mlab.execute( 'drn = reorder_dr({0});'.format(name) )
     rdr = retrieve_from_matlab('drn',mlab)
-    ys =  rdr['ys'][0,0]
+    ys =  rdr['ys'][0,0].flatten()
     ghx = rdr['ghx'][0,0]
     ghu = rdr['ghu'][0,0]
-    ghxx = rdr['ghxx'][0,0]
-    ghxu = rdr['ghxu'][0,0]
-    ghuu = rdr['ghuu'][0,0]
-    ghs2 = rdr['ghs2'][0,0]
-    ddr = DDR( [ [ys],[ghx,ghu],[ghxx,ghxu,ghuu] ] ,correc_s = ghs2 )
+    [n_v,n_states] = ghx.shape
+    n_shocks = ghu.shape[1]
+    ghxx = rdr['ghxx'][0,0].reshape( (n_v,n_states,n_states) )
+    ghxu = rdr['ghxu'][0,0].reshape( (n_v,n_states,n_shocks) )
+    ghuu = rdr['ghuu'][0,0].reshape( (n_v,n_shocks,n_shocks) )
+    ghs2 = rdr['ghs2'][0,0].flatten()
+    ddr = DDR( [ ys,[ghx,ghu],[ghxx,ghxu,ghuu] ] , ghs2 = ghs2 )
     return [ddr,rdr]
