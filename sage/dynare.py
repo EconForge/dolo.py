@@ -7,26 +7,34 @@ try:
     del dynkin_diagram
 except:
     None
+    
+class MatlabEngine:
+    # Very preliminary implementation
+    def __init__(self, engine):
+        self.set_matlab_engine(engine)
+        
+    def set_matlab_engine(self,engine):
+        if engine == 'octave':
+            engine = octave
+        elif engine == 'matlab':
+            engine = matlab
+        else:
+            raise Exception('Non supported engine ' + str(engine) )
+        print( '- Calculation engine is : ' + str(engine) + ' ' + engine.version() )
+        self.engine = engine
+        self.execute('cd ' + DATA)
+        globals()['engine'] = self
+    
+    def execute(self,cmd):
+        return self.engine.execute(cmd)
+        
+    def eval(self, code, strip=True, synchronize=False, locals=None, **kwargs):
+        return self.engine.eval( code, strip=strip, synchronize=False, locals=None, **kwargs )
+    
 
-def set_matlab_engine(engine):
-    '''Set the interface to be used for computations. Engine can be :
-    - 'octave'
-    - 'matlab' (needs matlab installed)
-    - 'matlabw' (needs matlab and mlabwrap installed)
-    '''
-    if engine == 'octave':
-        engine = octave
-    elif engine == 'matlab':
-        engine = matlab
-    else:
-        raise Exception('Non supported engine ' + str(engine) )
-    globals()['engine'] = engine
-    print( '- Calculation engine is : ' + str(engine) + ' ' + engine.version() )
-    return None
 
-set_matlab_engine('octave')
+engine = MatlabEngine('octave')
 
-engine.execute('cd ' + DATA)
 
 try:
     dynare_version = engine.execute('dynare_version').split('=')[1].strip()
@@ -158,5 +166,28 @@ def dynare(fname,*kargs):
     args = [fname] + list(kargs)
     cmd = "dynare({0})".format(','.join(["'%s'" %o for o in args]) )
     print engine.execute( cmd )
+    
+    
+def stoch_simul(var_list=[], noprint=False, irf=True, nomoments=False, nographs=True):
+    '''Runs stochastic simulations for variable names specified in var_list (all variables if var_list is an empty list.
+    Options :
+    - noprint
+    - irf
+    - nomoments
+    - nographs
+    '''
+    var_list_string  = str.join( '; ', ["'%s'"%e for e in var_list ] )
+    txt = '''
+    old_options_ = options_;
+    options_.noprint = {noprint};
+    options_.irf = {irf};
+    options_.nomoments = {nomoments};
+    options_.nographs = {nographs};
+    var_list = cell2mat({{ {var_list_string} }});
+    stoch_simul(var_list);
+    options = old_options_ ;
+    '''.format(var_list_string=var_list_string,noprint=noprint*1,irf=irf*1,nomoments=nomoments*1,nographs=nographs*1)
+    print engine.execute(txt)    
+    
 
 modfile = ModFileCell()
