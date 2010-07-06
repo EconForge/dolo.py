@@ -327,6 +327,10 @@ class Model:
 
         return ord
 
+    @property
+    def state_variables(self):
+        return [v for v in self.variables if v(-1) in self.dyn_var_order ]
+
     def compute_uhlig_matrices(self):
         model = self.model
         exo_eqs = [eq for eq in model.equations if eq.info.get('exogenous') == 'true']
