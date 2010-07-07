@@ -23,9 +23,9 @@ if __name__ == "__main__":
             sys.exit(2)
 
         # Read options
-        options = {"check":False,"ramsey":False,"portfolio":False, "static-order":2, "dynamic-order":1}
-        short_arg_dict = "hcdpr"
-        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","portfolio","ramsey"]
+        options = {"check":False,"ramsey":False, "output":False, "static-order":2, "dynamic-order":1}
+        short_arg_dict = "hcdro"
+        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey"]
         try:
             opts, args = getopt.getopt(argv, short_arg_dict, long_arg_dict)
         except getopt.GetoptError:
@@ -39,23 +39,22 @@ if __name__ == "__main__":
                 options["dynare"] = True
             if opt in ("-c","--check"):
                 options["check"] = True
-            if opt in ("-p","--portfolio"):
-                options["portfolio"] = True
             if opt in ("-r","--ramsey"):
                 options["ramsey"] = True
+            if opt in ("-o","--output"):
+                options["output"] = True
             if opt in ("--static-order",):
                 options["static-order"] = int(arg)
             if opt in ("--dynamic-order",):
                 options["dynamic-order"] = int(arg)
 
-        # determine filename type
         if args == []:
             print("File argument missing")
             sys.exit()
         else:
             filename = args[0]
 
-
+        # determine filename type
         regex_mod = re.compile("(.*)\.mod")
         regex_mod_match = re.match(regex_mod,filename)
         if regex_mod_match:
@@ -68,6 +67,7 @@ if __name__ == "__main__":
             filetype = "xml"
             filename_trunc = regex_xml_match.groups()[0]
 
+
         current_dir = os.getcwd()
         filename_trunc = current_dir + '/' + filename_trunc
 
@@ -75,18 +75,38 @@ if __name__ == "__main__":
             print("Unknown filetype")
             sys.exit(2)
 
-        # Start the actual work
+        # Import the model
         if filetype == "mod":
-            process_modfile(filename_trunc,options)
-        elif filetype == "xml":
-            process_xmlfile(filename_trunc,options)
+            dynare_model = dynare_import(filename)
+
+        dynare_model.check(verbose=True)
+        
+        #elif filetype == "xml":
+        #    import_xmlfile(filename_trunc,options)
+
+        # Process the model
+        if options['ramsey']:
+            from dolo.symbolic.ramsey import RamseyModel
+            #dynare_model.introduce_auxiliary_variables()
+            dynare_model.check()
+            
+            rmodel = RamseyModel(dynare_model)
+            rmodel.check(verbose=True)
+            options['output'] = True
+            dynare_model=rmodel
+
+
+        if options['output']:
+            from dolo.compiler.compiler_dynare import DynareCompiler
+            comp = DynareCompiler(dynare_model)
+            comp.export_to_modfile()
 
     def write_file(fname,content):
         f = file(fname,'w')
         f.write(content)
         f.close()
         
-    def process_modfile(filename_trunc,options):
+    def import_modfile(filename_trunc,options):
         from dolo.compiler.compiler_dynare import DynareCompiler
         import time
 
