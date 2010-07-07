@@ -19,11 +19,16 @@ if __name__ == "__main__":
 
     def main(argv):
         if len(argv)<1:
-            print("not enough argument")
+            print("Not enough arguments.")
+
+            print('')
+
+            usage()
+            
             sys.exit(2)
 
         # Read options
-        options = {"check":False,"ramsey":False, "output":False, "static-order":2, "dynamic-order":1}
+        options = {"check":False,"ramsey":False, "dynare":False, "output":False, "static-order":2, "dynamic-order":1}
         short_arg_dict = "hcdro"
         long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey"]
         try:
@@ -43,6 +48,8 @@ if __name__ == "__main__":
                 options["ramsey"] = True
             if opt in ("-o","--output"):
                 options["output"] = True
+            if opt in ("--dynare",):
+                options["dynare"]
             if opt in ("--static-order",):
                 options["static-order"] = int(arg)
             if opt in ("--dynamic-order",):
@@ -101,6 +108,17 @@ if __name__ == "__main__":
             comp = DynareCompiler(dynare_model)
             comp.export_to_modfile()
 
+        if options['dynare']:
+            from dolo.compiler.compiler_dynare import DynareCompiler
+            model = dynare_model
+
+            comp = DynareCompiler(model)
+
+            write_file(model.fname + '_dynamic.m', comp.compute_dynamic_mfile(max_order=options["dynamic-order"]))
+            write_file(model.fname + '_static.m', comp.compute_static_mfile(max_order=options["static-order"]))
+            write_file(model.fname + '.m',  comp.compute_main_file() )
+            
+
     def write_file(fname,content):
         f = file(fname,'w')
         f.write(content)
@@ -128,8 +146,7 @@ if __name__ == "__main__":
         comp = DynareCompiler(model)
         #comp.export_infos()
         
-        write_file(model.fname + '_dynamic.m', comp.compute_dynamic_mfile(max_order=options["dynamic-order"]))
-        write_file(model.fname + '_static.m', comp.compute_static_mfile(max_order=options["static-order"]))
+
         #write_file(model.fname + '.m',  comp.compute_main_file() )
         print('Modfile preprocessing finished in {0} seconds'.format(time.time() - t0))
 #        if options["check"]:
@@ -170,11 +187,14 @@ if __name__ == "__main__":
 				  	without option Dolo does nothing
 	-h      --help            	print this message
         -c      --check           	model is checked for consistency
-	-o      --outpout=OUTPUT  	the output model is written to OUTPUT file (not implemented)
-        -p      --portfolio       	model's equations are expanded so as to solve portfolio problems
-	-r	--ramsey          	model's equations defining Ramsey's optimal policy are added (not implemented)
-		--compute-static=order  _static.m file is written at given order
-		--compute-dynamic=order	_dynamic.m file is written at given order
+
+       	-r      --ramsey          	model's equations defining Ramsey's optimal policy are added (not implemented)
+
+        -o      --outpout=OUTPUT  	processed model is written to OUTPUT file (not implemented)
+
+        -d      --dynare
+                --static-order=order    _static.m file is written at given order
+		--dynamic-order=order	_dynamic.m file is written at given order
 	'''
 	print(help_text)
 
