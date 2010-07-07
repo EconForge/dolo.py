@@ -26,10 +26,26 @@ class MatlabEngine:
         globals()['engine'] = self
     
     def execute(self,cmd):
-        return self.engine.execute(cmd)
+        files_before = os.listdir( DATA )
+        files_before_mtime = [ os.lstat(DATA + e).st_mtime for e in files_before]
+        output = self.engine.execute(cmd)
+        files_after = os.listdir( DATA )
+        files_after_mtime = [ os.lstat(DATA + e).st_mtime for e in files_after]
+        modified = [ f for f in files_after if ( f not in files_before ) or ( files_after_mtime[files_after.index(f)] > files_before_mtime[files_before.index(f)] ) ]
+        for f in modified:
+            os.symlink(DATA+f,'./'+f)
+        return output
         
     def eval(self, code, strip=True, synchronize=False, locals=None, **kwargs):
-        return self.engine.eval( code, strip=strip, synchronize=False, locals=None, **kwargs )
+        files_before = os.listdir( DATA )
+        files_before_mtime = [ os.lstat(DATA + e).st_mtime for e in files_before]
+        txt = self.engine.eval( code, strip=strip, synchronize=False, locals=None, **kwargs )
+        files_after = os.listdir( DATA )
+        files_after_mtime = [ os.lstat(DATA + e).st_mtime for e in files_after]
+        modified = [ f for f in files_after if ( f not in files_before ) or ( files_after_mtime[files_after.index(f)] > files_before_mtime[files_before.index(f)] ) ]
+        for f in modified:
+            os.symlink(DATA+f,'./'+f)
+        return txt
     
 
 
