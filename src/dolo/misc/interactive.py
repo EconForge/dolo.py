@@ -364,10 +364,9 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
 
 def dynare_import(filename,names_dict={},full_output=False):
     '''Imports model defined in specified file'''
-    reg = re.compile('(|.*\/)(.*)\.mod')
-    fname = reg.search(filename).group(2)
-    print fname
-    print filename
+    import os
+    basename = os.path.basename(filename)
+    fname = re.compile('(.*)\.mod').match(basename).group(1)
     f = file(filename)
     txt = f.read()
     resp = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
