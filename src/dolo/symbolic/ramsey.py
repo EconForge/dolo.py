@@ -18,6 +18,8 @@ class RamseyModel(Model):
         self.covariances = base_model.covariances # should be copied instead
         self.init_values = dict(base_model.init_values)
         self.parameters_values = dict(base_model.parameters_values)
+
+
         if objective==None or discount==None:
             # parameters must be specified in the model
             ins_eq = [eq for eq in base_model.equations if eq.tags.has_key("ramsey_instrument")]
@@ -34,7 +36,8 @@ class RamseyModel(Model):
             discount = ins_eq.tags['ramsey_discount']
         self.objective = objective if not isinstance(objective,str) else self.eval_string(objective)
         self.discount = discount if not isinstance(objective,str) else self.eval_string(discount)
-        
+
+
         self.build_lagrangian()
         self.fname = self.base_model.fname + '_ramsey'
 
@@ -81,7 +84,6 @@ class RamseyModel(Model):
             self.equations.append(eq)
 
         for v in vars:
-            print 'differentiating w.r.t. ' + str(v)
             eq = lagrangian.diff(v)
             eq = Equation(eq,0).tag(name='Derivative of lagrangian w.r.t : ' + str(v) )
             self.equations.append(eq)
