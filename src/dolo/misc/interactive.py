@@ -123,8 +123,11 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     # currently, we don't check that the modfile is valid
 
     blocks = []
-    
-    imodel = instructions.index("model") #this doesn't work for "MODEL"
+
+    imodel = [re.compile('model(\(.*\)|)').match(e)!=None for e in instructions]
+    imodel = imodel.index(True)
+    #imodel = instructions.index("model") #this doesn't work for "MODEL"
+
     iend = instructions.index("end")
     init_block = instruction_groups[0:imodel]
     model_block = instruction_groups[imodel:(iend+1)]
@@ -227,24 +230,32 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         parameters.append(p)
 
 
-    frame = inspect.currentframe()
-    for s in variables + shocks + parameters:
-        frame.f_globals[s.name] = s
+    parse_dict = dict()
+    for v in variables + shocks + parameters:
+        parse_dict[v.name] = v
+
+    special_symbols = [sympy.exp,sympy.log,sympy.sin]
+    for s in special_symbols:
+        parse_dict[str(s)] = s
+
+    #frame = inspect.currentframe()
+    #for s in variables + shocks + parameters:
+    #    frame.f_globals[s.name] = s
 
 
     #set_variables(var_names,names_dict=names_dict)
     #set_shocks(varexo_names,names_dict=names_dict)
     #set_parameters(parameters_names,names_dict=names_dict)
 
-    for s in (variables + parameters + shocks):
-        if s.name in names_dict:
-            s.latex_name = names_dict[s.name]
-
     parameters_values = {}
     for p in declarations:
-        parameters_values[eval(p)] = eval(declarations[p])
+        parameters_values[eval(p,parse_dict)] = eval(declarations[p], parse_dict)
+
         
-    
+    special_symbols = [sympy.exp,sympy.log,sympy.sin]
+    for s in special_symbols:
+        parse_dict[str(s)] = s
+
     # Now we read the model block
     model_tags = model_block[0].tags
     equations = []
@@ -252,8 +263,8 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         if ig.instruction != '':
             teq = ig.instruction.replace('^',"**")
             teqlhs,teqrhs = teq.split("=")
-            eqlhs = eval(teqlhs)
-            eqrhs = eval(teqrhs)
+            eqlhs = eval(teqlhs, parse_dict)
+            eqrhs = eval(teqrhs, parse_dict)
             eq = Equation(eqlhs,eqrhs)
             eq.tags.update(ig.tags)
     #        if eq.tags.has_key('name'):
@@ -265,7 +276,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     if initval_block != None:
         for ig in initval_block[1:-1]:
             [lhs,rhs] = ig.instruction.split("=")
-            init_values[eval(lhs)] = eval(rhs) 
+            init_values[eval(lhs,parse_dict)] = eval(rhs,parse_dict)
     
     # Now we read the endval block
     # I don't really care about the endval block !
@@ -295,8 +306,8 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
                 value = m.group(5).strip().replace("^","**")
             i = varexo_names.index(varname1)
             j = varexo_names.index(varname2)
-            covariances[i,j] = eval(value)
-            covariances[j,i] = eval(value)
+            covariances[i,j] = eval(value,parse_dict)
+            covariances[j,i] = eval(value,parse_dict)
 
 
     resp = dict()
@@ -352,8 +363,11 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
 
 
 def dynare_import(filename,names_dict={},full_output=False):
-    reg = re.compile('.*\/(.*)\.mod')
-    fname = reg.search(filename).group(1)
+    '''Imports model defined in specified file'''
+    reg = re.compile('(|.*\/)(.*)\.mod')
+    fname = reg.search(filename).group(2)
+    print fname
+    print filename
     f = file(filename)
     txt = f.read()
     resp = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
