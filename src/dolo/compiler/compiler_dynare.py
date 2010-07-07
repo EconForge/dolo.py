@@ -109,8 +109,14 @@ M_.params = repmat(NaN,{param_nbr}, 1);
 
         idp = DicPrinter(self.static_substitution_list(y='oo_.steady_state',params='M_.params'))
 
+        # BUG: how do we treat parameters absent from the model, but present in parameters_values ?
+
         porder = model.order_parameters_values()
+        porder = [p for p in porder if p in model.parameters]
+        
         vorder = model.order_init_values()
+
+
         for p in porder:
             i = model.parameters.index(p) + 1
             output += "M_.params({0}) = {1};\n".format(i,idp.doprint_matlab(model.parameters_values[p]))
@@ -345,7 +351,6 @@ M_.exo_det_length = 0; % parrot
         # TODO create a log system
         t = []
         t.append(time.time())
-        print(' - compute derivatives ...')
         sols = []
         i = 0
         for eq in model.equations:
@@ -355,7 +360,6 @@ M_.exo_det_length = 0; % parrot
             sols.append(ndt)
 
         t.append(time.time())
-        print('   done ' + str(t[-1] - t[-2]))
 
         self.dynamic_derivatives = sols
 
@@ -378,7 +382,6 @@ M_.exo_det_length = 0; % parrot
         gs = str.join(', ',[('g'+str(i)) for i in range(1,(max_order+1))])
         txt = txt.format(gs=gs,fname=model.fname,neq=len(model.equations))
 
-        print(' - writing equations ...')
         t.append(time.time())
         for i in range(len(sols)):
             ndt = sols[i]
@@ -386,7 +389,6 @@ M_.exo_det_length = 0; % parrot
             rhs = dyn_printer.doprint_matlab(eq)
             txt += '    residual({0}) = {1};\n'.format(i+1,rhs )
         t.append(time.time())
-        print('   done ' + str(t[-1] - t[-2]))
         
         for current_order in range(1,(max_order+1)):
             if current_order == 1:
@@ -407,11 +409,9 @@ M_.exo_det_length = 0; % parrot
                 txt.format(matrix_name="Hessian")
             elif current_order == 1:
                 txt.format(matrix_name="Jacobian")
-            print ' - printing {0}th order derivatives'.format(current_order)
             t.append(time.time())
 
             nnzd = self.NNZDerivatives(current_order)
-            print "     {0} derivatives are going to be written".format(nnzd)
             if True: # we write full matrices ...
                 txt += "        v{order} = zeros({nnzd}, 3);\n".format(order=current_order, nnzd=nnzd)
                 i = 0
@@ -438,7 +438,6 @@ M_.exo_det_length = 0; % parrot
     end
 """
         t.append(time.time())
-        print(' done ' + str(t[-1] - t[-2]))
         f = file(model.fname + '_dynamic.m','w')
         f.write(txt)
         f.close()
