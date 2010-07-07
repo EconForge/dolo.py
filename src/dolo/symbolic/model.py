@@ -331,6 +331,44 @@ class Model:
     def state_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
+    def introduce_auxiliary_variables(self):
+        print 'Introduce auxiliary variables'
+        all_dv = []
+        for eq in self.equations:
+            all_dv.extend( [v for v in eq.atoms() if isinstance(v,Variable) and abs(v.date)>1] )
+        all_dv = set(all_dv)
+        nav = set([v.P for v in all_dv])
+
+        aux_eq = []
+
+        for v in nav:
+            subs_dict = {}
+
+            dates = [s.date for s in all_dv if s.P == v]
+            max_lag = -min(min(dates),0)
+            max_lead = max(max(dates),0)
+            if max_lead>1:
+                rhs = v
+                for i in range(1,max_lead+1):
+                    nv = Variable('E'+str(i)+'__'+str(v),0)
+                    eq = Equation(nv,rhs(1))
+                    aux_eq.append(eq)
+                    rhs = nv
+                    subs_dict[v(i+1)] = nv(+1)
+            if max_lag>1:
+                rhs = v
+                for i in range(1,max_lag+1):
+                    nv = Variable('P'+str(i)+'__'+str(v),0)
+                    eq = Equation(nv,rhs(-1))
+                    aux_eq.append(eq)
+                    rhs = nv
+                    subs_dict[v(-(i+1))] = nv(-1)
+            for eq in self.equations:
+                eq = eq.subs(subs_dict)
+                
+        self.equations.extend(aux_eq)
+        print 'done'
+                
     def compute_uhlig_matrices(self):
         model = self.model
         exo_eqs = [eq for eq in model.equations if eq.info.get('exogenous') == 'true']
