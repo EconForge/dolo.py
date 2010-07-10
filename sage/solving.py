@@ -364,9 +364,9 @@ class DDR():
     def ys_c(self,Sigma_e):
         return self.g[0] + 0.5*np.tensordot( self.correc_s , Sigma_e, axes = ((1,2),(0,1)) )
 
-    def __call__(self, x, e, Sigma_e):
+    def __call__(self, x, u, Sigma_e):
         # evaluates y_t, given y_{t-1} and e_t
-        resp = self.ys + np.dot( self.ghx, x ) +  np.dot( self.ghu, e )
+        resp = self.ys + np.dot( self.ghx, x ).flatten() +  np.dot( self.ghu, u ).flatten()
         resp += 0.5*np.tensordot( self.ghxx, np.outer(x,x) ) 
         resp += 0.5*np.tensordot( self.ghxu, np.outer(x,u) )
         resp += 0.5*np.tensordot( self.ghuu, np.outer(u,u) )
