@@ -46,7 +46,43 @@ class MatlabEngine:
         for f in modified:
             os.symlink(DATA+f,'./'+f)
         return txt
+        
+    def set(self, var, value): 
+        import scipy
+        import tempfile
+        import os
+        if isinstance(value,np.ndarray):
+            [junk,tmpname] = tempfile.mkstemp()
+            scipy.io.savemat(tmpname, {var:value})
+            self.execute('load {0}.mat'.format(tmpname) )
+            os.remove(tmpname)
+            return None
+        else:
+            raise Exception("I don't know what to do with this value")
     
+    def set(self, var,value): 
+        import scipy
+        import tempfile
+        import os
+        if isinstance(value,np.ndarray):
+            [junk,tmpname] = tempfile.mkstemp()
+            scipy.io.savemat(tmpname, {var:value})
+            self.execute('load {0}.mat'.format(tmpname) )
+            os.remove(tmpname)
+            return None
+        else:
+            raise Exception("I don't know what to do with this value")
+    
+    def get(self,var):
+        import scipy.io as matio
+        import tempfile
+        [junk,tmpname] = tempfile.mkstemp()
+        cmd = "save('{0}','{1}','-v7')".format(tmpname +'.mat',var)
+        print self.execute(cmd)
+        s = matio.loadmat(tmpname+'.mat',struct_as_record=True)
+        s = s[var]
+        os.remove(tmpname+'.mat')
+        return s
 
 
 engine = MatlabEngine('octave')

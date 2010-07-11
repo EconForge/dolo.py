@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 
 ### does this code really depends on Sage ?
 
 import dolo
-from dolo import *
 import numpy as np
 from  scipy.linalg.decomp import schur
 import time
@@ -119,7 +118,6 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     
     if order>3:
         raise Exception('Order > 3 not implemented yet')
-
     
     if derivs == None:
         comp = DynareCompiler(model)
@@ -150,15 +148,50 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     
     
     if use_dynare:
-        comp = DynareCompiler(model)
-        lli = comp.lead_lag_incidence_matrix()
-        from mlabwrap import mlab
-        mlab.addpath('/home/pablo/Programmation/mini_dynare/')
-        resp = mlab.dr3(f1,f2,0,lli,nout=1)
+        #comp = DynareCompiler(model)
+        #lli = comp.lead_lag_incidence_matrix()
+        #from mlabwrap import mlab
+        #mlab.addpath('/home/pablo/Programmation/mini_dynare/')
+        #resp = mlab.dr3(f1,f2,0,lli,nout=1)
         print 'Solve for decision rule using Dynare'
+        engine.set('f1',f_1)
+        engine.set('f2',f_2)
+        engine.execute('clear dr')
+        engine.eval('''
+        dr = struct;
+        dr.ys = oo_.steady_state; %dummy
+        dr.jacobia_ = f1;
+        ss = size(f2);
+        f2 = reshape(f2, [ss(1) (ss(2)*ss(3))]);
+        f2 = sparse(f2);
+        dr.hessian = f2;
+        ''')
+        print  engine.execute('[dr,info] = drs(dr,0,M_,options_,oo_);')
+        info = engine.get('info')
+        if info[0].max() != 0:
+            print dr1_info_code[float(info[0,0])]
+            print info
+        engine.eval('''
+        dr = reorder_dr(dr);
+        n_s = length( find( M_.lead_lag_incidence(1,:) ) );
+        dr.ghxx = reshape(dr.ghxx, M_.endo_nbr, n_s, n_s);
+        dr.ghxu = reshape(dr.ghxu, M_.endo_nbr, M_.exo_nbr, n_s);
+        dr.ghuu = reshape(dr.ghuu, M_.endo_nbr, M_.exo_nbr, M_.exo_nbr);
+        ''')
+
+        dr = engine.get('dr')
+        g_y = dr['ghx'][0,0]
+        g_u = dr['ghu'][0,0]
+        g_yy = dr['ghxx'][0,0]
+        g_yu = dr['ghxu'][0,0]
+        # this is done because of Fortran/C order conflicts
+        g_yu = g_yu.swapaxes(1,2)
+
+        g_uu = dr['ghuu'][0,0]
+        g_ss = dr['ghs2'][0,0]
+        return [[g_y,g_u],[g_yy,g_yu,g_uu],g_ss]
         
-        return None
-    
+   
     
     n_v = model.info['n_variables']
     n_s = model.info['n_shocks']
@@ -269,6 +302,12 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     K_ss = K_ss + np.tensordot( f_d, g_uu, axes=(1,0) )
     g_ss = np.tensordot( As_inv , K_ss, axes=(1,0) )
 
+
+    svi = [model.variables.index(v) for v in  model.state_variables]
+    g_y = g_y[:,svi]
+    g_yy = g_yy[:,svi,:]
+    g_yy = g_yy[:,:,svi]
+    g_yu = g_yu[:,svi,:]
 
     if derivs == None:
         return DDR( [y,[g_y,g_u],[g_yy,g_yu,g_uu]], correc_s = g_ss )
@@ -391,3 +430,13 @@ def retrieve_DDR_from_matlab(name,mlab):
     ghs2 = rdr['ghs2'][0,0].flatten()
     ddr = DDR( [ ys,[ghx,ghu],[ghxx,ghxu,ghuu] ] , ghs2 = ghs2 )
     return [ddr,rdr]
+
+
+dr1_info_code = {
+1: "the model doesn't define current variables uniquely.",
+2: "problem in mjdgges.dll info(2) contains error code.",
+3: "BK order condition not satisfied info(2) contains 'distance' absence of stable trajectory.",
+4: "BK order condition not satisfied info(2) contains 'distance' indeterminacy.",
+5: "BK rank condition not satisfied.",
+6: "The jacobian matrix evaluated at the steady state is complex."
+}
