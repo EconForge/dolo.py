@@ -34,6 +34,16 @@ class RamseyModel(Model):
             objective = ins_eq.tags['ramsey_objective']
         if ins_eq.tags.has_key('ramsey_discount'):
             discount = ins_eq.tags['ramsey_discount']
+        if ins_eq.tags.has_key('ignore_variables'):
+            ivs = ins_eq.tags['ignore_variables']
+            ivs = ivs.replace(',',' ')
+            ivs = ivs.squeeze()
+            ivs = '[' + ivs.replace(' ',',') + ']'
+            self.ignored_variables = self.eval_string(ivs)
+            print 'Ignoring : ' + str(self.ignored_variables)
+            
+
+
         self.objective = objective if not isinstance(objective,str) else self.eval_string(objective)
         self.discount = discount if not isinstance(objective,str) else self.eval_string(discount)
 
@@ -84,6 +94,8 @@ class RamseyModel(Model):
             self.equations.append(eq)
 
         for v in vars:
+            if v in self.ignored_variables:
+                pass
             eq = lagrangian.diff(v)
             eq = Equation(eq,0).tag(name='Derivative of lagrangian w.r.t : ' + str(v) )
             self.equations.append(eq)
