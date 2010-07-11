@@ -252,7 +252,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         parameters_values[eval(p,parse_dict)] = eval(declarations[p], parse_dict)
 
         
-    special_symbols = [sympy.exp,sympy.log,sympy.sin]
+    special_symbols = [sympy.exp,sympy.log,sympy.sin,sympy.cos, sympy.atan, sympy.tan]
     for s in special_symbols:
         parse_dict[str(s)] = s
 
