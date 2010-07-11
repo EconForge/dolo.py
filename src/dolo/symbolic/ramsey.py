@@ -41,7 +41,9 @@ class RamseyModel(Model):
             ivs = '[' + ivs.replace(' ',',') + ']'
             self.ignored_variables = self.eval_string(ivs)
             print 'Ignoring : ' + str(self.ignored_variables)
-            
+        else:
+            self.ignored_variables = []
+
 
 
         self.objective = objective if not isinstance(objective,str) else self.eval_string(objective)
