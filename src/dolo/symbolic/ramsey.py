@@ -53,13 +53,6 @@ class RamseyModel(Model):
         self.build_lagrangian()
         self.fname = self.base_model.fname + '_ramsey'
 
-    def eval_string(self,string):
-        # rather generic method (should be defined for any model with dictionary updated accordingly
-        context = dict()
-        for v in self.variables_ordering + self.parameters_ordering + self.shocks_ordering:
-            context[v.name] = v
-        context['exp'] = sympy.exp
-        return sympy.sympify( eval(string,context) )
 
     def build_lagrangian(self):
         vars = list(self.base_model.variables)

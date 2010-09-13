@@ -7,7 +7,7 @@ from sympy import Matrix
 
 class Model:
     #commands = None # keep some instructions to treat the model, not sure how to do it
-    def __init__(self, fname, equations, lookup=False):
+    def __init__(self, fname, equations=[], lookup=False):
         self.fname = fname
         self.variables = []
         #self.exovariables = []
@@ -24,8 +24,6 @@ class Model:
         self.shocks_ordering = []
         self.equations = equations
         self.tags = {}
-        if lookup:
-            self.__lookup__()
         self.model = self # seems strange ! (for compatibility reasons)
         return(None)
     
@@ -56,8 +54,13 @@ class Model:
         c.parameters = copy.copy(self.parameters)
         c.equations = copy.copy(self.equations)
         c.init_values = copy.copy(self.init_values)
-        c.commands = copy.copy(self.commands)
+        c.parameters_values = copy.copy(self.parameters_values)
+        c.tags = copy.copy(self.tags)
+        c.variables_ordering = self.variables_ordering
+        c.parameters_ordering = self.parameters_ordering
+        c.shocks_ordering = self.shocks_ordering
         return(c)
+
 
     def tag(self,h):
         self.tags.update(h)
@@ -238,6 +241,16 @@ class Model:
 
         
         #itd.update(model.init_values)
+
+    def eval_string(self,string):
+        # rather generic method (should be defined for any model with dictionary updated accordingly
+        special_symbols = [sympy.exp,sympy.log,sympy.sin]
+        context = dict()
+        for v in self.variables_ordering + self.parameters_ordering + self.shocks_ordering:
+            context[v.name] = v
+        for s in special_symbols:
+            context[str(s)] = s
+        return sympy.sympify( eval(string,context) )
 
     def reorder(self, vars, variables_order):
         arg = list(vars)

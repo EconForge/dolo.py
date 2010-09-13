@@ -148,21 +148,21 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     
     
     if use_dynare:
-
+        mlab = use_dynare
         comp = DynareCompiler(model)
         lli = comp.lead_lag_incidence_matrix()
-        from mlabwrap import mlab
-        mlab.addpath('/home/pablo/Programmation/mini_dynare/')
-        
+
+        Sigma_e = np.array(model.covariances).astype(np.float64)
+
         n_v = f_1.shape[0]
         n_d = f_1.shape[1]
         f_2 = f_2.reshape((n_v,n_d**2))
 
-        [dr,info] = mlab.dr3(f_1,f_2,0,lli,nout=2)
+        resp = mlab.dr3(f_1,f_2,lli,Sigma_e,nout=2)
+        [dr,info]=resp
         if info[0,0] != 0:
             print dr1_info_code[ info[0,0] ]
             print info
-
         g_y = dr.ghx
         n_v = g_y.shape[0]
         n_states = g_y.shape[1]
@@ -248,8 +248,11 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     Sm = S
     D = multidot( gg_2, [Sm,Sm] )
 
+    t = time.time()
     g_yy = solve_sylvester( A,B,C,D, insist=False, use_dynare=use_dynare_sylvester)
-
+    u = time.time()
+    #print str(u-t)
+    
     # it is now easy to
 
     F = np.zeros( ( len(fut_ind),n_v) )
@@ -282,6 +285,182 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     S_u_s = np.concatenate( [ np.zeros((n_pred_v,n_s)), np.zeros((n_v,n_s)), np.dot(F,g_u) , np.eye(n_s)] )
 
     K_ss = multidot(f_2,[S_u_s,S_u_s])    
+    K_ss = K_ss + np.tensordot( f_d, g_uu, axes=(1,0) )
+    g_ss = np.tensordot( As_inv , K_ss, axes=(1,0) )
+
+
+    svi = [model.variables.index(v) for v in  model.state_variables]
+    g_y = g_y[:,svi]
+    g_yy = g_yy[:,svi,:]
+    g_yy = g_yy[:,:,svi]
+    g_yu = g_yu[:,svi,:]
+
+    if return_dr != None:
+        return DDR( [y,[g_y,g_u],[g_yy,g_yu,g_uu]], correc_s = g_ss )
+    else:
+        return [[g_y,g_u],[g_yy,g_yu,g_uu],g_ss]
+
+
+def solve_decision_rule_2( model, order=2, derivs=None, use_dynare=False, return_dr=False, use_dynare_sylvester=True):
+
+    if order>3:
+        raise Exception('Order > 3 not implemented yet')
+
+    if derivs == None:
+        comp = DynareCompiler(model)
+        # let compile the function computing derivatives and residuals
+        #f_static = comp.compute_static_pfile(max_order=2)
+        f_dynamic = comp.compute_dynamic_pfile(max_order=order)
+        # compute steadystate values of the model
+        [y,x,parms] = compute_steadystate_values(model)
+        y = np.array(y) # y seems to be a list !
+        x = np.array(x) # y seems to be a list !
+        parms = np.array(parms) # y seems to be a list !
+        # compute steady derivatives
+        # [gs_0,gs_1,gs_2] = f_static(y,x,parms)
+        # compute dynamic derivatives
+        yy = [y[i] for i in [model.variables.index(v.P) for v in model.dyn_var_order]]
+        xx = np.zeros((1,len(model.shocks)))
+        if order == 1:
+            [f_0,f_1] = f_dynamic(yy,xx,parms)
+        elif order ==2:
+            [f_0,f_1,f_2] = f_dynamic(yy,xx,parms)
+        if abs(f_0).max() > TOL:
+            print("Supplied initial values don't solve the steady state")
+    else:
+        if order == 1:
+            [f_0,f_1] = derivs
+        elif order ==2:
+            [f_0,f_1,f_2] = derivs
+
+
+    n_v = model.info['n_variables']
+    n_s = model.info['n_shocks']
+    dvo = model.dyn_var_order
+    n_dvo = len(dvo)
+
+    ## solve for first order using uhligs toolkit
+
+    # Construction of f_d, f_a, f_h, f_u
+    f_d = np.zeros((n_v,n_v))
+    f_a = np.zeros((n_v,n_v))
+    f_h = np.zeros((n_v,n_v))
+    f_u = np.zeros((n_v,n_s))
+    O = np.zeros((n_v,n_v))
+    I = np.eye(n_v)
+    for i in range(n_v):
+        v = model.variables[i]
+        if v(-1) in model.dyn_var_order:
+            j = dvo.index( v(-1) )
+            f_h[:,i] = f_1[:,j]
+        if v in model.dyn_var_order:
+            j = dvo.index( v )
+            f_a[:,i] = f_1[:,j]
+        if v(1) in model.dyn_var_order:
+            j = dvo.index( v(1) )
+            f_d[:,i] = f_1[:,j]
+    for i in range( n_s ):
+        f_u[:,i] = f_1[:,n_dvo + i]
+
+    fut_variables = [v for v in model.variables if v(1) in model.dyn_var_order]
+    cur_variables = [v for v in model.variables if v in model.dyn_var_order]
+    pred_variables = [v for v in model.variables if v(-1) in model.dyn_var_order]
+
+    fut_ind = [model.variables.index(i) for i in fut_variables]
+    cur_ind = [model.variables.index(i) for i in cur_variables]
+    pred_ind = [model.variables.index(i) for i in pred_variables]
+    fut_ind_d = [model.dyn_var_order.index(i(1)) for i in fut_variables]
+    cur_ind_d = [model.dyn_var_order.index(i) for i in cur_variables]
+    pred_ind_d = [model.dyn_var_order.index(i(-1)) for i in pred_variables]
+
+    n_pred_v = len( pred_ind )
+
+
+    #from dolo.extern.toolkithelpers import qzdiv
+    #from dolo.extern.qz import qz
+    [ev,g_y] = second_order_solver(f_d,f_a,f_h)
+
+    #if ( max( np.linalg.eigvals(g_y) )  > 1 + TOL):
+    #    raise Exception( 'BK conditions not satisfied' )
+
+    mm = np.dot(f_d, g_y) + f_a
+    g_u = - np.linalg.solve( mm , f_u )
+
+    svi = [model.variables.index(v) for v in  model.state_variables]
+    g_y = g_y[:,svi]
+
+    if order == 1:
+        return [g_y,g_u]
+
+
+    F = np.zeros( ( len(fut_ind),n_v) )
+    for i in range(len(fut_ind)):
+        F[i,fut_ind[i]] = 1
+    P = np.zeros( ( len(pred_ind),n_v ) )
+    for i in range(len(pred_ind)):
+        P[i,pred_ind[i]] = 1
+
+
+    # new version
+
+    V_y = np.concatenate( [np.eye(n_v),g_y,np.dot(g_y,g_y),np.zeros((n_s,n_v))] )
+    V_u = np.concatenate( [np.dot(g_y,g_u),g_u,np.zeros((n_v,n_s)),np.eye(n_s)] )
+
+
+
+
+
+
+
+    gg_1 = np.zeros( (n_v , n_v*3 + n_s))
+    gg_2 = np.zeros( (n_v , n_v*3 + n_s, n_v*3 + n_s) )
+    #full_dvo_i = [n_v*2 + i for i in pred_ind] + [i + n_v for i in cur_ind]  + [i for i in fut_ind]
+    full_dvo_i = [n_v*2 + i for i in pred_ind] + [i + n_v for i in cur_ind]  + [i for i in fut_ind]
+    for i in range(n_dvo):
+        gg_1[:,full_dvo_i[i]] = f_1[:, i]
+        for j in range(n_dvo):
+            gg_2[:, full_dvo_i[i], full_dvo_i[j]] = f_2[:,i,j]
+    for i in range(n_s):
+        gg_1[:,n_v*3+i] = f_1[:,n_dvo+i]
+    # I should do the same for gg_2
+
+
+    A = np.dot(f_d,g_y) + f_a
+    B = f_d
+    C = g_y
+    # let compute the constant term of the sylvester equations
+    D = multidot( gg_2, [V_y,V_y] )
+
+    t = time.time()
+    g_yy = solve_sylvester( A,B,C,D, insist=False, use_dynare=use_dynare_sylvester)
+    u = time.time()
+    print 'First : ' + str(u-t)
+
+
+
+    A = np.dot( f_d, g_y ) + f_a
+    A_inv = -np.linalg.inv( A )
+
+    res_yu = np.tensordot( f_d, multidot(g_yy, [g_y,g_u] ), axes=(1,0) )
+    K_yu = multidot(gg_2,[V_y,V_u])
+    g_yu = np.tensordot( A_inv , res_yu + K_yu, axes=(1,0))
+
+    res_uu = np.tensordot( f_d, multidot( g_yy, [g_u,g_u] ), axes=(1,0))
+    K_uu =  multidot( gg_2, [V_u,V_u] )
+    g_uu = np.tensordot( A_inv , res_uu + K_uu, axes=(1,0))
+
+
+
+
+    # Sigma correction
+
+
+
+    As = A + f_d
+    As_inv = - np.linalg.inv(As)
+    S_u_s = np.concatenate( [ np.zeros((n_pred_v,n_s)), np.zeros((n_v,n_s)), np.dot(F,g_u) , np.eye(n_s)] )
+
+    K_ss = multidot(f_2,[S_u_s,S_u_s])
     K_ss = K_ss + np.tensordot( f_d, g_uu, axes=(1,0) )
     g_ss = np.tensordot( As_inv , K_ss, axes=(1,0) )
 

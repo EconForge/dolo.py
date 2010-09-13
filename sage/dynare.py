@@ -2,6 +2,12 @@
 import time
 import inspect
 
+try:
+    temp = DATA
+    del temp
+except:
+    DATA = '/home/pablo/'
+
 # here we clean up the sage workspace (highly unoptimal)
 try:
     del dynkin_diagram
@@ -13,22 +19,30 @@ class MatlabEngine:
     def __init__(self, engine):
         self.set_matlab_engine(engine)
         
-    def set_matlab_engine(self,engine):
-        if engine == 'octave':
+    def set_matlab_engine(self,engine_name):
+        if engine_name == 'octave':
             engine = octave
-        elif engine == 'matlab':
+        elif engine_name == 'matlab':
             engine = matlab
+        elif engine_name == 'mlabwrap':
+            from mlabwrap import mlab
+            engine = mlab
+            mlab._autosync_dirs = False
         else:
             raise Exception('Non supported engine ' + str(engine) )
-        print( '- Calculation engine is : ' + str(engine) + ' ' + engine.version() )
+        print( '- Calculation engine is : ' + str(engine_name) + ' - ' + engine.version() )
         self.engine = engine
+        self.engine_name = engine_name
         self.execute('cd ' + DATA)
         globals()['engine'] = self
     
     def execute(self,cmd):
         files_before = os.listdir( DATA )
         files_before_mtime = [ os.lstat(DATA + e).st_mtime for e in files_before]
-        output = self.engine.execute(cmd)
+        if self.engine_name in ('matlab','octave'):
+            output = self.engine.execute(cmd)
+        elif self.engine_name == 'mlabwrap':
+            output = self.engine._do(cmd, nout=0)
         files_after = os.listdir( DATA )
         files_after_mtime = [ os.lstat(DATA + e).st_mtime for e in files_after]
         modified = [ f for f in files_after if ( f not in files_before ) or ( files_after_mtime[files_after.index(f)] > files_before_mtime[files_before.index(f)] ) ]
@@ -39,36 +53,25 @@ class MatlabEngine:
     def eval(self, code, strip=True, synchronize=False, locals=None, **kwargs):
         files_before = os.listdir( DATA )
         files_before_mtime = [ os.lstat(DATA + e).st_mtime for e in files_before]
-        txt = self.engine.eval( code, strip=strip, synchronize=False, locals=None, **kwargs )
+        instructions = code.split()
+        for ins in instructions:
+            self.execute( ins )
         files_after = os.listdir( DATA )
         files_after_mtime = [ os.lstat(DATA + e).st_mtime for e in files_after]
         modified = [ f for f in files_after if ( f not in files_before ) or ( files_after_mtime[files_after.index(f)] > files_before_mtime[files_before.index(f)] ) ]
         for f in modified:
             os.symlink(DATA+f,'./'+f)
-        return txt
         
-    def set(self, var, value): 
-        import scipy
-        import tempfile
-        import os
-        if isinstance(value,np.ndarray):
-            [junk,tmpname] = tempfile.mkstemp()
-            scipy.io.savemat(tmpname, {var:value})
-            self.execute('load {0}.mat'.format(tmpname) )
-            os.remove(tmpname)
-            return None
-        else:
-            raise Exception("I don't know what to do with this value")
-    
     def set(self, var,value): 
         import scipy
         import tempfile
         import os
+        import time
         if isinstance(value,np.ndarray):
-            [junk,tmpname] = tempfile.mkstemp()
-            scipy.io.savemat(tmpname, {var:value})
+            tmpname = '/tmp/dolo_' + str(time.time())
+            scipy.io.savemat(tmpname + '.mat', {var:value})
             self.execute('load {0}.mat'.format(tmpname) )
-            os.remove(tmpname)
+            os.remove(tmpname + '.mat')
             return None
         else:
             raise Exception("I don't know what to do with this value")
@@ -76,21 +79,23 @@ class MatlabEngine:
     def get(self,var):
         import scipy.io as matio
         import tempfile
-        [junk,tmpname] = tempfile.mkstemp()
-        cmd = "save('{0}','{1}','-v7')".format(tmpname +'.mat',var)
-        print self.execute(cmd)
+        tmpname = '/tmp/dolo_' + str(time.time())
+        cmd = "save('{0}','{1}','-v7');".format(tmpname +'.mat',var)
+        self.execute(cmd)
         s = matio.loadmat(tmpname+'.mat',struct_as_record=True)
         s = s[var]
         os.remove(tmpname+'.mat')
         return s
 
 
-engine = MatlabEngine('octave')
-
+engine = MatlabEngine('mlabwrap')
 
 try:
-    dynare_version = engine.execute('dynare_version').split('=')[1].strip()
-    print( '- Dynare version is : ' + dynare_version )
+    engine.execute('dynare_version;') # how to print in a robust way ?
+    dynare_version = engine.get('version')[0]
+    print( '- Dynare version is : ' + str(dynare_version) )
+    engine.execute('dynare_config')
+
 except:
     print( '- Dynare is not in your matlab/octave path' )
     

@@ -108,7 +108,7 @@ class Compiler:
             i = model.variables.index(v.P)
             j = v.lag + minimum_endo_lag
             mat[i,j] = int(lagged_variables.index(v) + 1)
-        return mat
+        return mat.T
     
 #    def build_substitution_list(self,for_matlab=False,for_c=True):
 #        if for_matlab:
