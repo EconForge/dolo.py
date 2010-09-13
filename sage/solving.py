@@ -4,11 +4,12 @@
 
 import dolo
 import numpy as np
-from  scipy.linalg.decomp import schur
+#from  scipy.linalg.decomp import schur
 import time
 from dolo.compiler.compiler_dynare import DynareCompiler
-sys.path.append( '/home/pablo/Sources/src')
-from TensorLib.tensor import tensor
+#import sys
+#sys.path.append( '/home/pablo/Sources/src')
+#from TensorLib.tensor import tensor
 
 #from mlabwrap import mlab
 #mlab.addpath('/home/pablo/Programmation/mini_dynare/')
@@ -17,7 +18,6 @@ from TensorLib.tensor import tensor
 
 import scipy.io as matio
 import os
-import time
 #
 
 def compute_steadystate_values(model):
@@ -75,7 +75,6 @@ def second_order_solver(FF,GG,HH):
     Xi_eigval = diag(Xi_up)/where(diag(Delta_up)>TOL, diag(Delta_up), TOL)
 
     Xi_sortindex = abs(Xi_eigval).argsort()
-    
     # (Xi_sortabs doesn't really seem to be needed)
     
     Xi_sortval = Xi_eigval[Xi_sortindex]
@@ -87,8 +86,8 @@ def second_order_solver(FF,GG,HH):
     Delta_up,Xi_up,UUU,VVV = qzdiv(stake,Delta_up,Xi_up,UUU,VVV)
 
     # check that all unused roots are unstable
-    assert abs(Xi_sortval[m_states]) > 1-TOL
-    
+    assert abs(Xi_sortval[m_states]) > (1-TOL)
+
     # check that all used roots are stable
     assert abs(Xi_sortval[Xi_select]).max() < 1+TOL
     
@@ -114,7 +113,8 @@ def second_order_solver(FF,GG,HH):
 
     return [Xi_sortval[Xi_select],PP.A]
 
-def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
+        
+def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_dr=False, use_dynare_sylvester=True):
     
     if order>3:
         raise Exception('Order > 3 not implemented yet')
@@ -148,47 +148,31 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     
     
     if use_dynare:
-        #comp = DynareCompiler(model)
-        #lli = comp.lead_lag_incidence_matrix()
-        #from mlabwrap import mlab
-        #mlab.addpath('/home/pablo/Programmation/mini_dynare/')
-        #resp = mlab.dr3(f1,f2,0,lli,nout=1)
-        print 'Solve for decision rule using Dynare'
-        engine.set('f1',f_1)
-        engine.set('f2',f_2)
-        engine.execute('clear dr')
-        engine.eval('''
-        dr = struct;
-        dr.ys = oo_.steady_state; %dummy
-        dr.jacobia_ = f1;
-        ss = size(f2);
-        f2 = reshape(f2, [ss(1) (ss(2)*ss(3))]);
-        f2 = sparse(f2);
-        dr.hessian = f2;
-        ''')
-        print  engine.execute('[dr,info] = drs(dr,0,M_,options_,oo_);')
-        info = engine.get('info')
-        if info[0].max() != 0:
-            print dr1_info_code[float(info[0,0])]
+
+        comp = DynareCompiler(model)
+        lli = comp.lead_lag_incidence_matrix()
+        from mlabwrap import mlab
+        mlab.addpath('/home/pablo/Programmation/mini_dynare/')
+        
+        n_v = f_1.shape[0]
+        n_d = f_1.shape[1]
+        f_2 = f_2.reshape((n_v,n_d**2))
+
+        [dr,info] = mlab.dr3(f_1,f_2,0,lli,nout=2)
+        if info[0,0] != 0:
+            print dr1_info_code[ info[0,0] ]
             print info
-        engine.eval('''
-        dr = reorder_dr(dr);
-        n_s = length( find( M_.lead_lag_incidence(1,:) ) );
-        dr.ghxx = reshape(dr.ghxx, M_.endo_nbr, n_s, n_s);
-        dr.ghxu = reshape(dr.ghxu, M_.endo_nbr, M_.exo_nbr, n_s);
-        dr.ghuu = reshape(dr.ghuu, M_.endo_nbr, M_.exo_nbr, M_.exo_nbr);
-        ''')
 
-        dr = engine.get('dr')
-        g_y = dr['ghx'][0,0]
-        g_u = dr['ghu'][0,0]
-        g_yy = dr['ghxx'][0,0]
-        g_yu = dr['ghxu'][0,0]
+        g_y = dr.ghx
+        n_v = g_y.shape[0]
+        n_states = g_y.shape[1]
+        g_u = dr.ghu
+        n_shocks = g_u.shape[1]
+        g_yy = dr.ghxx.reshape((n_v,n_states,n_states))
+        g_yu = dr.ghxu.reshape((n_v,n_states,n_shocks))
         # this is done because of Fortran/C order conflicts
-        g_yu = g_yu.swapaxes(1,2)
-
-        g_uu = dr['ghuu'][0,0]
-        g_ss = dr['ghs2'][0,0]
+        g_uu = dr.ghuu.reshape((n_v,n_shocks,n_shocks))
+        g_ss = dr.ghs2
         return [[g_y,g_u],[g_yy,g_yu,g_uu],g_ss]
         
    
@@ -236,8 +220,8 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     #from dolo.extern.qz import qz
     [ev,g_y] = second_order_solver(f_d,f_a,f_h)
 
-    if ( max( np.linalg.eigvals(g_y) )  > 1 + TOL):
-        raise Exception( 'BK conditions not satisfied' )
+    #if ( max( np.linalg.eigvals(g_y) )  > 1 + TOL):
+    #    raise Exception( 'BK conditions not satisfied' )
     
     mm = np.dot(f_d, g_y) + f_a
     g_u = - np.linalg.solve( mm , f_u )
@@ -246,6 +230,7 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
         return [g_y,g_u]
     
     S = np.concatenate( [np.dot(g_y,g_y),g_y,np.eye(n_v)] )
+    
     gg_1 = np.zeros( (n_v , n_v*3))
     gg_2 = np.zeros( (n_v , n_v*3, n_v*3) )
     full_dvo_i = [n_v*2 + i for i in pred_ind] + [i + n_v for i in cur_ind]  + [i for i in fut_ind]
@@ -255,22 +240,17 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
         for j in range(n_dvo):
             gg_2[:, full_dvo_i[i], full_dvo_i[j]] = f_2[:,i,j]
             
-    # let compute the constant term of the sylvester equations
-    Sm = S
-    gg_2_t = tensor(gg_2)
-    D_t = gg_2_t.ttm([Sm,Sm],dims=(1,2),option='t')
-    D = D_t.tondarray()
-
+    
     A = np.dot(f_d,g_y) + f_a
     B = f_d
     C = g_y
+    # let compute the constant term of the sylvester equations
+    Sm = S
+    D = multidot( gg_2, [Sm,Sm] )
 
-    CC = np.kron(C,C)
-    DD = -D.reshape( (n_v,n_v*n_v))
+    g_yy = solve_sylvester( A,B,C,D, insist=False, use_dynare=use_dynare_sylvester)
 
-    g_yy = solve_sylvester( A,B,C,D, insist=False)
-    
-    # it is now easy to 
+    # it is now easy to
 
     F = np.zeros( ( len(fut_ind),n_v) )
 
@@ -281,24 +261,27 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
         P[i,pred_ind[i]] = 1
 
     n_pred_v = len( pred_ind )
+    
     S_y = np.concatenate( [P, g_y,  np.dot(F,np.dot(g_y,g_y)),  np.zeros((n_s,n_v))] )
     S_u = np.concatenate( [np.zeros((n_pred_v,n_s)), g_u, np.dot(F,np.dot(g_y,g_u)), np.eye(n_s)] )
 
     A = np.dot( f_d, g_y ) + f_a
     A_inv = -np.linalg.inv( A )
 
-    res_yu = np.tensordot( f_d, tensor(g_yy).ttm([g_y,g_u],dims=(1,2),option='t').tondarray() , axes=(1,0) )
-    K_yu = tensor(f_2).ttm([S_y,S_u],dims=(1,2),option='t').tondarray()
+
+    res_yu = np.tensordot( f_d, multidot(g_yy, [g_y,g_u] ), axes=(1,0) )
+    K_yu = multidot(f_2,[S_y,S_u])
     g_yu = np.tensordot( A_inv , res_yu + K_yu, axes=(1,0))
 
-    res_uu = np.tensordot( f_d, tensor(g_yy).ttm([g_u,g_u],dims=(1,2),option='t').tondarray() , axes=(1,0) )
-    K_uu = tensor(f_2).ttm([S_u,S_u],dims=(1,2),option='t').tondarray()
+    res_uu = np.tensordot( f_d, multidot( g_yy, [g_u,g_u] ), axes=(1,0))
+    K_uu =  multidot( f_2, [S_u,S_u] )
     g_uu = np.tensordot( A_inv , res_uu + K_uu, axes=(1,0))
 
     As = A + f_d
     As_inv = - np.linalg.inv(As)
     S_u_s = np.concatenate( [ np.zeros((n_pred_v,n_s)), np.zeros((n_v,n_s)), np.dot(F,g_u) , np.eye(n_s)] )
-    K_ss = tensor(f_2).ttm([S_u_s,S_u_s],dims=(1,2),option='t').tondarray()
+
+    K_ss = multidot(f_2,[S_u_s,S_u_s])    
     K_ss = K_ss + np.tensordot( f_d, g_uu, axes=(1,0) )
     g_ss = np.tensordot( As_inv , K_ss, axes=(1,0) )
 
@@ -309,11 +292,10 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False):
     g_yy = g_yy[:,:,svi]
     g_yu = g_yu[:,svi,:]
 
-    if derivs == None:
+    if return_dr != None:
         return DDR( [y,[g_y,g_u],[g_yy,g_yu,g_uu]], correc_s = g_ss )
     else:
         return [[g_y,g_u],[g_yy,g_yu,g_uu],g_ss]
-        
 
 
     #return DR( [,[g_y,g_u],[g_yy,g_yu,g_uu]] , correc_s = g_ss)
@@ -329,20 +311,27 @@ def multidot(ten,mats):
     n_d = ten.ndim
     n_m = len(mats)
     for i in range(n_m):
-        print n_d -1 -i
-        resp = np.tensordot( resp, mats[i], (n_d-n_m+i-1,0) )
+        #resp = np.tensordot( resp, mats[i], (n_d-n_m+i-1,0) )
+        resp = np.tensordot( resp, mats[i], (n_d-n_m,0) )
     return resp
 
-def solve_sylvester(A,B,C,D,insist=False):
+def solve_sylvester(A,B,C,D,insist=False,use_dynare=False):
     # Solves equation : A X + B X [C,...,C] + D = 0
     # where X is a multilinear function whose dimension is determined by D
+        
     n_d = D.ndim - 1
     n_v = C.shape[1]
     CC = np.kron(C,C)
     for i in range(n_d-2):
         CC = np.kron(CC,C)
     DD = D.reshape( n_v, n_v**n_d )
+    if use_dynare:
+        from mlabwrap import mlab
+        XX = mlab.gensylv(2,A,B,C,DD,nout=1)
+        return XX.reshape( (n_v,)*(n_d+1) )
 
+
+        
     Q = np.linalg.solve(A,B)
     R = CC
     S = np.linalg.solve(A,DD)
