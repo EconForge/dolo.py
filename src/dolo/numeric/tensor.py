@@ -1,3 +1,4 @@
+import numpy as np
 
 def multidot(ten,mats):
     '''
@@ -13,3 +14,12 @@ def multidot(ten,mats):
         #resp = np.tensordot( resp, mats[i], (n_d-n_m+i-1,0) )
         resp = np.tensordot( resp, mats[i], (n_d-n_m,0) )
     return resp
+
+mdot = multidot
+#def mdot( U, V ):
+#    return multidot( U, V )
+
+def sdot( U, V ):
+    nu = U.ndim
+    nv = V.ndim
+    return np.tensordot( U, V, axes=(nu-1,0) )
