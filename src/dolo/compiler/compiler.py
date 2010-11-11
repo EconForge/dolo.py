@@ -222,9 +222,28 @@ class DicPrinter(sympy.printing.StrPrinter):
         super(DicPrinter,self).__init__()
         self.printing_dict = printing_dict
 
-    def doprint_matlab(self,expr):
+    def doprint_matlab(self,expr,vectorize=False):
         txt = self.doprint(expr)
         txt = txt.replace('**','^')
+        if vectorize:
+            txt = txt.replace('^','.^')
+            txt = txt.replace('*','.*')
+            txt = txt.replace('/','./')
+            #txt = txt.replace('+','.+')
+            #txt = txt.replace('-','.-')
+
+        return txt
+
+    def doprint_numpy(self,expr,vectorize=False):
+        txt = self.doprint(expr)
+        #txt = txt.replace('**','^')
+        #if vectorize:
+        #    txt = txt.replace('^','.^')
+        #    txt = txt.replace('*','.*')
+        #    txt = txt.replace('/','./')
+            #txt = txt.replace('+','.+')
+            #txt = txt.replace('-','.-')
+
         return txt
     
     def _print_Variable(self, expr):
