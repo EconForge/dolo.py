@@ -1,7 +1,11 @@
 import numpy as np
-
+from dolo.numeric.tensor import sdot,mdot
+from dolo.numeric.misc import iszero
+import slycot
 
 TOL = 1e-10
+
+# credits : second_order_solver is adapted from Sven Schreiber's port of Uhlig's Toolkit.
 
 def second_order_solver(FF,GG,HH):
     from extern.toolkithelpers import qzdiv
@@ -9,6 +13,7 @@ def second_order_solver(FF,GG,HH):
     
     from numpy import mat,c_,r_,eye,zeros,real_if_close,diag,allclose,where,diagflat
     from numpy.linalg import solve
+    
     Psi_mat = mat(FF)
     Gamma_mat = mat(-GG)
     Theta_mat = mat(-HH)
@@ -71,38 +76,35 @@ def second_order_solver(FF,GG,HH):
 
     return [Xi_sortval[Xi_select],PP.A]
     
-    
-def solve_sylvester(A,B,C,D,insist=False,use_dynare=False):
+def solve_sylvester(A,B,C,D,Ainv = None):
     # Solves equation : A X + B X [C,...,C] + D = 0
     # where X is a multilinear function whose dimension is determined by D
+    # inverse of A can be optionally specified as an argument
+    
         
     n_d = D.ndim - 1
     n_v = C.shape[1]
     CC = np.kron(C,C)
     for i in range(n_d-2):
         CC = np.kron(CC,C)
-    DD = D.reshape( n_v, n_v**n_d )
-    if use_dynare:
-        from mlabwrap import mlab
-        XX = mlab.gensylv(2,A,B,C,DD,nout=1)
-        return XX.reshape( (n_v,)*(n_d+1) )
 
+    DD = D.reshape( n_v, n_v**n_d ) 
 
-        
-    Q = np.linalg.solve(A,B)
-    R = CC
-    S = np.linalg.solve(A,DD)
+    # we use slycot here
     
-    # X must be solution of :  X + Q X R = S
-    tt = np.kron( R.T , Q )
-    I = np.eye(tt.shape[0])
-    vec_S = S.flatten(1)
-    vec_X = np.linalg.solve( I + tt, - vec_S )
-    XX = vec_X.reshape( n_v, n_v**n_d, order='F' )
+    if Ainv != None:
+        Q = sdot(Ainv,B)
+        S = sdot(Ainv,DD)
+    else:
+        Q = np.linalg.solve(A,B)
+        S = np.linalg.solve(A,DD)
+            
+    n = n_v
+    m = n_v**n_d
     
-    # we can check against dynare routines
-    #XX = mlab.sylvester3(A,B,CC,-DD)
-    #XX = mlab.sylvester3a(XX,A,B,CC,-DD)
-    #print abs(my_XX - XX).max()
+    XX = slycot.sb04qd(n,m,Q,CC,-S)
+    
+    X = XX.reshape( (n_v,)*(n_d+1) )
 
-    return XX.reshape( (n_v,)*(n_d+1) )
+    return X
+    
