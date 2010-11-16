@@ -1,19 +1,17 @@
  # -*- coding: utf-8 -*-
 
-import dolo
 import numpy as np
 
 from dolo.compiler.compiler_dynare import DynareCompiler
 from dolo.numeric.matrix_equations import second_order_solver, solve_sylvester
 from dolo.numeric.tensor import multidot
 
-import scipy.io as matio
-import os
 #
 
 TOL = 0.000001
 
-def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_dr=False, use_dynare_sylvester=False):
+def solve_decision_rule( model, order=2, derivs=None, return_dr=False):
+
 
     if order>3:
         raise Exception('Order > 3 not implemented yet')
@@ -59,44 +57,34 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     f_a = np.zeros((n_v,n_v))
     f_h = np.zeros((n_v,n_v))
     f_u = np.zeros((n_v,n_s))
-    O = np.zeros((n_v,n_v))
-    I = np.eye(n_v)
+
+    #O = np.zeros((n_v,n_v))
+    #I = np.eye(n_v)
+    
     for i in range(n_v):
         v = model.variables[i]
-        if v(-1) in model.dyn_var_order:
+        if v(-1) in dvo:
             j = dvo.index( v(-1) )
             f_h[:,i] = f_1[:,j]
-        if v in model.dyn_var_order:
+        if v in dvo:
             j = dvo.index( v )
             f_a[:,i] = f_1[:,j]
-        if v(1) in model.dyn_var_order:
+        if v(1) in dvo:
             j = dvo.index( v(1) )
             f_d[:,i] = f_1[:,j]
     for i in range( n_s ):
         f_u[:,i] = f_1[:,n_dvo + i]
 
-    fut_variables = [v for v in model.variables if v(1) in model.dyn_var_order]
-    cur_variables = [v for v in model.variables if v in model.dyn_var_order]
-    pred_variables = [v for v in model.variables if v(-1) in model.dyn_var_order]
+    fut_variables = [v for v in model.variables if v(1) in dvo]
+    cur_variables = [v for v in model.variables if v in dvo]
+    pred_variables = [v for v in model.variables if v(-1) in dvo]
 
     fut_ind = [model.variables.index(i) for i in fut_variables]
     cur_ind = [model.variables.index(i) for i in cur_variables]
     pred_ind = [model.variables.index(i) for i in pred_variables]
-    fut_ind_d = [model.dyn_var_order.index(i(1)) for i in fut_variables]
-    cur_ind_d = [model.dyn_var_order.index(i) for i in cur_variables]
-    pred_ind_d = [model.dyn_var_order.index(i(-1)) for i in pred_variables]
 
     n_pred_v = len( pred_ind )
 
-    print f_d.shape
-    print f_a.shape
-    print f_h.shape
-
-    #from dolo.extern.toolkithelpers import qzdiv
-    #from dolo.extern.qz import qz
-    [ev,g_y] = second_order_solver(f_d,f_a,f_h)
-    
-    print g_y.shape
 
     #if ( max( np.linalg.eigvals(g_y) )  > 1 + TOL):
     #    raise Exception( 'BK conditions not satisfied' )
@@ -104,21 +92,10 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     mm = np.dot(f_d, g_y) + f_a
     g_u = - np.linalg.solve( mm , f_u )
 
-
-
     if order == 1:
         svi = [model.variables.index(v) for v in  model.state_variables]
         g_y = g_y[:,svi]
         return [g_y,g_u]
-
-
-    F = np.zeros( ( len(fut_ind),n_v) )
-    for i in range(len(fut_ind)):
-        F[i,fut_ind[i]] = 1
-    P = np.zeros( ( len(pred_ind),n_v ) )
-    for i in range(len(pred_ind)):
-        P[i,pred_ind[i]] = 1
-
 
     # new version
     
@@ -145,12 +122,9 @@ def solve_decision_rule( model, order=2, derivs=None, use_dynare=False, return_d
     # let compute the constant term of the sylvester equations
     D = multidot( gg_2, [V_y,V_y] )
 
-    g_yy = solve_sylvester( A,B,C,D, use_dynare=False)
-    #g_yy_d = solve_sylvester( A,B,C,D, use_dynare=True)
-
-    #print g_yy - g_yy_d
-
-
+    A_inv = -np.linalg.inv( A )
+    g_yy = solve_sylvester( A,B,C,D, Ainv = A_inv )
+    
 
     A = np.dot( f_d, g_y ) + f_a
     A_inv = -np.linalg.inv( A )
@@ -250,3 +224,26 @@ class DDR():
 
 
 
+
+def compute_steadystate_values(model):
+    from dolo.misc.calculus import solve_triangular_system
+
+    dvars = dict()
+    dvars.update(model.parameters_values)
+    dvars.update(model.init_values)
+    for v in model.variables:
+        if v not in dvars:
+            dvars[v] = 0
+    undeclared_parameters = []
+    for p in model.parameters:
+        if p not in dvars:
+            undeclared_parameters.append(p)
+            dvars[p] = 0
+            raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
+
+    values = solve_triangular_system(dvars)[0]
+
+    y = [values[v] for v in model.variables]
+    x = [0 for s in model.shocks]
+    params = [values[v] for v in model.parameters]
+    return [y,x,params]
