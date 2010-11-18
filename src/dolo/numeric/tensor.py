@@ -20,6 +20,17 @@ mdot = multidot
 #    return multidot( U, V )
 
 def sdot( U, V ):
+    '''
+    Computes the tensorproduct reducing last dimensoin of U with first dimension of V.
+    For matrices, it is equal to regular matrix product.
+    '''
     nu = U.ndim
-    nv = V.ndim
+    #nv = V.ndim
     return np.tensordot( U, V, axes=(nu-1,0) )
+
+def multitake(a,inds,axes):
+    resp = a
+    for n, ind in enumerate( inds ):
+        axe = axes[n]
+        resp = resp.take(ind, axe)
+    return resp
