@@ -22,7 +22,7 @@ class DerivativesTree:
         for v in deriv_vars:
             i = self.ref_var_list.index(v)
             if i >= self.p:
-                ndt = NonDecreasingTree(self.expr.diff(v), self.n + 1, i, self.vars + [v], self.ref_var_list)
+                ndt = DerivativesTree(self.expr.diff(v), self.n + 1, i, self.vars + [v], self.ref_var_list)
                 self.derivatives[i] = ndt
         return self.derivatives
 
