@@ -3,13 +3,12 @@ from compiler import *
 import sympy
 
 from dolo.symbolic.derivatives import *
-import time
 
 class CustomPrinter(sympy.printing.StrPrinter):
     def _print_TSymbol(self, expr):
         return expr.__str__()
 
-class DynareCompiler(Compiler):
+class PythonCompiler(Compiler):
 
     def compute_static_pfile(self,max_order):
 
@@ -99,16 +98,23 @@ class DynareCompiler(Compiler):
 
         txt += "    return g\n"
         txt = txt.replace('^','**')
+        
         exec txt
         return static_gaps
 
-    def compute_dynamic_pfile(self,max_order=1):
+    def compute_dynamic_pfile(self,max_order=1,compact_order=True):
 
-        NonDecreasingTree.symbol_type = TSymbol
+        DerivativesTree.symbol_type = TSymbol
 
         model = self.model
 
-        var_order = model.dyn_var_order + model.shocks
+        if compact_order:
+            var_order = model.dyn_var_order + model.shocks
+        else:
+            var_order = [v(1) for v in model.variables]
+            var_order += model.variables
+            var_order += [v(-1) for v in model.variables]
+            var_order += model.shocks
 
         # TODO create a log system
 
@@ -122,7 +128,7 @@ class DynareCompiler(Compiler):
 
         self.dynamic_derivatives = sols
 
-        dyn_subs_dict = self.dynamic_substitution_list(ind_0=0,brackets = True)
+        dyn_subs_dict = self.dynamic_substitution_list(ind_0=0,brackets = True,compact=compact_order)
         dyn_printer = DicPrinter(dyn_subs_dict)
 
         txt = """def dynamic_gaps(y, x, params):

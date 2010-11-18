@@ -17,18 +17,23 @@ class Compiler:
         self._static_substitution_list = None
         self.covariances = self.model.covariances
 
-    def dynamic_substitution_list(self,ind_0=1,brackets=False):
+    def dynamic_substitution_list(self,ind_0=1,brackets=False,compact=True):
         # Returns a dictionary mapping each symbol appearing in the model
         # to the string used in the dynamic file
-        if self._dynamic_substitution_list != None:
-            return self._dynamic_substitution_list
-        elif not brackets:
+
+        if compact == False:
+            dyn_order = [v(1) for v in self.model.variables]
+            dyn_order += self.model.variables
+            dyn_order += [v(-1) for v in self.model.variables]
+        else:
+            dyn_order = self.model.dyn_var_order
+
+        if not brackets:
             subs_dict = dict()
-            dyn_var_order = self.model.dyn_var_order
-            for i in range(len(dyn_var_order)):
-                v = dyn_var_order[i]
-                if v.P in self.model.variables:
-                    subs_dict[v] = 'y({0})'.format(i + 1)
+            for i,v in enumerate(dyn_order):
+                print v
+                #if v.P in self.model.variables:
+                subs_dict[v] = 'y({0})'.format(i + 1)
             for i in range(len(self.model.shocks)):
                 s = self.model.shocks[i]
                 subs_dict[s] = 'x(it_,{0})'.format(i + 1)
@@ -38,11 +43,10 @@ class Compiler:
             return subs_dict
         else:
             subs_dict = dict()
-            dyn_var_order = self.model.dyn_var_order
-            for i in range(len(dyn_var_order)):
-                v = dyn_var_order[i]
-                if v.P in self.model.variables:
-                    subs_dict[v] = 'y[{0}]'.format(i + ind_0)
+
+            for i,v in enumerate( dyn_order):
+                #if v.P in self.model.variables:
+                subs_dict[v] = 'y[{0}]'.format(i + ind_0)
             for i in range(len(self.model.shocks)):
                 s = self.model.shocks[i]
                 subs_dict[s] = 'x[it_,{0}]'.format(i + ind_0)
