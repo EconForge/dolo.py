@@ -48,11 +48,16 @@ def second_order_solver(FF,GG,HH):
     
     Delta_up,Xi_up,UUU,VVV = qzdiv(stake,Delta_up,Xi_up,UUU,VVV)
 
-    # check that all unused roots are unstable
-    assert abs(Xi_sortval[m_states]) > (1-TOL)
+    
+    try:
+        # check that all unused roots are unstable
+        assert abs(Xi_sortval[m_states]) > (1-TOL)
+        # check that all used roots are stable
+        assert abs(Xi_sortval[Xi_select]).max() < 1+TOL
+    except:
+        raise BKError('generic')
 
-    # check that all used roots are stable
-    assert abs(Xi_sortval[Xi_select]).max() < 1+TOL
+
     
     # check for unit roots anywhere
 
@@ -108,3 +113,8 @@ def solve_sylvester(A,B,C,D,Ainv = None):
 
     return X
     
+class BKError(Exception):
+    def __init__(self,type):
+        self.type = type
+    def __str__(self):
+        return 'Blanchard-Kahn error ({0})'.format(self.type)
