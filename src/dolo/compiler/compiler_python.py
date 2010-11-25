@@ -102,9 +102,14 @@ class PythonCompiler(Compiler):
         exec txt
         return static_gaps
 
-    def compute_dynamic_pfile(self,max_order=1,compact_order=True):
+    def compute_dynamic_pfile(self,max_order=1,compact_order=True,with_parameters=False):
 
-        DerivativesTree.symbol_type = TSymbol
+        if with_parameters:
+            DerivativesTree.symbol_type = sympy.Symbol
+        else:
+            DerivativesTree.symbol_type = TSymbol
+
+
 
         model = self.model
 
@@ -115,6 +120,8 @@ class PythonCompiler(Compiler):
             var_order += model.variables
             var_order += [v(-1) for v in model.variables]
             var_order += model.shocks
+        if with_parameters:
+            var_order += model.parameters
 
         # TODO create a log system
 
@@ -206,6 +213,7 @@ class PythonCompiler(Compiler):
             txt += "    g.append(g{order})\n".format(order=current_order)
         txt += "    return g\n"
         txt = txt.replace('^','**')
+        print txt
         exec txt
         return dynamic_gaps
 
