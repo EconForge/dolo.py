@@ -356,6 +356,8 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         model.covariances = covariances
         
         resp['model'] = model
+        model.check(verbose = True)
+
     if full_output == True:
         return resp
     else:
