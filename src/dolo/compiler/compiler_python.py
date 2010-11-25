@@ -1,7 +1,7 @@
 import math
 from compiler import *
 import sympy
-
+from dolo.misc.decorators import memoized
 from dolo.symbolic.derivatives import *
 
 class CustomPrinter(sympy.printing.StrPrinter):
@@ -100,6 +100,10 @@ class PythonCompiler(Compiler):
         txt = txt.replace('^','**')
         exec txt
         return static_gaps
+
+    @memoized
+    def compute_dynamic_pfile_cached(self,max_order,compact_order,with_parameters):
+        return self.compute_dynamic_pfile(max_order=max_order,compact_order=compact_order,with_parameters=with_parameters)
 
     def compute_dynamic_pfile(self,max_order=1,compact_order=True,with_parameters=False):
 
