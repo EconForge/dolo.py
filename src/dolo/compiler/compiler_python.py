@@ -98,7 +98,6 @@ class PythonCompiler(Compiler):
 
         txt += "    return g\n"
         txt = txt.replace('^','**')
-        
         exec txt
         return static_gaps
 
@@ -213,7 +212,6 @@ class PythonCompiler(Compiler):
             txt += "    g.append(g{order})\n".format(order=current_order)
         txt += "    return g\n"
         txt = txt.replace('^','**')
-        print txt
         exec txt
         return dynamic_gaps
 
