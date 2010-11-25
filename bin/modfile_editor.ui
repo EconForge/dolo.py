@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>825</width>
+    <width>966</width>
     <height>834</height>
    </rect>
   </property>
@@ -98,7 +98,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>485</width>
+             <width>524</width>
              <height>462</height>
             </rect>
            </property>
@@ -157,7 +157,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>825</width>
+     <width>966</width>
      <height>27</height>
     </rect>
    </property>
@@ -202,11 +202,17 @@
          </rect>
         </property>
         <attribute name="label">
-         <string>Summary</string>
+         <string>Parameters values</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
+        <layout class="QVBoxLayout" name="verticalLayout_8">
          <item>
-          <widget class="QTextEdit" name="textEdit"/>
+          <widget class="QPlainTextEdit" name="plainTextEdit">
+           <property name="font">
+            <font>
+             <family>DejaVu Sans Mono</family>
+            </font>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -220,11 +226,17 @@
          </rect>
         </property>
         <attribute name="label">
-         <string>Parameters values</string>
+         <string>Init values</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_7">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
-          <widget class="QPlainTextEdit" name="plainTextEdit"/>
+          <widget class="QPlainTextEdit" name="plainTextEdit_2">
+           <property name="font">
+            <font>
+             <family>DejaVu Sans Mono</family>
+            </font>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -240,12 +252,36 @@
         <attribute name="label">
          <string>Shocks definition</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
+        <layout class="QVBoxLayout" name="verticalLayout_7">
          <item>
-          <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+          <widget class="QPlainTextEdit" name="plainTextEdit_3">
+           <property name="font">
+            <font>
+             <family>DejaVu Sans Mono</family>
+            </font>
+           </property>
+          </widget>
          </item>
         </layout>
        </widget>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_3">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QVBoxLayout" name="verticalLayout_10">
+     <item>
+      <widget class="QTextEdit" name="textEdit">
+       <property name="font">
+        <font>
+         <family>DejaVu Sans Mono</family>
+        </font>
+       </property>
       </widget>
      </item>
     </layout>

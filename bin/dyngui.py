@@ -60,6 +60,37 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.lineEdit_parameters.setText( str.join(' ',[ str(v) for v in model.parameters ]) )
             self.ui.lineEdit_shocks.setText(  str.join(' ',[ str(v) for v in model.shocks ]) )
 
+            # parameters values
+            parms_text = ''
+            for p in model.parameters:
+                pv = model.parameters_values[p]
+                parms_text += '{0} = {1};\n'.format(p,pv)
+            self.ui.plainTextEdit.setPlainText(parms_text)
+            initval_text = ''
+            for v in model.init_values:
+                vv = model.init_values[v]
+                initval_text += '{0} = {1};\n'.format(v,vv)
+            self.ui.plainTextEdit_2.setPlainText(initval_text)
+            
+            if model.covariances:
+                cov_text = ''
+                for i,si in enumerate(model.shocks):
+                    for j,sj in enumerate(model.shocks):
+                        v = model.covariances[i,j]
+                        vt = str(v).replace('**','^')
+                        if v==0:
+                            pass
+                        elif i>j:
+                            pass
+                        elif i<j:
+                            cov_text += 'var {0},{1} = {2};\n'.format(si,sj,vt)
+                        else:
+                            cov_text += 'var {0} = {1};\n'.format(si,vt)
+                self.ui.plainTextEdit_3.setPlainText(cov_text)
+                
+
+            
+
         except Exception as e:
             print 'Import failed.'
             print e
@@ -111,6 +142,8 @@ class MainWindow(QtGui.QMainWindow):
         var_string = self.ui.lineEdit_var.text()
         shocks_string = self.ui.lineEdit_shocks.text()
         parameters_string = self.ui.lineEdit_parameters.text()
+        params_definition = self.ui.plainTextEdit.toPlainText()
+        initval_string = self.ui.plainTextEdit_2.toPlainText()
         l = [ el.get_text() for el in self.widgets]
         l = [ e for e in l if e]
         content = str.join(';\n',l)
@@ -120,11 +153,16 @@ class MainWindow(QtGui.QMainWindow):
 var {vars};
 varexo {varexo};
 parameters {parms};
+{params_definition}
 model;
 {equations}
 end;
+initval;
+{initval_string}
+end;
         '''.format(vars = var_string,varexo = shocks_string,
-        parms=parameters_string,equations = content)
+        parms=parameters_string,equations = content,
+        params_definition=params_definition, initval_string=initval_string)
 
         from dolo.misc.interactive import parse_dynare_text
         model = parse_dynare_text(simple_mod)
@@ -138,11 +176,18 @@ end;
         info['name'] = model.fname
         txt ='''
 Model check {name}:
-    Number of variables :  {n_variables}
-    Number of equations :  {n_equations}
-    Number of shocks :     {n_shocks}
+Number of variables :  {n_variables}
+Number of equations :  {n_equations}
+Number of shocks :     {n_shocks}
         '''.format(**info)
+        try:
+            from dolo.numeric.perturbations import solve_decision_rule
+            dr = solve_decision_rule( model )
+            txt += '\nBlanchard-Kahn conditions are met.'
+        except:
+            txt += '\nImpossible to solve the model (yet).'
         self.ui.textEdit.setText(txt)
+        
         
 
     def declared_symbols(self):
@@ -203,6 +248,10 @@ class CustomWidget(QtGui.QWidget):
     def check(self):
         txt = self.get_text()
         d = self.father.declared_symbols()
+        known_symbols = [sympy.exp,sympy.log,sympy.sin,sympy.cos,
+        sympy.tan, sympy.pi,sympy.atan,sympy.sqrt]
+        for s in known_symbols:
+            d[str(s)] = s
 
         try:
             txt = txt.replace('^','**')
