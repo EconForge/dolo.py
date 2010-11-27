@@ -1,8 +1,9 @@
-from compiler import *
+from dolo.compiler.compiler import *
+from dolo.symbolic.derivatives import *
+
 import math
 import sympy
 
-from dolo.symbolic.derivatives import *
 import time
 
 class CustomPrinter(sympy.printing.StrPrinter):

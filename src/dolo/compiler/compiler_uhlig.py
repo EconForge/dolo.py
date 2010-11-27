@@ -1,4 +1,4 @@
-from compiler import *
+from dolo.compiler.compiler import *
 
 class UhligCompiler(Compiler):
     '''

@@ -1,11 +1,8 @@
-#import scipy
-#import sympy
 from dolo.symbolic.model import *
 from dolo.symbolic.symbolic import *
 
-#from sympy import zeros
-
 from dolo.misc.misc import map_function_to_expression
+
 import numpy as np
 
 class Compiler:

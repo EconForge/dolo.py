@@ -1,6 +1,6 @@
-import sympy
 from dolo.symbolic.symbolic import Variable,Parameter
 
+import sympy
 
 def send_to_matlab(model,interactive=True,rmtemp=False,append=""):
     tempname = model.fname + ".mod"

@@ -1,8 +1,9 @@
-import math
-from compiler import *
-import sympy
+from dolo.compiler.compiler import *
 from dolo.misc.decorators import memoized
 from dolo.symbolic.derivatives import *
+
+import math
+import sympy
 
 class CustomPrinter(sympy.printing.StrPrinter):
     def _print_TSymbol(self, expr):

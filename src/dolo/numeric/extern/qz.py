@@ -16,6 +16,13 @@ from ctypes import cdll, c_int, c_char, POINTER
 import numpy as np
 from numpy.ctypeslib import load_library, ndpointer
 import sys
+import os
+
+__dirname__ =  os.path.dirname(__file__)
+
+__lapack_location__ = __dirname__
+__lapack_name__ = 'lapack.dll'
+__libio_name__ = 'libiomp5md.dll' 
 
 def setuplapack4xgges(A,B,lpname,lppath):
     '''Loads the lapack shared lib and does some input checks.
@@ -30,14 +37,13 @@ def setuplapack4xgges(A,B,lpname,lppath):
     assert A.ndim == 2
     assert A.shape == B.shape
     assert A.shape[0] == A.shape[1]
-    # load the lapack shared library
-    if lpname == '':
-         if sys.platform == 'win32':    lpname = 'lapack'
-         else:                          lpname = 'liblapack'  
-    if lppath == '':
-        if sys.platform == 'win32': lppath = 'c:\\winnt\\system32\\'
-        else:                       lppath = '/usr/lib/' 
-    lapack = load_library(lpname, lppath)
+
+    
+    print  __lapack_location__+'\\'+__libio_name__
+    print __lapack_location__+'\\'+__lapack_name__
+    __libio__ = cdll.LoadLibrary( __lapack_location__+'\\'+__libio_name__)
+    lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)
+
     return lapack
 
 def dgges4numpy(A,B, jobvsl='V', jobvsr='V', lapackname='', lapackpath=''):

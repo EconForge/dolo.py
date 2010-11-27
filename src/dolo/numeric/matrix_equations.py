@@ -1,7 +1,7 @@
-import numpy as np
 from dolo.numeric.tensor import sdot,mdot
 from dolo.numeric.misc import iszero
-import slycot
+
+import numpy as np
 
 TOL = 1e-10
 
@@ -85,7 +85,8 @@ def solve_sylvester(A,B,C,D,Ainv = None):
     # Solves equation : A X + B X [C,...,C] + D = 0
     # where X is a multilinear function whose dimension is determined by D
     # inverse of A can be optionally specified as an argument
-    
+
+    import slycot
         
     n_d = D.ndim - 1
     n_v = C.shape[1]

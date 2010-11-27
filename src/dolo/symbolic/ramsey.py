@@ -1,9 +1,6 @@
-# To change this template, choose Tools | Templates
-# and open the template in the editor.
-
-
 from dolo.symbolic.model import Model
 from dolo.symbolic.symbolic import Variable,Equation
+
 import sympy
 
 class RamseyModel(Model):

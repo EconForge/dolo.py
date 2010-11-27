@@ -1,7 +1,8 @@
+from dolo.model.symbolic import Variable, Parameter, Shock, Equation
+
 #import os
 #import time
 #import tempfile
-from dolo.model.symbolic import Variable, Parameter, Shock, Equation
 #from latex import latex
 
 

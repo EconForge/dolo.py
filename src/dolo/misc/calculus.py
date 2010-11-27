@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-import sympy
-#from scipy import *
 from dolo.symbolic.symbolic import *
-#import dolo.extern.qz
+
+import sympy
 import copy
 
-#def second_order_taylorisation(expr,shocks,covariances):
 def second_order_taylorization(expr,shocks,covariances):    
     h = sympy.hessian(expr,shocks)
     resp = expr

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from symbolic import * # TODO : change name of symbolic module
+from dolo.symbolic.symbolic import * # TODO : change name of symbolic module
+
 import copy
 import inspect
 from sympy import Matrix

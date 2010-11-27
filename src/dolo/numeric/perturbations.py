@@ -1,9 +1,8 @@
-import numpy as np
-
 from dolo.compiler.compiler_python import PythonCompiler
 from dolo.numeric.matrix_equations import second_order_solver, solve_sylvester
 from dolo.numeric.tensor import sdot,mdot
 
+import numpy as np
 
 def solve_decision_rule(model,order=2,method='default'):
     
