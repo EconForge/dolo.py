@@ -18,6 +18,9 @@ from numpy.ctypeslib import load_library, ndpointer
 import sys
 import os
 
+import sys
+sys.stderr = open("logfile.txt","w")
+
 __dirname__ =  os.path.dirname(__file__)
 
 __lapack_location__ = __dirname__
@@ -41,8 +44,11 @@ def setuplapack4xgges(A,B,lpname,lppath):
     
     print  __lapack_location__+'\\'+__libio_name__
     print __lapack_location__+'\\'+__lapack_name__
-    __libio__ = cdll.LoadLibrary( __lapack_location__+'\\'+__libio_name__)
-    lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)
+    try:
+        __libio__ = cdll.LoadLibrary( __lapack_location__+'\\'+__libio_name__)
+        lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)
+    except Exception as e:
+        raise ImportError('lapack')
 
     return lapack
 
