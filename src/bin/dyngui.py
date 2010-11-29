@@ -4,8 +4,11 @@ import dolo
 import sys
 
 from PyQt4 import QtCore, QtGui, uic
+from PyQt4.QtCore import QSettings
 
 app = QtGui.QApplication(sys.argv)
+app.setOrganizationName('Dolo')
+app.setOrganizationName('Pablo')
        
 [EqWidgetUi,EqWidgetBase] = uic.loadUiType("equation_widget.ui")
 
@@ -17,19 +20,30 @@ class MainWindow(QtGui.QMainWindow):
 
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
-        
+
         # Set up the user interface from Designer.
         self.ui = uic.loadUi("modfile_editor.ui")
 
 #        self.ew = uic.loadUi("equation_widget.ui")
+
+        self.ui.optionsDialog = OptionsDialog(self)
+
 
         # Connect up the buttons.
         self.connect(self.ui.pushButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("add_widget()"))
         self.connect(self.ui.pushButton_2, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("check()"))
         self.connect(self.ui.actionOpen, QtCore.SIGNAL("triggered()"), self, QtCore.SLOT("open()"))
         self.connect(self.ui.actionSave, QtCore.SIGNAL("triggered()"), self, QtCore.SLOT("save_as()"))
+        self.connect(self.ui.actionGeneral_options, QtCore.SIGNAL("triggered()"), self.ui.optionsDialog, QtCore.SLOT("show()"))
+
         self.add_widget()
+
         self.ui.show()
+
+
+#    def restore_settings(self):
+#        self.settings.
+
 
     @QtCore.pyqtSlot()
     def open(self):
@@ -165,20 +179,20 @@ end;
         params_definition=params_definition, initval_string=initval_string)
 
         from dolo.misc.interactive import parse_dynare_text
-        model = parse_dynare_text(simple_mod)
         try:
+            model = parse_dynare_text(simple_mod)
             model.check(verbose=True)
-        except Exception as e:
-            print 'Model is not valid'
-
-        info = model.info
-        info['name'] = model.fname
-        txt ='''
+            info = model.info
+            info['name'] = model.fname
+            txt ='''
 Model check {name}:
 Number of variables :  {n_variables}
 Number of equations :  {n_equations}
-Number of shocks :     {n_shocks}
-        '''.format(**info)
+Number of shocks :     {n_shocks}'''.format(**info)
+        except Exception as e:
+            txt = '\nModel is not valid'
+            self.ui.textEdit.setText(txt)            
+            return
         try:
             from dolo.numeric.perturbations import solve_decision_rule
             dr = solve_decision_rule( model, order = 1 )
@@ -189,7 +203,6 @@ Number of shocks :     {n_shocks}
             txt += '\nImpossible to solve the model (yet).'
             print e
         self.ui.textEdit.setText(txt)
-        
         
 
     def declared_symbols(self):
@@ -285,6 +298,65 @@ class CustomWidget(QtGui.QWidget):
 
     def set_text(self,tt):
         self.ui.lineEdit.setText(tt)
+
+
+
+[ui_class, ui_base] = uic.loadUiType('options.ui')
+
+
+class OptionsDialog(ui_class, ui_base):
+
+    def __init__(self,father):
+        super(OptionsDialog,self).__init__()
+        self.setupUi(self)    
+        self.father = father
+        self.connect(self.pushButton,QtCore.SIGNAL('clicked()'),self,QtCore.SLOT('open_lib_dir()'))
+
+        ld = str(QSettings().value('lib_dir').toString())
+        if not ld:
+            ld = 'c:\Windows\System32'
+        self.set_lib_dir(ld)
+
+        
+    @QtCore.pyqtSlot()
+    def open_lib_dir(self):
+        lib_dir = QtGui.QFileDialog.getExistingDirectory()
+        print lib_dir
+        self.set_lib_dir( str(lib_dir) ) 
+
+    def set_lib_dir(self,lib_dir):
+        import ctypes, sys
+        try:
+            self.lineEdit.setText(lib_dir)
+            if sys.platform == 'win32':
+                prefix = ''
+                suffix = '.dll'
+            else:
+                prefix = 'lib'
+                suffix = ''
+
+            f1 = lib_dir + '/' + prefix + 'libiomp5md' + suffix
+            f2 = lib_dir + '/' + prefix + 'lapack' + suffix
+
+
+            if sys.platform  == 'win32':
+                try:
+                    self.libiomp5md = ctypes.cdll.LoadLibrary(f1)
+                except Exception:
+                    None
+            #self.father.lapack =
+            lapack = ctypes.cdll.LoadLibrary(f2)
+            import dolo.numeric.extern.qz
+            dolo.numeric.extern.qz.lapack = lapack
+
+            QSettings().setValue("lib_dir" ,QtCore.QVariant(lib_dir) )
+            self.label_3.setText('Loaded')
+
+        except Exception as e:
+            self.label_3.setText('Not Found / Load Failed')
+            print e
+        
+
 
 
 

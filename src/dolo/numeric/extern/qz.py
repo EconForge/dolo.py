@@ -19,42 +19,40 @@ import sys
 import os
 
 import sys
-sys.stderr = open("logfile.txt","w")
 
-__dirname__ =  os.path.dirname(__file__)
-
-__lapack_location__ = __dirname__
+if sys.platform == 'win32':
+    __lapack_location__ = "c:\\Windows\\System32\\"
+else:
+    __lapack_location__ = '/usr/lib/'
+    
 __lapack_name__ = 'lapack.dll'
-__libio_name__ = 'libiomp5md.dll' 
+__libio_name__ = 'libiomp5md.dll'
 
-def setuplapack4xgges(A,B,lpname,lppath):
-    '''Loads the lapack shared lib and does some input checks.
-    
-    The defaults for lapackname and location are platform-specific:
-        Win32: 'lapack' (due to scilab's lapack.dll)
-               'c:\\winnt\\system32\\'
-        Otherwise: 'liblapack' 
-                   '/usr/lib/'
-    '''
+def setuplapack(lpname=None,lppath=None):
+#    '''Loads the lapack shared lib and does some input checks.
+#
+#    The defaults for lapackname and location are platform-specific:
+#        Win32: 'lapack' (due to scilab's lapack.dll)
+#               'c:\\winnt\\system32\\'
+#        Otherwise: 'liblapack'
+#                   '/usr/lib/'
+#    '''
     # some input checks
-    assert A.ndim == 2
-    assert A.shape == B.shape
-    assert A.shape[0] == A.shape[1]
 
-    
-    print  __lapack_location__+'\\'+__libio_name__
-    print __lapack_location__+'\\'+__lapack_name__
     try:
-        __libio__ = cdll.LoadLibrary( __lapack_location__+'\\'+__libio_name__)
-        lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)
+        if sys.platfrorm == 'win32':
+            lapack = cdll.LoadLibrary( __libio_location__+'\\'+__lapack_name__)
+        else:
+            lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)            
     except Exception as e:
-        raise ImportError('lapack')
+        return None
 
     return lapack
 
-def dgges4numpy(A,B, jobvsl='V', jobvsr='V', lapackname='', lapackpath=''):
+lapack = setuplapack()
+
+def dgges4numpy(A,B, jobvsl='V', jobvsr='V' ):
     '''wraps lapack function dgges, no sorting done'''
-    lapack = setuplapack4xgges(A,B,lapackname,lapackpath)
     rows = A.shape[0]
     # to determine matrix subclass
     Aintype = type(A)
@@ -133,12 +131,12 @@ def dgges4numpy(A,B, jobvsl='V', jobvsr='V', lapackname='', lapackpath=''):
         raise RuntimeError, 'something other than QZ iteration failed'
     else: raise RuntimeError, 'INFO not updated by dgges, complete failure!?'
 
-def zgges4numpy(A,B, jobvsl='V', jobvsr='V', lapackname='', lapackpath=''):
+def zgges4numpy(A,B, jobvsl='V', jobvsr='V'):
     '''Wraps lapack function zgges, no sorting done.
     
     Returns complex arrays, use real_if_close() if needed/possible.
     '''
-    lapack = setuplapack4xgges(A,B,lapackname,lapackpath)
+
     rows = A.shape[0]
     # determine matrix subclass
     Aintype = type(A)
@@ -215,7 +213,7 @@ def zgges4numpy(A,B, jobvsl='V', jobvsr='V', lapackname='', lapackpath=''):
         raise RuntimeError, 'something other than QZ iteration failed'
     else: raise RuntimeError, 'INFO not updated by zgges, complete failure!?'
 
-def qz(A,B, mode='complex', lapackname='', lapackpath=''):
+def qz(A,B, mode='complex'):
     '''Equivalent to Matlab's qz function [AA,BB,Q,Z] = qz(A,B).
     
     Requires Lapack as a shared compiled library on the system (one that
@@ -249,16 +247,14 @@ def qz(A,B, mode='complex', lapackname='', lapackpath=''):
     no generalized eigenvectors are calculated.
     '''
     if mode == 'real':
-        AA,BB,dum1,dum2,dum3,VSL,VSR = dgges4numpy(A,B,
-                        lapackname=lapackname,lapackpath=lapackpath)
+        AA,BB,dum1,dum2,dum3,VSL,VSR = dgges4numpy(A,B)
         return AA, BB, VSL.T, VSR
     elif mode == 'complex':
-        AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B,
-                        lapackname=lapackname,lapackpath=lapackpath)
+        AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B)
         return AA, BB, VSL.conj().T, VSR
     else: raise ValueError, 'bogus choice for mode'
    
-def eig2(A,B, lapackname='', lapackpath=''):
+def eig2(A,B):
     '''Calculates generalized eigenvalues of pair (A,B).
     
     This should correspond to Matlab's lambda = eig(A,B),
@@ -266,13 +262,12 @@ def eig2(A,B, lapackname='', lapackpath=''):
     
     Eigenvalues will be of complex type, are unsorted, and are returned as 1d.
     '''
-    AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B,
-                    lapackname=lapackname,lapackpath=lapackpath)
+    AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B)
     return np.diag(AA)/np.diag(BB)
     
-def eigwithqz(A,B, lapackname='', lapackpath=''):
+def eigwithqz(A,B):
     '''Does complex QZ decomp. and also returns the eigenvalues'''
-    AA, BB, Q, Z = qz(A,B,lapackname=lapackname,lapackpath=lapackpath)
+    AA, BB, Q, Z = qz(A,B)
     evals = np.diag(AA)/np.diag(BB)
     return evals,AA,BB,Q,Z
     

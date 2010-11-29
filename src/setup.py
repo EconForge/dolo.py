@@ -19,17 +19,19 @@ setup (
     author = 'pablo',
     author_email = '',
 
-    summary = 'Just another Python package for the cheese shop',
     url = '',
     license = '',
     long_description= 'Long description of the package',
     options = {
             "py2exe" : {
                 "includes" : ["sip"],
-                
+                "dist_dir" : "../windist/",
+                "bundle_files" : 1
+
             }
     },
+    data_files = [('',['bin/options.ui','bin/modfile_editor.ui','bin/equation_widget.ui'])],
     console = ['bin/doloc.py'],
-    windows = ['bin/dyngui.py'],
+    windows = ['bin/dyngui.py']
 
     )
