@@ -5,7 +5,6 @@ __date__ ="$3 sept. 2009 11:26:05$"
 from setuptools import setup,find_packages
 import py2exe
 
-print find_packages()
 
 setup (
     name = 'dolo',
@@ -27,11 +26,9 @@ setup (
                 "includes" : ["sip"],
                 "dist_dir" : "../windist/",
                 "bundle_files" : 1
-
             }
     },
     data_files = [('',['bin/options.ui','bin/modfile_editor.ui','bin/equation_widget.ui'])],
     console = ['bin/doloc.py'],
     windows = ['bin/dyngui.py']
-
     )
