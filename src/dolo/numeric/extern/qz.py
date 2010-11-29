@@ -22,11 +22,11 @@ import sys
 
 if sys.platform == 'win32':
     __lapack_location__ = "c:\\Windows\\System32\\"
+    __lapack_name__ = 'lapack.dll'
+    __libio_name__ = 'libiomp5md.dll'
 else:
-    __lapack_location__ = '/usr/lib/'
-    
-__lapack_name__ = 'lapack.dll'
-__libio_name__ = 'libiomp5md.dll'
+    __lapack_location__ = '/usr/lib/lapack/'
+    __lapack_name__ = 'liblapack.so'    
 
 def setuplapack(lpname=None,lppath=None):
 #    '''Loads the lapack shared lib and does some input checks.
@@ -40,13 +40,13 @@ def setuplapack(lpname=None,lppath=None):
     # some input checks
 
     try:
-        if sys.platfrorm == 'win32':
-            lapack = cdll.LoadLibrary( __libio_location__+'\\'+__lapack_name__)
+        if sys.platform == 'win32':
+            lapack = cdll.LoadLibrary( __libio_location__+'/'+__lapack_name__)
         else:
-            lapack = cdll.LoadLibrary( __lapack_location__+'\\'+__lapack_name__)            
+            lapack = cdll.LoadLibrary( __lapack_location__+'/'+__lapack_name__)            
     except Exception as e:
+        print e  
         return None
-
     return lapack
 
 lapack = setuplapack()
