@@ -6,6 +6,8 @@ import numpy as np
 
 def solve_decision_rule(model,order=2,method='default'):
     
+    Sigma = np.array(model.covariances).astype(np.float64)
+
     [y,x,parms] = compute_steadystate_values(model)
     #pc = PythonCompiler(model)
     pc = model.compiler
@@ -22,8 +24,6 @@ def solve_decision_rule(model,order=2,method='default'):
     xx = np.array(x)
     xx = np.atleast_2d(xx)
     parms = np.array(parms)
-
-    Sigma = np.array(model.covariances).astype(np.float64)
 
     derivatives = p_dynamic(yy,xx,parms)
 
@@ -49,7 +49,7 @@ def solve_decision_rule(model,order=2,method='default'):
         derivatives = [f_0,ft_1,ft_2]
 
     if method in ('sigma2','default'):
-        resp = perturb_solver(derivatives, max_order=order)
+        resp = perturb_solver(derivatives, Sigma, max_order=order)
     elif method == 'full':
         n_s = len(model.shocks)
         n_v = len(model.variables)
@@ -74,16 +74,18 @@ def solve_decision_rule(model,order=2,method='default'):
             V_s[-1] = 1
             K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
             rhs = np.tensordot( K_ss,Sigma) + mdot(h_2,[V_s,V_s])
-            ghs2 = sdot(A_inv,-rhs) / 2
-            dr.sigma2 = ghs2
+            sigma2 = sdot(A_inv,-rhs) / 2
+            dr.sigma2 = sigma2
         return dr
+    elif order == 3:
+        return resp
 
 class DDR():
     # this class represent a dynare decision rule
-    def __init__(self,g,correc_s=None,Sigma_e=None):
+    def __init__(self,g,ghs2=None):
         self.g = g
-        if correc_s !=None:
-            self.correc_s = correc_s
+        if ghs2 !=None:
+            self.ghs2 = ghs2
         # I should do something with Sigma_e
 
     @property
@@ -110,11 +112,11 @@ class DDR():
     def ghuu(self):
         return self.g[2][2]
 
-    def ghs2(self,Sigma_e):
-        return np.tensordot( self.correc_s , Sigma_e )/2
+    #def ghs2(self,Sigma_e):
+    #    return np.tensordot( self.correc_s , Sigma_e )/2
 
     def ys_c(self,Sigma_e):
-        return self.g[0] + 0.5*self.ghs2(Sigma_e)
+        return self.g[0] + 0.5*self.ghs2
 
     def __call__(self, x, u, Sigma_e):
         # evaluates y_t, given y_{t-1} and e_t
@@ -152,12 +154,14 @@ def compute_steadystate_values(model):
     return [y,x,params]
 
 
-def perturb_solver(derivatives, max_order=2):
+def perturb_solver(derivatives, Sigma, max_order=2):
 
     if max_order == 1:
         [f_0,f_1] = derivatives
     elif max_order == 2:
         [f_0,f_1,f_2] = derivatives
+    elif max_order == 3:
+        [f_0,f_1,f_2,f_3] = derivatives
     else:
         raise Exception('Perturbations not implemented at order {0}'.format(max_order))
     derivs = derivatives
@@ -202,6 +206,8 @@ def perturb_solver(derivatives, max_order=2):
     V_e = V_u
     g_a = g_x
     g_e = g_u
+    n_a = n_v
+    n_e = n_s
 
     # Once for all !
     A = f_a + sdot(f_d,g_a)
@@ -215,12 +221,14 @@ def perturb_solver(derivatives, max_order=2):
     ##################
 
     #----------Computing order 2
+
     order = 2
 
     #--- Computing derivatives ('a', 'a')
 
     K_aa =  + mdot(f_2,[V_a,V_a])
-    L_aa = np.zeros((n_v,n_v))   ######### ! ########
+    L_aa = np.zeros( (n_v, n_v, n_v) )
+
     #We need to solve the infamous sylvester equation
     #A = f_a + sdot(f_d,g_a)
     #B = f_d
@@ -228,6 +236,10 @@ def perturb_solver(derivatives, max_order=2):
     D = K_aa + sdot(f_d,L_aa)
     g_aa = solve_sylvester(A,B,C,D)
 
+    if order < max_order:
+        Y = L_aa + mdot(g_a,[g_aa]) + mdot(g_aa,[g_a,g_a])
+        Z = g_aa
+        V_aa = build_V(Y,Z,(n_a,n_e))
 
     #--- Computing derivatives ('a', 'e')
 
@@ -238,6 +250,11 @@ def perturb_solver(derivatives, max_order=2):
     const = sdot(f_d,L_ae) + K_ae
     g_ae = - sdot(A_inv, const)
 
+    if order < max_order:
+        Y = L_ae + mdot(g_a,[g_ae])
+        Z = g_ae
+        V_ae = build_V(Y,Z,(n_a,n_e))
+
     #--- Computing derivatives ('e', 'e')
 
     K_ee =  + mdot(f_2,[V_e,V_e])
@@ -247,20 +264,124 @@ def perturb_solver(derivatives, max_order=2):
     const = sdot(f_d,L_ee) + K_ee
     g_ee = - sdot(A_inv, const)
 
+    if order < max_order:
+        Y = L_ee + mdot(g_a,[g_ee])
+        Z = g_ee
+        V_ee = build_V(Y,Z,(n_a,n_e))
+
+    # manual
+    I = np.eye(n_v,n_v)
+    M_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
+    K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
+    rhs =  - np.tensordot( K_ss, Sigma, axes=((1,2),(0,1)) ) #- mdot(h_2,[V_s,V_s])
+    ghs2 = sdot(M_inv,rhs)/2
+    if max_order == 2:
+        return [ev,[g_a,g_e],[g_aa,g_ae,g_ee], ghs2]
+    # /manual
+
+    #----------Computing order 3
+
+    order = 3
+
+    #--- Computing derivatives ('a', 'a', 'a')
+
+    K_aaa =  + 3*mdot(f_2,[V_a,V_aa]) + mdot(f_3,[V_a,V_a,V_a])
+    L_aaa =  + 3*mdot(g_aa,[g_a,g_aa])
+
+    #We need to solve the infamous sylvester equation
+    #A = f_a + sdot(f_d,g_a)
+    #B = f_d
+    #C = g_a
+    D = K_aaa + sdot(f_d,L_aaa)
+    g_aaa = solve_sylvester(A,B,C,D)
+
+    if order < max_order:
+        Y = L_aaa + mdot(g_a,[g_aaa]) + mdot(g_aaa,[g_a,g_a,g_a])
+        Z = g_aaa
+        V_aaa = build_V(Y,Z,(n_a,n_e))
+
+    #--- Computing derivatives ('a', 'a', 'e')
+
+    K_aae =  + mdot(f_2,[V_aa,V_e]) + 2*mdot(f_2,[V_a,V_ae]) + mdot(f_3,[V_a,V_a,V_e])
+    L_aae =  + mdot(g_aa,[g_aa,g_e]) + 2*mdot(g_aa,[g_a,g_ae]) + mdot(g_aaa,[g_a,g_a,g_e])
+
+    #We solve A*X + const = 0
+    const = sdot(f_d,L_aae) + K_aae
+    g_aae = - sdot(A_inv, const)
+
+    if order < max_order:
+        Y = L_aae + mdot(g_a,[g_aae])
+        Z = g_aae
+        V_aae = build_V(Y,Z,(n_a,n_e))
+
+    #--- Computing derivatives ('a', 'e', 'e')
+
+    K_aee =  + 2*mdot(f_2,[V_ae,V_e]) + mdot(f_2,[V_a,V_ee]) + mdot(f_3,[V_a,V_e,V_e])
+    L_aee =  + 2*mdot(g_aa,[g_ae,g_e]) + mdot(g_aa,[g_a,g_ee]) + mdot(g_aaa,[g_a,g_e,g_e])
+
+    #We solve A*X + const = 0
+    const = sdot(f_d,L_aee) + K_aee
+    g_aee = - sdot(A_inv, const)
+
+    if order < max_order:
+        Y = L_aee + mdot(g_a,[g_aee])
+        Z = g_aee
+        V_aee = build_V(Y,Z,(n_a,n_e))
+
+    #--- Computing derivatives ('e', 'e', 'e')
+
+    K_eee =  + 3*mdot(f_2,[V_e,V_ee]) + mdot(f_3,[V_e,V_e,V_e])
+    L_eee =  + 3*mdot(g_aa,[g_e,g_ee]) + mdot(g_aaa,[g_e,g_e,g_e])
+
+    #We solve A*X + const = 0
+    const = sdot(f_d,L_eee) + K_eee
+    g_eee = - sdot(A_inv, const)
+
+    if order < max_order:
+        Y = L_eee + mdot(g_a,[g_eee])
+        Z = g_eee
+        V_eee = build_V(Y,Z,(n_a,n_e))
+
+
+    g_ss = ghs2
+
     ####################################
     ## Compute sigma^2 correction term #
     ####################################
 
-    I = np.eye(n_v,n_v)
-    A_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
-    K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
-    correc_s = sdot(A_inv,-K_ss)
-    #rhs =  - np.tensordot( K_ss, Sigma, axes=((1,2),(0,1)) ) #- mdot(h_2,[V_s,V_s])
-    #ghs2 = sdot(A_inv,rhs)/2
+    # ( a s s )
+    I_e = np.eye(n_e)
 
-    if max_order == 2:
-        return [ev,[g_a,g_e],[g_aa,g_ae,g_ee],correc_s]
-        
+    Y = g_e
+    Z = np.zeros((n_a,n_e))
+    V_s = build_V(Y,Z,(n_a,n_e))
+
+    Y = mdot( g_ae, [g_a, I_e] )
+    Z = np.zeros((n_a,n_a,n_e))
+    V_as = build_V(Y,Z,(n_a,n_e))
+
+    Y = sdot(g_a,g_ss) + g_ss + np.tensordot(g_ee,Sigma, axes=((1,2),(0,1)))
+    YY = sdot(g_a,g_ss) + g_ss + np.tensordot(g_ee,Sigma)
+    Z = g_ss
+    V_ss = build_V(Y,Z,(n_a,n_e))
+
+    K_ass_1 =  2*mdot(f_2,[V_as,V_s] ) + mdot(f_3,[V_a,V_s,V_s])
+    K_ass_1 = np.tensordot(K_ass_1,Sigma)
+    K_ass_2 = mdot( f_2, [V_a,V_ss] )
+
+    K_ass = K_ass_1 + K_ass_2
+
+    L_ass = mdot( g_aa, [g_a, g_ss]) + np.tensordot( g_aee, Sigma )
+
+    D = K_ass + sdot(f_d,L_ass)
+
+    g_ass = solve_sylvester( A, B, C, D)
+
+    if max_order == 3:
+        print 'returning'
+        return [ev,[g_a,g_e],[g_aa,g_ae,g_ee],[g_aaa,g_aae,g_aee,g_eee], g_ss]
+
+
         
 def new_solver_with_p(derivatives, sizes, max_order=2):
     
