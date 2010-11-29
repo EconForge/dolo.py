@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>610</width>
-    <height>248</height>
+    <width>677</width>
+    <height>459</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -22,7 +22,7 @@
      <item>
       <widget class="QPushButton" name="pushButton">
        <property name="text">
-        <string>PushButton</string>
+        <string>Test</string>
        </property>
       </widget>
      </item>
@@ -32,7 +32,7 @@
         <enum>Qt::NoFocus</enum>
        </property>
        <property name="text">
-        <string>...</string>
+        <string>Delete</string>
        </property>
       </widget>
      </item>

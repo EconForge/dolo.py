@@ -225,6 +225,7 @@ class CustomWidget(QtGui.QWidget):
         self.ui = EqWidgetUi()
         self.ui.setupUi(self)
         self.ui.frame.setVisible(False)
+
         self.connect(self.ui.toolButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("specialSignal()"))
         self.connect(self.ui.pushButton, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("check()"))
         self.connect(self.ui.pushButton_2, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("def_parameter()"))
@@ -232,6 +233,7 @@ class CustomWidget(QtGui.QWidget):
         self.connect(self.ui.pushButton_4, QtCore.SIGNAL("clicked()"), self, QtCore.SLOT("def_shock()"))
 
         self.locals = {}
+
 
     @QtCore.pyqtSlot()
     def def_parameter(self):
@@ -314,7 +316,10 @@ class OptionsDialog(ui_class, ui_base):
 
         ld = str(QSettings().value('lib_dir').toString())
         if not ld:
-            ld = 'c:\Windows\System32'
+            if sys.platform == 'win32':
+                ld = 'c:\Windows\System32'
+            else:
+                ld = '/usr/lib/lapack'
         self.set_lib_dir(ld)
 
         
@@ -333,7 +338,7 @@ class OptionsDialog(ui_class, ui_base):
                 suffix = '.dll'
             else:
                 prefix = 'lib'
-                suffix = ''
+                suffix = '.so'
 
             f1 = lib_dir + '/' + prefix + 'libiomp5md' + suffix
             f2 = lib_dir + '/' + prefix + 'lapack' + suffix
