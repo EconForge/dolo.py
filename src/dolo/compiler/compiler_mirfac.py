@@ -1,6 +1,8 @@
 from dolo.symbolic.model import *
 from dolo.symbolic.symbolic import *
 from dolo.compiler.compiler import Compiler
+import numpy as np
+import numpy.linalg
 
 class MirFacCompiler(Compiler):
     
@@ -11,6 +13,7 @@ class MirFacCompiler(Compiler):
     def read_model(self):
 
         dmodel = self.model
+        model = dmodel
 
         f_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='f']
         g_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='g']
@@ -77,6 +80,62 @@ class MirFacCompiler(Compiler):
             'sup_bounds': sup_bounds
         }
         return data
+
+
+    def perturbation_solution(self):
+        """
+        Returns perturbation solution around the steady-state
+        Result is [X,Y,Z] representing :
+        s_t = X s_{t-1} + Y e_t
+        x_t = Z s_t
+        """
+
+        model = self.model
+        data = self.read_model()
+        
+        controls_i = [model.variables.index(v) for v in data['controls'] ]
+        states_i = [model.variables.index(v) for v in data['states_vars'] ]
+
+        from dolo.numeric.perturbations import solve_decision_rule
+        dr = solve_decision_rule(model)
+
+
+        A = dr.ghx[states_i,:]
+        B = dr.ghx[controls_i,:]
+
+        [Z,err,rank,junk] = np.linalg.lstsq(A.T,B.T)
+        Z = Z.T
+
+        X = A[:,states_i] + np.dot( A[:,controls_i], Z )
+        Y = dr.ghu[states_i,:]
+
+        # We also compute bounds for distribution at a given probability interval
+
+        M = np.linalg.solve( 1-X, Y)
+
+        Sigma = np.array(model.covariances).astype(np.float64)
+        [V,P] = np.linalg.eigh(Sigma)
+        # we have Sigma == P * diag(V) * P.T
+        # unconditional distribution is ( P*diag(V) ) * N
+        # where N is the normal distribution associated
+        H = np.dot(Y,np.dot(P,np.diag(V)))
+        n_s = Sigma.shape[0]
+        I = np.eye(n_s)
+        points = np.concatenate([H,-H],axis=1)
+        lam = 2 # this coefficient should be more cleverly defined
+        p_infs = np.min(points,axis = 1) * lam
+        p_max  = np.max(points,axis = 1) * lam
+
+        # steady_state values
+        s_ss = dr.ys[states_i,]
+        x_ss = dr.ys[controls_i,]
+
+        bounds = np.row_stack([
+            s_ss + p_infs,
+            s_ss + p_max
+        ])
+        return [[s_ss,x_ss],[X,Y,Z],bounds]
+
 
 
     def process_output_python(self):
