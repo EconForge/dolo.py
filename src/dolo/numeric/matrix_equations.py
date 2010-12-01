@@ -90,7 +90,10 @@ def solve_sylvester(A,B,C,D,Ainv = None):
         
     n_d = D.ndim - 1
     n_v = C.shape[1]
-    CC = np.kron(C,C)
+    if n_d == 1:
+        CC = C
+    else:
+        CC = np.kron(C,C)
     for i in range(n_d-2):
         CC = np.kron(CC,C)
 
