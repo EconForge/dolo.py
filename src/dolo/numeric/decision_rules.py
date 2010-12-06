@@ -100,29 +100,49 @@ class DynareDecisionRule(TaylorExpansion):
 
     @property
     @memoized
+    def ghxxx(self):
+        ghxxx = self['g_aaa'][self.dr_var_order_i,...]
+        ghxxx = ghxxx[:,self.dr_states_i,:,:]
+        ghxxx = ghxxx[:,:,self.dr_states_i,:]
+        ghxxx = ghxxx[:,:,:,self.dr_states_i]
+        return ghxxx
+
+    @property
+    @memoized
+    def ghxxu(self):
+        ghxxu = self['g_aae'][self.dr_var_order_i,...]
+        ghxxu = ghxxu[:,self.dr_states_i,:,:]
+        ghxxu = ghxxu[:,:,self.dr_states_i,:]
+        return ghxxu
+
+    @property
+    @memoized
+    def ghxuu(self):
+        ghxuu = self['g_aee'][self.dr_var_order_i,...]
+        ghxuu = ghxuu[:,self.dr_states_i,:,:]
+        return ghxuu
+
+    @property
+    @memoized
+    def ghuuu(self):
+        ghuuu = self['g_eee'][self.dr_var_order_i,...]
+        return ghuuu
+
+    @property
+    @memoized
     def g_3(self):
         n_v = self['g_a'].shape[0]
         n_s = len(self.dr_states_order)
         n_e = self['g_e'].shape[1]
 
-        ghxxx = self['g_aaa'][self.dr_var_order_i,...]
-        ghxxx = ghxxx[:,self.dr_states_i,:,:]
-        ghxxx = ghxxx[:,:,self.dr_states_i,:]
-        ghxxx = ghxxx[:,:,:,self.dr_states_i]
-
-        ghxxu = self['g_aae'][self.dr_var_order_i,...]
-        ghxxu = ghxxu[:,self.dr_states_i,:,:]
-        ghxxu = ghxxu[:,:,self.dr_states_i,:]
+        ghxxx = self.ghxxx
+        ghxxu = self.ghxxu
+        ghxuu = self.ghxuu
+        ghuuu = self.ghuuu
         
-        ghxuu = self['g_aee'][self.dr_var_order_i,...]
-        ghxuu = ghxuu[:,self.dr_states_i,:,:]
-
-        ghuuu = self['g_eee'][self.dr_var_order_i,...]
-
         g_3 = np.zeros( (n_v,n_s+n_e,n_s+n_e,n_s+n_e))
 
         g_3[:,:n_s,:n_s,:n_s] = ghxxx
-        g_3[:,n_s:,n_s:,n_s:] = ghuuu
 
         g_3[:,:n_s,:n_s,n_s:] = ghxxu
         g_3[:,:n_s,n_s:,:n_s] = ghxxu.swapaxes(2,3)
@@ -132,6 +152,7 @@ class DynareDecisionRule(TaylorExpansion):
         g_3[:, n_s:, :n_s, n_s:] = ghxuu.swapaxes(1,2)
         g_3[:, n_s:, n_s:, :n_s] = ghxuu.swapaxes(1,3)
 
+        g_3[:,n_s:,n_s:,n_s:] = ghuuu
 
         return fold( g_3 ) / 2 / 3
 
