@@ -1,3 +1,5 @@
+from __future__ import division
+
 from dolo.compiler.compiler import *
 from dolo.misc.decorators import memoized
 from dolo.symbolic.derivatives import *
@@ -114,7 +116,6 @@ class PythonCompiler(Compiler):
             DerivativesTree.symbol_type = TSymbol
 
 
-
         model = self.model
 
         if compact_order:
@@ -139,7 +140,7 @@ class PythonCompiler(Compiler):
 
         self.dynamic_derivatives = sols
 
-        dyn_subs_dict = self.dynamic_substitution_list(ind_0=0,brackets = True,compact=compact_order)
+        dyn_subs_dict = self.dynamic_substitution_list(brackets = True,compact=compact_order)
         dyn_printer = DicPrinter(dyn_subs_dict)
 
         txt = """def dynamic_gaps(y, x, params):
@@ -202,7 +203,7 @@ class PythonCompiler(Compiler):
                 for nd in l:
                      # here we compute indices where we write the derivatives
                     indices = nd.compute_index_set(var_order)
-                    rhs = dyn_printer.doprint_matlab(nd.expr)
+                    rhs = dyn_printer.doprint_numpy(nd.expr)
                     i0 = indices[0]
                     i_col_s = ','.join([str(nn) for nn in i0])
                     indices.remove(i0)
