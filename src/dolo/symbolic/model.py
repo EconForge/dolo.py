@@ -348,7 +348,6 @@ class Model:
         purely_backward_vars = [v for v in self.variables if (v(1) not in dvo) and (v(-1) in dvo)]
         purely_forward_vars = [v for v in self.variables if (v(-1) not in dvo) and (v(1) in dvo)]
         static_vars =  [v for v in self.variables if (v(-1) not in dvo) and (v(1) not in dvo) ]
-        print static_vars
         mixed_vars = [v for v in self.variables if not v in purely_backward_vars+purely_forward_vars+static_vars ]
         dr_order = static_vars + purely_backward_vars + mixed_vars + purely_forward_vars
         return dr_order
