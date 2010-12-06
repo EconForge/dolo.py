@@ -14,7 +14,7 @@ class Compiler:
         self._static_substitution_list = None
         self.covariances = self.model.covariances
 
-    def dynamic_substitution_list(self,ind_0=1,brackets=False,compact=True):
+    def dynamic_substitution_list(self,brackets=False,compact=True):
         # Returns a dictionary mapping each symbol appearing in the model
         # to the string used in the dynamic file
 
@@ -25,6 +25,10 @@ class Compiler:
         else:
             dyn_order = self.model.dyn_var_order
 
+        if brackets:
+            ind_0 = 0
+        else:
+            ind_0 = 1
         if not brackets:
             subs_dict = dict()
             for i,v in enumerate(dyn_order):
