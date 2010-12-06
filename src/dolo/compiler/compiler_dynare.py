@@ -213,7 +213,7 @@ M_.exo_det_length = 0; % parrot
         model = self.model
         #init_state = self.get_init_dict()
 
-        default = {'steady':False,'check':False,'dest':'dynare','order':1}#default options
+        default = {'steady':False,'check':False,'dest':'dynare','order':1,'use_dll':False}#default options
         for o in default:
             if not o in options:
                 options[o] = default[o]
@@ -248,7 +248,10 @@ M_.exo_det_length = 0; % parrot
 
         printer = CustomPrinter()
         model_block = []
-        model_block.append( "model;" )
+        if options['use_dll']:
+            model_block.append( "model(use_dll);" )
+        else:
+            model_block.append( "model;" )
         for eq in self.model.equations:
             s = printer.doprint(eq)
             s = s.replace("==","=")
