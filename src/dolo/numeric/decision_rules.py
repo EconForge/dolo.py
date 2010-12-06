@@ -154,8 +154,13 @@ class DynareDecisionRule(TaylorExpansion):
 
         g_3[:,n_s:,n_s:,n_s:] = ghuuu
 
+        g_3 = symmetrize(g_3)
+
         return fold( g_3 ) / 2 / 3
 
+
+def symmetrize(tens):
+    return (tens + tens.swapaxes(3,2) + tens.swapaxes(1,2) + tens.swapaxes(1,2).swapaxes(2,3) + tens.swapaxes(1,3) + tens.swapaxes(1,3).swapaxes(2,3) )/6
 
 def fold(tens):
     from itertools import product
@@ -178,7 +183,6 @@ def fold(tens):
         assert( tens.shape[3] == q)
 
         non_decreasing_tuples = [ (i,j,k) for (i,j,k) in product(range(q),range(q),range(q)) if i<=j<=k ]
-        print non_decreasing_tuples
         result = np.zeros( (n,len(non_decreasing_tuples) ) )
         for l,(i,j,k) in enumerate(non_decreasing_tuples):
             result[:,l] = tens[:,i,j,k]
