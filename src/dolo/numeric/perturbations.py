@@ -1,6 +1,8 @@
 from dolo.compiler.compiler_python import PythonCompiler
 from dolo.numeric.matrix_equations import second_order_solver, solve_sylvester
 from dolo.numeric.tensor import sdot,mdot
+from dolo.numeric.decision_rules import DynareDecisionRule as DDR
+
 
 import numpy as np
 
@@ -34,8 +36,11 @@ def solve_decision_rule(model,order=2,method='default'):
         raise Exception("Initial values don't satisfy static equations")
 
     if (method == 'sigma2'):
-        [f_0,f_1,f_2] = derivatives
-
+        if order == 2:
+            [f_0,f_1,f_2] = derivatives
+        elif order == 3:
+            [f_0,f_1,f_2,f_3] = derivatives
+            
         n_s = len(model.shocks)
         n_v = len(model.variables)
         nt = n_v*3 +n_s
@@ -52,10 +57,16 @@ def solve_decision_rule(model,order=2,method='default'):
         f1_C = f_1[:,(2*n_v):(3*n_v)]
         f1_D = f_1[:,(3*n_v):(3*n_v+n_s)]
         f1_E = f_1[:,(3*n_v+n_s):(3*n_v+n_s+1)]
+
         derivatives = [f_0,ft_1,ft_2]
 
+        if order == 3:
+            h_3 = f_3[:,:nn,:nn,:nn]
+            ft_3 = f_3[:,:nt,:nt,:nt]
+            derivatives.append(ft_3)
+
     if method in ('sigma2','default'):
-        resp = perturb_solver(derivatives, Sigma, max_order=order)
+        d = perturb_solver(derivatives, Sigma, max_order=order)
         
     elif method == 'full':
         n_s = len(model.shocks)
@@ -65,16 +76,17 @@ def solve_decision_rule(model,order=2,method='default'):
         return resp
 
 
-    if order == 1:
-        # FIXME
-        return resp
-    elif order == 2:
-        ev = resp[0]
-        arg = resp[1:-1]
-        correc_s = resp[-1]
-        dr = DDR([y]+arg,correc_s)
-        if method == 'sigma2':
-            [ev,[g_a,g_e], [g_aa,g_ae,g_ee],correc_s] = resp
+    ddr = DDR( d , model )
+
+    if method == 'sigma2':
+
+        if order >= 2:
+
+            g_a = d['g_a']
+            g_e = d['g_e']
+            g_aa = d['g_aa']
+            g_ae = d['g_ae']
+            g_ee = d['g_ee']
             I = np.eye(n_v,n_v)
             A_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
             V_s = np.zeros( (n_v*3+n_s+1,))
@@ -82,11 +94,9 @@ def solve_decision_rule(model,order=2,method='default'):
             K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
             rhs = np.tensordot( K_ss,Sigma) + mdot(h_2,[V_s,V_s])
             sigma2 = sdot(A_inv,-rhs) / 2
-            dr.sigma2 = sigma2
-        return dr
-    elif order == 3:
-        return [y] + resp
+            ddr.sigma2 = sigma2
 
+        return ddr
     
 def compute_steadystate_values(model):
     from dolo.misc.calculus import solve_triangular_system
@@ -146,7 +156,8 @@ def perturb_solver(derivatives, Sigma, max_order=2):
     g_u = - np.linalg.solve( mm , f1_D )
 
     if max_order == 1:
-        return [ev,[g_x,g_u]]
+        d = {'ev':ev, 'g_a': g_x, 'g_e': g_u}
+        return d
 
     # we need it for higher order
     V_a = np.concatenate( [np.dot(g_x,g_x),g_x,np.eye(n_v),np.zeros((s,n))] )
@@ -231,8 +242,18 @@ def perturb_solver(derivatives, Sigma, max_order=2):
     rhs =  - np.tensordot( K_ss, Sigma, axes=((1,2),(0,1)) ) #- mdot(h_2,[V_s,V_s])
     g_ss = sdot(M_inv,rhs)
     ghs2 = g_ss/2
+
     if max_order == 2:
-        return [ev,[g_a,g_e],[g_aa,g_ae,g_ee], ghs2]
+        d = {
+            'ev': ev,
+            'g_a': g_a,
+            'g_e': g_e,
+            'g_aa': g_aa,
+            'g_ae': g_ae,
+            'g_ee': g_ee,
+            'g_ss': g_ss
+        }
+        return d
     # /manual
 
     #----------Computing order 3
@@ -317,6 +338,7 @@ def perturb_solver(derivatives, Sigma, max_order=2):
     ####################################
 
     # ( a s s )
+
     A = f_a + sdot(f_d,g_a)    
     I_e = np.eye(n_e)
 
@@ -345,8 +367,45 @@ def perturb_solver(derivatives, Sigma, max_order=2):
 
     g_ass = solve_sylvester( A, B, C, D)
 
+
+    # ( e s s )
+
+    A = f_a + sdot(f_d,g_a)
+    A_inv = np.linalg.inv(A)
+    I_e = np.eye(n_e)
+
+    Y = g_e
+    Z = np.zeros((n_a,n_e))
+    V_s = build_V(Y,Z,(n_a,n_e))
+
+    Y = mdot( g_ae, [g_e, I_e] )
+    Z = np.zeros((n_a,n_e,n_e))
+    V_es = build_V(Y,Z,(n_a,n_e))
+
+    Y = sdot(g_a,g_ss) + g_ss + np.tensordot(g_ee,Sigma)
+    Z = g_ss
+    V_ss = build_V(Y,Z,(n_a,n_e))
+
+    K_ess_1 =  2*mdot(f_2,[V_es,V_s] ) + mdot(f_3,[V_e,V_s,V_s])
+    K_ess_1 = np.tensordot(K_ess_1,Sigma)
+
+    K_ess_2 = mdot( f_2, [V_e,V_ss] )
+
+    K_ess = K_ess_1 + K_ess_2
+
+    L_ess = mdot( g_aa, [g_e, g_ss]) + np.tensordot( mdot(g_aee,[g_e, I_e, I_e]), Sigma)
+    L_ess += mdot( g_ass, [g_e])
+
+    D = K_ess + sdot(f_d,L_ess)
+
+    g_ess = sdot( A_inv, -D)
+
+
+
     if max_order == 3:
-        return  [ev,[g_a,g_e],[g_aa,g_ae,g_ee],[g_aaa,g_aae,g_aee,g_eee], g_ss, [g_ass] ]
+        d = {'ev':ev,'g_a':g_a,'g_e':g_e, 'g_aa':g_aa, 'g_ae':g_ae, 'g_ee':g_ee,
+    'g_aaa':g_aaa, 'g_aae':g_aae, 'g_aee':g_aee, 'g_eee':g_eee, 'g_ss':g_ss, 'g_ass':g_ass,'g_ess':g_ess}
+        return  d
 
 
         
