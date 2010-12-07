@@ -63,19 +63,24 @@ class  FormalCalculusTestCase(unittest.TestCase):
         p = Parameter('p')
         assert( isinstance(p,Parameter) )
         assert( isinstance(p,Symbol))
+        print p.__latex__()
         assert( p.__latex__() == 'p')
         # greek letters are translated by sympy
         beta = Parameter('beta')
         delta = Parameter('delta')
         assert( beta.__latex__() == "\\beta")
-        assert( delta.__latex__() == "d")
+        assert( delta.__latex__() == "\\delta")
+
+    def test_variables_printing(self):
+        v = Variable('v',0)
+        vv = v(1)
+        assert( str(vv) == 'v(1)' )
+        assert( str(vv**2) == 'v(1)**2')
 
     def test_derivatives(self):
         x = TSymbol('x',0)
         xx = x(+1)
         eq = x + xx
-        print eq.diff(x)
-        print(x == xx)
         assert(eq.diff(x)==1)
 #    def test_tvariable(self):
 #        t = TSymbol('t')
@@ -93,4 +98,3 @@ class  FormalCalculusTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

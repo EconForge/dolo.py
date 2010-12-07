@@ -48,7 +48,9 @@ class Parameter(sympy.Symbol):
         exponents = [greekify(r) for r in exponents]
         up =  '{' + str.join(',', exponents) + '}'
         down =  '{' + str.join(',', indices) + '}'
-        return '{0}_{1}^{2}'.format(rad,down,up)
+        sup = '^{0}'.format(up) if up != '{}'  else ''
+        sdown = '^{0}'.format(down) if down != '{}' else ''
+        return '{0}{1}{2}'.format(rad,sdown,sup)
 
 class TSymbol(sympy.Symbol):
 
