@@ -33,6 +33,7 @@ def solve_decision_rule(model,order=2,method='default'):
 
     res = derivatives[0]
     if abs(res).max() > TOL:
+        print res        
         raise Exception("Initial values don't satisfy static equations")
 
     if (method == 'sigma2'):
@@ -72,8 +73,8 @@ def solve_decision_rule(model,order=2,method='default'):
         n_s = len(model.shocks)
         n_v = len(model.variables)
         n_p = len(model.parameters)        
-        resp = new_solver_with_p(derivatives,(n_v,n_s,n_p),max_order=order)
-        return resp
+        d = new_solver_with_p(derivatives,(n_v,n_s,n_p),max_order=order)
+        return d
 
 
     ddr = DDR( d , model )
@@ -96,7 +97,7 @@ def solve_decision_rule(model,order=2,method='default'):
             sigma2 = sdot(A_inv,-rhs) / 2
             ddr.sigma2 = sigma2
 
-        return ddr
+    return ddr
     
 def compute_steadystate_values(model):
     from dolo.misc.calculus import solve_triangular_system
@@ -440,8 +441,15 @@ def new_solver_with_p(derivatives, sizes, max_order=2):
     g_u = - np.linalg.solve( mm , f1_D )
     g_p = - np.linalg.solve( mm , f1_E )
 
+    d = {
+        'ev':ev,
+        'g_a':g_x,
+        'g_e':g_u,
+        'g_p':g_p
+    }
+
     if max_order == 1:
-        return [g_x,g_u,g_p]
+        return d
     
     # we need it for higher order
 
@@ -562,10 +570,18 @@ def new_solver_with_p(derivatives, sizes, max_order=2):
         Y = L_pp + mdot(g_a,[g_pp])
         Z = g_pp
         V_pp = build_V(Y,Z,(n_a,n_e,n_p))
-        
+
+
+    d.update({
+        'g_aa':g_aa,
+        'g_ae':g_ae,
+        'g_ee':g_ee,
+        'g_ap':g_ap,
+        'g_ep':g_ep,
+        'g_pp':g_pp
+     })
     if max_order == 2:
-        der_p = [g_p, [g_ap,g_ep], g_pp]
-        return [[g_a,g_e], [g_aa,g_ae,g_ee],der_p]
+        return d
     
     #----------Computing order 3
     
@@ -715,10 +731,23 @@ def new_solver_with_p(derivatives, sizes, max_order=2):
         Y = L_ppp + mdot(g_a,[g_ppp])
         Z = g_ppp
         V_ppp = build_V(Y,Z,(n_a,n_e,n_p))
-        
-    der_p = [g_p, [g_ap,g_ep], [g_aap,g_aep,g_eep], g_pp, [g_app,g_epp], g_ppp]
 
-    return [ [g_a,g_e], [g_aa,g_ae,g_ee], [g_aaa,g_aae,g_aee,g_eee], der_p]
+
+    d.update({
+        'g_aaa':g_aaa,
+        'g_aae':g_aae,
+        'g_aee':g_aee,
+        'g_eee':g_eee,
+        'g_aap':g_aap,
+        'g_aep':g_aep,
+        'g_eep':g_eep,
+        'g_app':g_app,
+        'g_epp':g_epp,
+        'g_ppp':g_ppp
+    })
+    
+    return d
+
     
 def build_V(X,Y,others):
 
