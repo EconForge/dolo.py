@@ -309,52 +309,30 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
 
 
     resp = dict()
-    resp['variables'] = variables
-    resp['parameters'] = parameters
-    resp['shocks'] = shocks
+    resp['variables_ordering'] = variables
+    resp['parameters_ordering'] = parameters
+    resp['shocks_ordering'] = shocks
     resp['equations'] = equations
     resp['parameters_values'] = parameters_values
     resp['init_values'] = init_values
     resp['covariances'] = covariances
 
-    # Now, let create the objects and inject them into the workspace
-#    frame = inspect.currentframe().f_back
-#    frame.f_globals['variables'] = variables
-#    exovariables = []
-#    frame.f_globals['exovariables'] = exovariables
-#    frame.f_globals['parameters'] = parameters
-#    frame.f_globals['shocks'] = shocks
-#    frame.f_globals['equations'] = equations
-#    frame.f_globals['parameters_values'] = parameters_values
-#    frame.f_globals['init_values'] = init_values
-#    frame.f_globals['covariances'] = covariances
-    
-    # add variables to workspace
-#    for v in (variables+shocks+parameters):
-#        frame.f_globals[v.name] = v
-    
 #
     if add_model:
         if model_tags.has_key('fname'):
             fname = model_tags['fname']
         elif not fname:
             fname = "anonymous"
-        model = DynareModel(fname,equations,lookup=False)
-        model.tags = model_tags
+        #model = DynareModel(fname,equations,lookup=False)
+        #model.tags = model_tags
         #model.variables = variables
         #model.shocks = shocks
         #model.parameters = parameters
 
-        model.parameters_ordering = parameters
-        model.variables_ordering = variables
-        model.shocks_ordering = shocks
-        model.equations = equations
-        model.parameters_values = parameters_values
-        model.init_values = init_values
-        model.covariances = covariances
+        model = Model(**resp)
         
-        resp['model'] = model
-        model.check(verbose = True)
+#        resp['model'] = model
+#        model.check(verbose = True)
 
     if full_output == True:
         return resp

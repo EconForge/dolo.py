@@ -1,74 +1,72 @@
-# -*- coding: utf-8 -*-
-from dolo.symbolic.symbolic import * # TODO : change name of symbolic module
+import sympy
+from dolo.symbolic.symbolic import Equation,Variable,Shock,Parameter
 
-import copy
-import inspect
-from sympy import Matrix
+class Model(dict):
 
 
-class Model:
-    #commands = None # keep some instructions to treat the model, not sure how to do it
-    def __init__(self, fname, equations=[], lookup=False):
-        self.fname = fname
-        self.variables = []
-        #self.exovariables = []
-        self.shocks = []
-        self.parameters = []
-        self.equations = []
-        self.controls = []
-        self.init_values = dict()
-        self.parameters_values = dict()
-        self.covariances = Matrix()
-        self.variables_order = dict()
-        self.variables_ordering = []
-        self.parameters_ordering = []
-        self.shocks_ordering = []
-        self.equations = equations
-        self.tags = {}
-        self.model = self # seems strange ! (for compatibility reasons)
-        self.__compiler__ = False
-        return(None)
-    
-    def __lookup__(self):
-        """This function uses the context where Model() object has been created
-        in order to initialize some member variables.
-        """
-        #initializer
-        frame = inspect.currentframe().f_back.f_back
-        try:
-            #self.equations = frame.f_globals["equations"]
-            self.variables_ordering = frame.f_globals["variables_order"]
-            self.parameters_ordering = frame.f_globals["parameters_order"]
-            self.shocks_ordering = frame.f_globals["shocks_order"]
-        except:
-            raise Exception(
-"Dynare model : variables_order, shocks_order, or parameters_order have not been defined"
-            )
-        finally:
-            del frame
-            
-    def copy(self):
-        c = Model(self.fname)
-        c.variables = copy.copy(self.variables)
-        #c.exovariables = copy.copy(self.exovariables)
-        c.covariances = copy.copy(self.covariances)
-        c.shocks = copy.copy(self.shocks)
-        c.parameters = copy.copy(self.parameters)
-        c.equations = copy.copy(self.equations)
-        c.init_values = copy.copy(self.init_values)
-        c.parameters_values = copy.copy(self.parameters_values)
-        c.tags = copy.copy(self.tags)
-        c.variables_ordering = self.variables_ordering
-        c.parameters_ordering = self.parameters_ordering
-        c.shocks_ordering = self.shocks_ordering
-        return(c)
+    def __init__(self,*kargs,**kwargs):
+        super(Model,self).__init__(self,*kargs,**kwargs)
+        self.check()
+        self.check_consistency()
+        self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan]
+        self.__compiler__ = None
 
+    def check(self):
 
-    def tag(self,h):
-        self.tags.update(h)
-        return(self)
-    
-    def check_all(self,verbose=True):
+        defaults = {
+            'name': 'anonymous',
+            'init_values': {},
+            'parameters_values': {},
+            'covariances': sympy.Matrix(),
+            'variables_ordering': [],
+            'parameters_ordering': [],
+            'shocks_ordering': []
+        }
+
+        for k in defaults:
+            if k not in self:
+                self[k] = defaults[k]
+
+        if not self.get('equations'):
+            raise Exception('No equations specified')
+
+        for n,eq in enumerate(self['equations']):
+            if not isinstance(eq,Equation):
+                self['equations'][n] = Equation(eq,0)
+
+    @property
+    def equations(self):
+        return self['equations']
+
+    @property
+    def covariances(self):
+        return self['covariances'] # should get rid of this
+
+    @property
+    def parameters_values(self):
+        return self['parameters_values'] # should get rid of this
+
+    @property
+    def init_values(self):
+        return self['init_values'] # should get rid of this
+
+    @property
+    def compiler(self):
+        if not(self.__compiler__):
+            from dolo.compiler.compiler_python import PythonCompiler
+            self.__compiler__ = PythonCompiler(self)
+        return self.__compiler__
+
+    def reorder(self, vars, variables_order):
+        arg = list(vars)
+        res = [v for v in variables_order if v in arg]
+        t =  [v for v in arg if v not in variables_order]
+        t.sort()
+        res.extend( t )
+        return res
+
+    def check_consistency(self,verbose=True):
+
         print_info = verbose
         print_eq_info = verbose
 
@@ -88,240 +86,32 @@ class Model:
         tv = [v.P for v in all_dyn_vars]
         ts = [s.P for s in all_dyn_shocks]
         tp = [p for p in all_parameters]
-#        for i in range(len(self.equations)):
-#            self.equations[i].infos['n'] = i+1
-#            self.set_info(self.equations[i])
-#        info = {}
-#        if print_eq_info:
-#            for eq in self.equations:
-#                print("Eq (" + str(eq.n) +") : " + str(eq.info) )
-#        def multiunion(list_of_sets):
-#            res = set([])
-#            for s in list_of_sets:
-#                res = res.union(s)
-#            return res
-#
-#        tv = list( multiunion( [ eq.info['vars'] for eq in self.equations ] ) )
-#        ts = list( multiunion( [ eq.info['shocks'] for eq in self.equations ] ) )
-#        tp = list( multiunion( [ eq.info['params'] for eq in self.equations ] ) )
+        [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
-        self.variables = self.reorder(tv,self.variables_ordering)
-        self.shocks = self.reorder(ts,self.shocks_ordering)
-        self.parameters = self.reorder(tp,self.parameters_ordering)
+        self.variables = self.reorder(tv,self['variables_ordering'])
+        self.shocks = self.reorder(ts,self['shocks_ordering'])
+        self.parameters = self.reorder(tp,self['parameters_ordering'])
 
         info = {
                 "n_variables" : len(self.variables),
-                "n_variables" : len(self.variables),
+                "n_parameters" : len(self.parameters),
                 "n_shocks" : len(self.shocks),
                 "n_equations" : len(self.equations)
         }
         self.info = info
         if verbose:
-            print("Model check : " + self.fname)
+            print("Model check : " + self['name'])
             for k in info:
                 print("\t"+k+"\t\t"+str(info[k]))
 
-    def check(self,model_type="dynare",verbose=False):
-        '''
-        Runs a series of assertion to verify model compliance to uhlig/dynare conventions.
-        '''
-        if model_type == "uhlig":
-            self.check_type_uhlig(verbose)
-        elif model_type == "dynare":
-            self.check_type_dynare(verbose)
-
-    def check_type_dynare(self,verbose=False):
-        self.check_all(verbose=verbose) #compute all informations
-        return None
-
-    def check_type_uhlig(self,verbose=False):
-        self.check_all(verbose=verbose) #compute all informations
-        try: assert(self.info['n_equations'] == self.info['n_variables'])
-        except:
-            raise Exception("Number of equations must equal number of variables and exovariables")
-        # First we look for exogenous equations
-        exo_eqs = [eq for eq in self.equations if eq.info.get('all_shocks')]
-        exo_vars = set()
-        for eq in exo_eqs:
-            exo_v = eq.lhs
-            try: assert( isinstance(exo_v,Variable) and (exo_v.lag == 0) and (exo_v in self.variables) )
-            except: raise Exception('Exogenous equations left hand-side must contain only one variable at date t+1')
-            exo_vars.add(exo_v)
-        for eq in exo_eqs:
-            eq.info['exogenous'] = 'true'
-            vs = [ a for a in eq.rhs.atoms() if isinstance(a,Variable) ]
-            rhs_shocks = [ v for v in vs if v in self.shocks ]
-            rhs_vars = [ v for v in vs if v in self.variables ]
-            shocks_lags = set([ s.lag for s in rhs_shocks ])
-            try: assert( shocks_lags == set([0]))
-            except:
-                raise Exception('In exogenous equations, shocks should appear on the right hand side with lag 0 and coefficient 1.')
-            # TODO : add the condition that coefficient must be equal to 1
-            vars_lags = set([ v.lag for v in rhs_vars ])
-            try: assert( vars_lags.issubset( set([-1])) )
-            except:
-                raise Exception('In exogenous equations, variables should appear on the right hand side with lag -1.')
-            rhs_vars_c = set([ v.P for v in rhs_vars ])
-            try: assert( rhs_vars_c.issubset( exo_vars ) )
-            except:
-                raise Exception("One variable has been found in an exogenous equation that doesn't seem to be exogenous")
-    
-    def set_info(self,eq):
-        '''
-        Computes all informations concerning one equation (leads , lags, ...)
-        '''
-        info = {}
-        vars = set([])
-        shocks = set([])
-        params = set([])
-        all_vars = set([]) # will contain all variables
-        all_shocks = set([])
-        for a in eq.atoms():
-            if isinstance(a,Variable): # unnecessary
-                vars.add(a.P)
-                all_vars.add(a)
-            elif isinstance(a,Shock):
-                shocks.add(a.P)
-                all_shocks.add(a)
-            elif isinstance(a,Parameter):
-                params.add(a)
-        lags = [v.lag for v in all_vars]
-        if len(lags) == 0:
-            # this equations doesn't contain any variable
-            info['constant'] = True
-            eq.info = info
-            return None
-        else:
-            info['constant'] = False
-            # These information don't depend on the system of equations
-            info['max_lag'] = max(lags)
-            info['min_lag'] = min(lags)
-            info['expected'] = (max(lags) > 0)
-            # These information depend on the model
-            #info['exogenous'] =set(all_vars_c).issubset(set(self.exovariables).union(self.shocks)) # & max(lags)<=0
-        info['vars'] = vars
-        info['all_vars'] = all_vars
-        info['shocks'] = shocks
-        info['all_shocks'] = all_shocks
-        info['params'] = params
-        eq.info = info
-        
-    def incidence_matrix_static(self):
-        n = len(self.equations)
-        mat = Matrix().zeros((n,n))
-        for i in range(n):
-            eq = self.equations[i]
-            left_vars = set([v.P for v in eq.lhs.atoms() if isinstance(v,Variable)])
-            right_vars = set([v.P for v in eq.rhs.atoms() if isinstance(v,Variable)])
-            all_vars = left_vars.union(right_vars)
-            for v in all_vars:
-                j = self.variables.index(v)
-                if v in left_vars and v in right_vars:
-                    mat[i,j] = 2
-                elif v in left_vars:
-                    mat[i,j] = -1
-                elif v in right_vars:
-                    mat[i,j] = 1
-        return( mat )
-            
-
-    def order_parameters_values(self):
-        from dolo.misc.calculus import solve_triangular_system
-        itp = dict()
-        itp.update(self.parameters_values)
-        porder = solve_triangular_system(itp,return_order=True)
-        return porder
-
-    def order_init_values(self):
-        from dolo.misc.calculus import solve_triangular_system
-        #[itp,porder] = self.solve_parameters_values
-        itd = dict()
-        itd.update(self.init_values)
-        vorder = solve_triangular_system(itd,unknown_type=Variable,return_order=True)
-        # should we include shocks initialization or not ?
-        return vorder
-
-        
-        #itd.update(model.init_values)
-
     def eval_string(self,string):
         # rather generic method (should be defined for any model with dictionary updated accordingly
-        special_symbols = [sympy.exp,sympy.log,sympy.sin]
         context = dict()
-        for v in self.variables_ordering + self.parameters_ordering + self.shocks_ordering:
+        for v in self['variables_ordering'] + self['parameters_ordering'] + self['shocks_ordering']:
             context[v.name] = v
-        for s in special_symbols:
+        for s in self.__special_symbols__:
             context[str(s)] = s
         return sympy.sympify( eval(string,context) )
-
-    def reorder(self, vars, variables_order):
-        arg = list(vars)
-        res = [v for v in variables_order if v in vars]
-#        arg = list(vars)
-#        res = []
-#        for v in variables_order:
-#            if isinstance(v,IndexedSymbol):
-#                name = v.basename
-#                l = []
-#                for h in vars:
-#                    if h in arg and name == h.father:
-#                        l.append(h)
-#                        arg.remove(h)
-#                l.sort()
-#                res.extend(l)
-#            else:
-#                name = v.name
-#                for h in vars:
-#                    if h in arg and h == v:
-#                        res.append(h)
-#                        arg.remove(h)
-#        for h in arg:
-#            res.append(h)
-        return res
-
-    def dss_equations(self):
-        # returns all equations at the steady state
-        from dolo.misc.calculus import map_function_to_expression
-        c_eqs = []
-        def f(x):
-            if x in self.shocks:
-                return(0)
-            elif x.__class__ == Variable:
-                return(x.P)
-            else:
-                return(x)
-        for eq in self.equations:
-            n_eq = map_function_to_expression(f,eq)
-            #n_ecurrent_equationsq.is_endogenous = eq.is_endogenous
-            c_eqs.append(n_eq)
-        return(c_eqs)
-    
-    def future_variables(self):
-        '''
-        returns [f_vars, f_eq, f_eq_n]
-        f_vars : list of variables with lag > 1
-        f_eq : list of equations containing future variables
-        f_eq_n : list of indices of equations containing future variables
-        '''
-        # this could be simplified dramatically
-        f_eq_n = [] # indices of future equations
-        f_eq = [] # future equations (same order)
-        f_vars = set([]) # future variables
-        for i in range(len(self.equations)):
-            eq = self.equations[i]
-            all_atoms = eq.atoms()
-            f_var = []
-            for a in all_atoms:
-                if (a.__class__ == Variable) and (a(-a.lag) in self.variables):
-                    if a.lag > 0:
-                        f_var.append(a)
-            if len(f_var)>0:
-                f_eq_n.append(i)
-                f_eq.append(eq)
-                f_vars = f_vars.union(f_var)
-        f_vars = list(f_vars)
-        return([f_vars,f_eq,f_eq_n])
-
 
     @property
     def dyn_var_order(self):
@@ -356,51 +146,14 @@ class Model:
     def state_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
-    def introduce_auxiliary_variables(self):
-        print 'Introduce auxiliary variables'
-        all_dv = []
-        for eq in self.equations:
-            all_dv.extend( [v for v in eq.atoms() if isinstance(v,Variable) and abs(v.date)>1] )
-        all_dv = set(all_dv)
-        nav = set([v.P for v in all_dv])
 
-        aux_eq = []
 
-        for v in nav:
-            subs_dict = {}
+if __name__ == '__main__':
 
-            dates = [s.date for s in all_dv if s.P == v]
-            max_lag = -min(min(dates),0)
-            max_lead = max(max(dates),0)
-            if max_lead>1:
-                rhs = v
-                for i in range(1,max_lead+1):
-                    nv = Variable('E'+str(i)+'__'+str(v),0)
-                    eq = Equation(nv,rhs(1))
-                    aux_eq.append(eq)
-                    rhs = nv
-                    subs_dict[v(i+1)] = nv(+1)
-            if max_lag>1:
-                rhs = v
-                for i in range(1,max_lag+1):
-                    nv = Variable('P'+str(i)+'__'+str(v),0)
-                    eq = Equation(nv,rhs(-1))
-                    aux_eq.append(eq)
-                    rhs = nv
-                    subs_dict[v(-(i+1))] = nv(-1)
-            for eq in self.equations:
-                eq = eq.subs(subs_dict)
-                
-        self.equations.extend(aux_eq)
-        print 'done'
+    from dolo.symbolic.symbolic import Variable,Equation
 
-    @property
-    def compiler(self):
-        if not(self.__compiler__):
-            from dolo.compiler.compiler_python import PythonCompiler
-            self.__compiler__ = PythonCompiler(self)
-        return self.__compiler__
+    v = Variable('v',0)
 
-# for compatibility purposes
-UhligModel = Model
-DynareModel = Model
+    eq = Equation( v**2, v(1) - v(-1))
+
+    d = Model(equations=[eq])
