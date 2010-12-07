@@ -80,8 +80,24 @@ class DynareDecisionRule(TaylorExpansion):
 
     @property
     @memoized
+    def ghs2(self):
+        return self.get('g_ss')/2
+
+
+    @property
+    @memoized
     def g_1(self):
-        return np.column_stack([self.ghx,self.ghu])
+        
+        g_1x = self.ghx
+        g_1u = self.ghu
+
+        if 'g_ass' in self:
+            correc_x_ss =  self['g_ass'][self.dr_var_order_i,:][:,self.dr_states_i]/2
+            correc_u_ss =  self['g_ess'][self.dr_var_order_i,:]/2
+            g_1x += correc_x_ss
+            g_1u += correc_u_ss
+
+        return np.column_stack([g_1x,g_1u])
 
     @property
     @memoized
@@ -188,55 +204,55 @@ def fold(tens):
             result[:,l] = tens[:,i,j,k]
         return result
 
-class DDR():
-# this class represent a dynare decision rule
-    def __init__(self,g,ghs2=None):
-        self.g = g
-        if ghs2 !=None:
-            self.ghs2 = ghs2
-        # I should do something with Sigma_e
-
-    @property
-    def ys(self):
-        return self.g[0]
-
-    @property
-    def ghx(self):
-        return self.g[1][0]
-
-    @property
-    def ghu(self):
-        return self.g[1][1]
-
-    @property
-    def ghxx(self):
-        return self.g[2][0]
-
-    @property
-    def ghxu(self):
-        return self.g[2][1]
-
-    @property
-    def ghuu(self):
-        return self.g[2][2]
-
-
-
-    #def ghs2(self,Sigma_e):
-    #    return np.tensordot( self.correc_s , Sigma_e )/2
-
-    def ys_c(self,Sigma_e):
-        return self.g[0] + 0.5*self.ghs2
-
-    def __call__(self, x, u, Sigma_e):
-    # evaluates y_t, given y_{t-1} and e_t
-        resp = self.ys + np.dot( self.ghx, x ).flatten() +  np.dot( self.ghu, u ).flatten()
-        resp += 0.5*np.tensordot( self.ghxx, np.outer(x,x) )
-        resp += 0.5*np.tensordot( self.ghxu, np.outer(x,u) )
-        resp += 0.5*np.tensordot( self.ghuu, np.outer(u,u) )
-        resp += 0.5*self.ghs2(Sigma_e)
-        return resp
-
-    def __str__(self):
-        return 'Decision rule'
-
+#class DDR():
+## this class represent a dynare decision rule
+#    def __init__(self,g,ghs2=None):
+#        self.g = g
+#        if ghs2 !=None:
+#            self.ghs2 = ghs2
+#        # I should do something with Sigma_e
+#
+#    @property
+#    def ys(self):
+#        return self.g[0]
+#
+#    @property
+#    def ghx(self):
+#        return self.g[1][0]
+#
+#    @property
+#    def ghu(self):
+#        return self.g[1][1]
+#
+#    @property
+#    def ghxx(self):
+#        return self.g[2][0]
+#
+#    @property
+#    def ghxu(self):
+#        return self.g[2][1]
+#
+#    @property
+#    def ghuu(self):
+#        return self.g[2][2]
+#
+#
+#
+#    #def ghs2(self,Sigma_e):
+#    #    return np.tensordot( self.correc_s , Sigma_e )/2
+#
+#    def ys_c(self,Sigma_e):
+#        return self.g[0] + 0.5*self.ghs2
+#
+#    def __call__(self, x, u, Sigma_e):
+#    # evaluates y_t, given y_{t-1} and e_t
+#        resp = self.ys + np.dot( self.ghx, x ).flatten() +  np.dot( self.ghu, u ).flatten()
+#        resp += 0.5*np.tensordot( self.ghxx, np.outer(x,x) )
+#        resp += 0.5*np.tensordot( self.ghxu, np.outer(x,u) )
+#        resp += 0.5*np.tensordot( self.ghuu, np.outer(u,u) )
+#        resp += 0.5*self.ghs2(Sigma_e)
+#        return resp
+#
+#    def __str__(self):
+#        return 'Decision rule'
+#
