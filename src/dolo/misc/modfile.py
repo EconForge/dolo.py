@@ -266,6 +266,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
         resp['name'] = fname
 
     model = Model(**resp)
+    return model
 
 
 class Instruction_group():
@@ -327,9 +328,9 @@ def dynare_import(filename,names_dict={},full_output=False):
     fname = re.compile('(.*)\.mod').match(basename).group(1)
     f = file(filename)
     txt = f.read()
-    resp = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
-    resp.fname = fname
-    return resp
+    model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
+    model['name'] = fname
+    return model
 
 
 def undeclare_variables_not_in_equations():
