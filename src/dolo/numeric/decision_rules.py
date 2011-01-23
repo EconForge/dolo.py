@@ -12,11 +12,11 @@ class TaylorExpansion(dict):
     @memoized
     def order(self):
         order = 0
-        if self.get('g_a'):
+        if self.get('g_a') != None:
             order = 1
-        if self.get('g_aa'):
+        if self.get('g_aa') != None:
             order = 2
-        if self.get('g_aa'):
+        if self.get('g_aaa') != None:
             order = 3
         return order
 
@@ -174,6 +174,39 @@ class DynareDecisionRule(TaylorExpansion):
 
         return fold( g_3 ) / 2 / 3
 
+    def __str__(self):
+        txt = '''
+Decision rule (order {order}) :
+{msg}
+    - States : {states}
+    
+    - Endogenous variables : {endo}
+
+    - First order coefficients :
+
+{foc}
+'''
+        import scipy
+        mat = np.concatenate([self.ghx,self.ghu],axis=1)
+        if self.order > 1:
+            msg = '\n    (Only first order derivates are printed)\n'
+        else:
+            msg = ''
+        col_names = [str(v(-1)) for v in self.model.dr_var_order if v in self.model.state_variables] + [str(s) for s in self.model.shocks]
+        row_names = [str(v) for v in self.model.dr_var_order]
+        txt = txt.format(
+            msg = msg,
+            order=self.order,
+            states=str.join(' ', col_names),
+            endo=str.join(' ', row_names),
+            foc=mat
+        )
+        return txt
+
+        
+        return txt
+
+DecisionRule = DynareDecisionRule
 
 def symmetrize(tens):
     return (tens + tens.swapaxes(3,2) + tens.swapaxes(1,2) + tens.swapaxes(1,2).swapaxes(2,3) + tens.swapaxes(1,3) + tens.swapaxes(1,3).swapaxes(2,3) )/6
@@ -204,55 +237,142 @@ def fold(tens):
             result[:,l] = tens[:,i,j,k]
         return result
 
-#class DDR():
-## this class represent a dynare decision rule
-#    def __init__(self,g,ghs2=None):
-#        self.g = g
-#        if ghs2 !=None:
-#            self.ghs2 = ghs2
-#        # I should do something with Sigma_e
-#
-#    @property
-#    def ys(self):
-#        return self.g[0]
-#
-#    @property
-#    def ghx(self):
-#        return self.g[1][0]
-#
-#    @property
-#    def ghu(self):
-#        return self.g[1][1]
-#
-#    @property
-#    def ghxx(self):
-#        return self.g[2][0]
-#
-#    @property
-#    def ghxu(self):
-#        return self.g[2][1]
-#
-#    @property
-#    def ghuu(self):
-#        return self.g[2][2]
-#
-#
-#
-#    #def ghs2(self,Sigma_e):
-#    #    return np.tensordot( self.correc_s , Sigma_e )/2
-#
-#    def ys_c(self,Sigma_e):
-#        return self.g[0] + 0.5*self.ghs2
-#
-#    def __call__(self, x, u, Sigma_e):
-#    # evaluates y_t, given y_{t-1} and e_t
-#        resp = self.ys + np.dot( self.ghx, x ).flatten() +  np.dot( self.ghu, u ).flatten()
-#        resp += 0.5*np.tensordot( self.ghxx, np.outer(x,x) )
-#        resp += 0.5*np.tensordot( self.ghxu, np.outer(x,u) )
-#        resp += 0.5*np.tensordot( self.ghuu, np.outer(u,u) )
-#        resp += 0.5*self.ghs2(Sigma_e)
-#        return resp
-#
-#    def __str__(self):
-#        return 'Decision rule'
-#
+
+
+def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, percentages=False, plot=True):
+    
+    if order > 1:
+        raise Exception('irfs, for order > 1 not implemented')
+    
+    dr = decision_rule
+    A = dr['g_a']
+    B = dr['g_e']
+
+    [n_v, n_s] = [ len(dr.model.variables), len(dr.model.shocks) ]
+
+
+    if isinstance(shock,int):
+        i_s = shock
+    elif isinstance(shock,str):
+        from dolo.symbolic.symbolic import Shock
+        shock =  Shock(shock,0)
+        i_s = dr.model.shocks.index( shock )
+    else:
+        i_s = shock
+
+    E = np.zeros(  n_s )
+    E[i_s] = 0.01
+
+    simul = np.zeros( (n_v, horizon+1) )
+    simul[:,0] = np.dot(B,E)
+    for i in range(horizon):
+        simul[:,i+1] = np.dot( A, simul[:,i])
+
+
+    if percentages:
+        for i in range(n_v):
+            simul[i,:] = simul[i,:]/dr['ys'][i] * 100
+    else:
+        for i in range(n_v):
+            simul[i,:] += dr['ys'][i]
+
+    if variables:
+        from dolo.symbolic.symbolic import Variable
+        if not isinstance(variables,list):
+            variables = [variables]
+        variables =  [Variable(str(v),0) for v in variables]
+        ind_vars = [dr.model.variables.index( v ) for v in variables]
+        simul = simul[ind_vars, :]
+
+    x = np.linspace(0,horizon,horizon+1)
+
+    if plot:
+        from matplotlib import pylab
+        pylab.clf()
+        pylab.title('Impulse-Response Function for ${var}$'.format(var=shock.__latex__()))
+        for k in range(len(variables)):
+            pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
+        pylab.plot(x,x*0,'--',color='black')
+        pylab.xlabel('$t$')
+        if percentages:
+            pylab.ylabel('% deviations from the steady-state')
+        else:
+            pylab.ylabel('Deviations from the steady-state')
+        pylab.legend()
+        filename = 'irf_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
+        pylab.savefig(filename) # not good...
+        #pylab.show()
+
+    return simul
+
+def stoch_simul(decision_rule, shock, variables = None, init = None, horizon=40, order=1, percentages=False, plot=True, seed=None):
+
+    if order > 1:
+        raise Exception('irfs, for order > 1 not implemented')
+
+    dr = decision_rule
+    A = dr['g_a']
+    B = dr['g_e']
+
+    [n_v, n_s] = [ len(dr.model.variables), len(dr.model.shocks) ]
+
+
+    if isinstance(shock,int):
+        i_s = shock
+    elif isinstance(shock,str):
+        from dolo.symbolic.symbolic import Shock
+        shock =  Shock(shock,0)
+        i_s = dr.model.shocks.index( shock )
+    else:
+        i_s = shock
+
+
+
+    simul = np.zeros( (n_v, horizon+1) )
+    if init != None:
+        simul[:,0] = init
+
+    Sigma = dr['Sigma']
+    if seed:
+        np.random.seed(seed)
+    E = np.random.multivariate_normal((0,)*n_s,Sigma,horizon)
+    E = E.T
+    for i in range(horizon):
+        simul[:,i+1] = np.dot( A, simul[:,i]) + np.dot( B, E[:,i] )
+
+
+    if percentages:
+        for i in range(n_v):
+            simul[i,:] = simul[i,:]/dr['ys'][i] * 100
+    else:
+        for i in range(n_v):
+            simul[i,:] += dr['ys'][i]
+
+    if variables:
+        from dolo.symbolic.symbolic import Variable
+        if not isinstance(variables,list):
+            variables = [variables]
+        variables =  [Variable(str(v),0) for v in variables]
+        ind_vars = [dr.model.variables.index( v ) for v in variables]
+        simul = simul[ind_vars, :]
+
+    x = np.linspace(0,horizon,horizon+1)
+
+    if plot:
+        from matplotlib import pylab
+        pylab.clf()
+        pylab.title('Impulse-Response Function for ${var}$'.format(var=shock.__latex__()))
+        for k in range(len(variables)):
+            pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
+        pylab.plot(x,x*0,'--',color='black')
+        pylab.xlabel('$t$')
+        if percentages:
+            pylab.ylabel('% deviations from the steady-state')
+        else:
+            pylab.ylabel('Deviations from the steady-state')
+        pylab.legend()
+        filename = 'simul_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
+        pylab.savefig(filename) # not good...
+        #pylab.show()
+
+    return simul
