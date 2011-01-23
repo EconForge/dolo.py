@@ -65,7 +65,7 @@ class Model(dict):
         res.extend( t )
         return res
 
-    def check_consistency(self,verbose=True):
+    def check_consistency(self,verbose=False):
 
         print_info = verbose
         print_eq_info = verbose
@@ -113,6 +113,11 @@ class Model(dict):
             context[str(s)] = s
         return sympy.sympify( eval(string,context) )
 
+
+    @property
+    def fname(self):
+        return self['name']
+
     @property
     def dyn_var_order(self):
         # returns a list of dynamic variables ordered as in Dynare's dynamic function
@@ -146,7 +151,61 @@ class Model(dict):
     def state_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
+    def compute_steadystate_values(self):
+        model = self
+        from dolo.misc.calculus import solve_triangular_system
 
+        dvars = dict()
+        dvars.update(model.parameters_values)
+        dvars.update(model.init_values)
+        for v in model.variables:
+            if v not in dvars:
+                dvars[v] = 0
+        undeclared_parameters = []
+        for p in model.parameters:
+            if p not in dvars:
+                undeclared_parameters.append(p)
+                dvars[p] = 0
+                raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
+
+        values = solve_triangular_system(dvars)[0]
+
+        y = [values[v] for v in model.variables]
+        x = [0 for s in model.shocks]
+        params = [values[v] for v in model.parameters]
+        return [y,x,params]
+
+    def subs(self,a,b):
+
+        if isinstance(a,str):
+            a = sympy.Symbol(a)
+
+        nmodel = Model(**self)
+        nmodel['equations'] = [eq.subs({a:b}) for eq in nmodel['equations']]
+        for k,v in nmodel['init_values'].iteritems():
+            if isinstance(v,sympy.Basic):
+                nmodel['init_values'][k] = v.subs({a:b})
+
+        nmodel.check()
+        return nmodel
+
+
+def compute_residuals(model):
+
+    from dolo.misc.calculus import solve_triangular_system
+    dvars = dict()
+    dvars.update(model.parameters_values)
+    dvars.update(model.init_values)
+    for v in model.variables:
+        if v not in dvars:
+            dvars[v] = 0
+    # what are we supposed to do with parameters ?
+    values = solve_triangular_system(dvars)[0]
+    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
+    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
+    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
+    residuals = [ eq.subs(values) for eq in stateq ]
+    return residuals
 
 if __name__ == '__main__':
 
