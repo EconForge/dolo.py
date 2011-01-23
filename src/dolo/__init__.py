@@ -1,2 +1,5 @@
 from symbolic.symbolic import *
-from misc.interactive import *
+
+from misc.modfile import *
+
+from misc.commands import *
