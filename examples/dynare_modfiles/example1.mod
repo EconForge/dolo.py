@@ -35,10 +35,10 @@ e = 0;
 u = 0;
 end;
 
-//shocks;
-//var e; stderr 0.009;
-//var u; stderr 0.009;
-//var e, u = phi*0.009*0.009;
-//end;
+shocks;
+var e = 0.009;
+var u = 0.009;
+var e, u = 0.009*0.009;
+end;
 
 //stoch_simul;
