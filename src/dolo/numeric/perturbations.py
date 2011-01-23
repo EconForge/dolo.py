@@ -36,38 +36,36 @@ def solve_decision_rule(model,order=2,method='default'):
         print res        
         raise Exception("Initial values don't satisfy static equations")
 
+    derivatives_ss = None
+    
     if (method == 'sigma2'):
-        if order == 2:
-            [f_0,f_1,f_2] = derivatives
-        elif order == 3:
-            [f_0,f_1,f_2,f_3] = derivatives
-            
         n_s = len(model.shocks)
         n_v = len(model.variables)
         nt = n_v*3 +n_s
         nn = nt+1
 
-        h_1 = f_1[:,:nn]
-        h_2 = f_2[:,:nn,:nn] # derivatives with sigma
+        if order == 2:
+            [f_0,f_1,f_2] = derivatives
+            ft_1 = f_1[:,:nt]
+            ft_2 = f_2[:,:nt,:nt]
+            f_ss = f_2[:,nt,nt] # derivatives with sigma^2
+            derivatives = [f_0,ft_1,ft_2]
+            derivatives_ss = [f_ss]
 
-        ft_1 = f_1[:,:nt]
-        ft_2 = f_2[:,:nt,:nt] # traditionnal derivatives
 
-        f1_A = f_1[:,:n_v]
-        f1_B = f_1[:,n_v:(2*n_v)]
-        f1_C = f_1[:,(2*n_v):(3*n_v)]
-        f1_D = f_1[:,(3*n_v):(3*n_v+n_s)]
-        f1_E = f_1[:,(3*n_v+n_s):(3*n_v+n_s+1)]
-
-        derivatives = [f_0,ft_1,ft_2]
-
-        if order == 3:
-            h_3 = f_3[:,:nn,:nn,:nn]
+        elif order == 3:
+            [f_0,f_1,f_2,f_3] = derivatives
+            ft_1 = f_1[:,:nt]
+            ft_2 = f_2[:,:nt,:nt]
             ft_3 = f_3[:,:nt,:nt,:nt]
-            derivatives.append(ft_3)
+            f_ss = f_2[:,nt,nt] # derivatives with sigma^2
+            f_1ss = f_3[:,:nt,nt,nt]
+            derivatives = [f_0,ft_1,ft_2,ft_3]
+            derivatives_ss = [f_ss,f_1ss]
+
 
     if method in ('sigma2','default'):
-        d = perturb_solver(derivatives, Sigma, max_order=order)
+        d = perturb_solver(derivatives, Sigma, max_order=order, derivatives_ss=derivatives_ss)
         
     elif method == 'full':
         n_s = len(model.shocks)
@@ -76,26 +74,9 @@ def solve_decision_rule(model,order=2,method='default'):
         d = new_solver_with_p(derivatives,(n_v,n_s,n_p),max_order=order)
         return d
 
-
+    d['ys'] = yy
+    d['Sigma'] = Sigma
     ddr = DDR( d , model )
-
-    if method == 'sigma2':
-
-        if order >= 2:
-
-            g_a = d['g_a']
-            g_e = d['g_e']
-            g_aa = d['g_aa']
-            g_ae = d['g_ae']
-            g_ee = d['g_ee']
-            I = np.eye(n_v,n_v)
-            A_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
-            V_s = np.zeros( (n_v*3+n_s+1,))
-            V_s[-1] = 1
-            K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
-            rhs = np.tensordot( K_ss,Sigma) + mdot(h_2,[V_s,V_s])
-            sigma2 = sdot(A_inv,-rhs) / 2
-            ddr.sigma2 = sigma2
 
     return ddr
     
@@ -123,7 +104,7 @@ def compute_steadystate_values(model):
     return [y,x,params]
 
 
-def perturb_solver(derivatives, Sigma, max_order=2):
+def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None):
 
     if max_order == 1:
         [f_0,f_1] = derivatives
@@ -241,8 +222,13 @@ def perturb_solver(derivatives, Sigma, max_order=2):
     M_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
     K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
     rhs =  - np.tensordot( K_ss, Sigma, axes=((1,2),(0,1)) ) #- mdot(h_2,[V_s,V_s])
+    if derivatives_ss:
+        f_ss = derivatives_ss[0]
+        rhs -= f_ss
     g_ss = sdot(M_inv,rhs)
     ghs2 = g_ss/2
+
+
 
     if max_order == 2:
         d = {
@@ -366,6 +352,10 @@ def perturb_solver(derivatives, Sigma, max_order=2):
 
     D = K_ass + sdot(f_d,L_ass)
 
+    if derivatives_ss:
+        f_1ss = derivatives_ss[1]
+        D += mdot( f_1ss, [V_a]) + sdot( f1_A, mdot( g_aa, [ g_a , g_ss ])  )
+
     g_ass = solve_sylvester( A, B, C, D)
 
 
@@ -400,8 +390,6 @@ def perturb_solver(derivatives, Sigma, max_order=2):
     D = K_ess + sdot(f_d,L_ess)
 
     g_ess = sdot( A_inv, -D)
-
-
 
     if max_order == 3:
         d = {'ev':ev,'g_a':g_a,'g_e':g_e, 'g_aa':g_aa, 'g_ae':g_ae, 'g_ee':g_ee,
@@ -748,7 +736,49 @@ def new_solver_with_p(derivatives, sizes, max_order=2):
     
     return d
 
+
+def sigma2_correction(d,order,n_v,n_s,f1_A,f1_B, f_2, h_2, f_ss, Sigma):
+
+    resp = dict()
     
+    if order >= 2:
+        g_a = d['g_a']
+        g_e = d['g_e']
+        g_aa = d['g_aa']
+        g_ae = d['g_ae']
+        g_ee = d['g_ee']
+        I = np.eye(n_v,n_v)
+        A_inv = np.linalg.inv( sdot(f1_A,g_a+I) + f1_B )
+        V_s = np.zeros( (n_v*3+n_s+1,))
+        V_s[-1] = 1
+        K_ss = mdot(f_2[:,:n_v,:n_v],[g_e,g_e]) + sdot( f1_A, g_ee )
+        rhs = np.tensordot( K_ss,Sigma) + mdot(h_2,[V_s,V_s])
+        sigma2 = sdot(A_inv,-rhs) / 2
+
+        ds2 = sigma2 - d['g_ss']
+        resp['sigma2'] = sigma2
+
+    if order == 3:
+        A = sdot(f1_A,g_a) + f1_B
+        A_inv =  np.linalg.inv( A )
+        B = f1_A
+        C = g_a
+        V_x = np.row_stack( [
+            np.dot(g_a,g_a),
+            g_a,
+            I,
+            np.zeros((n_s,n_v))
+        ])
+
+        D = mdot( f_ss, [V_x]) + sdot( f1_A, mdot( g_aa, [ g_a , ds2 ])  )
+        print 'D'
+        print D
+        dsigma2 = solve_sylvester(A,B,C,D)
+        resp['dsigma2'] = dsigma2
+        resp['D'] = D
+        resp['f_ss'] = f_ss
+    return resp
+
 def build_V(X,Y,others):
 
     ddim = X.shape[1:]
