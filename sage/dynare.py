@@ -190,19 +190,24 @@ class ModFileCell():
         s = s.encode() # this is to avoid incompatibilities if cell contains unicode
         #locals['dynare_modfile'] = s
         DATA = locals['DATA']
-        mlab = locals['engine']
 
         fname = self.fname
+
+        f = file(DATA + fname + '.mod' ,'w')
+        f.write(s)
+        f.close()
+        
+        print "Modfile has been written as : '{0}.mod'".format(fname)
 
         #try:
         from dolo.misc.interactive import parse_dynare_text
 
         t = parse_dynare_text(s,full_output=True)
-        t['model'].fname = fname
-        locals['dynare_model'] = t['model']
-        locals['modfile_content'] = t
+        t['name']=fname
+        dynare_model = Model(**t)
+        locals['dynare_model'] = dynare_model
         print 'Dynare model successfully parsed and stored in "dynare_model"'
-        locals['dynare_model'].check()
+        locals['dynare_model'].check_consistency(verbose=True)
 #        except NameError:
 #            print 'Dolo is not installed'
 #            None
@@ -210,11 +215,6 @@ class ModFileCell():
         #except Exception as exc:
         #    print 'Dolo was unable to parse dynare block.'
         #    print exc
-
-        f = file(DATA + fname + '.mod' ,'w')
-        f.write(s)
-        f.close()
-        print "Modfile has been written as : '{0}.mod'".format(fname)
 
         return ''
 
