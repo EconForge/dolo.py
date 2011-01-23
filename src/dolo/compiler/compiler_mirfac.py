@@ -28,6 +28,7 @@ class MirFacCompiler(Compiler):
         exp_vars = [v for v in dmodel.variables if v in exp_vars]
         controls = [v for v in dmodel.variables if v in controls]
 
+
         # now we remove the left side of equations
         f_eqs = [eq.gap for eq in f_eqs]
         g_eqs = [eq.rhs for eq in g_eqs]
@@ -100,8 +101,8 @@ class MirFacCompiler(Compiler):
         dr = solve_decision_rule(model)
 
 
-        A = dr.ghx[states_i,:]
-        B = dr.ghx[controls_i,:]
+        A = dr['g_a'][states_i,:]
+        B = dr['g_a'][controls_i,:]
 
         [Z,err,rank,junk] = np.linalg.lstsq(A.T,B.T)
         Z = Z.T
@@ -127,8 +128,8 @@ class MirFacCompiler(Compiler):
         p_max  = np.max(points,axis = 1) * lam
 
         # steady_state values
-        s_ss = dr.ys[states_i,]
-        x_ss = dr.ys[controls_i,]
+        s_ss = dr['ys'][states_i,]
+        x_ss = dr['ys'][controls_i,]
 
         bounds = np.row_stack([
             s_ss + p_infs,
@@ -141,6 +142,7 @@ class MirFacCompiler(Compiler):
     def process_output_python(self):
         data = self.read_model()
         dmodel = self.model
+        model = dmodel
 
         f_eqs = data['f_eqs']
         g_eqs = data['g_eqs']
@@ -153,16 +155,16 @@ class MirFacCompiler(Compiler):
 
         sub_list = dict()
         for i,v in enumerate(exp_vars):
-            sub_list[v] = 'ep[:,{0}]'.format(i)
+            sub_list[v] = 'ep[{0},:]'.format(i)
 
         for i,v in enumerate(controls):
-            sub_list[v] = 'x[:,{0}]'.format(i)
+            sub_list[v] = 'x[{0},:]'.format(i)
 
         for i,v in enumerate(states_vars):
-            sub_list[v] = 's[:,{0}]'.format(i)
+            sub_list[v] = 's[{0},:]'.format(i)
 
         for i,v in enumerate(dmodel.shocks):
-            sub_list[v] = 'e[:,{0}]'.format(i)
+            sub_list[v] = 'e[{0},:]'.format(i)
 
         for i,v in enumerate(dmodel.parameters):
             sub_list[v] = 'p[{0}]'.format(i)
@@ -172,11 +174,12 @@ class MirFacCompiler(Compiler):
         text = '''
 from __future__ import division
 import numpy as np
+inf = np.inf
 
-def {mfname}_model(flag,s,x,ep,e,{param_names}):
+def model(flag,s,x,ep,e,{param_names}):
 
 
-    n = s.shape[0]
+    n = s.shape[-1]
 
     if flag == 'b':
 {eq_bounds_block}
@@ -201,18 +204,18 @@ def {mfname}_model(flag,s,x,ep,e,{param_names}):
         dp = DicPrinter(sub_list)
 
         def write_eqs(eq_l,outname='out1'):
-            eq_block = '        {0} = np.zeros( (n,{1}) ) ;\n'.format(outname, len(eq_l))
+            eq_block = '        {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
             for i,eq in enumerate(eq_l):
-                eq_block += '        {0}[:,{1}] = {2};\n'.format(outname, i,  dp.doprint_numpy(eq,vectorize=True))
+                eq_block += '        {0}[{1},:] = {2}\n'.format(outname, i,  dp.doprint_numpy(eq,vectorize=True))
             return eq_block
 
         def write_der_eqs(eq_l,v_l,lhs):
-            eq_block = '        {lhs} = np.zeros( (n,{0},{1}) ) ;\n'.format(len(eq_l),len(v_l),lhs=lhs)
+            eq_block = '        {lhs} = np.zeros( ({0},{1},n) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
             eq_l_d = eqdiff(eq_l,v_l)
             for i,eqq in enumerate(eq_l_d):
                 for j,eq in enumerate(eqq):
                     s = dp.doprint_numpy( eq, vectorize=True )
-                    eq_block += '        {lhs}[:,{0},{1}] = {2};\n'.format(i,j,s,lhs=lhs)
+                    eq_block += '        {lhs}[{0},{1},:] = {2}\n'.format(i,j,s,lhs=lhs)
             return eq_block
 
         eq_bounds_block = write_eqs(inf_bounds)
@@ -249,6 +252,7 @@ def {mfname}_model(flag,s,x,ep,e,{param_names}):
     def process_output_matlab(self):
         data = self.read_model()
         dmodel = self.model
+        model = dmodel
 
         f_eqs = data['f_eqs']
         g_eqs = data['g_eqs']
