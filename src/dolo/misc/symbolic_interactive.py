@@ -325,3 +325,13 @@ def clear_all():
             del frame.f_globals['parameters_order']
     finally:
         del frame
+
+
+def inject_symbols(symbs):
+    frame = inspect.currentframe().f_back
+    try:
+        for s in symbs:
+            sn = s.name
+            frame.f_globals[sn] = s
+    finally:
+        del frame
