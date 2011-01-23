@@ -11,8 +11,8 @@ import re
 #      |
 #      -------------------------------
 #      |                             |
-#   SSymbol                      Parameter
-# (subscripted symbol)
+#   TSymbol                      Parameter
+# (Time symbol)
 #      |
 #      ---------------
 #      |             |
@@ -185,7 +185,6 @@ class Shock(TSymbol):
     """
     Define a new shock with : x = Shock('x')
     Then x(k) returns the value with lag k
-    Internally x(-k) is a symbol with name x_bk
     """
 
 class Equation(sympy.Equality):
@@ -345,3 +344,106 @@ def greekify(expr):
         return greek_letters[expr]
     else:
         return expr
+sympy.Symbol
+from sympy.core.basic import Atom
+
+class String(sympy.Basic):
+    def __init__(self,name):
+        super(sympy.Basic,self).__init__()
+        self.name = name
+    def __str__(self):
+        return self.name
+
+class ISymbol(sympy.Basic):
+
+
+    def __init__(self,name,variable):
+        super(sympy.Basic,self).__init__()
+        self.name = name
+        self.variable = variable
+        
+    def __getitem__(self,s):
+        print s.__class__
+        if isinstance(s,(String,str)):
+            return sympy.Symbol(self.name + '_' + str(s))
+        return ISymbol(self.name,s)
+
+    def _eval_subs(self,a, b):
+        if a == self.variable:
+            return ISymbol(self.name,b)
+        else:
+            return self
+
+
+class Sum(sympy.Basic):
+
+
+    def __init__(self,index,set,expr):
+        super(sympy.Basic,self).__init__()
+        self.index = index
+        self.set = set
+        self.expr = expr
+
+    def _eval_(self):
+        return sum([self.expr.subs(self.index,s) for s in self.set])
+
+class SVariant(sympy.Basic):
+
+
+    def __init__(self,dummy,alternatives):
+        super(sympy.Basic,self).__init__()
+        self.dummy = dummy
+        self.alternatives = dict(alternatives)
+
+    def _eval_subs(self, a, b):
+        a = str(a)
+        b = str(b)
+        if str(a) == str(self.dummy):
+            b = str(b)
+            altvs = [str(s) for s in self.alternatives]
+            if b not in altvs:
+                return self
+            else:
+                vv = self.alternatives[b]
+                return vv
+        else:
+            return self
+
+def Variant(dummy,alternatives):
+    t = [(k,v) for k,v in alternatives.iteritems()]
+    return SVariant( dummy, tuple(t))
+
+if __name__ == '__main__':
+    x = sympy.Symbol('x')
+    i = sympy.Symbol('i')
+    j = sympy.Symbol('j')
+    c = sympy.Symbol('c')
+    v = Variable('v',0)
+    isym = ISymbol('test',x)
+    print isym.is_Atom
+    print isym[i]
+
+    eq = (v + isym)**2
+    #printq
+    print eq
+    print eq.subs(x,i)
+    print isym._subs_old_new(x,i)
+    print isym['paris']
+
+
+    s = Sum(i,[0,5], x**i+1+isym[i])
+    ss = Sum(c,[String('france'),'us'], isym[c])
+    print s._eval_()
+    print ss._eval_()
+    print isym['france']
+    print isym[String('france')]
+
+    from sympy import Symbol
+    dummy = Symbol
+
+
+    t =  tuple()
+    v = Variant( dummy, { i: 3, j: 43  } )
+    v = Variant( dummy, { i: 3, j: 43  } )
+    
+    print v.subs(dummy,i)
