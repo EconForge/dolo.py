@@ -56,7 +56,7 @@ class MainWindow(QtGui.QMainWindow):
             f.close()
         try:
             model = dolo.dynare_import(filename)
-            model.check(verbose=True)
+            model.check_consistency(verbose=True)
             n = len(model.equations)
             q = len(self.widgets)
             if n > q:
