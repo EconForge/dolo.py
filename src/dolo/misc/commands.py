@@ -6,9 +6,6 @@ This module contains the officially supported commands of Dolo :
 - irf()
 '''
 
-
-print "- Type 'dolo_help()' for help."
-
 import pylab
 import dolo
 import numpy
