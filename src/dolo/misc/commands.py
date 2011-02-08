@@ -94,6 +94,11 @@ def pprint(obj):
     else:
         print'Object type not known.'
 
+def simulated_moments(decision_rule):
+    dr = decision_rule
+    
+
+
 class ModFileCell():
 
     def __init(self):

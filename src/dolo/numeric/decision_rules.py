@@ -305,7 +305,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
     return simul
 
-def stoch_simul(decision_rule, shock, variables = None, init = None, horizon=40, order=1, percentages=False, plot=True, seed=None):
+def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentages=False, plot=True, seed=None):
 
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
@@ -317,20 +317,20 @@ def stoch_simul(decision_rule, shock, variables = None, init = None, horizon=40,
     [n_v, n_s] = [ len(dr.model.variables), len(dr.model.shocks) ]
 
 
-    if isinstance(shock,int):
-        i_s = shock
-    elif isinstance(shock,str):
-        from dolo.symbolic.symbolic import Shock
-        shock =  Shock(shock,0)
-        i_s = dr.model.shocks.index( shock )
-    else:
-        i_s = shock
-
-
+#    if isinstance(shock,int):
+#        i_s = shock
+#    elif isinstance(shock,str):
+#        from dolo.symbolic.symbolic import Shock
+#        shock =  Shock(shock,0)
+#        i_s = dr.model.shocks.index( shock )
+#    else:
+#        i_s = shock
+#
+#
+#
 
     simul = np.zeros( (n_v, horizon+1) )
-    if init != None:
-        simul[:,0] = init
+
 
     Sigma = dr['Sigma']
     if seed:
@@ -361,7 +361,7 @@ def stoch_simul(decision_rule, shock, variables = None, init = None, horizon=40,
     if plot:
         from matplotlib import pylab
         pylab.clf()
-        pylab.title('Impulse-Response Function for ${var}$'.format(var=shock.__latex__()))
+        pylab.title('Stochastic simulation')
         for k in range(len(variables)):
             pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
         pylab.plot(x,x*0,'--',color='black')
@@ -371,7 +371,7 @@ def stoch_simul(decision_rule, shock, variables = None, init = None, horizon=40,
         else:
             pylab.ylabel('Deviations from the steady-state')
         pylab.legend()
-        filename = 'simul_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
+        filename = 'simul_' + '_' + str.join('_',[str(v) for v in variables])
         pylab.savefig(filename) # not good...
         #pylab.show()
 
