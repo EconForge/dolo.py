@@ -81,7 +81,7 @@ class DynareDecisionRule(TaylorExpansion):
     @property
     @memoized
     def ghs2(self):
-        return self.get('g_ss')/2
+        return self.get('g_ss')
 
 
     @property
@@ -189,7 +189,7 @@ Decision rule (order {order}) :
         import scipy
         mat = np.concatenate([self.ghx,self.ghu],axis=1)
         if self.order > 1:
-            msg = '\n    (Only first order derivates are printed)\n'
+            msg = '\n    (Only first order derivatives are printed)\n'
         else:
             msg = ''
         col_names = [str(v(-1)) for v in self.model.dr_var_order if v in self.model.state_variables] + [str(s) for s in self.model.shocks]
