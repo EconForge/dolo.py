@@ -281,7 +281,7 @@ def model(flag,s,x,ep,e,{param_names}):
 
 
         text = '''
-function [out1,out2,out3,out4] = {mfname}(flag,s,x,ep,e,{param_names});
+function [out1,out2,out3,out4] = {mfname}(flag,s,x,ep,e,p);
 
 % p is the vector of parameters
 
