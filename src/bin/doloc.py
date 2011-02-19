@@ -83,7 +83,7 @@ if __name__ == "__main__":
         if filetype == "mod":
             dynare_model = dynare_import(filename)
 
-        dynare_model.check(verbose=True)
+        dynare_model.check_consistency(verbose=True)
         
         #elif filetype == "xml":
         #    import_xmlfile(filename_trunc,options)
@@ -138,7 +138,7 @@ if __name__ == "__main__":
 
         #model = resp['model']
 
-        model.check()
+        model.check_consistency(verbose=True)
 
         comp = DynareCompiler(model)
         #comp.export_infos()
