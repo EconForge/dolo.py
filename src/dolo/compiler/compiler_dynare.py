@@ -112,11 +112,17 @@ M_.params = repmat(NaN,{param_nbr}, 1);
 
         # BUG: how do we treat parameters absent from the model, but present in parameters_values ?
 
-        porder = model.order_parameters_values()
-        porder = [p for p in porder if p in model.parameters]
-        
-        vorder = model.order_init_values()
+        from dolo.misc.calculus import solve_triangular_system
 
+        [junk,porder] = solve_triangular_system(model.parameters_values)
+        porder = [p for p in porder if p in model.parameters]
+
+        d = dict()
+        d.update(model.parameters_values)
+        d.update(model.init_values)
+
+        [junk,vorder] = solve_triangular_system(model.init_values)
+        vorder = [v for v in vorder if p in model.variables]
 
         for p in porder:
             i = model.parameters.index(p) + 1
@@ -346,7 +352,7 @@ M_.exo_det_length = 0; % parrot
 
         print "Computing dynamic .m file at order {0}.".format(max_order)
 
-        NonDecreasingTree.symbol_type = TSymbol
+        DerivativesTree.symbol_type = TSymbol
 
         model = self.model
 
@@ -359,7 +365,7 @@ M_.exo_det_length = 0; % parrot
         i = 0
         for eq in model.equations:
             i+=1
-            ndt = NonDecreasingTree(eq.gap)
+            ndt = DerivativesTree(eq.gap)
             ndt.compute_nth_order_children(max_order)
             sols.append(ndt)
 
@@ -452,7 +458,7 @@ M_.exo_det_length = 0; % parrot
 
         print "Computing static .m file at order {0}.".format(max_order)
 
-        NonDecreasingTree.symbol_type = Variable
+        DerivativesTree.symbol_type = Variable
 
         model = self.model
         var_order = model.variables
@@ -468,7 +474,7 @@ M_.exo_det_length = 0; % parrot
             for tv in l:
                 if tv.lag != 0:
                     expr = expr.subs(tv,tv.P)
-            ndt = NonDecreasingTree(expr)
+            ndt = DerivativesTree(expr)
             ndt.compute_nth_order_children(max_order)
             sols.append(ndt)
         self.static_derivatives = sols
