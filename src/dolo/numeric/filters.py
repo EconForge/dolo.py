@@ -20,4 +20,5 @@ def hpfilter( x, lam=1600 ):
     M[-2:,-2:] = Ad
     M *= lam
     M += np.eye(T)
+
     return np.linalg.solve(M,x)

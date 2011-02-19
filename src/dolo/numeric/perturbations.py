@@ -8,7 +8,7 @@ import numpy as np
 
 TOL = 1E-10
 
-def solve_decision_rule(model,order=2,method='default'):
+def solve_decision_rule(model,order=2,method='default',mlab=None):
     
     Sigma = np.array(model.covariances).astype(np.float64)
 
@@ -65,7 +65,7 @@ def solve_decision_rule(model,order=2,method='default'):
 
 
     if method in ('sigma2','default'):
-        d = perturb_solver(derivatives, Sigma, max_order=order, derivatives_ss=derivatives_ss)
+        d = perturb_solver(derivatives, Sigma, max_order=order, derivatives_ss=derivatives_ss,mlab=mlab)
         
     elif method == 'full':
         n_s = len(model.shocks)
@@ -104,7 +104,7 @@ def compute_steadystate_values(model):
     return [y,x,params]
 
 
-def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None):
+def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=None):
 
     if max_order == 1:
         [f_0,f_1] = derivatives
@@ -248,7 +248,6 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None):
     order = 3
 
     #--- Computing derivatives ('a', 'a', 'a')
-
     K_aaa =  + 3*mdot(f_2,[V_a,V_aa]) + mdot(f_3,[V_a,V_a,V_a])
     L_aaa =  + 3*mdot(g_aa,[g_a,g_aa])
     
@@ -267,7 +266,23 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None):
     #B = f_d
     #C = g_a
     D = K_aaa + sdot(f_d,L_aaa)
-    g_aaa = solve_sylvester(A,B,C,D)
+
+
+
+    if mlab == None:
+        g_aaa = solve_sylvester(A,B,C,D)
+    # this is much much faster
+    else:
+        n_d = D.ndim - 1
+        n_v = C.shape[1]
+        CC = np.kron(np.kron(C,C),C)
+        DD = D.reshape( n_v, n_v**n_d )
+        [err,E] = mlab.gensylv(3,A,B,C,DD,nout=2)
+        g_aaa = E.reshape((n_v,n_v,n_v,n_v))
+
+    #res = sdot(A,g_aaa) + sdot(B, mdot(g_aaa,[C,C,C])) - D
+    #print 'res : ' + str( abs(res).max() )
+
 
     if order < max_order:
         Y = L_aaa + mdot(g_a,[g_aaa]) + mdot(g_aaa,[g_a,g_a,g_a])
