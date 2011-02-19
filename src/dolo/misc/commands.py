@@ -75,7 +75,7 @@ def print_model(model=None, print_residuals=True):
     else:
         print( str(model) )
 
-def pprint(obj):
+def pprint(obj,col_names=None,row_names=None):
     if __sage_is_running__:
         from sage.misc.html import HTML
         html = HTML()
@@ -91,6 +91,18 @@ def pprint(obj):
         tab = [ [v]+tab[i] for i,v in enumerate(model.variables) ]
         tab = [['']+[s(-1) for s in states]+model.shocks] + tab
         html.table(tab,header=True)
+    elif isinstance(obj,numpy.ndarray):
+        tab = obj
+        resp = [[ "%.3f" %tab[i,j] for j in range(tab.shape[1]) ] for i in range(tab.shape[0]) ]
+        if row_names:
+            resp = [  [row_names[i]] + resp[i] for i in range(tab.shape[0]) ]
+        header = False
+        if col_names:
+            resp = [[''] +col_names] + resp
+            header = True
+        html.table(resp,header)
+
+
     else:
         print'Object type not known.'
 
