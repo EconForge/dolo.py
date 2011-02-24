@@ -75,6 +75,21 @@ def print_model(model=None, print_residuals=True):
     else:
         print( str(model) )
 
+def print_table( tab,precision=3, col_names=None, row_names=None ):
+    if __sage_is_running__:
+        from sage.misc.html import HTML
+    else:
+        raise Exception('Sage is not running.')
+    import numpy as np
+    resp = [[ "%.3f" %tab[i,j] for j in range(tab.shape[1]) ] for i in range(tab.shape[0]) ]
+    if row_names:
+        resp = [  [row_names[i]] + resp[i] for i in range(tab.shape[0]) ]
+    header = False
+    if col_names:
+        resp = [[''] +col_names] + resp
+        header = True
+    HTML.table(resp,header)
+
 def pprint(obj,col_names=None,row_names=None):
     if __sage_is_running__:
         from sage.misc.html import HTML
