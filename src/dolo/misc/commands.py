@@ -89,7 +89,7 @@ def print_table( tab,precision=3, col_names=None, row_names=None ):
     if col_names:
         resp = [[''] +col_names] + resp
         header = True
-    HTML.table(resp,header)
+    html.table(resp,header)
 
 def pprint(obj,col_names=None,row_names=None):
     if __sage_is_running__:
