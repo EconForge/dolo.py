@@ -15,10 +15,47 @@ class MirFacCompiler(Compiler):
         dmodel = self.model
         model = dmodel
 
+        def_eqs = [eq for eq in dmodel.equations if 'def' == eq.tags['eq_type']]
+
+
+        from dolo.misc.misc import map_function_to_expression
+        from dolo.symbolic.symbolic import Variable
+        def timeshift(v,n):
+            if isinstance(v,Variable):
+                return v(n)
+            else:
+                return v
+
+        import sympy
+
+        #### built substitution dict
+        def_dict = {}
+        for eq in def_eqs:
+            v = eq.lhs
+            rhs = sympy.sympify( eq.rhs )
+            def_dict[v] = rhs
+            def_dict[v(1)] = map_function_to_expression( lambda x: timeshift(x,1), rhs)
+
+        new_equations = []
+        tbr = []
+        for i,eq in enumerate(dmodel.equations) :
+            if not ('def' == eq.tags['eq_type']):
+                lhs = sympy.sympify( eq.lhs ).subs(def_dict)
+                rhs = sympy.sympify( eq.rhs ).subs(def_dict)
+                neq = Equation(lhs,rhs).tag(**eq.tags)
+                new_equations.append( neq )
+
+        dmodel['equations'] = new_equations
+        dmodel.check_consistency()
+
+
+
         f_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='f']
         g_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='g']
-        h_eqs = [eq for eq in dmodel.equations if 'h' == eq.tags['eq_type']]
+        h_eqs = [eq for eq in dmodel.equations if 'h' == eq.tags['eq_type']]            
 
+
+        
         states_vars = [eq.lhs for eq in g_eqs]
         exp_vars =  [eq.lhs for eq in h_eqs]
         controls = set(dmodel.variables) - set(states_vars + exp_vars)
@@ -34,14 +71,8 @@ class MirFacCompiler(Compiler):
         g_eqs = [eq.rhs for eq in g_eqs]
         h_eqs = [eq.rhs for eq in h_eqs]
 
-        from dolo.misc.misc import map_function_to_expression
-        from dolo.symbolic.symbolic import Variable
 
-        def timeshift(v,n):
-            if isinstance(v,Variable):
-                return v(n)
-            else:
-                return v
+
 
         g_eqs = [map_function_to_expression(lambda x: timeshift(x,1),eq) for eq in g_eqs]
         h_eqs = [map_function_to_expression(lambda x: timeshift(x,-1),eq) for eq in h_eqs]
@@ -249,7 +280,7 @@ def model(flag,s,x,ep,e,{param_names}):
         #f.write( text )
         #f.close()
 
-    def process_output_matlab(self):
+    def process_output_matlab(self,with_param_names=False):
         data = self.read_model()
         dmodel = self.model
         model = dmodel
@@ -280,10 +311,13 @@ def model(flag,s,x,ep,e,{param_names}):
             sub_list[v] = 'p({0})'.format(i+1)
 
 
+
+
         text = '''
-function [out1,out2,out3,out4] = {mfname}(flag,s,x,ep,e,p);
+function [out1,out2,out3,out4] = {mfname}(flag,s,x,ep,e,{param_names});
 
 % p is the vector of parameters
+{param_def}
 
 n = size(s,1);
 switch flag
@@ -339,13 +373,17 @@ end;
         eq_h_block += write_der_eqs(h_eqs,controls,'out2')
         eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
 
+        param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
+
+
         text = text.format(
             eq_bounds_block = eq_bounds_block,
             mfname = 'mf_' + model.fname,
             eq_fun_block=eq_f_block,
             state_trans_block=eq_g_block,
             exp_fun_block=eq_h_block,
-            param_names=str.join(',',[p.name for p in dmodel.parameters])
+            param_names= (str.join(',',[p.name for p in dmodel.parameters]) if with_param_names  else 'p'),
+            param_def= param_def if with_param_names else ''
         )
 
         return text
