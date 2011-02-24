@@ -78,6 +78,7 @@ def print_model(model=None, print_residuals=True):
 def print_table( tab,precision=3, col_names=None, row_names=None ):
     if __sage_is_running__:
         from sage.misc.html import HTML
+        html = HTML()
     else:
         raise Exception('Sage is not running.')
     import numpy as np
