@@ -21,4 +21,9 @@ def hpfilter( x, lam=1600 ):
     M *= lam
     M += np.eye(T)
 
-    return np.linalg.solve(M,x)
+    if x.ndim == 1:
+        return np.linalg.solve(M,x)
+    elif x.ndim > 3:
+        raise Exception('HP filter is not defined for dimension >= 3.')
+    else:
+        return np.linalg.solve(M,x.T).T
