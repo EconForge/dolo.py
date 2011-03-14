@@ -280,7 +280,13 @@ def model(flag,s,x,ep,e,{param_names}):
         #f.write( text )
         #f.close()
 
-    def process_output_matlab(self,with_param_names=False):
+    def process_output_matlab(self,target='recs'):
+
+        if target == 'recs':
+            with_param_names = False
+        if target == 'compecon':
+            with_param_names = True
+
         data = self.read_model()
         dmodel = self.model
         model = dmodel

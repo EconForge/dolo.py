@@ -25,9 +25,9 @@ if __name__ == "__main__":
             sys.exit(2)
 
         # Read options
-        options = {"check":False,"ramsey":False, "dynare":False, "output":False, "static-order":2, "dynamic-order":1}
-        short_arg_dict = "hcdro"
-        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey"]
+        options = {"check":False,"ramsey":False, "dynare":False, "output":False, "static-order":2, "dynamic-order":1, "mirfac": False, 'target':'recs'}
+        short_arg_dict = "hcdrom"
+        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey","mirfac","target="]
         try:
             opts, args = getopt.getopt(argv, short_arg_dict, long_arg_dict)
         except getopt.GetoptError:
@@ -51,6 +51,11 @@ if __name__ == "__main__":
                 options["static-order"] = int(arg)
             if opt in ("--dynamic-order",):
                 options["dynamic-order"] = int(arg)
+            if opt in ("--mirfac",'-m'):
+                options["mirfac"] = True
+            if opt in ("--target"):
+                options["target"] = arg
+                print arg
 
         if args == []:
             print("File argument missing")
@@ -114,7 +119,19 @@ if __name__ == "__main__":
             write_file(model.fname + '_dynamic.m', comp.compute_dynamic_mfile(max_order=options["dynamic-order"]))
             write_file(model.fname + '_static.m', comp.compute_static_mfile(max_order=options["static-order"]))
             write_file(model.fname + '.m',  comp.compute_main_file() )
-            
+
+
+        if options['mirfac']:
+            from dolo.compiler.compiler_mirfac import MirFacCompiler
+            model = dynare_model
+
+            mirfac_target = options['target']
+            comp = MirFacCompiler(model)
+
+            write_file( '{0}_{1}.m'.format(model.fname, mirfac_target) ,comp.process_output_matlab(mirfac_target) )
+
+            print comp.perturbation_solution()
+
 
     def write_file(fname,content):
         f = file(fname,'w')
@@ -167,31 +184,24 @@ if __name__ == "__main__":
         f.close()
         print("Ramsey model written to : " + filename_trunc + "_ramsey.mod")
 
-    def write_portfolio_version(filename_trunc,options,model):
-        print("Processing portfolios")
-        portfolio_model = model.process_portfolio_model()
-        f = open(filename_trunc + "_pf.mod","w")
-        f.write(portfolio_model.export_to_modfile())
-        f.close()
-        print("Portfolio model written to : " + filename_trunc + "_pf.mod")
-
     def usage():
 	help_text = '''
-	Usage : dolo.py [options] model.xml|model.mod
+    Usage : dolo.py [options] model.xml|model.mod
 
-        The file argument defining a model can be in Dynare format or in XML format. Its extension determines its type.
-	Available options are :
-				  	without option Dolo does nothing
-	-h      --help            	print this message
-        -c      --check           	model is checked for consistency
+    The file argument defining a model can be in Dynare format or in XML format. Its extension determines its type.
 
-       	-r      --ramsey          	model's equations defining Ramsey's optimal policy are added (not implemented)
+    Available options are :
 
-        -o      --outpout=OUTPUT  	processed model is written to OUTPUT file (not implemented)
+    -h      --help            	print this message
+    -c      --check           	model is checked for consistency
 
-        -d      --dynare
+    -r      --ramsey          	model's equations defining Ramsey's optimal policy are added (not implemented)
+
+    -d      --dynare
                 --static-order=order    _static.m file is written at given order
-		--dynamic-order=order	_dynamic.m file is written at given order
+                --dynamic-order=order	_dynamic.m file is written at given order
+
+    -m      --miranda-fackler
 	'''
 	print(help_text)
 
