@@ -203,10 +203,54 @@ Decision rule (order {order}) :
         )
         return txt
 
-        
-        return txt
+    def gap_to_risky_steady_state(self,x):
+        from dolo.numeric.tensor import mdot
+        d = x - self['ys']
+        res = self['ys'] - x
+        res += np.dot( self['g_a'],d )
+        res += mdot(self['g_aa'],[d,d])
+        res += mdot(self['g_aaa'],[d,d,d])
+        res += self['g_ss']/2
+
+        res += np.dot(self['g_ass'],d)/2
+        return res
+
+    def __call__(self,x,e):
+        from dolo.numeric.tensor import mdot
+        simple = 1
+        d = x - self['ys']
+        res = self['ys'] + np.dot( self['g_a'],d )
+        res += mdot(self['g_aa'],[d,d])/2
+        res += mdot(self['g_aaa'],[d,d,d])/6
+        res += self['g_ss']/2
+        res += np.dot(self['g_ass'],d)/2
+        return res
 
 DecisionRule = DynareDecisionRule
+
+def theoretical_moments(dr,with_correlations=True):
+    maxit = 1000
+    tol = 0.00001
+    A = dr['g_a']
+    B = dr['g_e']
+    Sigma = dr['Sigma']
+    M0 = np.dot(B,np.dot(Sigma,B.T))
+    M1 = M0
+    for i in range( maxit ):
+        M = M0 + np.dot( A, np.dot( M1, A.T ) )
+        if abs( M - M1).max() < tol:
+            break
+        M1 = M
+    if not with_correlations:
+        return M
+    else:
+        cov = M
+        d = np.diag( 1/np.sqrt( np.diag(cov) ) )
+        correl = np.dot(d, np.dot(cov,d.T) )
+        return [M,correl]
+
+
+    
 
 def symmetrize(tens):
     return (tens + tens.swapaxes(3,2) + tens.swapaxes(1,2) + tens.swapaxes(1,2).swapaxes(2,3) + tens.swapaxes(1,3) + tens.swapaxes(1,3).swapaxes(2,3) )/6

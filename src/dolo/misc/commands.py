@@ -97,6 +97,7 @@ def pprint(obj,col_names=None,row_names=None):
         html = HTML()
     if isinstance(obj,dolo.symbolic.model.Model):
         print_model(obj)
+
     elif isinstance(obj,dolo.numeric.decision_rules.DecisionRule):
         dr = obj
         model = dr.model
@@ -107,6 +108,16 @@ def pprint(obj,col_names=None,row_names=None):
         tab = [ [v]+tab[i] for i,v in enumerate(model.variables) ]
         tab = [['']+[s(-1) for s in states]+model.shocks] + tab
         html.table(tab,header=True)
+
+        from dolo.numeric.decision_rules import theoretical_moments
+        [covariances,correlations] = theoretical_moments(dr,with_correlations=True)
+        html('Theoretical moments :')
+        print_table(covariances, col_names=model.variables, row_names=model.variables)
+
+        html('Correlations :')
+        print_table(correlations, col_names=model.variables, row_names=model.variables)
+
+
     elif isinstance(obj,numpy.ndarray):
         tab = obj
         resp = [[ "%.3f" %tab[i,j] for j in range(tab.shape[1]) ] for i in range(tab.shape[0]) ]
