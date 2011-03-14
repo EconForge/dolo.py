@@ -74,7 +74,8 @@ class TSymbol(sympy.Symbol):
 
     def __call__(self,lead):
         if self.lag == 'S':
-            raise Exception,"lags are not allowed on steady state variable"
+            return self
+            #raise Exception,"lags are not allowed on steady state variable"
         else:
             newdate = int(self.date) + lead
             newname = str(self.name)
