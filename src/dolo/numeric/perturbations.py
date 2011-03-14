@@ -74,7 +74,7 @@ def solve_decision_rule(model,order=2,method='default',mlab=None):
         d = new_solver_with_p(derivatives,(n_v,n_s,n_p),max_order=order)
         return d
 
-    d['ys'] = yy
+    d['ys'] = np.array( y )
     d['Sigma'] = Sigma
     ddr = DDR( d , model )
 
