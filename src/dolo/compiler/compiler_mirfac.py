@@ -373,6 +373,9 @@ end;
         eq_h_block += write_der_eqs(h_eqs,controls,'out2')
         eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
 
+        if with_param_names:
+            eq_h_block = 's=snext;\nx=xnext;\n'+eq_h_block
+
         param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
 
 
@@ -382,7 +385,7 @@ end;
             eq_fun_block=eq_f_block,
             state_trans_block=eq_g_block,
             exp_fun_block=eq_h_block,
-            param_names= (str.join(',',[p.name for p in dmodel.parameters]) if with_param_names  else 'p'),
+            param_names= 'snext,xnext,' + (str.join(',',[p.name for p in dmodel.parameters]) if with_param_names  else 'p'),
             param_def= param_def if with_param_names else ''
         )
 
