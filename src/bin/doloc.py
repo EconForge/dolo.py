@@ -25,9 +25,11 @@ if __name__ == "__main__":
             sys.exit(2)
 
         # Read options
-        options = {"check":False,"ramsey":False, "dynare":False, "output":False, "static-order":2, "dynamic-order":1, "mirfac": False, 'target':'recs'}
+        options = {"check":False,"ramsey":False, "dynare":False, "output":False, "static-order":2, "dynamic-order":1, "mirfac": False, 'target':'recs',
+            'solve': False
+        }
         short_arg_dict = "hcdrom"
-        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey","mirfac","target="]
+        long_arg_dict = ["help","check","dynare","static-order=","dynamic-order=","output=","ramsey","mirfac","target=",'solve']
         try:
             opts, args = getopt.getopt(argv, short_arg_dict, long_arg_dict)
         except getopt.GetoptError:
@@ -55,6 +57,8 @@ if __name__ == "__main__":
                 options["mirfac"] = True
             if opt in ("--target"):
                 options["target"] = arg
+            if opt in ("--solve"):
+                options["solve"] = True
                 print arg
 
         if args == []:
@@ -70,11 +74,11 @@ if __name__ == "__main__":
             filetype = "mod"
             filename_trunc = regex_mod_match.groups()[0]
 
-        regex_xml = re.compile("(.*)\.xml")
-        regex_xml_match = re.match(regex_xml,filename)
-        if regex_xml_match:
-            filetype = "xml"
-            filename_trunc = regex_xml_match.groups()[0]
+        regex_yaml = re.compile("(.*)\.yaml")
+        regex_yaml_match = re.match(regex_yaml,filename)
+        if regex_yaml_match:
+            filetype = "yaml"
+            filename_trunc = regex_yaml_match.groups()[0]
 
 
         current_dir = os.getcwd()
@@ -86,9 +90,14 @@ if __name__ == "__main__":
 
         # Import the model
         if filetype == "mod":
-            dynare_model = dynare_import(filename)
+            model = dynare_import(filename)
 
-        dynare_model.check_consistency(verbose=True)
+        elif filetype == "yaml":
+            from dolo.misc.yamlfile import yaml_import
+            model = yaml_import(filename)
+
+
+        model.check_consistency(verbose=True)
         
         #elif filetype == "xml":
         #    import_xmlfile(filename_trunc,options)
@@ -97,7 +106,7 @@ if __name__ == "__main__":
         if options['ramsey']:
             from dolo.symbolic.ramsey import RamseyModel
             #dynare_model.introduce_auxiliary_variables()
-            dynare_model.check()
+            model.check()
             
             rmodel = RamseyModel(dynare_model)
             rmodel.check(verbose=True)
@@ -107,12 +116,11 @@ if __name__ == "__main__":
 
         if options['output']:
             from dolo.compiler.compiler_dynare import DynareCompiler
-            comp = DynareCompiler(dynare_model)
+            comp = DynareCompiler(model)
             comp.export_to_modfile()
 
         if options['dynare']:
             from dolo.compiler.compiler_dynare import DynareCompiler
-            model = dynare_model
 
             comp = DynareCompiler(model)
 
@@ -123,15 +131,13 @@ if __name__ == "__main__":
 
         if options['mirfac']:
             from dolo.compiler.compiler_mirfac import MirFacCompiler
-            model = dynare_model
-
+            
             mirfac_target = options['target']
             comp = MirFacCompiler(model)
+            
+            out_txt = comp.process_output_matlab(mirfac_target, with_parameters_values=True, with_solution=options['solve'])
 
-            write_file( '{0}_{1}.m'.format(model.fname, mirfac_target) ,comp.process_output_matlab(mirfac_target) )
-
-            print comp.perturbation_solution()
-
+            write_file( '{0}_{1}.m'.format(model.fname, mirfac_target) , out_txt )
 
     def write_file(fname,content):
         f = file(fname,'w')
@@ -153,8 +159,6 @@ if __name__ == "__main__":
 
         model.fname = fname
 
-        #model = resp['model']
-
         model.check_consistency(verbose=True)
 
         comp = DynareCompiler(model)
@@ -171,11 +175,6 @@ if __name__ == "__main__":
 #            print(pf_solver.export_to_modfile())
 
 
-    def process_xmlfile(filename_trunc,options={}):
-        '''process xml file ; returns parsed model with symbolic equations'''
-
-        return(model)
-
     def write_ramsey_policy(filename_trunc,options,model):
         #model.export_to_modfile()
         ramsey_model = model.process_ramsey_policy_model()
@@ -186,9 +185,9 @@ if __name__ == "__main__":
 
     def usage():
 	help_text = '''
-    Usage : dolo.py [options] model.xml|model.mod
+    Usage : dolo.py [options] model.yaml|model.mod
 
-    The file argument defining a model can be in Dynare format or in XML format. Its extension determines its type.
+    The file argument defining a model can be in Dynare format or in YAML format. Its extension determines its type.
 
     Available options are :
 
