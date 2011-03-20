@@ -50,9 +50,9 @@ class MirFacCompiler(Compiler):
 
 
 
-        f_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='f']
-        g_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='g']
-        h_eqs = [eq for eq in dmodel.equations if 'h' == eq.tags['eq_type']]            
+        f_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('f','arbitrage')]
+        g_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('g','transition')]
+        h_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('h','expectation')]
 
 
         
@@ -82,7 +82,7 @@ class MirFacCompiler(Compiler):
 
         # read complementarity conditions
         compcond = {}
-        of_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type']=='f']
+        of_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('f','arbitrage')]
         locals = {}
         import sympy
         locals['inf'] = sympy.Symbol('inf')
@@ -280,7 +280,7 @@ def model(flag,s,x,ep,e,{param_names}):
         #f.write( text )
         #f.close()
 
-    def process_output_matlab(self,target='recs'):
+    def process_output_matlab(self,target='recs',with_parameters_values=True, with_solution=False):
 
         if target == 'recs':
             with_param_names = False
@@ -325,20 +325,30 @@ function [out1,out2,out3,out4] = {mfname}(flag,s,x,ep,e,{param_names});
 % p is the vector of parameters
 {param_def}
 
-n = size(s,1);
 switch flag
 
 case 'b';
+    n = size(s,1);
 {eq_bounds_block}
 
 case 'f';
+    n = size(s,1);
 {eq_fun_block}
 
 case 'g';
+    n = size(s,1);
 {state_trans_block}
 
 case 'h';
+    n = size(s,1);
 {exp_fun_block}
+
+case 'params';
+{params_values}
+
+case 'solution';
+{solution}
+
 
 end;
 '''
@@ -374,15 +384,46 @@ end;
         eq_g_block += write_der_eqs(g_eqs,controls,'out2')
         eq_g_block += write_der_eqs(g_eqs,states_vars,'out3')
 
+        if target == 'recs':
+            eq_h_block = write_eqs(h_eqs)
+            eq_h_block += '    out2 = zeros(n,{0},{1});\n'.format(len(h_eqs),len(controls)) ### TODO write the proper terms
+            eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
+            eq_h_block += write_der_eqs(h_eqs,controls,'out4')
+        else:
+            eq_h_block = write_eqs(h_eqs)
+            eq_h_block += write_der_eqs(h_eqs,controls,'out2')
+            eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
 
-        eq_h_block = write_eqs(h_eqs)
-        eq_h_block += write_der_eqs(h_eqs,controls,'out2')
-        eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
-
-        if with_param_names:
+        if not with_param_names:
             eq_h_block = 's=snext;\nx=xnext;\n'+eq_h_block
 
         param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
+
+        if not with_parameters_values:
+            params_values = ''
+        else:
+            params_values = 'out1 = [' + str.join(  ',', [ str( model.parameters_values[p] ) for p in model.parameters] ) + '];'
+
+        if with_solution:
+            from dolo.misc.matlab import value_to_mat
+            [[s_ss,x_ss],[X,Y,Z],bounds] = self.perturbation_solution()
+            solution = \
+'''    sol = struct;
+       sol.s_ss = {s_ss};
+       sol.x_ss = {x_ss};
+       sol.X = {X};
+       sol.Y = {Y};
+       sol.Z = {Z};
+       out1 = sol;
+'''.format(
+    s_ss = value_to_mat(s_ss),
+    x_ss = value_to_mat(x_ss),
+    X = value_to_mat(X),
+    Y = value_to_mat(Y),
+    Z = value_to_mat(Z)
+)
+        else:
+            solution = ''
 
 
         text = text.format(
@@ -392,7 +433,9 @@ end;
             state_trans_block=eq_g_block,
             exp_fun_block=eq_h_block,
             param_names= 'snext,xnext,' + (str.join(',',[p.name for p in dmodel.parameters]) if with_param_names  else 'p'),
-            param_def= param_def if with_param_names else ''
+            param_def= param_def if with_param_names else '',
+            params_values = params_values,
+            solution = solution,
         )
 
         return text
