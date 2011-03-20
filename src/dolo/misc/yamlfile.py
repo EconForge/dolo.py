@@ -331,3 +331,19 @@ def dynare_import(filename,names_dict={},full_output=False):
     model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
     model['name'] = fname
     return model
+
+
+def undeclare_variables_not_in_equations():
+    frame = inspect.currentframe().f_back
+    equations = frame.f_globals['equations']
+    variables = frame.f_globals['variables']
+    init_values = frame.f_globals['init_values']
+    l = set()
+    for eq in equations:
+        l=l.union(  [v.P for v in eq.variables] )
+    absent_variables = [v for v in variables if not v in l]
+    for v in absent_variables:
+        variables.remove(v)
+        if v in init_values:
+            init_values.pop(v)
+    del(frame)
