@@ -19,12 +19,13 @@ def parse_yaml_text(txt):
     # check
     if 'controls' in declarations:
         vnames = declarations['states'] + declarations['controls'] + declarations['expectations']
+        if 'auxiliary' in declarations:
+            vnames += declarations['auxiliary']
     else:
         vnames = declarations['variables']
 
     variables_ordering = [Variable(vn,0) for vn in vnames]
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
-    print parameters_ordering
     shocks_ordering = [Shock(vn,0) for vn in declarations['shocks']]
 
     context = {s.name: s for s in variables_ordering + parameters_ordering + shocks_ordering}
@@ -61,8 +62,6 @@ def parse_yaml_text(txt):
     init_values = { Variable(vn,0): eval(str(value),context)   for  vn,value in  calibration['steady_state'].iteritems()  }
 
     covariances = eval('np.array({0})'.format( calibration['covariances'] ))
-    print init_values
-    print parameters_values
 
     model_dict = {
         'variables_ordering': variables_ordering,
