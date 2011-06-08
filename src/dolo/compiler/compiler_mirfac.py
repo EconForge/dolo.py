@@ -8,15 +8,17 @@ class MirFacCompiler(Compiler):
     
     def __init__(self,model):
         self.model = model
+        self.__transformed_model__ = None
         # we assume model has already been checked
 
     def read_model(self):
+    
+        if self.__transformed_model__:
+            return self.__transformed_model__
 
-        dmodel = self.model
-        model = dmodel
+        dmodel = Model(**self.model) # copy the model
 
-        def_eqs = [eq for eq in dmodel.equations if 'def' == eq.tags['eq_type']]
-
+        def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'definition')]
 
         from dolo.misc.misc import map_function_to_expression
         from dolo.symbolic.symbolic import Variable
@@ -28,7 +30,7 @@ class MirFacCompiler(Compiler):
 
         import sympy
 
-        #### built substitution dict
+        #### build substitution dict
         def_dict = {}
         for eq in def_eqs:
             v = eq.lhs
@@ -71,9 +73,6 @@ class MirFacCompiler(Compiler):
         g_eqs = [eq.rhs for eq in g_eqs]
         h_eqs = [eq.rhs for eq in h_eqs]
 
-
-
-
         g_eqs = [map_function_to_expression(lambda x: timeshift(x,1),eq) for eq in g_eqs]
         h_eqs = [map_function_to_expression(lambda x: timeshift(x,-1),eq) for eq in h_eqs]
 
@@ -86,7 +85,7 @@ class MirFacCompiler(Compiler):
         locals = {}
         import sympy
         locals['inf'] = sympy.Symbol('inf')
-        for v in model.variables + model.parameters:
+        for v in dmodel.variables + dmodel.parameters:
             locals[v.name] = v
         import re
         compregex = re.compile('(.*)<=(.*)<=(.*)')
@@ -111,10 +110,13 @@ class MirFacCompiler(Compiler):
             'inf_bounds': inf_bounds,
             'sup_bounds': sup_bounds
         }
+        
+        self.__transformed_model__ = data # cache computation
+
         return data
 
 
-    def perturbation_solution(self):
+    def perturbation_solution(self,with_bounds=False):
         """
         Returns perturbation solution around the steady-state
         Result is [X,Y,Z] representing :
@@ -141,31 +143,34 @@ class MirFacCompiler(Compiler):
         X = A[:,states_i] + np.dot( A[:,controls_i], Z )
         Y = dr.ghu[states_i,:]
 
-        # We also compute bounds for distribution at a given probability interval
-
-        M = np.linalg.solve( 1-X, Y)
-
-        Sigma = np.array(model.covariances).astype(np.float64)
-        [V,P] = np.linalg.eigh(Sigma)
-        # we have Sigma == P * diag(V) * P.T
-        # unconditional distribution is ( P*diag(V) ) * N
-        # where N is the normal distribution associated
-        H = np.dot(Y,np.dot(P,np.diag(V)))
-        n_s = Sigma.shape[0]
-        I = np.eye(n_s)
-        points = np.concatenate([H,-H],axis=1)
-        lam = 2 # this coefficient should be more cleverly defined
-        p_infs = np.min(points,axis = 1) * lam
-        p_max  = np.max(points,axis = 1) * lam
-
         # steady_state values
         s_ss = dr['ys'][states_i,]
         x_ss = dr['ys'][controls_i,]
 
-        bounds = np.row_stack([
-            s_ss + p_infs,
-            s_ss + p_max
-        ])
+        # We also compute bounds for distribution at a given probability interval
+        if with_bounds:
+            M = np.linalg.solve( 1-X, Y)
+
+            Sigma = np.array(model.covariances).astype(np.float64)
+            [V,P] = np.linalg.eigh(Sigma)
+            # we have Sigma == P * diag(V) * P.T
+            # unconditional distribution is ( P*diag(V) ) * N
+            # where N is the normal distribution associated
+            H = np.dot(Y,np.dot(P,np.diag(V)))
+            n_s = Sigma.shape[0]
+            I = np.eye(n_s)
+            points = np.concatenate([H,-H],axis=1)
+            lam = 2 # this coefficient should be more cleverly defined
+            p_infs = np.min(points,axis = 1) * lam
+            p_max  = np.max(points,axis = 1) * lam
+
+            bounds = np.row_stack([
+                s_ss + p_infs,
+                s_ss + p_max
+            ])
+        else:
+            bounds = None
+            
         return [[s_ss,x_ss],[X,Y,Z],bounds]
 
 
