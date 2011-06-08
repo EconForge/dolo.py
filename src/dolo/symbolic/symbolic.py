@@ -336,7 +336,7 @@ def split_name_into_parts(a):
     return [rad, indices, exponents]
 
 gl = ['alpha', 'beta', 'gamma', 'delta', 'eta','epsilon', 'iota', 'kappa',
-'lambda', 'mu', 'nu', 'rho', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
+'lambda', 'mu', 'nu', 'rho','pi', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
 'Gamma', 'Delta', 'Lambda', 'Sigma','Theta','Upsilon','Omega','Xi' , 'Pi' ,'Phi','Psi' ]
 greek_letters = dict([ (x,'\\' + x ) for x in gl ])
 
