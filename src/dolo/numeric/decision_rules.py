@@ -283,7 +283,7 @@ def fold(tens):
 
 
 
-def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, percentages=False, plot=True):
+def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, percentages=False, deviations=True, plot=True):
     
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
@@ -305,7 +305,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         i_s = shock
 
     E = np.zeros(  n_s )
-    E[i_s] = 0.01
+    E[i_s] = np.sqrt( dr.Sigma[i_s,i_s] )
 
     simul = np.zeros( (n_v, horizon+1) )
     simul[:,0] = np.dot(B,E)
@@ -316,7 +316,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
     if percentages:
         for i in range(n_v):
             simul[i,:] = simul[i,:]/dr['ys'][i] * 100
-    else:
+    elif not deviations:
         for i in range(n_v):
             simul[i,:] += dr['ys'][i]
 
@@ -349,7 +349,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
     return simul
 
-def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentages=False, plot=True, seed=None):
+def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentages=False, deviations=True, plot=True, seed=None):
 
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
@@ -388,7 +388,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentag
     if percentages:
         for i in range(n_v):
             simul[i,:] = simul[i,:]/dr['ys'][i] * 100
-    else:
+    elif not deviations:
         for i in range(n_v):
             simul[i,:] += dr['ys'][i]
 
