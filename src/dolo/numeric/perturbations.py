@@ -7,13 +7,16 @@ from dolo.numeric.decision_rules import DynareDecisionRule as DDR
 import numpy as np
 
 TOL = 1E-10
+TOL_RES = 1E-8
 
-def solve_decision_rule(model,order=2,method='default',mlab=None):
+def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None):
 
     
     Sigma = np.array(model.covariances).astype(np.float64)
 
     [y,x,parms] = compute_steadystate_values(model)
+    if steady_state != None:
+        y = steady_state
     #pc = PythonCompiler(model)
     pc = model.compiler
     if method == 'default':
@@ -33,7 +36,7 @@ def solve_decision_rule(model,order=2,method='default',mlab=None):
     derivatives = p_dynamic(yy,xx,parms)
 
     res = derivatives[0]
-    if abs(res).max() > TOL:
+    if abs(res).max() > TOL_RES:
         print 'Residuals\n'
         for i,eq in enumerate(model.equations):
             print '{0}\t:{1}\t:\t{2}'.format(i,res[i],eq+1)

@@ -51,7 +51,7 @@ class PythonCompiler(Compiler):
 # Model equations
 #
     import numpy as np
-    from numpy import exp,log,atan
+    from numpy import exp,log
 
     it_ = 1 # should remove this !
 
