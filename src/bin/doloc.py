@@ -11,8 +11,11 @@ import os
 import getopt
 #import commands
 
-from dolo import *
-from dolo.compiler.compiler_dynare import *
+#from dolo import *
+import re
+from dolo.misc.modfile import dynare_import
+from dolo.compiler.compiler_dynare import DynareCompiler
+from dolo.compiler.compiler_mirfac import MirFacCompiler
 
 if __name__ == "__main__":
 
