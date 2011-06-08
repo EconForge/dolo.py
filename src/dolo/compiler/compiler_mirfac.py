@@ -63,6 +63,8 @@ class MirFacCompiler(Compiler):
         controls = set(dmodel.variables) - set(states_vars + exp_vars)
         controls = list(controls)
 
+        print 'controls: ' + str(controls)
+
         states_vars = [v for v in dmodel.variables if v in states_vars]
         exp_vars = [v for v in dmodel.variables if v in exp_vars]
         controls = [v for v in dmodel.variables if v in controls]
@@ -131,7 +133,7 @@ class MirFacCompiler(Compiler):
         states_i = [model.variables.index(v) for v in data['states_vars'] ]
 
         from dolo.numeric.perturbations import solve_decision_rule
-        dr = solve_decision_rule(model)
+        dr = solve_decision_rule(model,order=1)
 
 
         A = dr['g_a'][states_i,:]
@@ -407,7 +409,8 @@ end;
         if not with_parameters_values:
             params_values = ''
         else:
-            params_values = 'out1 = [' + str.join(  ',', [ str( model.parameters_values[p] ) for p in model.parameters] ) + '];'
+            [y,x,params] = model.compute_steadystate_values()
+            params_values = 'out1 = [' + str.join(  ',', [ str( p ) for p in params] ) + '];'
 
         if with_solution:
             from dolo.misc.matlab import value_to_mat
