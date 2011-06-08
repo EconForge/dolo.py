@@ -51,7 +51,7 @@ class PythonCompiler(Compiler):
 # Model equations
 #
     import numpy as np
-    from numpy import exp,log
+    from numpy import exp,log,atan
 
     it_ = 1 # should remove this !
 
@@ -157,6 +157,7 @@ class PythonCompiler(Compiler):
 
     import numpy as np
     from numpy import exp, log
+    from numpy import arctan as atan
 
     g = []
 
@@ -218,6 +219,7 @@ class PythonCompiler(Compiler):
             txt += "    g.append(g{order})\n".format(order=current_order)
         txt += "    return g\n"
         txt = txt.replace('^','**')
+        
         exec txt
         return dynamic_gaps
 

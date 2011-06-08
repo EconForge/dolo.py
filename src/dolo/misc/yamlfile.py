@@ -29,6 +29,11 @@ def parse_yaml_text(txt):
     shocks_ordering = [Shock(vn,0) for vn in declarations['shocks']]
 
     context = {s.name: s for s in variables_ordering + parameters_ordering + shocks_ordering}
+
+    # add some common functions
+    for f in [sympy.log, sympy.exp, sympy.atan, sympy.pi]:
+        context[str(f)] = f
+
     equations = []
     raw_equations = raw_dict['equations']
     if isinstance(raw_equations,dict):   # tests whether there are groups of equations
