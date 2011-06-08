@@ -305,7 +305,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         i_s = shock
 
     E = np.zeros(  n_s )
-    E[i_s] = np.sqrt( dr.Sigma[i_s,i_s] )
+    E[i_s] = dr['Sigma'][i_s,i_s]
 
     simul = np.zeros( (n_v, horizon+1) )
     simul[:,0] = np.dot(B,E)
