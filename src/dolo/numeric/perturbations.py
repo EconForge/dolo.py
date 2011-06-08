@@ -9,6 +9,7 @@ import numpy as np
 TOL = 1E-10
 
 def solve_decision_rule(model,order=2,method='default',mlab=None):
+
     
     Sigma = np.array(model.covariances).astype(np.float64)
 
@@ -33,7 +34,9 @@ def solve_decision_rule(model,order=2,method='default',mlab=None):
 
     res = derivatives[0]
     if abs(res).max() > TOL:
-        print res        
+        print 'Residuals\n'
+        for i,eq in enumerate(model.equations):
+            print '{0}\t:{1}\t:\t{2}'.format(i,res[i],eq+1)
         raise Exception("Initial values don't satisfy static equations")
 
     derivatives_ss = None
@@ -62,7 +65,6 @@ def solve_decision_rule(model,order=2,method='default',mlab=None):
             f_1ss = f_3[:,:nt,nt,nt]
             derivatives = [f_0,ft_1,ft_2,ft_3]
             derivatives_ss = [f_ss,f_1ss]
-
 
     if method in ('sigma2','default'):
         d = perturb_solver(derivatives, Sigma, max_order=order, derivatives_ss=derivatives_ss,mlab=mlab)
@@ -106,6 +108,7 @@ def compute_steadystate_values(model):
 
 def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=None):
 
+
     if max_order == 1:
         [f_0,f_1] = derivatives
     elif max_order == 2:
@@ -126,7 +129,6 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=No
     f1_B = f[1][:,n:(2*n)]
     f1_C = f[1][:,(2*n):(3*n)]
     f1_D = f[1][:,(3*n):]
-
 
     ## first order
     [ev,g_x] = second_order_solver(f1_A,f1_B,f1_C)
