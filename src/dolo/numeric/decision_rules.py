@@ -12,11 +12,11 @@ class TaylorExpansion(dict):
     @memoized
     def order(self):
         order = 0
-        if self.get('g_a') != None:
+        if self.get('g_a') is not None:
             order = 1
-        if self.get('g_aa') != None:
+        if self.get('g_aa') is not None:
             order = 2
-        if self.get('g_aaa') != None:
+        if self.get('g_aaa') is not None:
             order = 3
         return order
 
@@ -31,16 +31,6 @@ class DynareDecisionRule(TaylorExpansion):
         self.dr_var_order_i = [model.variables.index(v) for v in model.dr_var_order]
         self.dr_states_order = [v for v in model.dr_var_order if v in model.state_variables]
         self.dr_states_i = [model.variables.index(v) for v in self.dr_states_order]
-
-    def order(self):
-        if 'g_aaa' in self:
-            return 3
-        if 'g_aa' in self:
-            return 2
-        if 'g_a' in self:
-            return 1
-        return Exception("Empty decision rule")
-        
 
     @property
     @memoized
@@ -198,7 +188,6 @@ Decision rule (order {order}) :
 
 {foc}
 '''
-        import scipy
         mat = np.concatenate([self.ghx,self.ghu],axis=1)
         if self.order > 1:
             msg = '\n    (Only first order derivatives are printed)\n'
@@ -242,7 +231,6 @@ Decision rule (order {order}) :
 
     def __call__(self,x,e,order=None):
         from dolo.numeric.tensor import mdot
-        simple = 1
         d = x - self['ys']
         res = self['ys'] + np.dot( self['g_a'], d )
         res += np.dot( self['g_e'], e )
@@ -418,6 +406,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, start=Non
     RSS = dr.risky_ss()
     if start is None:
         start = RSS
+        
     simul[:,0] = start
     for i in range(horizon):
         simul[:,i+1] = dr( simul[:,i], E[:,i] )
