@@ -191,20 +191,18 @@ class Model(dict):
 
 
 def compute_residuals(model):
-
-    from dolo.misc.calculus import solve_triangular_system
-    dvars = dict()
-    dvars.update(model.parameters_values)
-    dvars.update(model.init_values)
-    for v in model.variables:
-        if v not in dvars:
-            dvars[v] = 0
-    # what are we supposed to do with parameters ?
-    values = solve_triangular_system(dvars)[0]
+    [y,x,parms] = model.compute_steadystate_values()
+    dd_v = dict([(model.variables[i],y[i]) for i in range(len(y))])
+    dd_p = dict([(model.parameters[i],parms[i]) for i in range(len(parms))])
+    dd_x = dict([(v,0) for v in model.shocks])
+    dd = dict()
+    dd.update(dd_v)
+    dd.update(dd_p)
+    dd.update(dd_x)
     stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
     stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
     stateq = [ eq.rhs - eq.lhs for eq in stateq ]
-    residuals = [ eq.subs(values) for eq in stateq ]
+    residuals = [ float(eq.subs(dd)) for eq in stateq ]
     return residuals
 
 if __name__ == '__main__':
