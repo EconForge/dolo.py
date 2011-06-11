@@ -32,6 +32,16 @@ class DynareDecisionRule(TaylorExpansion):
         self.dr_states_order = [v for v in model.dr_var_order if v in model.state_variables]
         self.dr_states_i = [model.variables.index(v) for v in self.dr_states_order]
 
+    def order(self):
+        if 'g_aaa' in self:
+            return 3
+        if 'g_aa' in self:
+            return 2
+        if 'g_a' in self:
+            return 1
+        return Exception("Empty decision rule")
+        
+
     @property
     @memoized
     def ghx(self):
@@ -81,7 +91,9 @@ class DynareDecisionRule(TaylorExpansion):
     @property
     @memoized
     def ghs2(self):
-        return self.get('g_ss')
+        ghs2 = self.get('g_ss')
+        ghs2 = ghs2[self.dr_var_order_i]
+        return ghs2
 
 
     @property
@@ -203,6 +215,20 @@ Decision rule (order {order}) :
         )
         return txt
 
+    @memoized
+    def risky_ss(self):
+        oo = self.order()
+        if oo == 1:
+            return self['ys']
+        elif oo in (2,3):
+            #TODO: RSS for order 3 should be computed differently
+            import numpy.linalg      
+            A = self['g_a']
+            I = np.eye(A.shape[0])
+            D = self['g_ss']/2
+            dx = numpy.linalg.solve( I - A, D)
+            return self['ys'] + dx
+        
     def gap_to_risky_steady_state(self,x):
         from dolo.numeric.tensor import mdot
         d = x - self['ys']
@@ -211,19 +237,27 @@ Decision rule (order {order}) :
         res += mdot(self['g_aa'],[d,d])
         res += mdot(self['g_aaa'],[d,d,d])
         res += self['g_ss']/2
-
         res += np.dot(self['g_ass'],d)/2
         return res
 
-    def __call__(self,x,e):
+    def __call__(self,x,e,order=None):
         from dolo.numeric.tensor import mdot
         simple = 1
         d = x - self['ys']
-        res = self['ys'] + np.dot( self['g_a'],d )
-        res += mdot(self['g_aa'],[d,d])/2
-        res += mdot(self['g_aaa'],[d,d,d])/6
-        res += self['g_ss']/2
-        res += np.dot(self['g_ass'],d)/2
+        res = self['ys'] + np.dot( self['g_a'], d )
+        res += np.dot( self['g_e'], e )
+        if ('g_aa' in self) or (order >=2):
+            res += mdot(self['g_aa'],[d,d])/2
+            res += mdot(self['g_ae'],[d,e])
+            res += mdot(self['g_ee'],[e,e])/2
+            res += self['g_ss']/2
+        if ('g_aaa' in self) or (order >=3):
+            res += mdot(self['g_aaa'],[d,d,d])/6
+            res += mdot(self['g_aae'],[d,d,e])/3
+            res += mdot(self['g_aee'],[d,e,e])/3
+            res += mdot(self['g_eee'],[e,e,e])/6
+            res += np.dot(self['g_ass'],d)/2
+            res += np.dot(self['g_ess'],e)/2
         return res
 
 DecisionRule = DynareDecisionRule
@@ -283,7 +317,7 @@ def fold(tens):
 
 
 
-def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, percentages=False, deviations=True, plot=True):
+def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, output='deviations', plot=True):
     
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
@@ -291,6 +325,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
     dr = decision_rule
     A = dr['g_a']
     B = dr['g_e']
+    Sigma = dr['Sigma']
 
     [n_v, n_s] = [ len(dr.model.variables), len(dr.model.shocks) ]
 
@@ -304,21 +339,33 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
     else:
         i_s = shock
 
-    E = np.zeros(  n_s )
-    E[i_s] = np.sqrt(dr['Sigma'][i_s,i_s])
+    E0 = np.zeros(  n_s )
+    E0[i_s] = np.sqrt(dr['Sigma'][i_s,i_s])
+
+    E = E0*0
+
+    RSS = dr.risky_ss()
 
     simul = np.zeros( (n_v, horizon+1) )
-    simul[:,0] = np.dot(B,E)
+
+    start = dr( RSS, E0 )
+    simul[:,0] = start
     for i in range(horizon):
-        simul[:,i+1] = np.dot( A, simul[:,i])
+        simul[:,i+1] = dr( simul[:,i], E )
 
+    # TODO: change the correction so that it corresponds to the risky steady-state
+    constant = np.tile(RSS, ( horizon+1, 1) ).T
+    if output == 'deviations':
+        simul = simul - constant
+    elif output == 'logs':
+        simul = np.log((simul-constant)/constant)
+    elif output == 'percentages':
+        simul = (simul-constant)/constant*100
+    elif output == 'levels':
+        pass
+    else:
+        raise Exception("Unknown output type")
 
-    if percentages:
-        for i in range(n_v):
-            simul[i,:] = simul[i,:]/dr['ys'][i] * 100
-    elif not deviations:
-        for i in range(n_v):
-            simul[i,:] += dr['ys'][i]
 
     if variables:
         from dolo.symbolic.symbolic import Variable
@@ -338,10 +385,12 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
             pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
         pylab.plot(x,x*0,'--',color='black')
         pylab.xlabel('$t$')
-        if percentages:
+        if output == 'percentages':
             pylab.ylabel('% deviations from the steady-state')
-        else:
+        elif output == 'deviations':
             pylab.ylabel('Deviations from the steady-state')
+        elif output == 'levels':
+            pylab.ylabel('Levels')
         pylab.legend()
         filename = 'irf_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
         pylab.savefig(filename) # not good...
@@ -349,48 +398,42 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
     return simul
 
-def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentages=False, deviations=True, plot=True, seed=None):
+def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, start=None, output='deviations', plot=True, seed=None):
 
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
 
     dr = decision_rule
-    A = dr['g_a']
-    B = dr['g_e']
 
     [n_v, n_s] = [ len(dr.model.variables), len(dr.model.shocks) ]
-
-
-#    if isinstance(shock,int):
-#        i_s = shock
-#    elif isinstance(shock,str):
-#        from dolo.symbolic.symbolic import Shock
-#        shock =  Shock(shock,0)
-#        i_s = dr.model.shocks.index( shock )
-#    else:
-#        i_s = shock
-#
-#
-#
-
-    simul = np.zeros( (n_v, horizon+1) )
-
 
     Sigma = dr['Sigma']
     if seed:
         np.random.seed(seed)
+
     E = np.random.multivariate_normal((0,)*n_s,Sigma,horizon)
     E = E.T
+
+    simul = np.zeros( (n_v, horizon+1) )
+    RSS = dr.risky_ss()
+    if start is None:
+        start = RSS
+    simul[:,0] = start
     for i in range(horizon):
-        simul[:,i+1] = np.dot( A, simul[:,i]) + np.dot( B, E[:,i] )
+        simul[:,i+1] = dr( simul[:,i], E[:,i] )
 
-
-    if percentages:
-        for i in range(n_v):
-            simul[i,:] = simul[i,:]/dr['ys'][i] * 100
-    elif not deviations:
-        for i in range(n_v):
-            simul[i,:] += dr['ys'][i]
+    # TODO: change the correction so that it corresponds to the risky steady-state
+    constant = np.tile(RSS, ( horizon+1, 1) ).T
+    if output == 'deviations':
+        simul = simul - constant
+    elif output == 'logs':
+        simul = np.log((simul-constant)/constant)
+    elif output == 'percentages':
+        simul = (simul-constant)/constant*100
+    elif output == 'levels':
+        pass
+    else:
+        raise Exception("Unknown output type")
 
     if variables:
         from dolo.symbolic.symbolic import Variable
@@ -410,10 +453,12 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, percentag
             pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
         pylab.plot(x,x*0,'--',color='black')
         pylab.xlabel('$t$')
-        if percentages:
+        if output == 'percentages':
             pylab.ylabel('% deviations from the steady-state')
-        else:
+        elif output == 'deviations':
             pylab.ylabel('Deviations from the steady-state')
+        elif output == 'levels':
+            pylab.ylabel('Levels')
         pylab.legend()
         filename = 'simul_' + '_' + str.join('_',[str(v) for v in variables])
         pylab.savefig(filename) # not good...

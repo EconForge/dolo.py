@@ -117,6 +117,11 @@ def pprint(obj,col_names=None,row_names=None):
         html('Correlations :')
         print_table(correlations, col_names=model.variables, row_names=model.variables)
 
+    elif isinstance(obj,dict):
+        t = []
+        for k in obj:
+            t.append([k,obj[k]])
+        html.table(t)
 
     elif isinstance(obj,numpy.ndarray):
         tab = obj

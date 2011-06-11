@@ -186,7 +186,16 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=No
     #B = f_d
     #C = g_a
     D = K_aa + sdot(f_d,L_aa)
-    g_aa = solve_sylvester(A,B,C,D)
+    if mlab==None:
+        g_aa = solve_sylvester(A,B,C,D,mlab=mlab)
+    else:
+        n_d = D.ndim - 1
+        n_v = C.shape[1]
+        CC = np.kron(C,C)
+        DD = D.reshape( n_v, n_v**n_d )
+        [err,E] = mlab.gensylv(2,A,B,C,DD,nout=2)
+        g_aa = - E.reshape((n_v,n_v,n_v)) # check that - is correct
+
 
     if order < max_order:
         Y = L_aa + mdot(g_a,[g_aa]) + mdot(g_aa,[g_a,g_a])
