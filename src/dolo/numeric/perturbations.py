@@ -187,7 +187,7 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=No
     #C = g_a
     D = K_aa + sdot(f_d,L_aa)
     if mlab==None:
-        g_aa = solve_sylvester(A,B,C,D,mlab=mlab)
+        g_aa = solve_sylvester(A,B,C,D)
     else:
         n_d = D.ndim - 1
         n_v = C.shape[1]

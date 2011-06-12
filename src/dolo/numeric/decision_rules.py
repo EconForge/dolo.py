@@ -206,7 +206,7 @@ Decision rule (order {order}) :
 
     @memoized
     def risky_ss(self):
-        oo = self.order()
+        oo = self.order
         if oo == 1:
             return self['ys']
         elif oo in (2,3):
@@ -231,6 +231,8 @@ Decision rule (order {order}) :
 
     def __call__(self,x,e,order=None):
         from dolo.numeric.tensor import mdot
+        if order is None:
+            order = self.order
         d = x - self['ys']
         res = self['ys'] + np.dot( self['g_a'], d )
         res += np.dot( self['g_e'], e )
