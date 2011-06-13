@@ -13,7 +13,7 @@ import numpy
 from pylab import *
 
 try:
-    import sagenb as sage
+    import sage
     __sage_instance__ = sage
     __sage_is_running__ = True
     #del sage
@@ -44,7 +44,7 @@ def dolo_help():
     - pprint : prints a model or a decision rule
 """
     if __sage_is_running__:
-        from sagenb.misc.html import HTML
+        from sage.misc.html import HTML
         html = HTML()
         html(txt)
 
@@ -61,9 +61,9 @@ def print_model(model=None, print_residuals=True):
 
     if not model:
         model = get_current_model()
-
+        
     if __sage_is_running__:
-        from sagenb.misc.html import HTML
+        from sage.misc.html import HTML
         html = HTML()
         if print_residuals:
             from dolo.symbolic.model import compute_residuals
@@ -77,7 +77,7 @@ def print_model(model=None, print_residuals=True):
 
 def print_table( tab,precision=3, col_names=None, row_names=None ):
     if __sage_is_running__:
-        from sagenb.misc.html import HTML
+        from sage.misc.html import HTML
         html = HTML()
     else:
         raise Exception('Sage is not running.')
@@ -93,7 +93,7 @@ def print_table( tab,precision=3, col_names=None, row_names=None ):
 
 def pprint(obj,col_names=None,row_names=None):
     if __sage_is_running__:
-        from sagenb.misc.html import HTML
+        from sage.misc.html import HTML
         html = HTML()
     if isinstance(obj,dolo.symbolic.model.Model):
         print_model(obj)
@@ -140,7 +140,7 @@ def pprint(obj,col_names=None,row_names=None):
 
 def simulated_moments(decision_rule):
     dr = decision_rule
-
+    
 
 
 class ModFileCell():
