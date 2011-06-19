@@ -39,7 +39,7 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
     if abs(res).max() > TOL_RES:
         print 'Residuals\n'
         for i,eq in enumerate(model.equations):
-            print '{0}\t:{1}\t:\t{2}'.format(i,res[i],eq+1)
+            print '{0}\t:{1}\t:\t{2}'.format(i,res[i],eq)
         raise Exception("Initial values don't satisfy static equations")
 
     derivatives_ss = None
