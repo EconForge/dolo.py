@@ -33,6 +33,7 @@ def parse_yaml_text(txt):
     # add some common functions
     for f in [sympy.log, sympy.exp, sympy.atan, sympy.pi]:
         context[str(f)] = f
+    context['sqrt'] = sympy.sqrt
 
     equations = []
     raw_equations = raw_dict['equations']
@@ -44,11 +45,7 @@ def parse_yaml_text(txt):
                     comp = str.strip(comp)
                 else:
                     teq = raw_eq
-                if '=' in teq:
-                    lhs,rhs = str.split(teq,'=')
-                else:
-                    lhs = teq
-                    rhs = '0'
+
                 try:
                     lhs = eval(lhs,context)
                     rhs = eval(rhs,context)
@@ -60,6 +57,21 @@ def parse_yaml_text(txt):
                 if groupname == 'arbitrage':
                     eq.tag(complementarity=comp)
                 equations.append(eq)
+    else:
+        for teq in raw_equations:
+            if '=' in teq:
+                lhs,rhs = str.split(teq,'=')
+            else:
+                lhs = teq
+                rhs = '0'
+            try:
+                lhs = eval(lhs,context)
+                rhs = eval(rhs,context)
+            except Exception as e:
+                print('Error parsing equations : ' + teq)
+                print str(e)
+            eq = Equation(lhs,rhs)
+            equations.append(eq)
 
     calibration = raw_dict['calibration']
     parameters_values = { Parameter(k): eval(str(v),context)   for  k,v in  calibration['parameters'].iteritems()  }
@@ -76,9 +88,7 @@ def parse_yaml_text(txt):
         'parameters_values': parameters_values,
         'init_values': init_values,
         'covariances': covariances
-
     }
-
     return Model(**model_dict)
                 
 
