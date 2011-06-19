@@ -21,6 +21,11 @@ try:
 except Exception as e:
     __sage_is_running__ = False
 
+if __sage_is_running__:
+    from sagenb.misc.html import HTML
+    html = HTML()
+    del HTML
+    
 from dolo.numeric.decision_rules import impulse_response_function as irf
 from dolo.numeric.decision_rules import stoch_simul
 from dolo.numeric.perturbations import solve_decision_rule
@@ -92,11 +97,16 @@ def print_table( tab,precision=3, col_names=None, row_names=None ):
     html.table(resp,header)
 
 def pprint(obj,col_names=None,row_names=None):
+
     if __sage_is_running__:
         from sagenb.misc.html import HTML
         html = HTML()
+
     if isinstance(obj,dolo.symbolic.model.Model):
         print_model(obj)
+
+    elif isinstance(obj,str):
+        html(obj)
 
     elif isinstance(obj,dolo.numeric.decision_rules.DecisionRule):
         dr = obj
@@ -137,11 +147,6 @@ def pprint(obj,col_names=None,row_names=None):
 
     else:
         print'Object type not known.'
-
-def simulated_moments(decision_rule):
-    dr = decision_rule
-
-
 
 class ModFileCell():
 
@@ -195,5 +200,8 @@ modfile = ModFileCell()
 
 if not __sage_is_running__:
     # these functions make no sense
+    def pprint(s):
+        print(s)
+        
     del modfile
     del ModFileCell
