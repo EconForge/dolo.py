@@ -1,6 +1,7 @@
+import numpy
 import numpy as np
 
-def multisimul(g, start, variance, horizon, n_shocks, seed=1):
+def multisimul(g, start, variance, horizon, n_exp, seed=1):
     """
     Computes multiple stochastic simulations.
     @param g:
