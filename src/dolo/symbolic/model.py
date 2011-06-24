@@ -1,3 +1,4 @@
+
 import sympy
 from dolo.symbolic.symbolic import Equation,Variable,Shock,Parameter
 
@@ -7,8 +8,8 @@ class Model(dict):
     def __init__(self,*kargs,**kwargs):
         super(Model,self).__init__(self,*kargs,**kwargs)
         self.check()
-        self.check_consistency()
-        self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan]
+        self.check_consistency(verbose=False)
+        self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan,sympy.sqrt]
         self.__compiler__ = None
 
     def check(self):
