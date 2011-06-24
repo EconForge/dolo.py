@@ -14,7 +14,7 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
     
     Sigma = np.array(model.covariances).astype(np.float64)
 
-    [y,x,parms] = compute_steadystate_values(model)
+    [y,x,parms] = model.read_calibration()
 
 
     if steady_state != None:
@@ -94,29 +94,6 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
     ddr = DDR( d , model )
 
     return ddr
-    
-def compute_steadystate_values(model):
-    from dolo.misc.calculus import solve_triangular_system
-
-    dvars = dict()
-    dvars.update(model.parameters_values)
-    dvars.update(model.init_values)
-    for v in model.variables:
-        if v not in dvars:
-            dvars[v] = 0
-    undeclared_parameters = []
-    for p in model.parameters:
-        if p not in dvars:
-            undeclared_parameters.append(p)
-            dvars[p] = 0
-            raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
-
-    values = solve_triangular_system(dvars)[0]
-
-    y = [values[v] for v in model.variables]
-    x = [0 for s in model.shocks]
-    params = [values[v] for v in model.parameters]
-    return [y,x,params]
 
 
 def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=None):

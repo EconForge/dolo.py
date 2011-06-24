@@ -409,7 +409,7 @@ end;
         if not with_parameters_values:
             params_values = ''
         else:
-            [y,x,params] = model.compute_steadystate_values()
+            [y,x,params] = model.read_calibration()
             params_values = 'out1 = [' + str.join(  ',', [ str( p ) for p in params] ) + '];'
 
         if with_solution:

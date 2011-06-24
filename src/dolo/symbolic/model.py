@@ -217,7 +217,7 @@ class Model(dict):
 
 
 def compute_residuals(model):
-    [y,x,parms] = model.compute_steadystate_values()
+    [y,x,parms] = model.read_calibration()
     dd_v = dict([(model.variables[i],y[i]) for i in range(len(y))])
     dd_p = dict([(model.parameters[i],parms[i]) for i in range(len(parms))])
     dd_x = dict([(v,0) for v in model.shocks])
