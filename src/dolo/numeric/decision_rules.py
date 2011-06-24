@@ -372,7 +372,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         pylab.clf()
         pylab.title('Impulse-Response Function for ${var}$'.format(var=shock.__latex__()))
         for k in range(len(variables)):
-            pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
+            pylab.plot(x[1:], simul[k,1:],label='$'+variables[k]._latex_()+'$' )
         pylab.plot(x,x*0,'--',color='black')
         pylab.xlabel('$t$')
         if output == 'percentages':
@@ -388,10 +388,10 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
     return simul
 
-def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, start=None, output='deviations', plot=True, seed=None):
+def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=None, output='deviations', plot=True, seed=None):
 
-    if order > 1:
-        raise Exception('irfs, for order > 1 not implemented')
+#    if order > 1:
+#        raise Exception('irfs, for order > 1 not implemented')
 
     dr = decision_rule
 
@@ -409,6 +409,9 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, start=Non
     if start is None:
         start = RSS
         
+    if not order:
+        order = dr.order
+
     simul[:,0] = start
     for i in range(horizon):
         simul[:,i+1] = dr( simul[:,i], E[:,i] )
@@ -441,7 +444,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=1, start=Non
         pylab.clf()
         pylab.title('Stochastic simulation')
         for k in range(len(variables)):
-            pylab.plot(x, simul[k,:],label='$'+variables[k]._latex_()+'$' )
+            pylab.plot(x[1:], simul[k,1:],label='$'+variables[k]._latex_()+'$' )
         pylab.plot(x,x*0,'--',color='black')
         pylab.xlabel('$t$')
         if output == 'percentages':
