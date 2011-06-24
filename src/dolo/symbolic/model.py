@@ -181,16 +181,12 @@ class Model(dict):
         import numpy as np
         from dolo.numeric.solver import solver
         [y,x,params] = [np.array(e) for e in self.read_calibration() ]
-        print y.__class__
         if y0 == None:
             y0 = np.array(y)
         else:
             y0 = np.array(y0)
         f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
         fobj = lambda z: f_static(z,x,params)[0]
-        print y0.shape
-        print fobj(y0).shape
-        print fobj(y0) - y0
         try:
             opts = {'eps1': 1e-12, 'eps2': 1e-16}
             sol = solver(fobj,y0,method='lmmcp',options=opts)
