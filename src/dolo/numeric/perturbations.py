@@ -9,15 +9,25 @@ import numpy as np
 TOL = 1E-10
 TOL_RES = 1E-8
 
-def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None):
+def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None, solve_ss = True):
 
     
     Sigma = np.array(model.covariances).astype(np.float64)
 
     [y,x,parms] = compute_steadystate_values(model)
+
+
     if steady_state != None:
-        y = steady_state
+        y0 = steady_state
+    else:
+        y0 = y
+
+    if solve_ss == True:
+        y = model.solve_for_steady_state(y0)
+
+
     #pc = PythonCompiler(model)
+
     pc = model.compiler
     if method == 'default':
         p_dynamic = pc.compute_dynamic_pfile_cached(order,False,False)

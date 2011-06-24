@@ -152,7 +152,7 @@ class Model(dict):
     def state_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
-    def compute_steadystate_values(self):
+    def read_calibration(self):
         model = self
         from dolo.misc.calculus import solve_triangular_system
 
@@ -175,6 +175,35 @@ class Model(dict):
         x = [0 for s in model.shocks]
         params = [values[v] for v in model.parameters]
         return [y,x,params]
+
+
+    def solve_for_steady_state(self,y0=None):
+        import numpy as np
+        from dolo.numeric.solver import solver
+        [y,x,params] = [np.array(e) for e in self.read_calibration() ]
+        print y.__class__
+        if y0 == None:
+            y0 = np.array(y)
+        else:
+            y0 = np.array(y0)
+        f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
+        fobj = lambda z: f_static(z,x,params)[0]
+        print y0.shape
+        print fobj(y0).shape
+        print fobj(y0) - y0
+        try:
+            opts = {'eps1': 1e-12, 'eps2': 1e-16}
+            sol = solver(fobj,y0,method='lmmcp',options=opts)
+            return sol
+        except Exception as e:
+            print 'The steady-state could not be found.'
+            raise e
+            
+        
+        
+
+
+
 
     def subs(self,a,b):
 
