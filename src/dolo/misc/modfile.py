@@ -179,6 +179,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     special_symbols = [sympy.exp,sympy.log,sympy.sin,sympy.cos, sympy.atan, sympy.tan]
     for s in special_symbols:
         parse_dict[str(s)] = s
+    parse_dict['sqrt'] = sympy.sqrt
 
 
     # Read parameters values
@@ -219,8 +220,13 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     init_values = {}
     if initval_block != None:
         for ig in initval_block[1:-1]:
-            [lhs,rhs] = ig.instruction.split("=")
-            init_values[eval(lhs,parse_dict)] = eval(rhs,parse_dict)
+            if len(ig.instruction.strip()) >0:
+                try:
+                    [lhs,rhs] = ig.instruction.split("=")
+                except Exception as e:
+                    print(ig.instruction)
+                    raise e
+                init_values[eval(lhs,parse_dict)] = eval(rhs,parse_dict)
 
     # Now we read the endval block
     # I don't really care about the endval block !
@@ -325,7 +331,7 @@ def dynare_import(filename,names_dict={},full_output=False):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
-    fname = re.compile('(.*)\.mod').match(basename).group(1)
+    fname = re.compile('(.*)\.(.*)').match(basename).group(1)
     f = file(filename)
     txt = f.read()
     model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
