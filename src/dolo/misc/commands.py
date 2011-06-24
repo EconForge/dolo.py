@@ -6,6 +6,8 @@ This module contains the officially supported commands of Dolo :
 - irf()
 '''
 
+import matplotlib
+matplotlib.use('Agg')
 import pylab
 import dolo
 import numpy
