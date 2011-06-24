@@ -7,8 +7,6 @@
 import time
 import numpy as np
 
-t = time.time()
-
 # parameter settings
 eps1 = 1e-8    # default: 1e-6
 eps2 = 1e-12   # default: 1e-10
@@ -51,25 +49,16 @@ sigma2=2       # default: 2
 eta=0.95       # default: 0.95
 
 
-# choice of test problem
-#TODO
-#from josephy import josephy as fun
-#from Djosephy import Djosephy as Dfun
-#from Sjosephy import Sjosephy
-
-
 # initializations
 defaults = dict(
     eps1 = 1e-6,    # default: 1e-6
-    eps2 = 1e-12,   # default: 1e-10
+    eps2 = 1e-10,   # default: 1e-10
     null = 1e-8,    # default: 1e-8
     Big  = 1e10,    # default: 1e+10
 
     preprocess=True,  # 1=preprocessor used, otherwise not
     presteps=20   # maximum number of preprocessing steps, default: 20
 )
-#initial data
-#[x0, lb, ub] = Sjosephy(None) # TODO None, really ?
 
 
 def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
@@ -83,7 +72,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     null = opts['null']
     Big  = opts['Big']
     preprocess = opts['preprocess']
-    verbose = opts['verbose']
+    #verbose = opts['verbose']
 
     x = x0
     delta = 5
