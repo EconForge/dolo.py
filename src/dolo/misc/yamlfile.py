@@ -39,19 +39,24 @@ def parse_yaml_text(txt):
     raw_equations = raw_dict['equations']
     if isinstance(raw_equations,dict):   # tests whether there are groups of equations
         for groupname in raw_equations.keys():
-            for raw_eq in raw_equations[groupname]:
+            for raw_eq in raw_equations[groupname]:  # Modfile is supposed to represent a global model. TODO: change it
                 if groupname == 'arbitrage':
                     teq,comp = raw_eq.split('|')
                     comp = str.strip(comp)
                 else:
                     teq = raw_eq
-
+                if '=' in teq:
+                    lhs,rhs = str.split(teq,'=')
+                else:
+                    lhs = teq
+                    rhs = '0'
                 try:
                     lhs = eval(lhs,context)
                     rhs = eval(rhs,context)
                 except Exception as e:
                     print('Error parsing equations : ' + teq)
                     print str(e)
+                    raise e
                 eq = Equation(lhs,rhs)
                 eq.tag(eq_type=groupname)
                 if groupname == 'arbitrage':
