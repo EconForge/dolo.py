@@ -137,8 +137,11 @@ if __name__ == "__main__":
             
             mirfac_target = options['target']
             comp = MirFacCompiler(model)
-            
-            out_txt = comp.process_output_matlab(mirfac_target, with_parameters_values=True, with_solution=options['solve'])
+
+            if mirfac_target == 'recs':
+                out_txt = comp.process_output_matlab(mirfac_target, with_parameters_values=True, with_solution=options['solve'])
+            else:
+                out_txt = comp.process_output_matlab_old(mirfac_target, with_parameters_values=True, with_solution=options['solve'])
 
             write_file( '{0}_{1}.m'.format(model.fname, mirfac_target) , out_txt )
 
