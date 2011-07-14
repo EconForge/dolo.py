@@ -178,7 +178,7 @@ end;
         parms=parameters_string,equations = content,
         params_definition=params_definition, initval_string=initval_string)
 
-        from dolo.misc.interactive import parse_dynare_text
+        from dolo.misc.modfile import parse_dynare_text
         try:
             model = parse_dynare_text(simple_mod)
             model.check(verbose=True)
