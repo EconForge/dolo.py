@@ -9,7 +9,7 @@ import numpy as np
 TOL = 1E-10
 TOL_RES = 1E-8
 
-def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None, solve_ss = True):
+def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None, solve_ss = False):
 
     
     Sigma = np.array(model.covariances).astype(np.float64)

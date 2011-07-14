@@ -122,6 +122,8 @@ class Model(dict):
     @property
     def dyn_var_order(self):
         # returns a list of dynamic variables ordered as in Dynare's dynamic function
+        if hasattr(self,'__dyn_var_order__') :
+            return self.__dyn_var_order__
         d = dict()
         for eq in self.equations:
             all_vars = eq.variables
@@ -135,7 +137,7 @@ class Model(dict):
         for i in range(minimum,maximum+1):
             if i in d.keys():
                 ord += [v(i) for v in self.variables if v(i) in d[i]]
-
+        self.__dyn_var_order__ = ord
         return ord
 
     @property
@@ -188,7 +190,7 @@ class Model(dict):
         f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
         fobj = lambda z: f_static(z,x,params)[0]
         try:
-            opts = {'eps1': 1e-12, 'eps2': 1e-16}
+            opts = {'eps1': 1e-12, 'eps2': 1e-20}
             sol = solver(fobj,y0,method='lmmcp',options=opts)
             return sol
         except Exception as e:
