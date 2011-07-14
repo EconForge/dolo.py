@@ -12,6 +12,7 @@ def parse_yaml_text(txt):
     '''
     Imports the content of a modfile into the current interpreter scope
     '''
+    txt = txt.replace('..','-')
     txt = txt.replace('^','**')
     raw_dict = yaml.load(txt)
 
