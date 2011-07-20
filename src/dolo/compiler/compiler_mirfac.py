@@ -546,7 +546,7 @@ end;
         dp = DicPrinter(sub_list)
 
         def write_eqs(eq_l,outname='out1',ntabs=0):
-            eq_block = '\t' * ntabs + '{0} = zeros(n,{1});\n'.format(outname,len(eq_l))
+            eq_block = '' * ntabs + '{0} = zeros(n,{1});\n'.format(outname,len(eq_l))
             for i,eq in enumerate(eq_l):
                 eq_block += '\t' * ntabs + '{0}(:,{1}) = {2};\n'.format( outname,  i+1,  dp.doprint_matlab(eq,vectorize=True) )
             return eq_block
