@@ -28,7 +28,8 @@ def parse_yaml_text(txt):
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
     shocks_ordering = [Shock(vn,0) for vn in declarations['shocks']]
 
-    context = {s.name: s for s in variables_ordering + parameters_ordering + shocks_ordering}
+    context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
+    context = dict(context)
 
     # add some common functions
     for f in [sympy.log, sympy.exp, sympy.atan, sympy.pi]:
@@ -79,9 +80,11 @@ def parse_yaml_text(txt):
             equations.append(eq)
 
     calibration = raw_dict['calibration']
-    parameters_values = { Parameter(k): eval(str(v),context)   for  k,v in  calibration['parameters'].iteritems()  }
+    parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
+    parameters_values = dict(parameters_values)
     #steady_state = raw_dict['steady_state']
-    init_values = { Variable(vn,0): eval(str(value),context)   for  vn,value in  calibration['steady_state'].iteritems()  }
+    init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
+    init_values = dict(init_values)
 
     covariances = eval('np.array({0})'.format( calibration['covariances'] ))
 
