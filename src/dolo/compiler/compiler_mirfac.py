@@ -488,16 +488,14 @@ end;
 
 
 
-        text = '''
-function [out1,out2,out3,out4,out5,out6] = {mfname}(flag,s,x,z,e,snext,xnext,p,out);
-
+        text = '''function [out1,out2,out3,out4,out5] = {mfname}(flag,s,x,z,e,snext,xnext,p,out);
 
     output = struct('F',1,'Js',0,'Jx',0,'Jsn',0,'Jxn',0,'Jz',0, 'hmult',0);
 
     if nargin == 9
         output = catstruct(output,out);
-        voidcell                        = cell(1,6);
-        [out1,out2,out3,out4,out5,out6] = {trick};
+        voidcell                        = cell(1,5);
+        [out1,out2,out3,out4,out5] = {trick};
     else
         if nargout >= 2
             output.Js = 1;
@@ -514,9 +512,6 @@ function [out1,out2,out3,out4,out5,out6] = {mfname}(flag,s,x,z,e,snext,xnext,p,o
         end
         if nargout >= 5
             output.Jxn = 1;
-        end
-        if nargout >= 6
-            output.hmult = 1;
         end
     end
 
@@ -630,16 +625,12 @@ end;
         if output.Jxn
 {4}
         end
-        if output.hmult
-{5}
-        end
         '''.format(
              write_eqs(h_eqs,'out1',2),
              write_der_eqs(h_eqs,states_vars,'out2',2),
              write_der_eqs(h_eqs,controls,'out3',2),
              write_der_eqs(h_eqs,states_f,'out4',2),
-             write_der_eqs(h_eqs,controls_f,'out5',2),
-             "\t\tout6 = ones(size(e,1),size(x,2));"
+             write_der_eqs(h_eqs,controls_f,'out5',2)
         )
 
         #if not with_param_names:
