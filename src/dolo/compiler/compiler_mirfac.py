@@ -490,41 +490,35 @@ end;
 
         text = '''function [out1,out2,out3,out4,out5] = {mfname}(flag,s,x,z,e,snext,xnext,p,out);
 
-    output = struct('F',1,'Js',0,'Jx',0,'Jsn',0,'Jxn',0,'Jz',0, 'hmult',0);
+output = struct('F',1,'Js',0,'Jx',0,'Jsn',0,'Jxn',0,'Jz',0,'hmult',0);
 
-    if nargin == 9
-        output = catstruct(output,out);
-        voidcell                        = cell(1,5);
-        [out1,out2,out3,out4,out5] = {trick};
+if nargin == 9
+  output                     = catstruct(output,out);
+  voidcell                   = cell(1,5);
+  [out1,out2,out3,out4,out5] = {trick};
+else
+  if nargout >= 2, output.Js = 1; end
+  if nargout >= 3, output.Jx = 1; end
+  if nargout >= 4
+    if strcmpi(flag, 'f')
+      output.Jz = 1;
     else
-        if nargout >= 2
-            output.Js = 1;
-        end
-        if nargout >= 3
-            output.Jx = 1;
-        end
-        if nargout >= 4
-            if strcmpi(flag, 'f')
-                output.Jz = 1;
-            else
-                output.Jsn = 1;
-            end
-        end
-        if nargout >= 5
-            output.Jxn = 1;
-        end
+      output.Jsn = 1;
     end
+  end
+  if nargout >= 5, output.Jxn = 1; end
+end
 
 
 switch flag
 
-case 'b';
-\tn = size(s,1);
-{eq_bounds_block}
+ case 'b';
+  n = size(s,1);
+  {eq_bounds_block}
 
-case 'f';
-\tn = size(s,1);
-{eq_fun_block}
+ case 'f';
+  n = size(s,1);
+  {eq_fun_block}
 
 case 'g';
 \tn = size(s,1);
