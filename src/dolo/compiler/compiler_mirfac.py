@@ -512,33 +512,29 @@ end
 
 switch flag
 
- case 'b';
-  n = size(s,1);
-  {eq_bounds_block}
+  case 'b';
+    n = size(s,1);
+{eq_bounds_block}
 
- case 'f';
-  n = size(s,1);
-  {eq_fun_block}
-
-case 'g';
-\tn = size(s,1);
+  case 'f';
+    n = size(s,1);
+{eq_fun_block}
+  case 'g';
+    n = size(s,1);
 {state_trans_block}
-
-case 'h';
-\tn = size(snext,1);
+  case 'h';
+    n = size(snext,1);
 {exp_fun_block}
+  case 'e';
+    warning('Euler equation errors not implemented in Dolo');
 
-case 'e';
-\twarning('Euler equation errors not implemented in Dolo');
+  case 'params';
+{params_values}
 
-case 'params';
-\t{params_values}
+  case 'solution';
+{solution}
 
-case 'solution';
-\t{solution}
-
-
-end;
+end
 '''
 
         from dolo.compiler.compiler import DicPrinter
@@ -546,85 +542,95 @@ end;
         dp = DicPrinter(sub_list)
 
         def write_eqs(eq_l,outname='out1',ntabs=0):
-            eq_block = '' * ntabs + '{0} = zeros(n,{1});\n'.format(outname,len(eq_l))
+            eq_block = '  ' * ntabs + '{0} = zeros(n,{1});'.format(outname,len(eq_l))
             for i,eq in enumerate(eq_l):
-                eq_block += '\t' * ntabs + '{0}(:,{1}) = {2};\n'.format( outname,  i+1,  dp.doprint_matlab(eq,vectorize=True) )
+                eq_block += '\n' + '  ' * ntabs + '{0}(:,{1}) = {2};'.format( outname,  i+1,  dp.doprint_matlab(eq,vectorize=True) )
             return eq_block
 
         def write_der_eqs(eq_l,v_l,lhs,ntabs=0):
-            eq_block = '\t' * ntabs + '{lhs} = zeros(n,{0},{1});\n'.format(len(eq_l),len(v_l),lhs=lhs)
+            eq_block = '  ' * ntabs + '{lhs} = zeros(n,{0},{1});'.format(len(eq_l),len(v_l),lhs=lhs)
             eq_l_d = eqdiff(eq_l,v_l)
             for i,eqq in enumerate(eq_l_d):
                 for j,eq in enumerate(eqq):
                     s = dp.doprint_matlab( eq, vectorize=True )
-                    eq_block += '\t' * ntabs + '{lhs}(:,{0},{1}) = {2}; % d eq_{eq_n} w.r.t. {vname}\n'.format(i+1,j+1,s,lhs=lhs,eq_n=i+1,vname=str(v_l[j]) )
+                    eq_block += '\n' + '  ' * ntabs + '{lhs}(:,{0},{1}) = {2}; % d eq_{eq_n} w.r.t. {vname}'.format(i+1,j+1,s,lhs=lhs,eq_n=i+1,vname=str(v_l[j]) )
             return eq_block
 
-        eq_bounds_block = write_eqs(inf_bounds,ntabs=1)
-        eq_bounds_block += write_eqs(sup_bounds,'out2',ntabs=1)
+        eq_bounds_block = write_eqs(inf_bounds,ntabs=2)
+        eq_bounds_block += '\n'
+        eq_bounds_block += write_eqs(sup_bounds,'out2',ntabs=2)
 
         eq_f_block = '''
-        % f
-        if output.F
+    % f
+    if output.F
 {0}
-        end
-        % df/ds
-        if output.Js
+    end
+
+    % df/ds
+    if output.Js
 {1}
-        end
-        % df/dx
-        if output.Jx
+    end
+
+    % df/dx
+    if output.Jx
 {2}
-        end
-        % df/dz
-        if output.Jz
+    end
+
+    % df/dz
+    if output.Jz
 {3}
-        end
-        '''.format( write_eqs(f_eqs,'out1',2),
-                    write_der_eqs(f_eqs,states_vars,'out2',2),
-                    write_der_eqs(f_eqs,controls,'out3',2),
-                    write_der_eqs(f_eqs,exp_vars,'out4',2)
+    end
+        '''.format( write_eqs(f_eqs,'out1',3),
+                    write_der_eqs(f_eqs,states_vars,'out2',3),
+                    write_der_eqs(f_eqs,controls,'out3',3),
+                    write_der_eqs(f_eqs,exp_vars,'out4',3)
             )
 
         eq_g_block = '''
-        % g
-        if output.F
-{0}
-        end
-        if output.Js
+    % g
+    if output.F
+{0}      
+    end
+
+    if output.Js
 {1}
-        end
-        if output.Jx
+    end
+
+    if output.Jx
 {2}
-        end
-        '''.format( write_eqs(g_eqs,'out1',2),
-                    write_der_eqs(g_eqs,states_vars,'out2',2),
-                    write_der_eqs(g_eqs,controls,'out3',2)
+    end
+        '''.format( write_eqs(g_eqs,'out1',3),
+                    write_der_eqs(g_eqs,states_vars,'out2',3),
+                    write_der_eqs(g_eqs,controls,'out3',3)
             )
         
         eq_h_block = '''
-        %h
-        if output.F
+    %h
+    if output.F
 {0}
-        end
-        if output.Js
+    end
+
+    if output.Js
 {1}
-        end
-        if output.Jx
+    end
+
+    if output.Jx
 {2}
-        end
-        if output.Jsn
+    end
+
+    if output.Jsn
 {3}
-        end
-        if output.Jxn
+    end
+
+    if output.Jxn
 {4}
-        end
+    end
         '''.format(
-             write_eqs(h_eqs,'out1',2),
-             write_der_eqs(h_eqs,states_vars,'out2',2),
-             write_der_eqs(h_eqs,controls,'out3',2),
-             write_der_eqs(h_eqs,states_f,'out4',2),
-             write_der_eqs(h_eqs,controls_f,'out5',2)
+             write_eqs(h_eqs,'out1',3),
+             write_der_eqs(h_eqs,states_vars,'out2',3),
+             write_der_eqs(h_eqs,controls,'out3',3),
+             write_der_eqs(h_eqs,states_f,'out4',3),
+             write_der_eqs(h_eqs,controls_f,'out5',3)
         )
 
         #if not with_param_names:
@@ -636,7 +642,7 @@ end;
             params_values = ''
         else:
             [y,x,params] = model.read_calibration()
-            params_values = 'out1 = [' + str.join(  ',', [ str( p ) for p in params] ) + '];'
+            params_values = '    out1 = [' + str.join(  ',', [ str( p ) for p in params] ) + '];'
 
         if with_solution:
             from dolo.misc.matlab import value_to_mat
