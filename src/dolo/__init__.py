@@ -1,5 +1,7 @@
 __version__ = '0.2'
 
+import dolo.config
+
 from symbolic.symbolic import *
 
 from misc.modfile import *

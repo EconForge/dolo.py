@@ -7,7 +7,7 @@ This module contains the officially supported commands of Dolo :
 '''
 
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import pylab
 import dolo
 import numpy
@@ -64,91 +64,9 @@ def get_current_model():
     except:
         raise( Exception( "You need to define a model first !" ) )
 
-def print_model(model=None, print_residuals=True):
 
-    if not model:
-        model = get_current_model()
+from dolo.config import display
 
-    if __sage_is_running__:
-        from sagenb.misc.html import HTML
-        html = HTML()
-        if print_residuals:
-            from dolo.symbolic.model import compute_residuals
-            res = compute_residuals(model)
-            #res = [0]*len(model.equations)
-            html.table([['','Equations','Residuals']] + [(i+1,model.equations[i],"%.4f" %float(res[i])) for i in range(len(model.equations))],header=True)
-        else:
-            html.table([['','Equations']] + [(i+1,model.equations[i]) for i in range(len(model.equations))], header=True)
-    else:
-        print( str(model) )
-
-def print_table( tab,precision=3, col_names=None, row_names=None ):
-    if __sage_is_running__:
-        from sagenb.misc.html import HTML
-        html = HTML()
-    else:
-        raise Exception('Sage is not running.')
-    import numpy as np
-    resp = [[ "%.3f" %tab[i,j] for j in range(tab.shape[1]) ] for i in range(tab.shape[0]) ]
-    if row_names:
-        resp = [  [row_names[i]] + resp[i] for i in range(tab.shape[0]) ]
-    header = False
-    if col_names:
-        resp = [[''] +col_names] + resp
-        header = True
-    html.table(resp,header)
-
-def pprint(obj,col_names=None,row_names=None):
-
-    if __sage_is_running__:
-        from sagenb.misc.html import HTML
-        html = HTML()
-
-    if isinstance(obj,dolo.symbolic.model.Model):
-        print_model(obj)
-
-    elif isinstance(obj,str):
-        html(obj)
-
-    elif isinstance(obj,dolo.numeric.decision_rules.DecisionRule):
-        dr = obj
-        model = dr.model
-        states = model.state_variables
-        states_i = [model.variables.index(v) for v in states]
-        mat = numpy.concatenate( [dr['g_a'][:,states_i], dr['g_e']],axis=1 )
-        tab = [['%.3f' %n for n in  mat[i,:]] for i in range(len(model.variables)) ]
-        tab = [ [v]+tab[i] for i,v in enumerate(model.variables) ]
-        tab = [['']+[s(-1) for s in states]+model.shocks] + tab
-        html.table(tab,header=True)
-
-        from dolo.numeric.decision_rules import theoretical_moments
-        [covariances,correlations] = theoretical_moments(dr,with_correlations=True)
-        html('Theoretical moments :')
-        print_table(covariances, col_names=model.variables, row_names=model.variables)
-
-        html('Correlations :')
-        print_table(correlations, col_names=model.variables, row_names=model.variables)
-
-    elif isinstance(obj,dict):
-        t = []
-        for k in obj:
-            t.append([k,obj[k]])
-        html.table(t)
-
-    elif isinstance(obj,numpy.ndarray):
-        tab = obj
-        resp = [[ "%.3f" %tab[i,j] for j in range(tab.shape[1]) ] for i in range(tab.shape[0]) ]
-        if row_names:
-            resp = [  [row_names[i]] + resp[i] for i in range(tab.shape[0]) ]
-        header = False
-        if col_names:
-            resp = [[''] +col_names] + resp
-            header = True
-        html.table(resp,header)
-
-
-    else:
-        print'Object type not known.'
 
 class ModFileCell():
 
