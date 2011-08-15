@@ -90,30 +90,41 @@ def solve_sylvester(A,B,C,D,Ainv = None):
         
     n_d = D.ndim - 1
     n_v = C.shape[1]
-    if n_d == 1:
-        CC = C
-    else:
-        CC = np.kron(C,C)
-    for i in range(n_d-2):
-        CC = np.kron(CC,C)
 
-    DD = D.reshape( n_v, n_v**n_d ) 
 
-    # we use slycot here
-    
-    if Ainv != None:
-        Q = sdot(Ainv,B)
-        S = sdot(Ainv,DD)
+    DD = D.reshape( n_v, n_v**n_d )
+
+    import dolo.config
+    opts = dolo.config.use_engine
+
+    if opts['sylvester']:
+        pytave = dolo.config.engine.engine
+        DD = D.flatten().reshape( n_v, n_v**n_d)
+        [err,XX] = dolo.config.engine.engine.feval(2,'gensylv',n_d,A,B,C,-DD)
+        X = XX.reshape( (n_v,)*(n_d+1))
+
     else:
-        Q = np.linalg.solve(A,B)
-        S = np.linalg.solve(A,DD)
-            
-    n = n_v
-    m = n_v**n_d
+
+        if n_d == 1:
+            CC = C
+        else:
+            CC = np.kron(C,C)
+        for i in range(n_d-2):
+            CC = np.kron(CC,C)
     
-    XX = slycot.sb04qd(n,m,Q,CC,-S)
-    
-    X = XX.reshape( (n_v,)*(n_d+1) )
+        if Ainv != None:
+            Q = sdot(Ainv,B)
+            S = sdot(Ainv,DD)
+        else:
+            Q = np.linalg.solve(A,B)
+            S = np.linalg.solve(A,DD)
+
+        n = n_v
+        m = n_v**n_d
+
+        XX = slycot.sb04qd(n,m,Q,CC,-S)
+
+        X = XX.reshape( (n_v,)*(n_d+1) )
 
     return X
     

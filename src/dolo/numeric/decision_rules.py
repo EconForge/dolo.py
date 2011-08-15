@@ -2,6 +2,8 @@
 This module contains classes representing decision rules
 """
 
+import dolo.config
+
 from dolo.misc.decorators import memoized
 
 import numpy as np
@@ -382,9 +384,11 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         elif output == 'levels':
             pylab.ylabel('Levels')
         pylab.legend()
-        filename = 'irf_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
-        pylab.savefig(filename) # not good...
-        #pylab.show()
+        if dolo.config.save_plots:
+            filename = 'irf_' + str(shock) + '__' + '_' + str.join('_',[str(v) for v in variables])
+            pylab.savefig(filename) # not good...
+        else:
+            pylab.show()
 
     return simul
 
@@ -454,8 +458,10 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=
         elif output == 'levels':
             pylab.ylabel('Levels')
         pylab.legend()
-        filename = 'simul_' + '_' + str.join('_',[str(v) for v in variables])
-        pylab.savefig(filename) # not good...
-        #pylab.show()
+        if dolo.config.save_plots:
+            filename = 'simul_' + '_' + str.join('_',[str(v) for v in variables])
+            pylab.savefig(filename) # not good...
+        else:
+            pylab.show()
 
     return simul

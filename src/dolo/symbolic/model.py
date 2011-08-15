@@ -4,13 +4,16 @@ from dolo.symbolic.symbolic import Equation,Variable,Shock,Parameter
 
 class Model(dict):
 
-
     def __init__(self,*kargs,**kwargs):
         super(Model,self).__init__(self,*kargs,**kwargs)
         self.check()
         self.check_consistency(verbose=False)
         self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan,sympy.sqrt]
         self.__compiler__ = None
+
+    def _repr_html_(self):
+        from dolo.misc.printing import htmlprinter
+        return htmlprinter.print_model( self )
 
     def check(self):
 
@@ -196,12 +199,6 @@ class Model(dict):
         except Exception as e:
             print 'The steady-state could not be found.'
             raise e
-            
-        
-        
-
-
-
 
     def subs(self,a,b):
 
