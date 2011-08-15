@@ -1,11 +1,9 @@
 from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
 from dolo.symbolic.model import Model
-import numpy as np
-import yaml
 
+import yaml
 import sympy
 import re
-import inspect
 
 
 def parse_yaml_text(txt):
@@ -87,7 +85,13 @@ def parse_yaml_text(txt):
     init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
     init_values = dict(init_values)
 
-    covariances = eval('np.array({0})'.format( calibration['covariances'] ))
+    #covariances = eval('np.array({0})'.format( calibration['covariances'] ))
+    if 'covariances' in calibration:
+        import numpy
+        covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
+        print covariances
+    else:
+        covariances = None # to avoid importing numpy
 
     model_dict = {
         'variables_ordering': variables_ordering,

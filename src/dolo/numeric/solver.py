@@ -44,7 +44,8 @@ def MyJacobian(fun):
         for i in range(n):
             delta = np.zeros(len(x))
             delta[i] = eps
-            y = fun(x+delta)
-            D[:,i] = (y - y0)/eps
+            y1 = fun(x+delta)
+            y2 = fun(x-delta)
+            D[:,i] = (y1 - y2)/eps/2
         return D
     return rfun
