@@ -54,16 +54,22 @@ class Parameter(sympy.Symbol):
 
 class TSymbol(sympy.Symbol):
 
-    latex_names = {}
+    #latex_names = {}
 
     def __init__(self, name, date):
         super(TSymbol,self).__init__()
         self.date = date
         self.name = name
-        self.latex_name = None
         self.is_commutative = True
-        self._father = None
         return(None)
+
+    def __getstate__(self):
+        return {
+            'date': self.date,
+            'name': self.name,
+            'is_commutative': self.is_commutative,
+            '_mhash': self._mhash
+        }
 
     def _hashable_content(self):
         return (self.name,self.date)
@@ -85,20 +91,6 @@ class TSymbol(sympy.Symbol):
     @property
     def P(self):
         return(self(-self.lag))
-
-    #def getlatex_name(self):
-    #    return(self.parent.__latex_name)
-    
-    #def setlatex_name(self,latex_name):
-#        if self.lag != 0:
-#            raise Exception('You can change latex names only for symbols without lag')
-#        else:
-#            self.__latex_name = latex_name
-#    latex_name = property(getlatex_name,setlatex_name)
-
-    #def __repr__(self):
-    #    self.precedence=-1
-    #    return(self.tostr())
 #
     def __repr__(self):
         return self.__str__(self)
@@ -114,16 +106,6 @@ class TSymbol(sympy.Symbol):
 
     def __repr__(self):
         return self.__str__()
-
-    @property
-    def father(self):
-        if not self._father:
-            m = father_regexp.match(self.name)
-            if m:
-                self._father =  m.group(1)
-            else:
-                self._father = self.name
-        return self._father
 
 
     def tostr(self, level=0):
