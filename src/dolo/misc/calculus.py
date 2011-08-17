@@ -17,7 +17,7 @@ def second_order_taylorization(expr,shocks,covariances):
 def lambda_sub(expr,dic):
     # This function evaluates expression expr to a float using float dictionary dic
     # dic must contains at least all symbols of expr
-    expr = sympy.core.sympify(expr)
+    expr = sympy.sympify(expr)
     symbs = [s for s in expr.atoms() if isinstance(s,sympy.Symbol)]
     vals = [ dic[s] for s in symbs]
     f = sympy.lambdify(symbs,expr)
@@ -29,7 +29,7 @@ def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
     oks = []
     symbols = dict()
     for v in sdict:
-        atoms = sympy.core.sympify(sdict[v]).atoms()
+        atoms = sympy.sympify(sdict[v]).atoms()
         symbols[v] = set([s for s in atoms if isinstance(s,unknown_type)])
     notfinished = True
     while notfinished:
