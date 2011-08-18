@@ -8,7 +8,10 @@ class memoized(object):
     def __init__(self, func):
          self.func = func
          self.cache = {}
+
     def __call__(self, *args):
+
+        args = (hashable(e) for e in args)
         try:
             return self.cache[args]
         except KeyError:
@@ -36,10 +39,10 @@ class cachedondisk(object):
     def __init__(self, func):
          self.func = func
          self.fname = func.__name__
-         self.cache = {}
         
     def __call__(self, *args):
         import pickle
+        args = (hashable(e) for e in args)
         try:
             h = hash(args)
             with file('cache.{0}.{1}.pickle'.format(self.fname,h)) as f:
@@ -71,3 +74,16 @@ def clear_cache():
         os.system('rm cache.*.pickle')
     except:
         pass
+
+
+import collections
+
+def hashable(obj):
+    if isinstance(obj, collections.Hashable):
+        return obj
+    if isinstance(obj, collections.Mapping):
+        items = [(k,hashable(v)) for (k,v) in obj.items()]
+        return frozenset(items)
+    if isinstance(obj, collections.Iterable):
+        return tuple([hashable(item) for item in obj])
+    return TypeError(type(obj))
