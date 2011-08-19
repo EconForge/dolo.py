@@ -42,15 +42,15 @@ class cachedondisk(object):
         
     def __call__(self, *args):
         import pickle
-        args = (hashable(e) for e in args)
+        hh = tuple(  hashable(e) for e in args )
+#        print args
+        h = hash(hh)
         try:
-            h = hash(args)
             with file('cache.{0}.{1}.pickle'.format(self.fname,h)) as f:
                 value = pickle.load(f)
             return value
         except IOError:
             value = self.func(*args)
-            h = hash(args)
             # write file with h
             with file('cache.{0}.{1}.pickle'.format(self.fname,h),'w') as f:
                 pickle.dump(value,f)
@@ -78,7 +78,10 @@ def clear_cache():
 
 import collections
 
+
 def hashable(obj):
+    if hasattr(obj,'flatten'): # for numpy arrays
+        return tuple( obj.flatten().tolist() )
     if isinstance(obj, collections.Hashable):
         return obj
     if isinstance(obj, collections.Mapping):
