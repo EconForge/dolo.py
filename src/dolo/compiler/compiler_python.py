@@ -1,7 +1,7 @@
 from __future__ import division
 
 from dolo.compiler.compiler import *
-from dolo.misc.decorators import memoized
+from dolo.misc.caching import memoized
 from dolo.symbolic.derivatives import *
 
 import math
