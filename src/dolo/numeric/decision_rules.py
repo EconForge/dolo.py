@@ -4,7 +4,7 @@ This module contains classes representing decision rules
 
 import dolo.config
 
-from dolo.misc.decorators import memoized
+from dolo.misc.caching import memoized
 
 import numpy as np
 
