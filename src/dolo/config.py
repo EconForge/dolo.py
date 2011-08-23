@@ -71,24 +71,6 @@ class IPythonInterpreter(DefaultInterpreter):
         else:
             self._display_(obj)
 
-        
-class SageInterpreter(DefaultInterpreter):
-
-    def __init__(self):
-        from sagenb.misc.html import HTML
-        self.display_html = HTML
-
-    def display(self,obj):
-
-        if hasattr(obj,'_repr_html_'):
-            self.display_html(obj)
-
-        elif isinstance(obj,str):
-            self.display_html(obj)
-            
-        else:
-            print(obj)
-
 
 use_engine = {
     'sylvester': False
