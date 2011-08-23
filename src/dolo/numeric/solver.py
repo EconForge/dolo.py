@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def solver(fobj,x0,options={},method='fsolve',jac='default',verbose=False):
+def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
     in_shape = x0.shape
 
     ffobj = lambda x: fobj(x.reshape(in_shape)).flatten()
