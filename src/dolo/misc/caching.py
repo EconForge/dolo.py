@@ -11,7 +11,7 @@ class memoized(object):
 
     def __call__(self, *args):
 
-        args = (hashable(e) for e in args)
+        args = (e for e in args)
         try:
             return self.cache[args]
         except KeyError:
