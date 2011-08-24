@@ -1,6 +1,9 @@
 import argparse
 
+from dolo import __version__
+
 parser = argparse.ArgumentParser(description='RECS compiler')
+parser.add_argument('-v','--version', action='version', version=__version__)
 parser.add_argument('-s','--solve', action='store_const', const=True, default=False, help='solve for the decision rule')
 parser.add_argument('input', help='model file')
 parser.add_argument('output',help='model file')
