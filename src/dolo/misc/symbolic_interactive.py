@@ -249,6 +249,7 @@ def def_variables(s):
             frame.f_globals['variables_order'].extend(res)
         else:
             frame.f_globals['variables_order'] = res
+        return res
     finally:
         del frame
 
@@ -277,6 +278,7 @@ def def_shocks(s):
             frame.f_globals['shocks_order'].extend(res)
         else:
             frame.f_globals['shocks_order'] = res
+        return res
     finally:
         del frame
 
@@ -306,6 +308,7 @@ def def_parameters(s):
             frame.f_globals['parameters_order'].extend(res)
         else:
             frame.f_globals['parameters_order'] = res
+        return res
     finally:
         del frame
 
