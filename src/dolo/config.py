@@ -86,7 +86,7 @@ use_engine = {
 save_plots = False
 
 
-for IPC in [IPythonInterpreter, SageInterpreter, DefaultInterpreter]:
+for IPC in [IPythonInterpreter, DefaultInterpreter]:
     try:
         interpreter = IPC()
         break
