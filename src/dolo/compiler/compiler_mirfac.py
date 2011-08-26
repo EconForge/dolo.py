@@ -85,6 +85,9 @@ class MirFacCompiler(Compiler):
         locals = {}
         import sympy
         locals['inf'] = sympy.Symbol('inf')
+        locals['log'] = sympy.log # this should be more generic
+        locals['exp'] = sympy.exp
+        
         for v in dmodel.variables + dmodel.parameters:
             locals[v.name] = v
         import re
@@ -633,10 +636,10 @@ end
              write_der_eqs(h_eqs,controls_f,'out5',3)
         )
 
-        #if not with_param_names:
+        # if not with_param_names:
         #    eq_h_block = 's=snext;\nx=xnext;\n'+eq_h_block
 
-        param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
+        # param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
 
         if not with_parameters_values:
             params_values = ''
