@@ -89,7 +89,6 @@ def parse_yaml_text(txt):
     if 'covariances' in calibration:
         import numpy
         covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
-        print covariances
     else:
         covariances = None # to avoid importing numpy
 
