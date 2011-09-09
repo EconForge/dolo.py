@@ -366,7 +366,7 @@ switch flag
     n = size(snext,1);
 {exp_fun_block}
   case 'e';
-    warning('Euler equation errors not implemented in Dolo');
+    out1 = [];
 
   case 'model'; % informations about the model
 {model_info}
