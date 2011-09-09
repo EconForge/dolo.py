@@ -1,20 +1,49 @@
-from dolo.symbolic.model import Model
+def approximate_controls(model, order=1):
+    
+    gm = simple_global_representation(model)
 
-from dolo.symbolic.symbolic import Equation,Variable,Shock,Parameter
+    g_eqs = gm['g_eqs']
+    g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
+    f_eqs = gm['f_eqs']
+    f_args = gm['states'] + gm['controls'] + [s(1) for s in gm['states']] + [x(1) for x in gm['controls']]
+    p_args = gm['parameters']
+
+    from dolo.compiler.compiling import compile_function
+
+    g_fun = compile_function(g_eqs, g_args, p_args, order)
+    f_fun = compile_function(f_eqs, f_args, p_args, order)
+
+    # get steady_state
+    import numpy
+    [y,x,parms] = model.read_calibration()
+    sigma = numpy.array( model.covariances )
+    states_ss = [y[model.variables.index(v)] for v in gm['states']]
+    controls_ss = [y[model.variables.index(v)] for v in gm['controls']]
+    shocks_ss = x
+
+    f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
+    g = g_fun( states_ss + controls_ss + shocks_ss, parms)
+
+    return [controls_ss] + state_perturb(f, g, sigma)
+
 
 def simple_global_representation(self):
     resp = {}
     eq_g = self['equations_groups']
     v_g = self['variables_groups']
-    resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage'] + eq_g['expectation']] # TODO: complementarity conditions
+    if 'expectation' in eq_g:
+        resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage'] + eq_g['expectation']] # TODO: complementarity conditions
+        resp['controls'] = v_g['controls'] + v_g['expectations']
+    else:
+        resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage']] # TODO: complementarity conditions
+        resp['controls'] = v_g['controls']
     resp['g_eqs'] = [eq.rhs for eq in  eq_g['transition'] ]
     resp['states'] = v_g['states']
-    resp['controls'] = v_g['controls'] + v_g['expectations']
     resp['shocks'] = self.shocks #['shocks_ordering'] # TODO: bad
     resp['parameters'] = self.parameters #['parameters_ordering']
     return resp
 
-def state_perturb(f_fun, g_fun):
+def state_perturb(f_fun, g_fun, sigma):
     """
     Compute the perturbation of a system in the form:
     $E_t f(s_t,x_t,s_{t+1},x_{t+1})$
@@ -70,7 +99,7 @@ def state_perturb(f_fun, g_fun):
 
 
     if approx_order == 1:
-        return [C,P,Q]
+        return [C]
 
     # second order solution
     from dolo.numeric.tensor import sdot, mdot
@@ -79,8 +108,8 @@ def state_perturb(f_fun, g_fun):
 
     f2 = f_fun[2]
     g2 = g_fun[2]
-    g_ss = g2[:,n_s,:n_s]
-    g_sx = g2[:,n_s,n_s:n_v]
+    g_ss = g2[:,:n_s,:n_s]
+    g_sx = g2[:,:n_s,n_s:n_v]
     g_xx = g2[:,n_s:n_v,n_s:n_v]
 
     #print g_ss.shape
@@ -104,8 +133,33 @@ def state_perturb(f_fun, g_fun):
     
     X_ss = solve_sylvester(A,B,C,D)
 
+    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,[V1_3,V1_3]) ) + D
+
+    
+    if not sigma == None:
+        g_ee = g2[:,n_v:,n_v:]
+
+        v = np.row_stack([
+            g_e,
+            dot(X_s,g_e)
+        ])
+
+        K_tt = mdot( f2[:,n_v:,n_v:], [v,v] )
+        K_tt += sdot( f_snext + dot(f_xnext,X_s) , g_ee )
+        K_tt += mdot( sdot( f_xnext, X_ss), [g_e, g_e] )
+        K_tt = np.tensordot( K_tt, sigma, axes=((1,2),(0,1)))
+
+        L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) )
+        from numpy.linalg import det
+        #print L_ss
+        #print det( L_ss )
+        X_tt = solve( L_tt, - K_tt)
+
     if approx_order == 2:
-        return [X_s,X_ss]  # here, we don't approximate the law of motion of the states
+        if sigma == None:
+            return [X_s,X_ss]  # here, we don't approximate the law of motion of the states
+        else:
+            return [[X_s,X_ss],[X_tt]]  # here, we don't approximate the law of motion of the states
 
     # third order solution
 
@@ -136,47 +190,43 @@ def state_perturb(f_fun, g_fun):
 
     X_sss = solve_sylvester(A,B,C,D)
 
+    # now doing sigma correction with sigma replaced by l in the subscripts
+
+    g_se= g2[:,:n_s,n_v:]
+    g_xe= g2[:,n_s:n_v,n_v:]
+
+    g_see= g3[:,:n_s,n_v:,n_v:]
+    g_xee= g3[:,n_s:n_v,n_v:,n_v:]
+
+    SW_l = np.row_stack([
+        g_e,
+        dot(X_s,g_e)
+    ])
+    SW_ll = np.row_stack([
+        g_ee,
+        mdot(X_ss,[g_e,g_e]) + sdot(X_s, g_ee)
+    ])
+    SV_sl = g_se + mdot( g_xe, [X_s, np.eye(n_e)])
+    SW_sl = np.row_stack([
+        SV_sl,
+        mdot( X_ss, [ V1_3, g_e ] ) + sdot( X_s, SV_sl)
+    ])
+
+    SV_ll = g_ee + sdot(g_x, X_tt)
+
+    K_ee = mdot(f3[:,:,n_v:,n_v:], [V1, SW_l, SW_l ])
+    K_ee += 2 * mdot( f2[:,n_v:,n_v:], [SW_sl, SW_l])
+    K_ee += mdot( f2[:,:,n_v:], [V1, SW_ll])
+
+    I_e = np.eye(n_e)
+    L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) ) # same as before
+
+    K1 = sdot( f_snext, sdot( g_sx, X_tt) + mdot(g_xx,[X_s,X_tt]))
+    K2_ee = sdot( f_snext, g_see + mdot( g_xee,[X_s,I_e,I_e] ) ) # to be reduced by sigma
+
+    KT_ee = mdot(X_sss,[V1_3, g_e, g_e]) + 2 * mdot( X_ss [SV_sl, g_e]) + mdot( X_ss, [V1_3, SV_ll])
+
     if approx_order == 3:
         return [X_s,X_ss,X_sss]
 
 
-
-
-if __name__ == '__main__':
-
-    #dolo.config.engine.dynare_config()
-    #dolo.config.use_engine['sylvester'] = True
-
-    from dolo.misc.yamlfile import yaml_import
-    model = yaml_import('../../../examples/global_models/optimal_growth.yaml')
-    
-    gm = simple_global_representation(model)
-
-    g_eqs = gm['g_eqs']
-    g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
-    f_eqs = gm['f_eqs']
-    f_args = gm['states'] + gm['controls'] + [s(1) for s in gm['states']] + [x(1) for x in gm['controls']]
-    p_args = gm['parameters']
-
-    from dolo.compiler.compiling import compile_function
-
-    g_fun = compile_function(g_eqs, g_args, p_args, 3)
-    f_fun = compile_function(f_eqs, f_args, p_args, 3)
-
-    # get steady_state
-    [y,x,parms] = model.read_calibration()
-    states_ss = [y[model.variables.index(v)] for v in gm['states']]
-    controls_ss = [y[model.variables.index(v)] for v in gm['controls']]
-    shocks_ss = x
-
-    f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
-    g = g_fun( states_ss + controls_ss + shocks_ss, parms)
-
-
-    import time
-    nit = 100
-    t = time.time()
-    for i in range(nit):
-        state_perturb(f,g)
-    s = time.time()
-    print('Mean iteration :' + str((s-t)/nit) )
