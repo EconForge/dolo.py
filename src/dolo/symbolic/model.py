@@ -61,13 +61,7 @@ class Model(dict):
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
-    def reorder(self, vars, variables_order):
-        arg = list(vars)
-        res = [v for v in variables_order if v in arg]
-        t =  [v for v in arg if v not in variables_order]
-        t.sort()
-        res.extend( t )
-        return res
+
 
     def check_consistency(self,verbose=False):
 
@@ -92,9 +86,9 @@ class Model(dict):
         tp = [p for p in all_parameters]
         [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
-        self.variables = self.reorder(tv,self['variables_ordering'])
-        self.shocks = self.reorder(ts,self['shocks_ordering'])
-        self.parameters = self.reorder(tp,self['parameters_ordering'])
+        self.variables = reorder(tv,self['variables_ordering'])
+        self.shocks = reorder(ts,self['shocks_ordering'])
+        self.parameters = reorder(tp,self['parameters_ordering'])
 
         info = {
                 "n_variables" : len(self.variables),
@@ -214,6 +208,13 @@ class Model(dict):
         nmodel.check()
         return nmodel
 
+def reorder(vars, variables_order):
+    arg = list(vars)
+    res = [v for v in variables_order if v in arg]
+    t =  [v for v in arg if v not in variables_order]
+    t.sort()
+    res.extend( t )
+    return res
 
 def compute_residuals(model):
     [y,x,parms] = model.read_calibration()
