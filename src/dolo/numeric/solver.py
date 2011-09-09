@@ -14,7 +14,7 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
 
     if method == 'fsolve':
         import scipy.optimize as optimize
-        factor = options['factor']
+        factor = options.get('factor')
         factor = factor if factor else 1
         [sol,infodict,ier,msg] = optimize.fsolve(ffobj,x0.flatten(),factor=factor,full_output=True,xtol=1e-10,epsfcn=1e-9)
         if ier != 1:
@@ -27,8 +27,11 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
         sol = optimize.newton_krylov(ffobj,x0.flatten())
     elif method == 'lmmcp':
         from dolo.numeric.extern.lmmcp import lmmcp
+        #lb = -np.inf*np.ones(len(x0.flatten()))
+        #ub = np.inf*np.ones(len(x0.flatten()))
         lb = -np.inf*np.ones(len(x0.flatten()))
         ub = np.inf*np.ones(len(x0.flatten()))
+
         sol = lmmcp(ffobj,Dffobj,x0.flatten(),lb,ub,verbose=verbose,options=options)
 
     return sol.reshape(in_shape)
