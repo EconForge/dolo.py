@@ -1,6 +1,6 @@
 from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
 from dolo.symbolic.model import Model
-
+from collections import OrderedDict
 import yaml
 import sympy
 import re
@@ -11,20 +11,25 @@ def parse_yaml_text(txt):
     Imports the content of a modfile into the current interpreter scope
     '''
     txt = txt.replace('..','-')
+    txt = txt.replace('--','-')
     txt = txt.replace('^','**')
     raw_dict = yaml.load(txt)
 
     declarations = raw_dict['declarations']
     # check
     if 'controls' in declarations:
-        vnames = declarations['states'] + declarations['controls'] + declarations['expectations']
-        if 'auxiliary' in declarations:
-            vnames += declarations['auxiliary']
+        variables_groups = OrderedDict()
+        for vtype in ['states','controls','expectations','auxiliary']:
+            if vtype in declarations:
+                variables_groups[vtype] = [Variable(vn,0) for vn in declarations[vtype]]
+        variables_ordering = sum(variables_groups.values(),[])
     else:
         vnames = declarations['variables']
-
-    variables_ordering = [Variable(vn,0) for vn in vnames]
+        variables_ordering = [Variable(vn,0) for vn in vnames]
+        variables_groups = None
+        
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
+    
     shocks_ordering = [Shock(vn,0) for vn in declarations['shocks']]
 
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
@@ -36,9 +41,11 @@ def parse_yaml_text(txt):
     context['sqrt'] = sympy.sqrt
 
     equations = []
+    equations_groups = OrderedDict()
     raw_equations = raw_dict['equations']
     if isinstance(raw_equations,dict):   # tests whether there are groups of equations
         for groupname in raw_equations.keys():
+            equations_groups[groupname] = []
             for raw_eq in raw_equations[groupname]:  # Modfile is supposed to represent a global model. TODO: change it
                 if groupname == 'arbitrage':
                     teq,comp = raw_eq.split('|')
@@ -54,7 +61,7 @@ def parse_yaml_text(txt):
                     lhs = eval(lhs,context)
                     rhs = eval(rhs,context)
                 except Exception as e:
-                    print('Error parsing equations : ' + teq)
+                    print('Error parsing equation : ' + teq)
                     print str(e)
                     raise e
                 eq = Equation(lhs,rhs)
@@ -62,6 +69,7 @@ def parse_yaml_text(txt):
                 if groupname == 'arbitrage':
                     eq.tag(complementarity=comp)
                 equations.append(eq)
+                equations_groups[groupname].append( eq )
     else:
         for teq in raw_equations:
             if '=' in teq:
@@ -77,6 +85,7 @@ def parse_yaml_text(txt):
                 print str(e)
             eq = Equation(lhs,rhs)
             equations.append(eq)
+        equations_groups = None
 
     calibration = raw_dict['calibration']
     parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
@@ -96,6 +105,8 @@ def parse_yaml_text(txt):
         'variables_ordering': variables_ordering,
         'parameters_ordering': parameters_ordering,
         'shocks_ordering': shocks_ordering,
+        'variables_groups': variables_groups,
+        'equations_groups': equations_groups,
         'equations': equations,
         'parameters_values': parameters_values,
         'init_values': init_values,
