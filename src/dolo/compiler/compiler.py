@@ -241,14 +241,6 @@ class DicPrinter(sympy.printing.StrPrinter):
 
     def doprint_numpy(self,expr,vectorize=False):
         txt = self.doprint(expr)
-        #txt = txt.replace('**','^')
-        #if vectorize:
-        #    txt = txt.replace('^','.^')
-        #    txt = txt.replace('*','.*')
-        #    txt = txt.replace('/','./')
-            #txt = txt.replace('+','.+')
-            #txt = txt.replace('-','.-')
-
         return txt
     
     def _print_Variable(self, expr):
