@@ -40,6 +40,12 @@ def parse_yaml_text(txt):
         context[str(f)] = f
     context['sqrt'] = sympy.sqrt
 
+    import re
+    eq_regex = re.compile('([^|]*)(\|.*)?')
+    # we recognize two kinds of equations:
+    # lhs = rhs
+    # lhs | comp          where comp is a complementarity condition
+
     equations = []
     equations_groups = OrderedDict()
     raw_equations = raw_dict['equations']
@@ -47,11 +53,12 @@ def parse_yaml_text(txt):
         for groupname in raw_equations.keys():
             equations_groups[groupname] = []
             for raw_eq in raw_equations[groupname]:  # Modfile is supposed to represent a global model. TODO: change it
-                if groupname == 'arbitrage':
-                    teq,comp = raw_eq.split('|')
-                    comp = str.strip(comp)
-                else:
-                    teq = raw_eq
+                try:
+                    m = eq_regex.match(raw_eq)
+                    teq = m.group(1)
+                    comp = m.group(2)
+                except:
+                    raise Exception('Invalid equation:\n' + raw_eq)
                 if '=' in teq:
                     lhs,rhs = str.split(teq,'=')
                 else:
@@ -64,9 +71,10 @@ def parse_yaml_text(txt):
                     print('Error parsing equation : ' + teq)
                     print str(e)
                     raise e
+
                 eq = Equation(lhs,rhs)
                 eq.tag(eq_type=groupname)
-                if groupname == 'arbitrage':
+                if comp:
                     eq.tag(complementarity=comp)
                 equations.append(eq)
                 equations_groups[groupname].append( eq )
@@ -87,19 +95,23 @@ def parse_yaml_text(txt):
             equations.append(eq)
         equations_groups = None
 
-    calibration = raw_dict['calibration']
-    parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
-    parameters_values = dict(parameters_values)
-    #steady_state = raw_dict['steady_state']
-    init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
-    init_values = dict(init_values)
-
-    #covariances = eval('np.array({0})'.format( calibration['covariances'] ))
-    if 'covariances' in calibration:
-        import numpy
-        covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
-    else:
-        covariances = None # to avoid importing numpy
+    parameters_values = {}
+    init_values = {}
+    covariances = None
+    if 'calibration' in raw_dict:
+        calibration = raw_dict['calibration']
+        if 'parameters' in calibration:
+            parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
+            parameters_values = dict(parameters_values)
+        #steady_state = raw_dict['steady_state']
+        if 'steady_state' in calibration:
+            init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
+            init_values = dict(init_values)
+        if 'covariances' in calibration:
+            import numpy
+            covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
+        else:
+            covariances = None # to avoid importing numpy
 
     model_dict = {
         'variables_ordering': variables_ordering,
