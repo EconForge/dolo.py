@@ -1,8 +1,9 @@
-from sympy import Symbol
+#from sympy import Symbol
+from dolo.symbolic.symbolic import TSymbol
 
 class DerivativesTree:
 
-    symbol_type = Symbol
+    symbol_type = TSymbol
 
     def __init__(self,expr,n=0,p=-1,vars=[],ref_var_list=None):
         self.expr = expr
@@ -12,13 +13,15 @@ class DerivativesTree:
         self.derivatives = dict()
         # if index is not given it is constructed
         if ref_var_list == None:
+            # TODO: remove this
             self.ref_var_list = [s for s in expr.atoms() if isinstance(s,self.symbol_type)]
         else:
             self.ref_var_list = ref_var_list
 
     def compute_children(self):
         self.derivatives = dict()
-        deriv_vars = [s for s in self.expr.atoms() if isinstance(s,self.symbol_type)]
+        #deriv_vars = [s for s in self.expr.atoms() if isinstance(s,self.symbol_type)]
+        deriv_vars = [s for s in self.expr.atoms() if s in self.ref_var_list]
         for v in deriv_vars:
             i = self.ref_var_list.index(v)
             if i >= self.p:
