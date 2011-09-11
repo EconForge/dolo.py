@@ -1,5 +1,7 @@
 def approximate_controls(model, order=1):
-    
+
+
+
     gm = simple_global_representation(model)
 
     g_eqs = gm['g_eqs']
@@ -15,7 +17,9 @@ def approximate_controls(model, order=1):
 
     # get steady_state
     import numpy
-    [y,x,parms] = model.read_calibration()
+    [y0,x,parms] = model.read_calibration()
+    y = model.solve_for_steady_state(y0)
+
     sigma = numpy.array( model.covariances )
     states_ss = [y[model.variables.index(v)] for v in gm['states']]
     controls_ss = [y[model.variables.index(v)] for v in gm['controls']]
@@ -37,7 +41,22 @@ def simple_global_representation(self):
     else:
         resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage']] # TODO: complementarity conditions
         resp['controls'] = v_g['controls']
+
     resp['g_eqs'] = [eq.rhs for eq in  eq_g['transition'] ]
+
+    if 'auxiliary' in eq_g:
+        from dolo.misc.misc import timeshift
+        aux_eqs = eq_g['auxiliary']
+        auxiliary_definitions = dict()
+        for eq in aux_eqs:
+            v = eq.lhs
+            auxiliary_definitions[v] = eq.rhs
+            auxiliary_definitions[v(1)] = timeshift(eq.rhs,1)
+        from dolo.misc.calculus import simple_triangular_solve
+        substitutions = simple_triangular_solve(auxiliary_definitions)
+        for eq_type in ['f_eqs','g_eqs']:
+            resp[eq_type] = [ eq.subs(substitutions) for eq in resp[eq_type] ]
+
     resp['states'] = v_g['states']
     resp['shocks'] = self.shocks #['shocks_ordering'] # TODO: bad
     resp['parameters'] = self.parameters #['parameters_ordering']
@@ -224,7 +243,7 @@ def state_perturb(f_fun, g_fun, sigma):
     K1 = sdot( f_snext, sdot( g_sx, X_tt) + mdot(g_xx,[X_s,X_tt]))
     K2_ee = sdot( f_snext, g_see + mdot( g_xee,[X_s,I_e,I_e] ) ) # to be reduced by sigma
 
-    KT_ee = mdot(X_sss,[V1_3, g_e, g_e]) + 2 * mdot( X_ss [SV_sl, g_e]) + mdot( X_ss, [V1_3, SV_ll])
+    KT_ee = mdot(X_sss,[V1_3, g_e, g_e]) + 2 * mdot( X_ss, [SV_sl, g_e]) + mdot( X_ss, [V1_3, SV_ll])
 
     if approx_order == 3:
         return [X_s,X_ss,X_sss]
