@@ -176,6 +176,14 @@ class Model(dict):
         return [y,x,params]
 
 
+    def read_covariances(self):
+        m = self['covariances']
+        import numpy
+        m = numpy.array(m).astype(numpy.float)
+        return m
+
+        
+
     def solve_for_steady_state(self,y0=None):
         import numpy as np
         from dolo.numeric.solver import solver
