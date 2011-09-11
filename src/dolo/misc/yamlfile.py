@@ -108,8 +108,7 @@ def parse_yaml_text(txt):
             init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
             init_values = dict(init_values)
         if 'covariances' in calibration:
-            import numpy
-            covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
+            covariances = eval('sympy.Matrix({0})'.format( calibration['covariances'] )) # bad, use sympy ?
         else:
             covariances = None # to avoid importing numpy
 
