@@ -26,11 +26,11 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
         import scipy.optimize as optimize
         sol = optimize.newton_krylov(ffobj,x0.flatten())
     elif method == 'lmmcp':
-        from dolo.numeric.extern.lmmcp import lmmcp
+        from dolo.numeric.extern.lmmcp import lmmcp,Big
+        lb = -Big*np.ones(len(x0.flatten()))
+        ub = Big*np.ones(len(x0.flatten()))
         #lb = -np.inf*np.ones(len(x0.flatten()))
         #ub = np.inf*np.ones(len(x0.flatten()))
-        lb = -np.inf*np.ones(len(x0.flatten()))
-        ub = np.inf*np.ones(len(x0.flatten()))
 
         sol = lmmcp(ffobj,Dffobj,x0.flatten(),lb,ub,verbose=verbose,options=options)
 
