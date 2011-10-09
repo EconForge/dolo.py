@@ -642,7 +642,7 @@ end
         # param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
 
         if not with_parameters_values:
-            params_values = ''
+            params_values = '    out1 = [];'
         else:
             [y,x,params] = model.read_calibration()
             params_values = '    out1 = [' + str.join(  ',', [ str( p ) for p in params] ) + '];'
