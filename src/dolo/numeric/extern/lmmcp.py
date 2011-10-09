@@ -35,8 +35,7 @@ watchdog=1 # 1=watchdog strategy active, otherwise not
 
 # parameters for preprocessor
 preprocess=True  # 1=preprocessor used, otherwise not
-presteps=20   # maximum number of preprocessing steps, default: 20
-presteps=5
+presteps=20    # maximum number of preprocessing steps, default: 20
 
 # trust-region parameters for preprocessor
 delta=5        # default: 5
