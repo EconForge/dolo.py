@@ -27,6 +27,16 @@ class Model(dict):
             'shocks_ordering': []
         }
 
+        equations_groups = dict()
+        for eq in self['equations']:
+            if 'eq_type' in eq.tags:
+                g = eq.tags['eq_type']
+                if g not in equations_groups:
+                    equations_groups[g] = []
+                equations_groups[g].append( eq )
+
+        self['equations_groups'] = equations_groups
+
         for k in defaults:
             if k not in self:
                 self[k] = defaults[k]
@@ -177,9 +187,31 @@ class Model(dict):
 
 
     def read_covariances(self):
+
+        # duplicated code
+        model = self
+        from dolo.misc.calculus import solve_triangular_system
+        dvars = dict()
+        dvars.update(model.parameters_values)
+        dvars.update(model.init_values)
+        for v in model.variables:
+            if v not in dvars:
+                dvars[v] = 0
+        undeclared_parameters = []
+        for p in model.parameters:
+            if p not in dvars:
+                undeclared_parameters.append(p)
+                dvars[p] = 0
+                raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
+
+        values = solve_triangular_system(dvars)[0]
+
         m = self['covariances']
+        m = m.subs(values)
+        
         import numpy
         m = numpy.array(m).astype(numpy.float)
+        
         return m
 
         
@@ -194,6 +226,7 @@ class Model(dict):
             y0 = np.array(y0)
         f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
         fobj = lambda z: f_static(z,x,params)[0]
+        print(fobj(y0))
         try:
             opts = {'eps1': 1e-12, 'eps2': 1e-20}
             sol = solver(fobj,y0,method='lmmcp',options=opts)

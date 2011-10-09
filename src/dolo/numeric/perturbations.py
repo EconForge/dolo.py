@@ -11,9 +11,9 @@ TOL_RES = 1E-8
 
 def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None, solve_ss = False):
 
-    
-    Sigma = np.array(model.covariances).astype(np.float64)
-
+#    Sigma = model.read_covariances()
+#    Sigma = np.array(model.covariances).astype(np.float64)
+    Sigma = model.read_covariances()
     [y,x,parms] = model.read_calibration()
 
 
