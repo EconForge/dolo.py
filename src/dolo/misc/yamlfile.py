@@ -17,7 +17,8 @@ def parse_yaml_text(txt):
     declarations = raw_dict['declarations']
     # check
     if 'controls' in declarations:
-        vnames = declarations['states'] + declarations['controls'] + declarations['expectations']
+        vnames = declarations['states'] + declarations['controls'] + \
+                 declarations['expectations']
         if 'auxiliary' in declarations:
             vnames += declarations['auxiliary']
     else:
@@ -79,16 +80,25 @@ def parse_yaml_text(txt):
             equations.append(eq)
 
     calibration = raw_dict['calibration']
-    parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
-    parameters_values = dict(parameters_values)
-    #steady_state = raw_dict['steady_state']
-    init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
-    init_values = dict(init_values)
+    if 'parameters' in calibration:
+        parameters_values = [(Parameter(k), eval(str(v),context))
+                             for k,v in calibration['parameters'].iteritems()]
+        parameters_values = dict(parameters_values)
+    else:
+        parameters_values = None
+
+    if 'steady_state' in calibration:
+        #steady_state = raw_dict['steady_state']
+        init_values = [(Variable(vn,0), eval(str(value),context))
+                       for vn,value in calibration['steady_state'].iteritems()]
+        init_values = dict(init_values)
+    else:
+        init_values = None
 
     #covariances = eval('np.array({0})'.format( calibration['covariances'] ))
     if 'covariances' in calibration:
         import numpy
-        covariances = eval('numpy.array({0})'.format( calibration['covariances'] )) # bad, use sympy ?
+        covariances = eval('numpy.array({0})'.format(calibration['covariances'])) # bad, use sympy ?
     else:
         covariances = None # to avoid importing numpy
 
@@ -102,7 +112,7 @@ def parse_yaml_text(txt):
         'covariances': covariances
     }
     return Model(**model_dict)
-                
+
 
 def yaml_import(filename,names_dict={},full_output=False):
     '''Imports model defined in specified file'''
