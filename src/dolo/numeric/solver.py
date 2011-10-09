@@ -2,11 +2,19 @@ import numpy as np
 
 
 def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
+    
     in_shape = x0.shape
 
     ffobj = lambda x: fobj(x.reshape(in_shape)).flatten()
 
-    if jac=='precise':
+    if not isinstance(jac,str):
+        pp = np.prod(in_shape)
+        def Dffobj(t):
+            tt = t.reshape(in_shape)
+            dval = jac(tt)
+            return dval.reshape( (pp,pp) )
+
+    elif jac=='precise':
         from numdifftools import Jacobian
         Dffobj = Jacobian(ffobj)
     else:
@@ -16,10 +24,10 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
         import scipy.optimize as optimize
         factor = options.get('factor')
         factor = factor if factor else 1
-        [sol,infodict,ier,msg] = optimize.fsolve(ffobj,x0.flatten(),factor=factor,full_output=True,xtol=1e-10,epsfcn=1e-9)
+        [sol,infodict,ier,msg] = optimize.fsolve(ffobj,x0.flatten(),fprime=Dffobj,factor=factor,full_output=True,xtol=1e-10,epsfcn=1e-9)
         if ier != 1:
             print msg
-    elif method == 'broyden1':
+    elif method == 'anderson':
         import scipy.optimize as optimize
         sol = optimize.anderson(ffobj,x0.flatten())
     elif method == 'newton_krylov':
@@ -29,8 +37,6 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
         from dolo.numeric.extern.lmmcp import lmmcp,Big
         lb = -Big*np.ones(len(x0.flatten()))
         ub = Big*np.ones(len(x0.flatten()))
-        #lb = -np.inf*np.ones(len(x0.flatten()))
-        #ub = np.inf*np.ones(len(x0.flatten()))
 
         sol = lmmcp(ffobj,Dffobj,x0.flatten(),lb,ub,verbose=verbose,options=options)
 
