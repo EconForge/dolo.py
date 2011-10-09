@@ -77,7 +77,7 @@ def parse_yaml_text(txt):
                 if comp:
                     eq.tag(complementarity=comp)
                 equations.append(eq)
-                equations_groups[groupname].append( eq )
+                #equations_groups[groupname].append( eq )
     else:
         for teq in raw_equations:
             if '=' in teq:
@@ -108,7 +108,8 @@ def parse_yaml_text(txt):
             init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
             init_values = dict(init_values)
         if 'covariances' in calibration:
-            covariances = eval('sympy.Matrix({0})'.format( calibration['covariances'] )) # bad, use sympy ?
+            context['sympy'] = sympy
+            covariances = eval('sympy.Matrix({0})'.format( calibration['covariances'] ), context)
         else:
             covariances = None # to avoid importing numpy
 
@@ -123,6 +124,11 @@ def parse_yaml_text(txt):
         'init_values': init_values,
         'covariances': covariances
     }
+
+    if 'model_type' in raw_dict:
+        model_dict['model_type'] = raw_dict['model_type']
+    model_dict['original_data'] = raw_dict
+        
     return Model(**model_dict)
                 
 
