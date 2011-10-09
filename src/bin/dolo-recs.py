@@ -28,7 +28,14 @@ from dolo.compiler.compiler_mirfac import MirFacCompiler
 
 comp = MirFacCompiler(model)
 
-txt = comp.process_output_matlab(target='recs', with_solution=args.solve)
+if model['parameters_values']:
+    with_parameters_values = True
+else:
+    with_parameters_values = False
+
+txt = comp.process_output_matlab(target = 'recs',
+                                 with_parameters_values = with_parameters_values,
+                                 with_solution = args.solve)
 
 ######
 

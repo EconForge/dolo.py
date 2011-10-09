@@ -79,28 +79,33 @@ def parse_yaml_text(txt):
             eq = Equation(lhs,rhs)
             equations.append(eq)
 
-    calibration = raw_dict['calibration']
-    if 'parameters' in calibration:
-        parameters_values = [(Parameter(k), eval(str(v),context))
-                             for k,v in calibration['parameters'].iteritems()]
-        parameters_values = dict(parameters_values)
+    if 'calibration' in raw_dict:
+        calibration = raw_dict['calibration']
+        if 'parameters' in calibration:
+            parameters_values = [(Parameter(k), eval(str(v),context))
+                                 for k,v in calibration['parameters'].iteritems()]
+            parameters_values = dict(parameters_values)
+        else:
+            parameters_values = None
+            
+        if 'steady_state' in calibration:
+            #steady_state = raw_dict['steady_state']
+            init_values = [(Variable(vn,0), eval(str(value),context))
+                           for vn,value in calibration['steady_state'].iteritems()]
+            init_values = dict(init_values)
+        else:
+            init_values = None
+                
+        if 'covariances' in calibration:
+        #covariances = eval('np.array({0})'.format( calibration['covariances'] ))
+            import numpy
+            covariances = eval('numpy.array({0})'.format(calibration['covariances'])) # bad, use sympy ?
+        else:
+            covariances = None # to avoid importing numpy
     else:
         parameters_values = None
-
-    if 'steady_state' in calibration:
-        #steady_state = raw_dict['steady_state']
-        init_values = [(Variable(vn,0), eval(str(value),context))
-                       for vn,value in calibration['steady_state'].iteritems()]
-        init_values = dict(init_values)
-    else:
         init_values = None
-
-    #covariances = eval('np.array({0})'.format( calibration['covariances'] ))
-    if 'covariances' in calibration:
-        import numpy
-        covariances = eval('numpy.array({0})'.format(calibration['covariances'])) # bad, use sympy ?
-    else:
-        covariances = None # to avoid importing numpy
+        covariances = None
 
     model_dict = {
         'variables_ordering': variables_ordering,
