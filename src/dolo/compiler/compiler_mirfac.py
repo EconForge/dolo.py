@@ -556,7 +556,8 @@ end
             for i,eqq in enumerate(eq_l_d):
                 for j,eq in enumerate(eqq):
                     s = dp.doprint_matlab( eq, vectorize=True )
-                    eq_block += '\n' + '  ' * ntabs + '{lhs}(:,{0},{1}) = {2}; % d eq_{eq_n} w.r.t. {vname}'.format(i+1,j+1,s,lhs=lhs,eq_n=i+1,vname=str(v_l[j]) )
+                    if s!='0':
+                        eq_block += '\n' + '  ' * ntabs + '{lhs}(:,{0},{1}) = {2}; % d eq_{eq_n} w.r.t. {vname}'.format(i+1,j+1,s,lhs=lhs,eq_n=i+1,vname=str(v_l[j]) )
             return eq_block
 
         eq_bounds_block = write_eqs(inf_bounds,ntabs=2)
