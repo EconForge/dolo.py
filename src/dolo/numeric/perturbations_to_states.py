@@ -1,24 +1,26 @@
-def approximate_controls(model, order=1):
+def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False):
 
-
-
-    gm = simple_global_representation(model)
+    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary)
 
     g_eqs = gm['g_eqs']
     g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
     f_eqs = gm['f_eqs']
+
     f_args = gm['states'] + gm['controls'] + [s(1) for s in gm['states']] + [x(1) for x in gm['controls']]
     p_args = gm['parameters']
 
     from dolo.compiler.compiling import compile_function
-
+    
     g_fun = compile_function(g_eqs, g_args, p_args, order)
     f_fun = compile_function(f_eqs, f_args, p_args, order)
 
     # get steady_state
     import numpy
     [y0,x,parms] = model.read_calibration()
-    y = model.solve_for_steady_state(y0)
+    parms = numpy.array(parms)
+
+    y = y0
+    #y = model.solve_for_steady_state(y0)
 
     sigma = numpy.array( model.covariances )
     states_ss = [y[model.variables.index(v)] for v in gm['states']]
@@ -28,10 +30,36 @@ def approximate_controls(model, order=1):
     f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
     g = g_fun( states_ss + controls_ss + shocks_ss, parms)
 
-    return [controls_ss] + state_perturb(f, g, sigma)
+    if lambda_name:
+        epsilon = 0.01
+        sigma_index = [p.name for p in model.parameters].index(lambda_name)
+        pert_parms = parms.copy()
+        pert_parms[sigma_index] += epsilon
+        f_pert = f_fun( states_ss + controls_ss + states_ss + controls_ss, pert_parms)
+        sig2 = (f_pert[0] - f[0])/epsilon*2
+        sig2_s = (f_pert[1] - f[1])/epsilon*2
+        pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s] )
+
+    else:
+        pert_sol = state_perturb(f, g, sigma )
+
+    if order == 2:
+        [[X_s,X_ss],[X_tt]] = pert_sol
+        X_bar = controls_ss + X_tt/2
+        return [X_bar, X_s, X_ss]
 
 
-def simple_global_representation(self):
+    if order == 3:
+        [[X_s,X_ss,X_sss],[X_tt, X_stt]] = pert_sol
+        X_bar = controls_ss + X_tt/2
+        X_s = X_s + X_stt/2
+        return [X_bar, X_s, X_ss, X_sss]
+        
+    return [controls_ss] + pert_sol
+
+
+def simple_global_representation(self, substitute_auxiliary=False):
+
     resp = {}
     eq_g = self['equations_groups']
     v_g = self['variables_groups']
@@ -40,29 +68,29 @@ def simple_global_representation(self):
         resp['controls'] = v_g['controls'] + v_g['expectations']
     else:
         resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage']] # TODO: complementarity conditions
-        resp['controls'] = v_g['controls']
+        resp['controls'] = list( v_g['controls'] )
 
     resp['g_eqs'] = [eq.rhs for eq in  eq_g['transition'] ]
 
     if 'auxiliary' in eq_g:
-        from dolo.misc.misc import timeshift
-        aux_eqs = eq_g['auxiliary']
-        auxiliary_definitions = dict()
-        for eq in aux_eqs:
-            v = eq.lhs
-            auxiliary_definitions[v] = eq.rhs
-            auxiliary_definitions[v(1)] = timeshift(eq.rhs,1)
-        from dolo.misc.calculus import simple_triangular_solve
-        substitutions = simple_triangular_solve(auxiliary_definitions)
-        for eq_type in ['f_eqs','g_eqs']:
-            resp[eq_type] = [ eq.subs(substitutions) for eq in resp[eq_type] ]
+        if not substitute_auxiliary:
+            resp['f_eqs'] += [eq.gap for eq in eq_g['auxiliary']]
+            resp['controls'] += v_g['auxiliary']
+        else:
+            sdict = {}
+            from dolo.misc.misc import timeshift
+            for eq in eq_g['auxiliary']:
+                sdict[eq.lhs] = eq.rhs
+                sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+            resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
+
 
     resp['states'] = v_g['states']
     resp['shocks'] = self.shocks #['shocks_ordering'] # TODO: bad
     resp['parameters'] = self.parameters #['parameters_ordering']
     return resp
 
-def state_perturb(f_fun, g_fun, sigma):
+def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     """
     Compute the perturbation of a system in the form:
     $E_t f(s_t,x_t,s_{t+1},x_{t+1})$
@@ -76,8 +104,9 @@ def state_perturb(f_fun, g_fun, sigma):
     from numpy.linalg import solve
 
     approx_order = len(f_fun) - 1 # order of approximation
-    
+
     [f0,f1] = f_fun[:2]
+
     [g0,g1] = g_fun[:2]
     n_x = f1.shape[0]           # number of controls
     n_s = f1.shape[1]/2 - n_x   # number of states
@@ -116,6 +145,10 @@ def state_perturb(f_fun, g_fun, sigma):
     P = np.dot(solve(S11.T, Z11.T).T , solve(Z11.T, T11.T).T )
     Q = g_e
 
+    if False:
+        from numpy import dot
+        test = f_s + dot(f_x,C) + dot( f_snext, g_s + dot(g_x,C) ) + dot(f_xnext, dot( C, g_s + dot(g_x,C) ) )
+        print('Error: ' + str(abs(test).max()))
 
     if approx_order == 1:
         return [C]
@@ -152,7 +185,7 @@ def state_perturb(f_fun, g_fun, sigma):
     
     X_ss = solve_sylvester(A,B,C,D)
 
-    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,[V1_3,V1_3]) ) + D
+#    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,[V1_3,V1_3]) ) + D
 
     
     if not sigma == None:
@@ -167,6 +200,9 @@ def state_perturb(f_fun, g_fun, sigma):
         K_tt += sdot( f_snext + dot(f_xnext,X_s) , g_ee )
         K_tt += mdot( sdot( f_xnext, X_ss), [g_e, g_e] )
         K_tt = np.tensordot( K_tt, sigma, axes=((1,2),(0,1)))
+
+        if sigma2_correction is not None:
+            K_tt += sigma2_correction[0] # constant
 
         L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) )
         from numpy.linalg import det
@@ -211,41 +247,74 @@ def state_perturb(f_fun, g_fun, sigma):
 
     # now doing sigma correction with sigma replaced by l in the subscripts
 
-    g_se= g2[:,:n_s,n_v:]
-    g_xe= g2[:,n_s:n_v,n_v:]
+    if not sigma is None:
+        g_se= g2[:,:n_s,n_v:]
+        g_xe= g2[:,n_s:n_v,n_v:]
 
-    g_see= g3[:,:n_s,n_v:,n_v:]
-    g_xee= g3[:,n_s:n_v,n_v:,n_v:]
+        g_see= g3[:,:n_s,n_v:,n_v:]
+        g_xee= g3[:,n_s:n_v,n_v:,n_v:]
 
-    SW_l = np.row_stack([
-        g_e,
-        dot(X_s,g_e)
-    ])
-    SW_ll = np.row_stack([
-        g_ee,
-        mdot(X_ss,[g_e,g_e]) + sdot(X_s, g_ee)
-    ])
-    SV_sl = g_se + mdot( g_xe, [X_s, np.eye(n_e)])
-    SW_sl = np.row_stack([
-        SV_sl,
-        mdot( X_ss, [ V1_3, g_e ] ) + sdot( X_s, SV_sl)
-    ])
 
-    SV_ll = g_ee + sdot(g_x, X_tt)
+        W_l = np.row_stack([
+            g_e,
+            dot(X_s,g_e)
+        ])
 
-    K_ee = mdot(f3[:,:,n_v:,n_v:], [V1, SW_l, SW_l ])
-    K_ee += 2 * mdot( f2[:,n_v:,n_v:], [SW_sl, SW_l])
-    K_ee += mdot( f2[:,:,n_v:], [V1, SW_ll])
+        I_e = np.eye(n_e)
 
-    I_e = np.eye(n_e)
-    L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) ) # same as before
+        V_sl = g_se + mdot( g_xe, [X_s, np.eye(n_e)])
 
-    K1 = sdot( f_snext, sdot( g_sx, X_tt) + mdot(g_xx,[X_s,X_tt]))
-    K2_ee = sdot( f_snext, g_see + mdot( g_xee,[X_s,I_e,I_e] ) ) # to be reduced by sigma
+        W_sl = np.row_stack([
+            V_sl,
+            mdot( X_ss, [ V1_3, g_e ] ) + sdot( X_s, V_sl)
+        ])
 
-    KT_ee = mdot(X_sss,[V1_3, g_e, g_e]) + 2 * mdot( X_ss, [SV_sl, g_e]) + mdot( X_ss, [V1_3, SV_ll])
+        K_ee = mdot(f3[:,:,n_v:,n_v:], [V1, W_l, W_l ])
+        K_ee += 2 * mdot( f2[:,n_v:,n_v:], [W_sl, W_l])
+
+        # stochastic part of W_ll
+
+        SW_ll = np.row_stack([
+            g_ee,
+            mdot(X_ss, [g_e, g_e]) + sdot(X_s, g_ee)
+        ])
+
+        DW_ll = np.concatenate([
+            X_tt,
+            dot(g_x, X_tt),
+            dot(X_s, sdot(g_x,X_tt )) + X_tt
+        ])
+
+        K_ee += mdot( f2[:,:,n_v:], [V1, SW_ll])
+
+        K_ = np.tensordot(K_ee, sigma, axes=((2,3),(0,1)))
+
+        K_ += mdot(f2[:,:,n_s:], [V1, DW_ll])
+
+        def E(vec):
+            n = len(vec.shape)
+            return np.tensordot(vec,sigma,axes=((n-2,n-1),(0,1)))
+
+        L = sdot(g_sx,X_tt) + mdot(g_xx,[X_s,X_tt])
+
+        L += E(g_see + mdot(g_xee,[X_s,I_e,I_e]) )
+
+        M = E( mdot(X_sss,[V1_3, g_e, g_e]) + 2*mdot(X_ss, [V_sl,g_e]) )
+        M += mdot( X_ss, [V1_3, E( g_ee ) + sdot(g_x, X_tt)] )
+
+
+        A = f_x + dot( f_snext + dot(f_xnext,X_s), g_x) # same as before
+        B = f_xnext # same
+        C = V1_3 # same
+        D = K_ + dot( f_snext + dot(f_xnext,X_s), L) + dot( f_xnext, M )
+
+        if sigma2_correction is not None:
+            D += sdot( sigma2_correction[1], V1 )# constant
+
+        X_stt = solve_sylvester(A,B,C,D)
 
     if approx_order == 3:
-        return [X_s,X_ss,X_sss]
-
-
+        if sigma is None:
+            return [X_s,X_ss,X_sss]
+        else:
+            return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
