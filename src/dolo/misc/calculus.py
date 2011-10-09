@@ -44,6 +44,7 @@ def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
         if len(symbols) == 0:
             notfinished = False
         elif len(symbols) == l:
+            print('could not solve : ' + str(symbols))
             raise(Exception('The system is not triangular'))
     if return_order:
         return(oks)
