@@ -671,7 +671,7 @@ end
 
         text = text.format(
             eq_bounds_block = eq_bounds_block,
-            mfname = 'mf_' + model.fname,
+            mfname = model.fname,
             eq_fun_block=eq_f_block,
             state_trans_block=eq_g_block,
             exp_fun_block=eq_h_block,
