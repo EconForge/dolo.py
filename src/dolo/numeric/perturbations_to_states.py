@@ -1,4 +1,7 @@
-def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False):
+from dolo.numeric.decision_rules_states import CDR
+
+
+def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False):
 
     gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary)
 
@@ -43,9 +46,19 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     else:
         pert_sol = state_perturb(f, g, sigma )
 
+    if order == 1:
+        if return_dr:
+            S_bar = states_ss
+            X_bar = controls_ss
+            return CDR([S_bar, X_bar, pert_sol[0]])
+        return [controls_ss] + pert_sol
+
     if order == 2:
         [[X_s,X_ss],[X_tt]] = pert_sol
         X_bar = controls_ss + X_tt/2
+        if return_dr:
+            S_bar = states_ss
+            return CDR([S_bar, X_bar, X_s, X_ss])
         return [X_bar, X_s, X_ss]
 
 
@@ -53,9 +66,12 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
         [[X_s,X_ss,X_sss],[X_tt, X_stt]] = pert_sol
         X_bar = controls_ss + X_tt/2
         X_s = X_s + X_stt/2
+        if return_dr:
+            S_bar = states_ss
+            return CDR([S_bar, X_bar, X_s, X_ss, X_sss])
         return [X_bar, X_s, X_ss, X_sss]
         
-    return [controls_ss] + pert_sol
+
 
 
 def simple_global_representation(self, substitute_auxiliary=False):
