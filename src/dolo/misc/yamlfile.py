@@ -116,7 +116,9 @@ def parse_yaml_text(txt):
         'init_values': init_values,
         'covariances': covariances
     }
-    return Model(**model_dict)
+    model = Model(**model_dict)
+    model.check_consistency(auto_remove_variables=False)
+    return model
 
 
 def yaml_import(filename,names_dict={},full_output=False):
