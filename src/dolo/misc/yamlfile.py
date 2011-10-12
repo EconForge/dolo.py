@@ -124,6 +124,10 @@ def parse_yaml_text(txt):
         'init_values': init_values,
         'covariances': covariances
     }
+    
+    model = Model(**model_dict)
+    model.check_consistency(auto_remove_variables=False)
+    return model
 
     if 'model_type' in raw_dict:
         model_dict['model_type'] = raw_dict['model_type']

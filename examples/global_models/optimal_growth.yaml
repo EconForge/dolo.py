@@ -8,11 +8,14 @@ declarations:
 
     shocks: [e_A]
 
-    parameters: [beta, gamma, rho_A, rho_r, ybar, rbar, theta]
+    parameters: [beta, gamma, rho_A, rho_r, ybar, rbar, theta, dumb]
 
 
 equations:
 
+    arbitrage:
+        - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  = 1     |   0 <= c <= w * dumb
+        - c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf <=  Welf <= inf
 
     transition:
         - A = 1 + rho_A*(A(-1)-1) + e_A
@@ -29,13 +32,14 @@ equations:
 calibration:
 
   parameters:
-      beta : 0.96
-      gamma : 4.0
-      rho_A : 0.9
-      rho_r : 0.5
-      rbar : 1.0
-      ybar : 1.0
-      theta : 0.3
+      beta: 0.96
+      gamma: 4.0
+      rho_A: 0.9
+      rho_r: 0.5
+      rbar: 1.0
+      ybar: 1.0
+      theta: 0.3
+      dumb: 1
 
   steady_state:
     A: 1

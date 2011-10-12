@@ -71,34 +71,38 @@ class Model(dict):
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
+    def check_consistency(self,verbose=False, auto_remove_variables=True):
 
+        if auto_remove_variables:
+            print_info = verbose
+            print_eq_info = verbose
 
-    def check_consistency(self,verbose=False):
+            all_dyn_vars = set([])
+            all_dyn_shocks = set([])
+            all_parameters = set([])
+            for i in range(len(self.equations)):
+                eq = self.equations[i]
+                eq.infos['n'] = i+1
+                atoms = eq.atoms()
+                vs = [a for a in atoms if isinstance(a,Variable)]
+                ss = [a for a in atoms if isinstance(a,Shock)]
+                ps = [a for a in atoms if isinstance(a,Parameter)]
+                all_dyn_vars.update(vs)
+                all_dyn_shocks.update(ss)
+                all_parameters.update(ps)
+            tv = [v.P for v in all_dyn_vars]
+            ts = [s.P for s in all_dyn_shocks]
+            tp = [p for p in all_parameters]
+            [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
-        print_info = verbose
-        print_eq_info = verbose
+            self.variables = self.reorder(tv,self['variables_ordering'])
+            self.shocks = self.reorder(ts,self['shocks_ordering'])
+            self.parameters = self.reorder(tp,self['parameters_ordering'])
 
-        all_dyn_vars = set([])
-        all_dyn_shocks = set([])
-        all_parameters = set([])
-        for i in range(len(self.equations)):
-            eq = self.equations[i]
-            eq.infos['n'] = i+1
-            atoms = eq.atoms()
-            vs = [a for a in atoms if isinstance(a,Variable)]
-            ss = [a for a in atoms if isinstance(a,Shock)]
-            ps = [a for a in atoms if isinstance(a,Parameter)]
-            all_dyn_vars.update(vs)
-            all_dyn_shocks.update(ss)
-            all_parameters.update(ps)
-        tv = [v.P for v in all_dyn_vars]
-        ts = [s.P for s in all_dyn_shocks]
-        tp = [p for p in all_parameters]
-        [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
-
-        self.variables = reorder(tv,self['variables_ordering'])
-        self.shocks = reorder(ts,self['shocks_ordering'])
-        self.parameters = reorder(tp,self['parameters_ordering'])
+        else:
+            self.variables = self['variables_ordering']
+            self.shocks = self['shocks_ordering']
+            self.parameters = self['parameters_ordering']
 
         info = {
                 "n_variables" : len(self.variables),
