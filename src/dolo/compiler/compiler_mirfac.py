@@ -16,7 +16,9 @@ class MirFacCompiler(Compiler):
         if self.__transformed_model__:
             return self.__transformed_model__
 
+
         dmodel = Model(**self.model) # copy the model
+        dmodel.check_consistency(auto_remove_variables=False)
 
         def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'definition')]
 
@@ -82,20 +84,12 @@ class MirFacCompiler(Compiler):
         # read complementarity conditions
         compcond = {}
         of_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('f','arbitrage')]
-        locals = {}
-        import sympy
-        locals['inf'] = sympy.Symbol('inf')
-        locals['log'] = sympy.log # this should be more generic
-        locals['exp'] = sympy.exp
-        
-        for v in dmodel.variables + dmodel.parameters:
-            locals[v.name] = v
         import re
         compregex = re.compile('(.*)<=(.*)<=(.*)')
         for eq in of_eqs:
             tg = eq.tags['complementarity']
             [lhs,mhs,rhs] = compregex.match(tg).groups()
-            [lhs,mhs,rhs] = [eval(x,locals) for x in [lhs,mhs,rhs] ]
+            [lhs,mhs,rhs] = [dmodel.eval_string(x) for x in [lhs,mhs,rhs] ]
             compcond[mhs] = (lhs,rhs)
         
         complementarities = [compcond[v] for v in controls]
