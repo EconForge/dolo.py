@@ -1,7 +1,7 @@
 import numpy
 
 
-quantization_data = '/home/pablo/Documents/Research/Thesis/Chapter_1/code/data/quantization_grids/'
+quantization_data = '~/Programmation/dynare-python/dolo/src/dolo/numeric/data/quantization_grids/'
 
 
 def quantization_weights(N,sigma):
