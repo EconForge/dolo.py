@@ -86,6 +86,9 @@ class SmolyakGrid:
         return self.interpolate(x)[0]
 
     def __interpolate__(self,x):
+
+        x = x.real ## ? justification ?
+
         theta = self.theta
 
         [n_v, n_t] = theta.shape
