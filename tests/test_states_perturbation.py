@@ -14,8 +14,8 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
         from dolo.numeric.perturbations_to_states import approximate_controls
 
-        [Xbar, [X_s,X_ss],[X_tt]]  = approximate_controls(model,2)
-        state_perturb = (Xbar + X_tt/2.0)
+        [Xbar, X_s,X_ss]  = approximate_controls(model,2)
+        state_perturb = Xbar
 
 
         from dolo.numeric.perturbations import solve_decision_rule

@@ -1,7 +1,7 @@
 # To change this template, choose Tools | Templates
 # and open the template in the editor.
 
-from dolo.misc.interactive import dynare_import, parse_dynare_text
+from dolo.misc.modfile import dynare_import, parse_dynare_text
 from dolo.symbolic.ramsey import RamseyModel
 from dolo.compiler.compiler_dynare import DynareCompiler
 import unittest

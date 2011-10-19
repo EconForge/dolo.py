@@ -2,8 +2,8 @@
 # and open the template in the editor.
 
 import unittest
-from dolo.model.symbolic import Variable
-from dolo.misc.latex_preview import latex
+from dolo.symbolic.symbolic import Variable
+from sympy import latex
 
 
 class  LatexPrintingTestCase(unittest.TestCase):
