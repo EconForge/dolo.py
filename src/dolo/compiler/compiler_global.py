@@ -67,30 +67,42 @@ def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
     return res
 
 
-def step_residual(s, x):
-    from serial_operations import strange_tensor_multiplication as stm
-    ss = tile(s, (1,n_draws))
-    xx = tile(x, (1,n_draws))
-    ee = repeat(epsilons, n_g , axis=1)
-    [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms)[:3]
-    [xxnext, xxold_ss] = interp.interpolate(ssnext)[:2]
-    [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms)[:5]
-    dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
+def step_residual(s, x, dr, f, g, parms, epsilons, weights, with_derivatives=True):
+    n_draws = epsilons.shape[1]
+    [n_x,n_g] = x.shape
+    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+    ss = np.tile(s, (1,n_draws))
+    xx = np.tile(x, (1,n_draws))
+    ee = np.repeat(epsilons, n_g , axis=1)
+    if with_derivatives:
+        [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms)[:3]
+        [xxnext, xxold_ss] = dr.interpolate(ssnext)[:2]
+        [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms)[:5]
+        dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
 
-    res = np.zeros( (n_x,n_g) )
-    for i in range(n_draws):
-        res += weights[i] * val[:,n_g*i:n_g*(i+1)]
+        res = np.zeros( (n_x,n_g) )
+        for i in range(n_draws):
+            res += weights[i] * val[:,n_g*i:n_g*(i+1)]
 
-    dres = np.zeros( (n_x,n_x,n_g) )
-    for i in range(n_draws):
-        dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
+        dres = np.zeros( (n_x,n_x,n_g) )
+        for i in range(n_draws):
+            dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
 
-    dval = np.zeros( (n_x,n_g,n_x,n_g))
-    for i in range(n_g):
-        dval[:,i,:,i] = dres[:,:,i]
+        dval = np.zeros( (n_x,n_g,n_x,n_g))
+        for i in range(n_g):
+            dval[:,i,:,i] = dres[:,:,i]
 
-    return [res, dval]
+        return [res, dval]
+    else:
+        [ssnext] = g(ss,xx,ee,parms)[:1]
+        [xxnext] = dr.interpolate(ssnext)[:1]
+        [val] = f(ss,xx,ssnext,xxnext,ee,parms)[:1]
 
+        res = np.zeros( (n_x,n_g) )
+        for i in range(n_draws):
+            res += weights[i] * val[:,n_g*i:n_g*(i+1)]
+
+        return [res]
 #f = model_fun['f']
 #g = model_fun['g']
 def test_residuals(s,dr, f,g,parms, epsilons, weights):
@@ -116,3 +128,36 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     std_errors = np.sqrt( np.sum(squared_errors,axis=0) )
     
     return std_errors
+
+
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True):
+
+    from dolo.numeric.solver import solver
+
+    fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[0]
+    dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[1]
+
+    #
+    tol = 1e-8
+    ##
+    import time
+    t1 = time.time()
+    err = 1
+    x0 = xinit
+    it = 0
+    print('Solving')
+    while err > tol:
+        it +=1
+        interp.fit_values(x0)
+    #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
+        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=False, options=options)
+        res = abs(fun(x)).max()
+        err = abs(x-x0).max()
+        if verbose:
+            print("iteration {} : {}".format(it,err))
+        x0 = x0 + (x-x0)
+    #
+    t2 = time.time()
+    print('Elapsed: {}'.format(t2 - t1))
+
+    return interp
