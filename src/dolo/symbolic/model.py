@@ -95,9 +95,9 @@ class Model(dict):
             tp = [p for p in all_parameters]
             [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
-            self.variables = self.reorder(tv,self['variables_ordering'])
-            self.shocks = self.reorder(ts,self['shocks_ordering'])
-            self.parameters = self.reorder(tp,self['parameters_ordering'])
+            self.variables = reorder(tv,self['variables_ordering'])
+            self.shocks = reorder(ts,self['shocks_ordering'])
+            self.parameters = reorder(tp,self['parameters_ordering'])
 
         else:
             self.variables = self['variables_ordering']
