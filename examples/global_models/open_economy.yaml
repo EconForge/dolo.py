@@ -1,6 +1,6 @@
 name: Open economy
 
-description: Adapted from "country portfolios dynamics"
+description: Two endowment economies with one riskless bond
 
 declarations:
 
@@ -58,14 +58,14 @@ calibration:
         dumb: 0
 
     covariances: |
-      [[ 0.01,    0,      ],
-      [     0,      0.01 ]]
+      [[ 0.005,    0,      ],
+      [     0,      0.005 ]]
 
 ############################
 approximation_space:
-    smin: [0.5, 0.5]
-    smax: [1.5, 1.5]
-    orders: [10, 10]
+    smin: [0.7, 0.7]
+    smax: [1.3, 1.3]
+    orders: [5, 5]
 
 shocks:
     type: optimal_quantization
