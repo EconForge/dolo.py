@@ -145,16 +145,18 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
     err = 1
     x0 = xinit
     it = 0
-    print('Solving')
     while err > tol:
+        t_start = time.time()
         it +=1
         interp.fit_values(x0)
     #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
-        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=False, options=options)
+        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=verbose, options=options)
         res = abs(fun(x)).max()
         err = abs(x-x0).max()
+        t_finish = time.time()
+        elapsed = t_finish - t_start
         if verbose:
-            print("iteration {} : {}".format(it,err))
+            print("iteration {} : {} : {}".format(it,err,elapsed))
         x0 = x0 + (x-x0)
     #
     t2 = time.time()
