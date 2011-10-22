@@ -3,7 +3,7 @@ from dolo.numeric.decision_rules_states import CDR
 
 def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False):
 
-    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary)
+    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False)
 
     g_eqs = gm['g_eqs']
     g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
@@ -32,6 +32,8 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
 
     f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
     g = g_fun( states_ss + controls_ss + shocks_ss, parms)
+
+    print('Functions evaluated')
 
     if lambda_name:
         epsilon = 0.01
@@ -74,7 +76,7 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
 
 
 
-def simple_global_representation(self, substitute_auxiliary=False):
+def simple_global_representation(self, substitute_auxiliary=False, allow_future_shocks=True):
 
     resp = {}
     eq_g = self['equations_groups']
@@ -98,7 +100,15 @@ def simple_global_representation(self, substitute_auxiliary=False):
             for eq in eq_g['auxiliary']:
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+            from dolo.misc.calculus import simple_triangular_solve
+            sdict = simple_triangular_solve(sdict)
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
+            resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+
+    if not allow_future_shocks:
+        # future shocks are replaced by 0
+        zero_shocks = {s(1):0 for s in self.shocks}
+        resp['f_eqs'] = [ eq.subs(zero_shocks) for eq in resp['f_eqs'] ]
 
 
     resp['states'] = v_g['states']
@@ -148,6 +158,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     ])
 
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
+    print ("Found first order")
     
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
