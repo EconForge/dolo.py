@@ -87,8 +87,6 @@ class SmolyakGrid:
 
     def __interpolate__(self,x):
 
-        x = x.real ## ? justification ?
-
         theta = self.theta
 
         [n_v, n_t] = theta.shape
@@ -191,6 +189,8 @@ class SmolyakGrid:
 
 
     def fit_values(self,res0):
+
+        res0 = res0.real
         
         ket = self.__ket__
         #######
@@ -198,7 +198,7 @@ class SmolyakGrid:
         l = []
         n_v = res0.shape[0]
         n_t = res0.shape[1]
-        for i in range(n_v):
+        for i in range(n_v):                         # TODO : I shouldn't recompute it every time
             block = np.zeros( (n_v,n_t,n_t) )
             block[i,:,:] = ket
             l.append(block)
