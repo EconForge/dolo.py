@@ -33,8 +33,6 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
     g = g_fun( states_ss + controls_ss + shocks_ss, parms)
 
-    print('Functions evaluated')
-
     if lambda_name:
         epsilon = 0.01
         sigma_index = [p.name for p in model.parameters].index(lambda_name)
@@ -158,8 +156,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     ])
 
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
-    print ("Found first order")
-    
+
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
     Z21 = Z[n_s:,:n_s]
