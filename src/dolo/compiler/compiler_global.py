@@ -130,12 +130,15 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, maxit=500, debug=None):
 
     from dolo.numeric.solver import solver
 
     fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[0]
     dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[1]
+
+    if debug:
+        maxit = debug
 
     #
     tol = 1e-8
@@ -145,12 +148,15 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
     err = 1
     x0 = xinit
     it = 0
-    while err > tol:
+    if debug:
+        x_values = []
+    while err > tol and it < maxit:
         t_start = time.time()
         it +=1
         interp.fit_values(x0)
     #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
-        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=verbose, options=options)
+	verbit = True if verbose=='full' else False
+        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=verbit, options=options)
         res = abs(fun(x)).max()
         err = abs(x-x0).max()
         t_finish = time.time()
@@ -158,7 +164,17 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
         if verbose:
             print("iteration {} : {} : {}".format(it,err,elapsed))
         x0 = x0 + (x-x0)
+        if debug:
+            x_values.append(x0)
     #
+
+    if it == maxit:
+        if not debug:
+            raise("Maximum number of iterations reached")
+        else:
+            return x_values
+
+
     t2 = time.time()
     print('Elapsed: {}'.format(t2 - t1))
 

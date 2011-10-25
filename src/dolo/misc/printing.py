@@ -61,6 +61,15 @@ class HTMLPrinter():
         return self.print_table(resp)
 
     def print_model(self,model, print_residuals=True):
+        if 'equations_groups' in model:
+            eqs = [ ['', 'Equations'] ]
+            for groupname in model['equations_groups']:
+               eqg = model['equations_groups']
+	       eqs.append( [ groupname ,''] )
+               eqs.extend([ ['',eq] for eq in eqg[groupname] ])
+            txt = self.print_table( eqs, header = True)
+            return txt
+                
         if print_residuals:
             from dolo.symbolic.model import compute_residuals
             res = compute_residuals(model)

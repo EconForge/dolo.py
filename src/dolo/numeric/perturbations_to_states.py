@@ -156,7 +156,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     ])
 
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
-
+    
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
     Z21 = Z[n_s:,:n_s]
