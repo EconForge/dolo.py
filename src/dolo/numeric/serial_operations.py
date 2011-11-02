@@ -63,15 +63,35 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
         
     return ret
 
-
 def strange_tensor_multiplication(A,B):
-    assert( A.ndim==3 & B.ndim ==3 )
-    nobs = A.shape[2]
-    assert( B.shape[2] == nobs )
-    resp = np.zeros( (A.shape[0], B.shape[1],nobs)  ) #empty?
-    for i in range(nobs):
-        resp[:,:,i] = np.dot( A[:,:,i], B[:,:,i] )
+
+    I = A.shape[0]
+    J = A.shape[1]
+    N = A.shape[2]
+    K = B.shape[1]
+
+    assert(B.shape[0]==J)
+    assert(B.shape[2]==N)
+
+    resp = np.zeros( (I,K,N) )
+    for i in range(I):
+        for k in range(K):
+            T = np.zeros( N )
+            for j in range(J):
+                T += A[i,j,:]*B[j,k,:]
+            resp[i,k,:] = T
     return resp
+
+#def strange_tensor_multiplication(A,B):
+#    A = np.asfortranarray(A)
+#    B = np.asfortranarray(B)
+#    assert( A.ndim==3 & B.ndim ==3 )
+#    nobs = A.shape[2]
+#    assert( B.shape[2] == nobs )
+#    resp = np.zeros( (A.shape[0], B.shape[1],nobs)  ) #empty?
+#    for i in range(nobs):
+#        resp[...,i] = np.dot( A[...,i], B[...,i] )
+#    return resp
 
 def serial_dot(A,B):
     nobs = A.shape[-1]
