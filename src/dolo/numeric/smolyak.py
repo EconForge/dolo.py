@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy as np
 
 from operator import mul
@@ -29,7 +31,8 @@ def build_basic_grids(l):
     incr = [[0.0],[-1.0,1.0]]
     for i in range(2,len(ll)):
         t = ll[i]
-        tt =  [ t[2*n+1] for n in range( (len(t)-1)/2 ) ]
+        n = (len(t)-1)/2
+        tt =  [ t[2*n+1] for n in range( int(n) ) ]
         incr.append( tt )
     incr = [np.array(i) for i in incr]
     return [ll,incr]
@@ -88,29 +91,23 @@ class SmolyakGrid:
     def __interpolate__(self,x):
 
         theta = self.theta
-
         [n_v, n_t] = theta.shape
         assert( n_t == self.n_points )
-
         [n_d, n_p] = x.shape
-
         assert( n_d == self.d )
         s = self.A(x)
         Ts = chebychev( s, self.n_points - 1 )
-
         ket = []
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
             ket.append(p)
-
         ket = np.row_stack( ket )
-
         val = np.dot(theta,ket)
 
         return val
 
-    def interpolate(self, x, with_derivative=True):
-        eps = 1e-5
+    def interpolate2(self, x, with_derivative=True):
+        eps = 1e-8
         val = self.__interpolate__(x)
         n_x = x.shape[0]
         dval = np.zeros( (val.shape[0], n_x, val.shape[1]))
@@ -121,40 +118,35 @@ class SmolyakGrid:
             dval[:,i,:] = delta
         return [val,dval]
 #
-#    def interpolate(self, x, with_derivative=True):
-#        # points in x must be stacked horizontally
+    def interpolate(self, x, with_derivative=True):
+        # points in x must be stacked horizontally
+
+        theta = self.theta
+
+        [n_v, n_t] = theta.shape
+        assert( n_t == self.n_points )
+        n = theta.shape[1] - 1
+
+        [n_d, n_p] = x.shape
+        n_obs = n_p # by def
+        assert( n_d == self.d )
+
+        s = self.A(x)
+
+        Ts = chebychev( s, self.n_points - 1 )
+
+        ket = []
+        for comb in self.smolyak_indices:
+            p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
+            ket.append(p)
+        ket = np.row_stack( ket )
+
+        val = np.dot(theta,ket)
 #
-#        theta = self.theta
-#
-#        [n_v, n_t] = theta.shape
-#        assert( n_t == self.n_points )
-#        n = theta.shape[1] - 1
-#
-##        if x is None:
-##            x = self.real_grid
-##            #s = self.A(x)
-##            s = self.smolyak_points.T
-##            ket = self.__ket__
-##            Tx = self.__Ts__
-##        else:
-#        [n_d, n_p] = x.shape
-#        n_obs = n_p # by def
-#        assert( n_d == self.d )
-#        s = self.A(x)
-#        Ts = chebychev( s, self.n_points - 1 )
-#        Tx = Ts
-#
-#        ket = []
-#        for comb in self.smolyak_indices:
-#            p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
-#            ket.append(p)
-#        ket = np.row_stack( ket )
-#        s = ket.shape
-#        #vprint('s')
-#
-#        val = np.dot(theta,ket)
-#
-#        if with_derivative:
+        if with_derivative:
+
+            bounds = self.bounds
+            bounds_delta = bounds[1,:] - bounds[0,:]
 #            # derivative w.r.t. to theta
 #            l = []
 #            for i in range(n_v):
@@ -163,26 +155,26 @@ class SmolyakGrid:
 #                l.append(block)
 #                dval = np.concatenate( l, axis = 1 )
 #
-#            # derivative w.r.t. arguments
-#            Ux = chebychev( x, n-1 )
-#            Ux = np.concatenate([np.zeros( (1,n_d,n_obs) ), Ux],axis=0)
-#            for i in range(Ux.shape[0]):
-#                Ux[i,:,:] = Ux[i,:,:] * i
-#
-#            der_x = np.zeros( ( n_t, n_d, n_obs ) )
-#            #vprint('n_t')
-#            #print Tx.shap
-#            for i in range(n_d):
-#                BB = Tx.copy()
-#                BB[:,i,:] = Ux[:,i,:]
-#                el = []
-#                for comb in self.smolyak_indices:
-#                    p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )
-#                    el.append(p)
-#                el = np.row_stack(el)
-#                der_x[:,i,:] =  el
-#            dder = np.tensordot( theta, der_x, (1,0) )
-#            return [val,dder]
+            # derivative w.r.t. arguments
+            Us = chebychev2( s, self.n_points - 2 )
+            Us = np.concatenate([np.zeros( (1,n_d,n_obs) ), Us],axis=0)
+            for i in range(Us.shape[0]):
+                Us[i,:,:] = Us[i,:,:] * i
+
+            der_s = np.zeros( ( n_t, n_d, n_obs ) )
+            for i in range(n_d):
+                BB = Ts.copy()
+                BB[:,i,:] = Us[:,i,:]
+                el = []
+                for comb in self.smolyak_indices:
+                    p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )
+                    el.append(p)
+                el = np.row_stack(el)
+                der_s[:,i,:] =  el / ((bounds_delta[i]) / 2.0)
+            dder = np.tensordot( theta, der_s, (1,0) )
+            return [val,dder]
+        else:
+            return val
 #
 #        #dval = ket # I should include the computation of the derivative here
 #        return val
@@ -245,34 +237,43 @@ if __name__ == '__main__':
     # we define a reference funcion :
     def testfun(x):
         val = np.row_stack([
-            x[0,:]*x[0,:] * (1-np.sqrt(x[1,:])),
-            x[0,:]*(1-np.sqrt(x[1,:])) + x[1,:]/4
+            x[0,:]*x[0,:] * (1-np.power(x[1,:],2)),
+            x[0,:]*(1-np.power(x[1,:],3)) + x[1,:]/4
         ])
         return val
     
     bounds = np.array([[0,1],[0,1]]).T
+#    bounds = np.array([[-1,1],[-1,1]]).T
     sg2 = SmolyakGrid(bounds, 2)
     sg3 = SmolyakGrid(bounds, 3)
-    
+
+    print sg3.real_grid
+    from dolo.numeric.serial_operations import numdiff2, numdiff1
     
     theta2_0 = np.zeros( (2, sg2.n_points) )
     vals = testfun(sg2.real_grid)
     print vals
     print sg2.fit_values(vals)
-    
-    print sg2.interpolate(sg2.real_grid)
-    
-    from dolo.numeric.serial_operations import numdiff2
 
-    fobj = lambda x: sg2.interpolate(x,with_derivative=True)
-    [val,dval] = fobj(sg2.real_grid)
-    print sg2.real_grid.shape
-    print sg2.theta.shape
-    print val.shape
-    print dval.shape
-    print dval
-    
-    ddval = numdiff2(sg2.interpolate,sg2.real_grid)
+
+    print sg2.interpolate(sg2.real_grid)
+
+    [val,dval] = sg2.interpolate(sg2.real_grid)
+    [val0,dval0] = sg2.interpolate2(sg2.real_grid)
+    ddval = numdiff1(lambda x: sg2.interpolate(x,with_derivative=False)[0],sg2.real_grid)
+    print ddval.shape
+
+    print('val - val0')
+    print(val - val0)
+    print('dval - dval0')
+    print(ddval -dval)
+    print(ddval -dval0)
+    print ddval
+    print(dval0)
+
+
+    exit()
+    ddval = numdiff1(sg2.interpolate,sg2.real_grid)
     print ddval
 
     print dval.shape
