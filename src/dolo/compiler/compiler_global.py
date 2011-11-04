@@ -67,6 +67,39 @@ def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
     return res
 
 
+def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+
+    n_t = len(theta)
+    dr.theta = theta.copy().reshape(shape)
+    #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
+    n_draws = epsilons.shape[1]
+    [n_s,n_g] = s.shape
+    ss = np.tile(s, (1,n_draws))
+    [xx, xx_s, xx_theta] = dr.interpolate(ss, with_theta_deriv=True) # should repeat theta instead
+    n_x = xx.shape[0]
+#    xx = np.tile(x, (1,n_draws))
+    ee = np.repeat(epsilons, n_g , axis=1)
+    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms)
+    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)
+    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms)
+
+
+    res = np.zeros( (n_x,n_g) )
+    for i in range(n_draws):
+        res += weights[i] * F[:,n_g*i:n_g*(i+1)]
+
+    if no_deriv:
+        return res
+
+    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+    SS_theta = stm( SS_xx, xx_theta)
+    XX_theta = stm( XX_SS, SS_theta) + XX_t
+    dF = stm(F_xx, xx_theta) + stm( F_SS, SS_theta) + stm( F_XX , XX_theta)
+    dres = np.zeros( (n_x,n_t,n_g))
+    for i in range(n_draws):
+        dres += weights[i] * dF[:,:,n_g*i:n_g*(i+1)]
+    return [res,dres.swapaxes(1,2)]
+
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, with_derivatives=True):
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
