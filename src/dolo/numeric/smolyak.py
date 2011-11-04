@@ -163,11 +163,12 @@ class SmolyakGrid:
 
             der_s = np.zeros( ( n_t, n_d, n_obs ) )
             for i in range(n_d):
-                BB = Ts.copy()
-                BB[:,i,:] = Us[:,i,:]
+                #BB = Ts.copy()
+                #BB[:,i,:] = Us[:,i,:]
                 el = []
                 for comb in self.smolyak_indices:
-                    p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )
+                    #p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )
+                    p = reduce( mul, [ (Ts[comb[j],j,:] if i!=j else Us[comb[j],j,:]) for j in range(self.d)] )
                     el.append(p)
                 el = np.row_stack(el)
                 der_s[:,i,:] =  el / ((bounds_delta[i]) / 2.0)

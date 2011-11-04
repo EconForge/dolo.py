@@ -130,7 +130,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, maxit=500, debug=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, method='lmmcp', maxit=500, debug=None):
 
     from dolo.numeric.solver import solver
 
@@ -156,7 +156,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
         interp.fit_values(x0)
     #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
 	verbit = True if verbose=='full' else False
-        x = solver(fun, x0, method='lmmcp', jac=dfun, verbose=verbit, options=options)
+        x = solver(fun, x0, method=method, jac=dfun, verbose=verbit, options=options)
         res = abs(fun(x)).max()
         err = abs(x-x0).max()
         t_finish = time.time()
