@@ -118,7 +118,7 @@ class SmolyakGrid:
             dval[:,i,:] = delta
         return [val,dval]
 #
-    def interpolate(self, x, with_derivative=True):
+    def interpolate(self, x, with_derivative=True, with_theta_deriv=False):
         # points in x must be stacked horizontally
 
         theta = self.theta
@@ -172,7 +172,21 @@ class SmolyakGrid:
                 el = np.row_stack(el)
                 der_s[:,i,:] =  el / ((bounds_delta[i]) / 2.0)
             dder = np.tensordot( theta, der_s, (1,0) )
-            return [val,dder]
+
+            if with_theta_deriv:
+                # derivative w.r.t. to theta
+                l = []
+                for i in range(n_v):
+                    block = np.zeros( (n_v,n_t,n_obs) )
+                    block[i,:,:] = ket
+                    l.append(block)
+                    dval = np.concatenate( l, axis = 1 )
+                return [val,dder,dval]
+            else:
+                return [val,dder]
+
+
+
         else:
             return val
 #
@@ -247,30 +261,49 @@ if __name__ == '__main__':
     sg2 = SmolyakGrid(bounds, 2)
     sg3 = SmolyakGrid(bounds, 3)
 
-    print sg3.real_grid
     from dolo.numeric.serial_operations import numdiff2, numdiff1
     
     theta2_0 = np.zeros( (2, sg2.n_points) )
     vals = testfun(sg2.real_grid)
-    print vals
-    print sg2.fit_values(vals)
+    sg2.fit_values(vals)
+#
+#
+#
+#
+#    print sg2.interpolate(sg2.real_grid)
+#
+#    [val,dval] = sg2.interpolate(sg2.real_grid)
+#    [val0,dval0] = sg2.interpolate2(sg2.real_grid)
+#    ddval = numdiff1(lambda x: sg2.interpolate(x,with_derivative=False)[0],sg2.real_grid)
+#    print ddval.shape
+#
+#    print('val - val0')
+#    print(val - val0)
+#    print('dval - dval0')
+#    print(ddval -dval)
+#    print(ddval -dval0)
+#    print ddval
+#    print(dval0)
 
 
-    print sg2.interpolate(sg2.real_grid)
+    def fobj(values):
+        sg2.fit_values(values.reshape((2,5)))
+        return sg2.interpolate(sg2.grid, with_derivative=False)
 
-    [val,dval] = sg2.interpolate(sg2.real_grid)
-    [val0,dval0] = sg2.interpolate2(sg2.real_grid)
-    ddval = numdiff1(lambda x: sg2.interpolate(x,with_derivative=False)[0],sg2.real_grid)
-    print ddval.shape
 
-    print('val - val0')
-    print(val - val0)
-    print('dval - dval0')
-    print(ddval -dval)
-    print(ddval -dval0)
-    print ddval
-    print(dval0)
+    print('derivatives w.r.t. parameters')
+    [val,dval] = sg2.interpolate(sg2.grid, with_theta_deriv=True, with_derivative=False)
 
+    vals = vals.reshape((1,10))
+#    [val0,dval0] = numdiff1(fobj,vals)
+    [val1,dval1] = numdiff2(fobj,vals)
+
+    print vals.shape
+    print fobj(vals).shape
+    print dval.shape
+    print dval.shape
+#    print dval0.shape
+    print(dval1.shape)
 
     exit()
     ddval = numdiff1(sg2.interpolate,sg2.real_grid)
