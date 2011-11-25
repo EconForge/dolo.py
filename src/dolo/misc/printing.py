@@ -61,19 +61,25 @@ class HTMLPrinter():
         return self.print_table(resp)
 
     def print_model(self,model, print_residuals=True):
-        if 'equations_groups' in model:
-            eqs = [ ['', 'Equations'] ]
-            for groupname in model['equations_groups']:
-               eqg = model['equations_groups']
-	       eqs.append( [ groupname ,''] )
-               eqs.extend([ ['',eq] for eq in eqg[groupname] ])
-            txt = self.print_table( eqs, header = True)
-            return txt
-                
+        from sympy import latex
         if print_residuals:
             from dolo.symbolic.model import compute_residuals
             res = compute_residuals(model)
-            txt = self.print_table([['','Equations','Residuals']] + [(i+1,model.equations[i],"%.4f" %float(res[i])) for i in range(len(model.equations))],header=True)
+        if 'equations_groups' in model:
+            if print_residuals:
+                eqs = [ ['', 'Equations','Residuals'] ]
+            else:
+                eqs = [ ['', 'Equations'] ]
+            for groupname in model['equations_groups']:
+               eqg = model['equations_groups']
+               eqs.append( [ groupname ,''] )
+               if print_residuals:
+                   eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
+               else:
+                   eqs.extend([ ['','${}$'.format(latex(eq))] for eq in eqg[groupname] ])
+            txt = self.print_table( eqs, header = True)
+            return txt
+                
         else:
             txt = self.print_table([['','Equations']] + [(i+1,model.equations[i]) for i in range(len(model.equations))], header=True)
         return HTMLString(txt)
