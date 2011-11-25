@@ -132,6 +132,8 @@ def compile_function_2(equations, args_list, args_names, parms, fname='anonymous
     text = '''
 def {fname}({args_names}, {param_names}):
 
+    from numpy import exp, log
+
     n = {var}.shape[-1]
 
 {content}
