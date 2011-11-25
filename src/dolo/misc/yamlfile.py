@@ -6,7 +6,7 @@ import sympy
 import re
 
 
-def parse_yaml_text(txt):
+def parse_yaml_text(txt,verbose=False):
     '''
     Imports the content of a modfile into the current interpreter scope
     '''
@@ -14,6 +14,8 @@ def parse_yaml_text(txt):
     txt = txt.replace('--','-')
     txt = txt.replace('^','**')
     raw_dict = yaml.load(txt)
+    if verbose == True:
+        print('YAML file successfully parsed')
 
     declarations = raw_dict['declarations']
     # check
@@ -133,13 +135,13 @@ def parse_yaml_text(txt):
     model.check_consistency(auto_remove_variables=False)
     return model
 
-def yaml_import(filename,names_dict={},full_output=False):
+def yaml_import(filename,names_dict={},full_output=False,verbose=False):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.yaml').match(basename).group(1)
     f = file(filename)
     txt = f.read()
-    model = parse_yaml_text(txt)
+    model = parse_yaml_text(txt,verbose=verbose)
     model['name'] = fname
     return model
