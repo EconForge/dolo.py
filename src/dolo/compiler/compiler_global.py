@@ -3,8 +3,8 @@ import numpy as np
 from dolo.numeric.perturbations_to_states import simple_global_representation
 from dolo.compiler.compiling import compile_function_2
 
-def model_functions(model,substitute_auxiliary=False):
-    sgm = simple_global_representation(model,substitute_auxiliary=substitute_auxiliary)
+def model_functions(model,substitute_auxiliary=False, solve_systems=False):
+    sgm = simple_global_representation(model,substitute_auxiliary=substitute_auxiliary, solve_systems=solve_systems)
 
     controls = sgm['controls']
     states = sgm['states']
@@ -30,10 +30,10 @@ def model_functions(model,substitute_auxiliary=False):
     return [f,g]
 
 class GlobalCompiler:
-    def __init__(self,model,substitute_auxiliary=False):
+    def __init__(self,model,substitute_auxiliary=False, solve_systems=False):
         self.model = model
 
-        [f,g] = model_functions(model,substitute_auxiliary=substitute_auxiliary)
+        [f,g] = model_functions(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems)
         self.f = f
         self.g = g
 
@@ -100,6 +100,35 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
         dres += weights[i] * dF[:,:,n_g*i:n_g*(i+1)]
     return [res,dres.swapaxes(1,2)]
 
+def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+
+        n_t = len(theta)
+        dr.theta = theta.copy().reshape(shape)
+        #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
+        n_draws = epsilons.shape[1]
+        [n_s,n_g] = s.shape
+        [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True) # should repeat theta instead
+        n_x = x.shape[0]
+        #    xx = np.tile(x, (1,n_draws))
+        #ee = np.repeat(epsilons, n_g , axis=1)
+#
+        from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+#
+        res = np.zeros( (n_x,n_g) )
+        dres = np.zeros( (n_x,n_t,n_g))
+        for i in range(n_draws):
+            tt = [epsilons[:,i:i+1]]*n_g
+            e = numpy.column_stack(tt)
+            [S, S_s, S_x, S_e] = g(s, x, e, parms)
+            [X, X_S, X_t] = dr.interpolate(S, with_theta_deriv=True)
+            [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms)
+            res += weights[i] * F
+            S_theta = stm(S_x, x_theta)
+            X_theta = stm(X_S, S_theta) + X_t
+            dF = stm(F_x, x_theta) + stm( F_S, S_theta) + stm( F_X , X_theta)
+            dres += weights[i] * dF
+        return [res,dres.swapaxes(1,2)]
+
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, with_derivatives=True):
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
@@ -158,7 +187,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
         errors += weights[i] * val[:,n_g*i:n_g*(i+1)]
 
     squared_errors = np.power(errors,2)
-    std_errors = np.sqrt( np.sum(squared_errors,axis=0) )
+    std_errors = np.sqrt( np.sum(squared_errors,axis=0)/len(squared_errors) )
     
     return std_errors
 

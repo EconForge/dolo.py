@@ -1,9 +1,9 @@
 from dolo.numeric.decision_rules_states import CDR
 
 
-def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False):
+def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False, solve_systems=False):
 
-    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False)
+    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False, solve_systems=solve_systems)
 
     g_eqs = gm['g_eqs']
     g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
@@ -74,7 +74,7 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
 
 
 
-def simple_global_representation(self, substitute_auxiliary=False, allow_future_shocks=True):
+def simple_global_representation(self, substitute_auxiliary=False, allow_future_shocks=True, solve_systems=False):
 
     resp = {}
     eq_g = self['equations_groups']
@@ -98,6 +98,7 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
             for eq in eq_g['auxiliary']:
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+                sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
             from dolo.misc.calculus import simple_triangular_solve
             sdict = simple_triangular_solve(sdict)
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
@@ -108,6 +109,11 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
         zero_shocks = {s(1):0 for s in self.shocks}
         resp['f_eqs'] = [ eq.subs(zero_shocks) for eq in resp['f_eqs'] ]
 
+    if solve_systems:
+        from dolo.misc.calculus import simple_triangular_solve
+        system = {s: resp['g_eqs'][i] for i,s in enumerate(v_g['states'])}
+        new_geqs = simple_triangular_solve(system)
+        resp['g_eqs'] = [new_geqs[s] for s in v_g['states']]
 
     resp['states'] = v_g['states']
     resp['shocks'] = self.shocks #['shocks_ordering'] # TODO: bad
@@ -188,8 +194,6 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     g_sx = g2[:,:n_s,n_s:n_v]
     g_xx = g2[:,n_s:n_v,n_s:n_v]
 
-    #print g_ss.shape
-
     X_s = C
 
     V1_3 = g_s + dot(g_x,X_s)
@@ -230,8 +234,6 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
 
         L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) )
         from numpy.linalg import det
-        #print L_ss
-        #print det( L_ss )
         X_tt = solve( L_tt, - K_tt)
 
     if approx_order == 2:
