@@ -12,13 +12,16 @@ class CDR:
         if self.order >= 3:
             self.X_sss = l[4]
 
-    def __call__(self,s):
-        n_s = s.shape[1]
-        ds = s - tile( self.S_bar, (n_s,1) ).T
+    def __call__(self,points):
+        n_s = points.shape[1]
+        ds = points - tile( self.S_bar, (n_s,1) ).T
         choice =  dot(self.X_s, ds) +  tile( self.X_bar, (n_s,1) ).T
+        n_ss = self.X_s.shape[1]
         if self.order == 2:
-            for i in range(n_s):
-                choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2
+			for k in range(self.X_ss.shape[0]):
+				for i in range(n_ss):
+					for j in range(n_ss):
+						choice[k,:] += self.X_ss[k,i,j]*ds[i,:]*ds[j,:]/2
         if self.order == 3:
             for i in range(n_s):
                 choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2
