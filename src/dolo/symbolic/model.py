@@ -26,9 +26,10 @@ class Model(dict):
             'parameters_ordering': [],
             'shocks_ordering': []
         }
-
-        equations_groups = dict()
-        for eq in self['equations']:
+        from collections import OrderedDict as odict
+        equations_groups = odict()
+        for i,eq in enumerate(self['equations']):
+            eq.tags['eq_number'] = i
             if 'eq_type' in eq.tags:
                 g = eq.tags['eq_type']
                 if g not in equations_groups:
@@ -263,18 +264,23 @@ def reorder(vars, variables_order):
 
 def compute_residuals(model):
     [y,x,parms] = model.read_calibration()
-    dd_v = dict([(model.variables[i],y[i]) for i in range(len(y))])
-    dd_p = dict([(model.parameters[i],parms[i]) for i in range(len(parms))])
-    dd_x = dict([(v,0) for v in model.shocks])
     dd = dict()
-    dd.update(dd_v)
-    dd.update(dd_p)
-    dd.update(dd_x)
-    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
-    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
-    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
-    residuals = [ float(eq.subs(dd)) for eq in stateq ]
-    return residuals
+    dd.update( {v:y[i] for i,v in enumerate(model.variables) } )
+    dd.update( {v(-1):y[i] for i,v in enumerate(model.variables) } )
+    dd.update( {v(1):y[i] for i,v in enumerate(model.variables) } )
+    dd.update( dict([(model.parameters[i],parms[i]) for i in range(len(parms))]) )
+    dd.update( dict([(v,0) for v in model.shocks]) )
+    dd.update( {s: 0 for s in model.shocks} )
+    if 'equations_groups' in model:
+        from collections import OrderedDict as odict
+        residuals = odict()
+        for gname,geqs in model['equations_groups'].iteritems():
+            residuals[ gname ] = [ float( eq.gap.subs( dd ) ) for eq in geqs]
+        return residuals
+    else:
+        stateq = [ eq.gap.subs( dd ) for eq in model.equations]
+        residuals = [ float(eq) for eq in stateq ]
+        return residuals
 
 if __name__ == '__main__':
 
