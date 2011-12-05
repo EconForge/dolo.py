@@ -72,17 +72,6 @@ class Model(dict):
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
-<<<<<<< HEAD
-    def reorder(self, vars, variables_order):
-        arg = list(vars)
-        res = [v for v in variables_order if v in arg]
-        t =  [v for v in arg if v not in variables_order]
-        t.sort()
-        res.extend( t )
-        return res
-
-=======
->>>>>>> global_models
     def check_consistency(self,verbose=False, auto_remove_variables=True):
 
         if auto_remove_variables:
@@ -107,15 +96,10 @@ class Model(dict):
             tp = [p for p in all_parameters]
             [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
-<<<<<<< HEAD
-            self.variables = self.reorder(tv,self['variables_ordering'])
-            self.shocks = self.reorder(ts,self['shocks_ordering'])
-            self.parameters = self.reorder(tp,self['parameters_ordering'])
-=======
+
             self.variables = reorder(tv,self['variables_ordering'])
             self.shocks = reorder(ts,self['shocks_ordering'])
             self.parameters = reorder(tp,self['parameters_ordering'])
->>>>>>> global_models
 
         else:
             self.variables = self['variables_ordering']

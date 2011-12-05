@@ -8,8 +8,8 @@ import re
 
 def parse_yaml_text(txt,verbose=False):
     '''
-    Imports the content of a modfile into the current interpreter scope
-    '''
+Imports the content of a modfile into the current interpreter scope
+'''
     txt = txt.replace('..','-')
     txt = txt.replace('--','-')
     txt = txt.replace('^','**')
@@ -44,24 +44,19 @@ def parse_yaml_text(txt,verbose=False):
     context['sqrt'] = sympy.sqrt
 
     import re
-    eq_regex = re.compile('([^|]*)(\|.*)?')
     # we recognize two kinds of equations:
     # lhs = rhs
-    # lhs | comp          where comp is a complementarity condition
+    # lhs | comp where comp is a complementarity condition
 
     equations = []
     equations_groups = OrderedDict()
     raw_equations = raw_dict['equations']
-    if isinstance(raw_equations,dict):   # tests whether there are groups of equations
+    if isinstance(raw_equations,dict): # tests whether there are groups of equations
         for groupname in raw_equations.keys():
             equations_groups[groupname] = []
-            for raw_eq in raw_equations[groupname]:  # Modfile is supposed to represent a global model. TODO: change it
-                try:
-                    m = eq_regex.match(raw_eq)
-                    teq = m.group(1)
-                    comp = m.group(2)
-                except:
-                    raise Exception('Invalid equation:\n' + raw_eq)
+            for raw_eq in raw_equations[groupname]: # Modfile is supposed to represent a global model. TODO: change it
+                teqg = raw_eq.split('|')
+                teq = teqg[0]
                 if '=' in teq:
                     lhs,rhs = str.split(teq,'=')
                 else:
@@ -77,7 +72,8 @@ def parse_yaml_text(txt,verbose=False):
 
                 eq = Equation(lhs,rhs)
                 eq.tag(eq_type=groupname)
-                if comp:
+                if len(teqg)>1:
+                    comp = teqg[1]
                     eq.tag(complementarity=comp)
                 equations.append(eq)
                 #equations_groups[groupname].append( eq )
@@ -104,11 +100,11 @@ def parse_yaml_text(txt,verbose=False):
     if 'calibration' in raw_dict:
         calibration = raw_dict['calibration']
         if 'parameters' in calibration:
-            parameters_values = [ (Parameter(k), eval(str(v),context))   for  k,v in  calibration['parameters'].iteritems()  ]
+            parameters_values = [ (Parameter(k), eval(str(v),context)) for k,v in calibration['parameters'].iteritems() ]
             parameters_values = dict(parameters_values)
         #steady_state = raw_dict['steady_state']
         if 'steady_state' in calibration:
-            init_values = [ (Variable(vn,0), eval(str(value),context))   for  vn,value in  calibration['steady_state'].iteritems()  ]
+            init_values = [ (Variable(vn,0), eval(str(value),context)) for vn,value in calibration['steady_state'].iteritems() ]
             init_values = dict(init_values)
         if 'covariances' in calibration:
             context['sympy'] = sympy
@@ -127,10 +123,6 @@ def parse_yaml_text(txt,verbose=False):
         'init_values': init_values,
         'covariances': covariances
     }
-    model = Model(**model_dict)
-    model.check_consistency(auto_remove_variables=False)
-    return model
-
 
     if 'model_type' in raw_dict:
         model_dict['model_type'] = raw_dict['model_type']

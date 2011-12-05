@@ -20,7 +20,7 @@ class MirFacCompiler(Compiler):
         dmodel = Model(**self.model) # copy the model
         dmodel.check_consistency(auto_remove_variables=False)
 
-        def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'definition')]
+        def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'auxiliary')]
 
         from dolo.misc.misc import map_function_to_expression
         from dolo.symbolic.symbolic import Variable
