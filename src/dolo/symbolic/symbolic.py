@@ -148,7 +148,10 @@ class TSymbol(sympy.Symbol):
         else:
             down =  '{' + str.join(',', indices) + ',' + times + '}'
 
-        resp = '{0}_{1}^{2}'.format(rad,down,up)
+        if len(up)>2:
+            resp = '{0}_{1}^{2}'.format(rad,down,up)
+        else:
+            resp = '{0}_{1}'.format(rad,down)
 
         return resp
 

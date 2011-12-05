@@ -8,8 +8,7 @@ TOL = 1e-10
 # credits : second_order_solver is adapted from Sven Schreiber's port of Uhlig's Toolkit.
 
 def second_order_solver(FF,GG,HH):
-    from extern.toolkithelpers import qzdiv
-    from extern.qz import qz
+    from extern.qz import qz,qzdiv
     
     from numpy import mat,c_,r_,eye,zeros,real_if_close,diag,allclose,where,diagflat
     from numpy.linalg import solve
@@ -18,11 +17,6 @@ def second_order_solver(FF,GG,HH):
     Gamma_mat = mat(-GG)
     Theta_mat = mat(-HH)
     m_states = FF.shape[0]
-
-    m1 = (np.c_[Gamma_mat, Theta_mat])
-    m2 = (np.c_[eye(m_states), np.zeros((m_states, m_states))])
-    m1 = np.mat(m1)
-    m2 = np.mat(m2)
         
     Xi_mat = r_[c_[Gamma_mat, Theta_mat],
                 c_[eye(m_states), zeros((m_states, m_states))]]
@@ -75,9 +69,6 @@ def second_order_solver(FF,GG,HH):
     assert allclose(real_if_close(PP), PP.real)
     PP = PP.real
     ## end of solve_qz!
-        
-    #print "solution for PP :"
-    #print PP
 
     return [Xi_sortval[Xi_select],PP.A]
     
@@ -91,19 +82,19 @@ def solve_sylvester(A,B,C,D,Ainv = None):
     n_d = D.ndim - 1
     n_v = C.shape[1]
 
+    n_c = D.size/n_v**n_d
 
-    DD = D.reshape( n_v, n_v**n_d )
 
     import dolo.config
     opts = dolo.config.use_engine
 
     if opts['sylvester']:
-        pytave = dolo.config.engine.engine
-        DD = D.flatten().reshape( n_v, n_v**n_d)
+        DD = D.flatten().reshape( n_c, n_v**n_d)
         [err,XX] = dolo.config.engine.engine.feval(2,'gensylv',n_d,A,B,C,-DD)
-        X = XX.reshape( (n_v,)*(n_d+1))
+        X = XX.reshape( (n_c,)+(n_v,)*(n_d))
 
     else:
+        DD = D.reshape( n_c, n_v**n_d )
 
         if n_d == 1:
             CC = C
@@ -119,12 +110,12 @@ def solve_sylvester(A,B,C,D,Ainv = None):
             Q = np.linalg.solve(A,B)
             S = np.linalg.solve(A,DD)
 
-        n = n_v
+        n = n_c
         m = n_v**n_d
 
         XX = slycot.sb04qd(n,m,Q,CC,-S)
 
-        X = XX.reshape( (n_v,)*(n_d+1) )
+        X = XX.reshape( (n_c,)+(n_v,)*(n_d) )
 
     return X
     

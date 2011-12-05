@@ -35,8 +35,7 @@ watchdog=1 # 1=watchdog strategy active, otherwise not
 
 # parameters for preprocessor
 preprocess=True  # 1=preprocessor used, otherwise not
-presteps=20   # maximum number of preprocessing steps, default: 20
-presteps=5
+presteps=20    # maximum number of preprocessing steps, default: 20
 
 # trust-region parameters for preprocessor
 delta=5        # default: 5
@@ -188,7 +187,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
                 pLM = np.linalg.lstsq(A1,A2)[0]
             else:
                 # pLM = A1 \ A2
-                pLM = -np.linalg.lstsq(DPhix,Phix)
+                pLM = -np.linalg.lstsq(DPhix,Phix)[0]
 
             normpLM=norm(pLM)
 
@@ -278,7 +277,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
             d = np.linalg.lstsq(A1,A2)[0]
         else:
             # pLM = A1 \ A2
-            d = -np.linalg.lstsq(DPhix,Phix)
+            d = -np.linalg.lstsq(DPhix,Phix)[0]
 
         d = d.flatten()
 
@@ -367,7 +366,7 @@ def Phi3MCPPFB(x,Fx,lb,ub,lambda1,lambda2, n,Indexset):
             y[i-1]=-lambda1*Fx[i-1];
             y[n+i-1]= -lambda2*Fx[i-1];
         elif Indexset[i-1]==3:
-            y[i-1]=lambda1*(np.sqrt((x[i-1]-lb[i-1])^2+phi_u^2)-x[i-1]+lb[i-1]-phi_u);
+            y[i-1]=lambda1*(np.sqrt((x[i-1]-lb[i-1])**2+phi_u**2)-x[i-1]+lb[i-1]-phi_u);
             y[n+i-1]=lambda2*(max(0,x[i-1]-lb[i-1])*max(0,Fx[i-1])+max(0,ub[i-1]-x[i-1])*max(0,-Fx[i-1]));
     return y
 

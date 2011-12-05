@@ -14,10 +14,10 @@ on the Numpy mailing list (see scipy.org).
 
 from ctypes import cdll, c_int, c_char, POINTER
 import numpy as np
-from numpy.ctypeslib import load_library, ndpointer
-import sys
-import os
-
+from numpy.ctypeslib import ndpointer
+from numpy import mat, c_, r_, where, sqrt, newaxis
+from numpy.linalg import solve
+from numpy.matlib import diag
 import sys
 
 if sys.platform == 'win32':
@@ -252,7 +252,8 @@ def qz(A,B, mode='complex'):
     elif mode == 'complex':
         AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B)
         return AA, BB, VSL.conj().T, VSR
-    else: raise ValueError, 'bogus choice for mode'
+    else:
+        raise ValueError, 'bogus choice for mode'
    
 def eig2(A,B):
     '''Calculates generalized eigenvalues of pair (A,B).
@@ -270,21 +271,67 @@ def eigwithqz(A,B):
     AA, BB, Q, Z = qz(A,B)
     evals = np.diag(AA)/np.diag(BB)
     return evals,AA,BB,Q,Z
-    
-if __name__ == '__main__': 
-    #print help(np.asfortranarray)
-    
-    # test case:
-    myA = np.random.rand(4,4)
-    myB = np.random.rand(4,4)
-    myqz = qz(myA, myB, lapackname='lapack')
-    AAd = np.diag(myqz[0])
-    BBd = np.diag(myqz[1])
-    myeig = eig2(myA,myB,lapackname='lapack')
-    assert np.allclose(AAd/BBd, myeig)
-    print myeig
-    print eigwithqz(myA,myB)
-    
-    # does it preserve matrices?
-    print type(qz(np.mat(myA),np.mat(myB))[0])
-    assert type(qz(np.mat(myA),myB)[0]) == type(np.mat(np.eye(2)))
+
+
+def qzswitch(i, A2, B2, Q, Z):
+    #print i, A2, B2, Q, Z
+    Aout = A2.copy(); Bout = B2.copy(); Qout = Q.copy(); Zout = Z.copy()
+    ix = i-1    # from 1-based to 0-based indexing...
+    # use all 1x1-matrices for convenient conjugate-transpose even if real:
+    a = mat(A2[ix, ix]); d = mat(B2[ix, ix]); b = mat(A2[ix, ix+1]);
+    e = mat(B2[ix, ix+1]); c = mat(A2[ix+1, ix+1]); f = mat(B2[ix+1, ix+1])
+    wz = c_[c*e - f*b, (c*d - f*a).H]
+    xy = c_[(b*d - e*a).H, (c*d - f*a).H]
+    n = sqrt(wz*wz.H)
+    m = sqrt(xy*xy.H)
+    if n[0,0] == 0: return (Aout, Bout, Qout, Zout)
+    wz = solve(n, wz)
+    xy = solve(m, xy)
+    wz = r_[ wz, \
+            c_[-wz[:,1].H, wz[:,0].H]]
+    xy = r_[ xy, \
+         c_[-xy[:,1].H, xy[:,0].H]]
+    Aout[ix:ix+2, :] = xy * Aout[ix:ix+2, :]
+    Bout[ix:ix+2, :] = xy * Bout[ix:ix+2, :]
+    Aout[:, ix:ix+2] = Aout[:, ix:ix+2] * wz
+    Bout[:, ix:ix+2] = Bout[:, ix:ix+2] * wz
+    Zout[:, ix:ix+2] = Zout[:, ix:ix+2] * wz
+    Qout[ix:ix+2, :] = xy * Qout[ix:ix+2, :]
+    return (Aout, Bout, Qout, Zout)
+
+def qzdiv(stake, A2, B2, Q, Z):
+    Aout = A2.copy(); Bout = B2.copy(); Qout = Q.copy(); Zout = Z.copy()
+    n, jnk = A2.shape
+    # remember diag returns 1d
+    root = mat(abs(c_[diag(A2)[:,newaxis], diag(B2)[:,newaxis]]))
+    root[:,1] /= where(root[:,0]<1e-13, -root[:,1], root[:,0])
+    for i in range(1,n+1)[::-1]:        # always first i rows, decreasing
+        m = None
+        for j in range(1,i+1)[::-1]:    # search backwards in the first i rows
+            #print root.shape
+            #print n, i, j
+            #print 'i,j in qzdiv', i,j
+            if root[j-1,1] > stake or root[j-1,1] < -0.1:
+                m = j                   # get last relevant row
+                break
+        if m == None: return (Aout, Bout, Qout, Zout)
+        for k in range(m,i):            # from relev. row to end of first part
+            (Aout, Bout, Qout, Zout) = qzswitch(k, Aout, Bout, Qout, Zout)
+            root[k-1:k+1, 1] = root[k-1:k+1, 1][::-1]
+    return (Aout, Bout, Qout, Zout)
+
+def qzordered(A,B,m_states):
+    TOL = 1e-10
+    from numpy import real_if_close,where
+    S,T,Q,Z = qz(A,B)
+    S,T,Q,Z = [real_if_close(mm) for mm in (S,T,Q,Z)]
+    u = np.diag(S)
+    v = np.diag(T)
+    eigval = v / where( u >TOL, u, TOL)
+    sortindex = abs(eigval).argsort()
+    # (Xi_sortabs doesn't really seem to be needed)
+    sortval = eigval[sortindex]
+    select = slice(0, m_states)
+    stake = (abs(sortval[select])).max() + TOL
+    S,T,Q,Z = qzdiv(stake,S,T,Q,Z)
+    return [S,T,Q,Z,eigval]

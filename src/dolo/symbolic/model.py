@@ -26,6 +26,17 @@ class Model(dict):
             'parameters_ordering': [],
             'shocks_ordering': []
         }
+        from collections import OrderedDict as odict
+        equations_groups = odict()
+        for i,eq in enumerate(self['equations']):
+            eq.tags['eq_number'] = i
+            if 'eq_type' in eq.tags:
+                g = eq.tags['eq_type']
+                if g not in equations_groups:
+                    equations_groups[g] = []
+                equations_groups[g].append( eq )
+
+        self['equations_groups'] = equations_groups
 
         for k in defaults:
             if k not in self:
@@ -61,6 +72,7 @@ class Model(dict):
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
+<<<<<<< HEAD
     def reorder(self, vars, variables_order):
         arg = list(vars)
         res = [v for v in variables_order if v in arg]
@@ -69,6 +81,8 @@ class Model(dict):
         res.extend( t )
         return res
 
+=======
+>>>>>>> global_models
     def check_consistency(self,verbose=False, auto_remove_variables=True):
 
         if auto_remove_variables:
@@ -93,9 +107,15 @@ class Model(dict):
             tp = [p for p in all_parameters]
             [tv,ts,tp] = [list(set(ens)) for ens in [tv,ts,tp]]
 
+<<<<<<< HEAD
             self.variables = self.reorder(tv,self['variables_ordering'])
             self.shocks = self.reorder(ts,self['shocks_ordering'])
             self.parameters = self.reorder(tp,self['parameters_ordering'])
+=======
+            self.variables = reorder(tv,self['variables_ordering'])
+            self.shocks = reorder(ts,self['shocks_ordering'])
+            self.parameters = reorder(tp,self['parameters_ordering'])
+>>>>>>> global_models
 
         else:
             self.variables = self['variables_ordering']
@@ -188,6 +208,36 @@ class Model(dict):
         return [y,x,params]
 
 
+    def read_covariances(self):
+
+        # duplicated code
+        model = self
+        from dolo.misc.calculus import solve_triangular_system
+        dvars = dict()
+        dvars.update(model.parameters_values)
+        dvars.update(model.init_values)
+        for v in model.variables:
+            if v not in dvars:
+                dvars[v] = 0
+        undeclared_parameters = []
+        for p in model.parameters:
+            if p not in dvars:
+                undeclared_parameters.append(p)
+                dvars[p] = 0
+                raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
+
+        values = solve_triangular_system(dvars)[0]
+
+        m = self['covariances']
+        m = m.subs(values)
+        
+        import numpy
+        m = numpy.array(m).astype(numpy.float)
+        
+        return m
+
+        
+
     def solve_for_steady_state(self,y0=None):
         import numpy as np
         from dolo.numeric.solver import solver
@@ -198,6 +248,7 @@ class Model(dict):
             y0 = np.array(y0)
         f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
         fobj = lambda z: f_static(z,x,params)[0]
+
         try:
             opts = {'eps1': 1e-12, 'eps2': 1e-20}
             sol = solver(fobj,y0,method='lmmcp',options=opts)
@@ -220,21 +271,34 @@ class Model(dict):
         nmodel.check()
         return nmodel
 
+def reorder(vars, variables_order):
+    arg = list(vars)
+    res = [v for v in variables_order if v in arg]
+    t =  [v for v in arg if v not in variables_order]
+    t.sort()
+    res.extend( t )
+    return res
 
 def compute_residuals(model):
     [y,x,parms] = model.read_calibration()
-    dd_v = dict([(model.variables[i],y[i]) for i in range(len(y))])
-    dd_p = dict([(model.parameters[i],parms[i]) for i in range(len(parms))])
-    dd_x = dict([(v,0) for v in model.shocks])
     dd = dict()
-    dd.update(dd_v)
-    dd.update(dd_p)
-    dd.update(dd_x)
-    stateq = [ eq.subs( dict([[v,v.P] for v in eq.variables]) ) for eq in model.equations]
-    stateq = [ eq.subs( dict([[v,0] for v in eq.shocks]) ) for eq in stateq]
-    stateq = [ eq.rhs - eq.lhs for eq in stateq ]
-    residuals = [ float(eq.subs(dd)) for eq in stateq ]
-    return residuals
+    dd.update( {v:y[i] for i,v in enumerate(model.variables) } )
+    dd.update( {v(-1):y[i] for i,v in enumerate(model.variables) } )
+    dd.update( {v(1):y[i] for i,v in enumerate(model.variables) } )
+    dd.update( dict([(model.parameters[i],parms[i]) for i in range(len(parms))]) )
+    dd.update( dict([(v,0) for v in model.shocks]) )
+    dd.update( {s: 0 for s in model.shocks} )
+    if 'equations_groups' in model:
+        from collections import OrderedDict as odict
+        residuals = odict()
+        for gname,geqs in model['equations_groups'].iteritems():
+            residuals[ gname ] = [ float( eq.gap.subs( dd ) ) for eq in geqs]
+        return residuals
+    else:
+        stateq = [ eq.gap.subs( dd ) for eq in model.equations]
+        residuals = [ float(eq) for eq in stateq ]
+        return residuals
+
 
 if __name__ == '__main__':
 

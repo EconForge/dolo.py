@@ -44,6 +44,7 @@ def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
         if len(symbols) == 0:
             notfinished = False
         elif len(symbols) == l:
+            print('could not solve : ' + str(symbols))
             raise(Exception('The system is not triangular'))
     if return_order:
         return(oks)
@@ -52,6 +53,24 @@ def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
         for s in oks:
             res[s] = lambda_sub(res[s],res)
         return [res,oks]
+
+def simple_triangular_solve(sdict, l=0):
+    if l == 0:
+        sdict = {k: sympy.sympify(sdict[k]) for k in sdict}
+    if l > len(sdict):
+        raise Exception('System is not triangular')
+    # test if work is finished
+    lhs_values = set([])
+    for val in sdict.values():
+        atoms = [v for v in val.atoms() if v in sdict]
+        lhs_values = lhs_values.union( atoms )
+    if len(lhs_values) == 0:
+        return sdict
+    bdict = dict()
+    for k in sdict:
+        bdict[k] = sdict[k].subs(sdict)
+        
+    return simple_triangular_solve(bdict,l+1)
 
 def construct_4_blocks_matrix(blocks):
     '''construct block matrix line by line

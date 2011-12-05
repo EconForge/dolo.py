@@ -73,7 +73,11 @@ def value_to_mat(v):
     elif isinstance(v,sympy.Matrix):
         return '[%s]' %v.__repr__().replace('\n',';').replace(',',' ')
     elif str(v.__class__) == "<type 'numpy.ndarray'>":
-        return str(v).replace('\n','').replace('] [',' ; ')
+        if len(v.shape)  <= 2:
+            return str(v).replace('\n','').replace('] [',' ; ')
+        else:
+            import numpy
+            return 'reshape( {0} , {1} )'.format(  str(v.flatten('F')).replace('\n','') , str(v.shape).strip('()')  )
         #raise Warning('list conversion to matlab not implemented (will be soon)')
     else:
         return "'%s'" %str(v)
