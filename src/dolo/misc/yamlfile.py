@@ -14,6 +14,7 @@ def parse_yaml_text(txt,verbose=False):
     txt = txt.replace('--','-')
     txt = txt.replace('^','**')
     raw_dict = yaml.load(txt)
+
     if verbose == True:
         print('YAML file successfully parsed')
 

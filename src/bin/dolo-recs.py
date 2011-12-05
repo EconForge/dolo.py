@@ -29,6 +29,12 @@ from dolo.misc.yamlfile import yaml_import
 
 model = yaml_import( input_file )
 
+import os
+import re
+basename = os.path.basename(output_file)
+fname = re.compile('(.*)\.m').match(basename).group(1)
+model['name'] = fname
+
 from dolo.compiler.compiler_mirfac import MirFacCompiler
 
 comp = MirFacCompiler(model)

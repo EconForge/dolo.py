@@ -231,7 +231,7 @@ class Model(dict):
             y0 = np.array(y0)
         f_static = self.compiler.compute_static_pfile(max_order=0)  # TODO:  use derivatives...
         fobj = lambda z: f_static(z,x,params)[0]
-        print(fobj(y0))
+
         try:
             opts = {'eps1': 1e-12, 'eps2': 1e-20}
             sol = solver(fobj,y0,method='lmmcp',options=opts)
@@ -281,6 +281,7 @@ def compute_residuals(model):
         stateq = [ eq.gap.subs( dd ) for eq in model.equations]
         residuals = [ float(eq) for eq in stateq ]
         return residuals
+
 
 if __name__ == '__main__':
 

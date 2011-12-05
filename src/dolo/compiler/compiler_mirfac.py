@@ -16,7 +16,9 @@ class MirFacCompiler(Compiler):
         if self.__transformed_model__:
             return self.__transformed_model__
 
+
         dmodel = Model(**self.model) # copy the model
+        dmodel.check_consistency(auto_remove_variables=False)
 
         def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'definition')]
 

@@ -9,7 +9,6 @@ in the form S1 x ... x Sf x Rn. The last dimension corresponds to various
 observations. The value returned is of dimension :
 S1 x ... x Sf x R1 x ... x Rd x Rn    
     '''
-    
     in_shape = x0.shape
     nobs = in_shape[-1]
     dd = in_shape[:-1]
