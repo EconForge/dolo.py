@@ -127,7 +127,8 @@ class SplineInterpolation2:
         n_x = len(grid_x)
         n_y = len(grid_y)
         # TODO: options to change 0.1
-        bbox = [min(grid_x)- 0.1, max(grid_x) + 0.1,min(grid_y)- 0.1, max(grid_y) + 0.1]
+        margin = 0.5
+        bbox = [min(grid_x)- margin, max(grid_x) + margin,min(grid_y)-margin, max(grid_y) + margin]
 
         self.__splines__ = [ RectBivariateSpline( grid_x, grid_y, val[i,:].reshape((n_y,n_x)).T, bbox=bbox ) for i in range(val.shape[0]) ]
 
