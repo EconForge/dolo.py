@@ -11,12 +11,14 @@ class memoized(object):
 
     def __call__(self, *args):
 
-        args = (e for e in args)
+        targs = (e for e in args)
+        hh = tuple(  hashable(e) for e in targs )
+        h = hash(hh)
         try:
-            return self.cache[args]
+            return self.cache[h]
         except KeyError:
             value = self.func(*args)
-            self.cache[args] = value
+            self.cache[h] = value
             return value
         except TypeError:
             # uncachable -- for instance, passing a list as an argument.
