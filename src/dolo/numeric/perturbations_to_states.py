@@ -1,7 +1,9 @@
 from dolo.numeric.decision_rules_states import CDR
 
+from dolo.misc.caching import memoized
 
-def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False, solve_systems=False):
+@memoized
+def interim_gm( model, substitute_auxiliary, False, solve_systems, order):
 
     gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False, solve_systems=solve_systems)
 
@@ -13,9 +15,16 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     p_args = gm['parameters']
 
     from dolo.compiler.compiling import compile_function
-    
+
     g_fun = compile_function(g_eqs, g_args, p_args, order)
     f_fun = compile_function(f_eqs, f_args, p_args, order)
+
+    return [gm,g_fun,f_fun]
+
+
+def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False, solve_systems=False):
+
+    [gm, g_fun, f_fun] = interim_gm(model, substitute_auxiliary, substitute_auxiliary, solve_systems, order)
 
     # get steady_state
     import numpy
@@ -34,13 +43,13 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     g = g_fun( states_ss + controls_ss + shocks_ss, parms)
 
     if lambda_name:
-        epsilon = 0.01
+        epsilon = 0.001
         sigma_index = [p.name for p in model.parameters].index(lambda_name)
         pert_parms = parms.copy()
         pert_parms[sigma_index] += epsilon
-        f_pert = f_fun( states_ss + controls_ss + states_ss + controls_ss, pert_parms)
-        sig2 = (f_pert[0] - f[0])/epsilon*2
-        sig2_s = (f_pert[1] - f[1])/epsilon*2
+        g_pert = g_fun( states_ss + controls_ss + shocks_ss, pert_parms)
+        sig2 = (g_pert[0] - g[0])/epsilon*2
+        sig2_s = (g_pert[1] - g[1])/epsilon*2
         pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s] )
 
     else:
@@ -230,7 +239,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
         K_tt = np.tensordot( K_tt, sigma, axes=((1,2),(0,1)))
 
         if sigma2_correction is not None:
-            K_tt += sigma2_correction[0] # constant
+            K_tt += sdot( f_snext + dot(f_xnext,X_s) , sigma2_correction[0] )
 
         L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) )
         from numpy.linalg import det
@@ -335,7 +344,9 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
         D = K_ + dot( f_snext + dot(f_xnext,X_s), L) + dot( f_xnext, M )
 
         if sigma2_correction is not None:
-            D += sdot( sigma2_correction[1], V1 )# constant
+            g_sl = sigma2_correction[1][:,:n_s]
+            g_xl = sigma2_correction[1][:,n_s:(n_s+n_x)]
+            D += dot( f_snext + dot(f_xnext,X_s), g_sl + dot(g_xl,X_s) )   # constant
 
         X_stt = solve_sylvester(A,B,C,D)
 

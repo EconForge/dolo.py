@@ -10,6 +10,14 @@ class Model(dict):
         self.check_consistency(verbose=False)
         self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan,sympy.sqrt,sympy.Symbol('inf')]
         self.__compiler__ = None
+        self.__hashno__ = None
+
+    def __hash__(self):
+        if self.__hashno__:
+            return self.__hashno__
+        else:
+            self.__hashno__ = hash('hello world')
+            return self.__hashno__
 
     def _repr_html_(self):
         from dolo.misc.printing import htmlprinter
@@ -271,7 +279,9 @@ def compute_residuals(model):
     dd.update( {v(1):y[i] for i,v in enumerate(model.variables) } )
     dd.update( dict([(model.parameters[i],parms[i]) for i in range(len(parms))]) )
     dd.update( dict([(v,0) for v in model.shocks]) )
+    dd.update( dict([(v(1),0) for v in model.shocks]) )
     dd.update( {s: 0 for s in model.shocks} )
+
     if 'equations_groups' in model:
         from collections import OrderedDict as odict
         residuals = odict()
