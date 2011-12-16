@@ -51,7 +51,14 @@ def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
     else:
         res = copy.copy(sdict)
         for s in oks:
-            res[s] = lambda_sub(res[s],res)
+            try:
+                res[s] = lambda_sub(res[s],res)
+            except Exception as e:
+                print('Error evaluating: '+ str(res[s]))
+                print('with :')
+                print(res)
+                raise(e)
+
         return [res,oks]
 
 def simple_triangular_solve(sdict, l=0):
