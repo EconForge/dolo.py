@@ -99,7 +99,7 @@ class MirFacCompiler(Compiler):
             [lhs,mhs,rhs] = compregex.match(tg).groups()
             [lhs,mhs,rhs] = [dmodel.eval_string(x) for x in [lhs,mhs,rhs] ]
             compcond[mhs] = (lhs,rhs)
-        
+
         complementarities = [compcond[v] for v in controls]
 
         inf_bounds = [c[0] for c in complementarities]
@@ -501,6 +501,8 @@ end
 
             ZZ = approximate_controls(self.model,order=solution_order)
             n_c = len(controls)
+	    
+	    ZZ = [np.array(e) for e in ZZ]
             ZZ = [e[:n_c,...] for e in ZZ] # keep only control vars. (x) not expectations (h)
 
             solution = "    mod.X = cell({0},1);\n".format(len(ZZ))

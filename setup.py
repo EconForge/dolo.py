@@ -7,7 +7,7 @@ setup(
     version = __version__,
     packages = find_packages('src'),
     package_dir = {'':'src'},
-    scripts = ['src/bin/dolo-recs.py'],
+    scripts = ['src/bin/dolo-recs.py', 'src/bin/dolo-matlab.py'],
 
     author = "Pablo Winant",
     author_email = "pablo.winant@gmail.com",
