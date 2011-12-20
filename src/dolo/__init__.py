@@ -10,4 +10,5 @@ from misc.yamlfile import *
 from numeric.perturbations import solve_decision_rule
 from numeric.decision_rules import *
 
+from dolo.numeric.perturbations_to_states import approximate_controls
 #from misc.commands import *

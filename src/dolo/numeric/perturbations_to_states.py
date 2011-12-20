@@ -3,7 +3,7 @@ from dolo.numeric.decision_rules_states import CDR
 from dolo.misc.caching import memoized
 
 @memoized
-def interim_gm( model, substitute_auxiliary, False, solve_systems, order):
+def interim_gm( model, substitute_auxiliary, solve_systems, order):
 
     gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False, solve_systems=solve_systems)
 
@@ -24,7 +24,7 @@ def interim_gm( model, substitute_auxiliary, False, solve_systems, order):
 
 def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False, solve_systems=False):
 
-    [gm, g_fun, f_fun] = interim_gm(model, substitute_auxiliary, substitute_auxiliary, solve_systems, order)
+    [gm, g_fun, f_fun] = interim_gm(model, substitute_auxiliary, solve_systems, order)
 
     # get steady_state
     import numpy
@@ -57,9 +57,15 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
 
     if order == 1:
         if return_dr:
-            S_bar = states_ss
-            X_bar = controls_ss
-            return CDR([S_bar, X_bar, pert_sol[0]])
+            S_bar = numpy.array( states_ss )
+            X_bar = numpy.array( controls_ss )
+            # add transitions of states to the d.r.
+            X_s = pert_sol[0]
+            P = g[1][:,:len(states_ss)] + numpy.dot( g[1][:,len(states_ss):len(states_ss+controls_ss)], X_s )
+            dr = CDR([S_bar, X_bar, X_s])
+            dr.P = P
+            dr.sigma = sigma
+            return dr
         return [controls_ss] + pert_sol
 
     if order == 2:
@@ -67,6 +73,8 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
         X_bar = controls_ss + X_tt/2
         if return_dr:
             S_bar = states_ss
+            S_bar = numpy.array(S_bar)
+            X_bar = numpy.array(X_bar)
             return CDR([S_bar, X_bar, X_s, X_ss])
         return [X_bar, X_s, X_ss]
 
