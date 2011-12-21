@@ -168,8 +168,7 @@ class SmolyakBasic(object):
         l = []
         n_v = res0.shape[0]
         n_t = res0.shape[1]
-        print n_v
-        print n_t
+
         for i in range(n_v):                         # TODO : I shouldn't recompute it every time
             block = np.zeros( (n_v,n_t,n_t) )
             block[i,:,:] = ket
