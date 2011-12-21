@@ -61,9 +61,12 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
             X_bar = numpy.array( controls_ss )
             # add transitions of states to the d.r.
             X_s = pert_sol[0]
-            P = g[1][:,:len(states_ss)] + numpy.dot( g[1][:,len(states_ss):len(states_ss+controls_ss)], X_s )
+            A = g[1][:,:len(states_ss)] + numpy.dot( g[1][:,len(states_ss):len(states_ss+controls_ss)], X_s )
+            B = g[1][:,len(states_ss+controls_ss):]
             dr = CDR([S_bar, X_bar, X_s])
-            dr.P = P
+            dr.A = A
+            dr.B = B
+
             dr.sigma = sigma
             return dr
         return [controls_ss] + pert_sol

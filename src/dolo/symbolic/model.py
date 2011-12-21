@@ -16,7 +16,9 @@ class Model(dict):
         if self.__hashno__:
             return self.__hashno__
         else:
-            self.__hashno__ = hash('hello world')
+            import random
+            n = random.random()
+            self.__hashno__ = hash(n)
             return self.__hashno__
 
     def _repr_html_(self):

@@ -211,10 +211,8 @@ class SmolyakGrid(SmolyakBasic):
             self.P = np.diag(self.radius)
             self.Pinv = numpy.linalg.inv(self.P)
 
-        base = np.eye(2)
+        base = np.eye(d)
         image_of_base = np.dot( self.P , base)
-        print('image')
-        print image_of_base
 
         self.grid = self.A( self.u_grid )
 

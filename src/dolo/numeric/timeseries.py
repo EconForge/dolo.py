@@ -1,6 +1,6 @@
-def asymptotic_variance( A, sigma, T=100 ):
+def asymptotic_variance( A, B, sigma, T=100 ):
     '''Computes asymptotic variance of the AR(1) process defined by:
-    $X_t = A X_{t-1} + \epsilon_t$
+    $X_t = A X_{t-1} + B \epsilon_t$
     where the $\epsilon_t$ follows a random law with covariance sigma.
     '''
     import numpy
