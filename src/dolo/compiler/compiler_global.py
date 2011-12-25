@@ -150,9 +150,11 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, with_derivatives=Tru
         for i in range(n_draws):
             dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
 
-        dval = np.zeros( (n_x,n_g,n_x,n_g))
-        for i in range(n_g):
-            dval[:,i,:,i] = dres[:,:,i]
+#        dval = np.zeros( (n_x,n_g,n_x,n_g))
+#        for i in range(n_g):
+#            dval[:,i,:,i] = dres[:,:,i]
+
+        dval = dres
 
         return [res, dval]
     else:
@@ -192,12 +194,13 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, method='lmmcp', maxit=500, debug=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, method='lmmcp', maxit=500, debug=None, hook=None):
 
     from dolo.numeric.solver import solver
+    from dolo.numeric.newton import newton_solver
 
-    fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[0]
-    dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[1]
+    fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)
+#    dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[1]
 
     if debug:
         maxit = debug
@@ -212,14 +215,17 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
     it = 0
     if debug:
         x_values = []
+
+    verbit = True if verbose=='full' else False
+
     while err > tol and it < maxit:
         t_start = time.time()
         it +=1
         interp.fit_values(x0)
     #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
-	verbit = True if verbose=='full' else False
-        x = solver(fun, x0, method=method, jac=dfun, verbose=verbit, options=options)
-        res = abs(fun(x)).max()
+#        x = solver(fun, x0, method=method, jac=dfun, verbose=verbit, options=options)
+        x = newton_solver(fun,x0)
+#        res = abs(fun(x)).max()
         err = abs(x-x0).max()
         t_finish = time.time()
         elapsed = t_finish - t_start
@@ -228,7 +234,11 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
         x0 = x0 + (x-x0)
         if debug:
             x_values.append(x0)
-    #
+        if hook:
+            hook(interp,it,err)
+        if False in np.isfinite(x0):
+            print('iteration {} failed : non finite value')
+            return [x0, x]
 
     if it == maxit:
         if not debug:
