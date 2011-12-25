@@ -5,7 +5,7 @@ def asymptotic_variance( A, B, sigma, T=100 ):
     '''
     import numpy
     p = A.shape[0] # number of variables
-    Q = numpy.zeros( (p,p), dtype=numpy.float )
+    Q = numpy.zeros( (p,p) )
     for i in range(T):
-        Q = numpy.dot( A.T, numpy.dot( Q, A)) + sigma
+        Q = numpy.dot( A, numpy.dot( Q, A.T)) + numpy.dot( B, numpy.dot( sigma, B.T))
     return Q
