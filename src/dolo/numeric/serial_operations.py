@@ -77,10 +77,27 @@ def strange_tensor_multiplication(A,B):
         for k in range(K):
             T = np.zeros( N )
             for j in range(J):
-                T += A[i,j,:]*B[j,k,:]
+                T += A[i,j,:]*B[j,k,:] 
             resp[i,k,:] = T
     return resp
 
+
+def strange_tensor_multiplication_vector(A,X):
+
+    I = A.shape[0]
+    J = A.shape[1]
+    N = A.shape[2]
+
+    assert(X.shape[0]==J)
+    assert(X.shape[1]==N)
+
+    resp = np.zeros( (I,N) )
+    for i in range(I):
+#        T = np.zeros( N )
+        for j in range(J):
+#            T += A[i,j,:]*B[j,k,:]
+            resp[i,:] += A[i,j,:]*X[j,:]
+    return resp
 #def strange_tensor_multiplication(A,B):
 #    A = np.asfortranarray(A)
 #    B = np.asfortranarray(B)
