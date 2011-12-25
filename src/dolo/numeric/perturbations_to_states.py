@@ -34,7 +34,7 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     y = y0
     #y = model.solve_for_steady_state(y0)
 
-    sigma = numpy.array( model.covariances )
+    sigma = numpy.array( model.covariances ).astype(float)
     states_ss = [y[model.variables.index(v)] for v in gm['states']]
     controls_ss = [y[model.variables.index(v)] for v in gm['controls']]
     shocks_ss = x
