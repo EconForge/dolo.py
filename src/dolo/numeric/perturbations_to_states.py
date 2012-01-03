@@ -78,7 +78,11 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
             S_bar = states_ss
             S_bar = numpy.array(S_bar)
             X_bar = numpy.array(X_bar)
-            return CDR([S_bar, X_bar, X_s, X_ss])
+            dr = CDR([S_bar, X_bar, X_s, X_ss])
+            dr.A = g[1][:,:len(states_ss)] + numpy.dot( g[1][:,len(states_ss):len(states_ss+controls_ss)], X_s )
+            dr.B = g[1][:,len(states_ss+controls_ss):]
+            dr.sigma = sigma
+            return dr
         return [X_bar, X_s, X_ss]
 
 
@@ -115,7 +119,10 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
         else:
             sdict = {}
             from dolo.misc.misc import timeshift
-            for eq in eq_g['auxiliary']:
+            auxies = eq_g['auxiliary']
+            if 'auxiliary_2' in eq_g:
+                auxies += eq_g['auxiliary_2']
+            for eq in  auxies:
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
                 sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
