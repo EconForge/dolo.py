@@ -194,16 +194,13 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, method='lmmcp', maxit=500, debug=None, hook=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options={}, verbose=True, method='lmmcp', maxit=500, hook=None):
 
     from dolo.numeric.solver import solver
     from dolo.numeric.newton import newton_solver
 
     fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)
 #    dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights)[1]
-
-    if debug:
-        maxit = debug
 
     #
     tol = 1e-8
@@ -213,8 +210,6 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
     err = 1
     x0 = xinit
     it = 0
-    if debug:
-        x_values = []
 
     verbit = True if verbose=='full' else False
 
@@ -232,8 +227,6 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
         if verbose:
             print("iteration {} : {} : {}".format(it,err,elapsed))
         x0 = x0 + (x-x0)
-        if debug:
-            x_values.append(x0)
         if hook:
             hook(interp,it,err)
         if False in np.isfinite(x0):
@@ -241,10 +234,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
             return [x0, x]
 
     if it == maxit:
-        if not debug:
-            raise("Maximum number of iterations reached")
-        else:
-            return x_values
+        print("Maximum number of iterations reached")
 
 
     t2 = time.time()
