@@ -125,9 +125,9 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     n_x = xx.shape[0]
 #    xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
-    [SS, SS_ss, SS_xx] = g(ss, xx, ee, parms)[:3]
-    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)[:3]
-    [F, F_ss, F_xx, F_SS, F_XX] = f(ss, xx, SS, XX, ee, parms)[:5]
+    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms)
+    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)
+    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms)
 
 
     res = np.zeros( (n_x,n_g) )
@@ -137,7 +137,7 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     if no_deriv:
         return res
 
-    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+    from dolo.numeric.serial_operations import serial_multiplication as stm
     SS_theta = stm( SS_xx, xx_theta)
     XX_theta = stm( XX_SS, SS_theta) + XX_t
     dF = stm(F_xx, xx_theta) + stm( F_SS, SS_theta) + stm( F_XX , XX_theta)
