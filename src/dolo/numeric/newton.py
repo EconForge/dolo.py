@@ -1,4 +1,6 @@
-def newton_solver(f, x0):
+import numpy
+
+def newton_solver(f, df, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -6,44 +8,45 @@ def newton_solver(f, x0):
     :return: solution x such that f(x) = 0
     '''
 
-    from dolo.numeric.serial_operations import strange_tensor_multiplication_vector as stv
+    from dolo.numeric.serial_operations import strange_tensor_multiplication_vector as stv, serial_solve
     err = 1
     tol = 1e-8
-    maxit = 10
     it = 0
     while err > tol and it <= maxit:
-        [res,dres] = f(x0)
-        dres_inv = serial_inversion(dres)
-        x = x0 - stv(dres_inv, res)
+        res = f(x0)
+        dres = df(x0)
+        fnorm = abs(res).max()  # suboptimal
 
-        err = abs(x-x0).max()
+        dx = - serial_solve(dres,res)
+
+        for i in range(backsteps):
+            xx = x0 + dx/(2**i)
+            if not ub==None:
+                xx = numpy.maximum(xx, lb)
+                xx = numpy.minimum(xx, ub)
+            new_res = f(xx)
+            new_fnorm = abs(new_res).max()
+            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
+                x = xx
+                break
+            if i == backsteps -1:
+                if numpy.isfinite(new_fnorm):
+                    x = xx
+                else:
+                    raise Exception('Non finit value found')
+
+        err = abs(dx).max()
 
         x0 = x
         it += 1
+#    print (it <=maxit)
+#    print(err)
+    if not infos:
+        return x
+    else:
+        return [x, it]
 
-    return x
-
-def serial_inversion(M):
-    '''
-
-    :param M: a pxpxN array
-    :return: a pxpxN array T such that T(:,:,i) is the inverse of M(:,:,i)
-    '''
-
-    import numpy
-    from numpy.linalg import inv
-
-    p = M.shape[0]
-    assert(M.shape[1] == p)
-    N = M.shape[2]
-    T = numpy.zeros((p,p,N))
-
-
-    for i in range(N):
-        T[:,:,i] = inv(M[:,:,i])
-
-    return T
-
+from dolo.numeric.serial_operations import serial_inversion
 
 if __name__ == '__main__':
 
