@@ -1,4 +1,4 @@
-def newton_solver(f, x0):
+def newton_solver(f, x0,infos=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -20,8 +20,11 @@ def newton_solver(f, x0):
 
         x0 = x
         it += 1
+    if not infos:
+        return x
+    else:
+        return [x,it]
 
-    return x
 
 def serial_inversion(M):
     '''

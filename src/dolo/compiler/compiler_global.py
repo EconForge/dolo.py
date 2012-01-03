@@ -219,13 +219,13 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, options=
         interp.fit_values(x0)
     #    x = solver(fun, x0, method='lmmcp', jac='default', verbose=False, options=options)
 #        x = solver(fun, x0, method=method, jac=dfun, verbose=verbit, options=options)
-        x = newton_solver(fun,x0)
+        [x,nit] = newton_solver(fun,x0,infos=True)
 #        res = abs(fun(x)).max()
         err = abs(x-x0).max()
         t_finish = time.time()
         elapsed = t_finish - t_start
         if verbose:
-            print("iteration {} : {} : {}".format(it,err,elapsed))
+		print("iteration {} : {} : {} : {}".format(it,err,elapsed,nit))
         x0 = x0 + (x-x0)
         if hook:
             hook(interp,it,err)
