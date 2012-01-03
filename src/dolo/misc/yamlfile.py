@@ -22,7 +22,8 @@ Imports the content of a modfile into the current interpreter scope
     # check
     if 'controls' in declarations:
         variables_groups = OrderedDict()
-        for vtype in ['states','controls','expectations','auxiliary']:
+        known_types = ['states','controls','expectations','auxiliary','auxiliary_2']
+        for vtype in known_types:
             if vtype in declarations:
                 variables_groups[vtype] = [Variable(vn,0) for vn in declarations[vtype]]
         variables_ordering = sum(variables_groups.values(),[])
