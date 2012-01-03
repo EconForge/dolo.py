@@ -62,7 +62,7 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
         
     return ret
 
-def strange_tensor_multiplication(A,B):
+def serial_multiplication(A,B):
 
     I = A.shape[0]
     J = A.shape[1]
@@ -82,7 +82,7 @@ def strange_tensor_multiplication(A,B):
     return resp
 
 
-def strange_tensor_multiplication_vector(A,X):
+def serial_multiplication_vector(A,X):
 
     I = A.shape[0]
     J = A.shape[1]
@@ -98,16 +98,6 @@ def strange_tensor_multiplication_vector(A,X):
 #            T += A[i,j,:]*B[j,k,:]
             resp[i,:] += A[i,j,:]*X[j,:]
     return resp
-#def strange_tensor_multiplication(A,B):
-#    A = np.asfortranarray(A)
-#    B = np.asfortranarray(B)
-#    assert( A.ndim==3 & B.ndim ==3 )
-#    nobs = A.shape[2]
-#    assert( B.shape[2] == nobs )
-#    resp = np.zeros( (A.shape[0], B.shape[1],nobs)  ) #empty?
-#    for i in range(nobs):
-#        resp[...,i] = np.dot( A[...,i], B[...,i] )
-#    return resp
 
 def serial_dot(A,B):
     nobs = A.shape[-1]
@@ -118,7 +108,68 @@ def serial_dot(A,B):
     for i in range(nobs):
         resp[...,i] = np.dot( A[...,i], B[...,i] )
     return resp
-    
+
+
+def serial_solve(M,Y):
+    '''
+    :param M: a pxpxN array
+    :param Y: a pxN array
+    :return X: a pxN array X such that M(:,:,i)*X(:,i) = Y(:,:,i)
+    '''
+
+    ## surprisingly it is slower than inverting M and doing a serial multiplication !
+
+    import numpy
+    from numpy.linalg import solve
+
+
+    p = M.shape[0]
+    assert(M.shape[1] == p)
+    N = M.shape[2]
+    assert(Y.shape == (p,N) )
+
+    X = numpy.zeros((p,N))
+
+    for i in range(N):
+        X[:,i] = solve(M[:,:,i],Y[:,i])
+
+    return X
+
+def serial_inversion(M):
+    '''
+
+    :param M: a pxpxN array
+    :return: a pxpxN array T such that T(:,:,i) is the inverse of M(:,:,i)
+    '''
+
+    import numpy
+    from numpy.linalg import inv
+
+#    MM = numpy.ascontiguousarray(M.swapaxes(0,2))
+
+    p = M.shape[0]
+    assert(M.shape[1] == p)
+    N = M.shape[2]
+    T = numpy.zeros((p,p,N))
+
+
+    for i in range(N):
+        T[:,:,i] = inv(M[:,:,i])
+
+    return T
+
+
+
+
+try:
+    from dolo.numeric.serial_operations_c import serial_multiplication
+except:
+    pass
+
+
+strange_tensor_multiplication_vector = serial_multiplication_vector
+strange_tensor_multiplication = serial_multiplication
+
 ################################################################################    
 
 if __name__ == "__main__":
@@ -134,3 +185,4 @@ if __name__ == "__main__":
     resp = numdiff1(test, X0)
     print resp.shape
     print resp[:, :, 1, 1, 0]
+
