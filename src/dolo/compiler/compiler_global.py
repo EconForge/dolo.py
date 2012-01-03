@@ -252,7 +252,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, options={}, serial_grid=False, verbose=True, method='lmmcp', maxit=500, nmaxit=50, backsteps=10, hook=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, options={}, serial_grid=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
 
     from dolo.numeric.solver import solver
     from dolo.numeric.newton import newton_solver
@@ -309,7 +309,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         t_finish = time.time()
         elapsed = t_finish - t_start
         if verbose:
-            print("\t\t{}\t|\t{}\t|\t{}\t|\t{}".format(it,err,elapsed,'-'*nit))
+            print("\t\t{}\t|\t{}\t|\t{}\t|\t{}".format(it,err,elapsed,nit))
         x0 = x0 + (x-x0)
         if hook:
             hook(interp,it,err)

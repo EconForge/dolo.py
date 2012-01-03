@@ -14,6 +14,7 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
     it = 0
     while err > tol and it <= maxit:
         [res,dres] = f(x0)
+#	res = f(x0)
 #        dres = df(x0)
         fnorm = abs(res).max()  # suboptimal
 
