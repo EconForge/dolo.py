@@ -149,7 +149,7 @@ class SmolyakBasic(object):
                     block = np.zeros( (n_v,n_t,n_obs) )
                     block[i,:,:] = ket
                     l.append(block)
-                    dval = np.concatenate( l, axis = 1 )
+                dval = np.concatenate( l, axis = 1 )
                 return [val,dder,dval]
             else:
                 return [val,dder]
