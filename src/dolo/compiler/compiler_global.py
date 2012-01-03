@@ -258,8 +258,9 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
     from dolo.numeric.newton import newton_solver
 
     if serial_grid:
-        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)[0]
-        dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
+        #fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)[0]
+        #dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
+        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
     else:
         fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False, with_derivatives=False)[0]
         dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False)[1]
@@ -296,7 +297,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         interp.fit_values(x0)
 
         if serial_grid:
-            [x,nit] = newton_solver(fun,dfun,x0,lb=lb,ub=ub,infos=True, backsteps=backsteps, maxit=nmaxit)
+            [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, backsteps=backsteps, maxit=nmaxit)
         else:
             x = solver(fun, x0, lb=lb, ub=ub, method=method, jac=dfun, verbose=verbit, options=options)
             nit = 0
