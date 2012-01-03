@@ -1,6 +1,6 @@
 import numpy
 
-def newton_solver(f, df, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50):
+def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -13,27 +13,29 @@ def newton_solver(f, df, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=
     tol = 1e-8
     it = 0
     while err > tol and it <= maxit:
-        res = f(x0)
-        dres = df(x0)
+        [res,dres] = f(x0)
+#        dres = df(x0)
         fnorm = abs(res).max()  # suboptimal
 
         dx = - serial_solve(dres,res)
 
-        for i in range(backsteps):
-            xx = x0 + dx/(2**i)
-            if not ub==None:
-                xx = numpy.maximum(xx, lb)
-                xx = numpy.minimum(xx, ub)
-            new_res = f(xx)
-            new_fnorm = abs(new_res).max()
-            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
-                x = xx
-                break
-            if i == backsteps -1:
-                if numpy.isfinite(new_fnorm):
-                    x = xx
-                else:
-                    raise Exception('Non finit value found')
+	x = x0 + dx
+
+        #for i in range(backsteps):
+        #    xx = x0 + dx/(2**i)
+        #    if not ub==None:
+        #        xx = numpy.maximum(xx, lb)
+        #        xx = numpy.minimum(xx, ub)
+        #    new_res = f(xx)
+        #    new_fnorm = abs(new_res).max()
+        #    if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
+        #        x = xx
+        #        break
+        #    if i == backsteps -1:
+        #        if numpy.isfinite(new_fnorm):
+        #            x = xx
+        #        else:
+        #            raise Exception('Non finit value found')
 
         err = abs(dx).max()
 
