@@ -99,6 +99,8 @@ def serial_multiplication_vector(A,X):
             resp[i,:] += A[i,j,:]*X[j,:]
     return resp
 
+strange_tensor_multiplication = serial_multiplication
+
 def serial_dot(A,B):
     nobs = A.shape[-1]
     test = np.dot( A[...,0], B[...,0] )
@@ -168,7 +170,7 @@ except:
 
 
 strange_tensor_multiplication_vector = serial_multiplication_vector
-strange_tensor_multiplication = serial_multiplication
+#strange_tensor_multiplication = serial_multiplication
 
 ################################################################################    
 
