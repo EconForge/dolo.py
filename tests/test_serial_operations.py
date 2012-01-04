@@ -3,7 +3,7 @@ import pyximport; pyximport.install()
 
 import numpy.random
 
-from dolo.numeric.serial_operations import serial_multiplication, serial_dot
+from dolo.numeric.serial_operations import serial_multiplication, serial_dot, strange_tensor_multiplication
 from dolo.numeric.serial_operations_c import serial_multiplication as smult_c
 from dolo.numeric.serial_operations_cython import serial_multiplication as smult_cython
 
@@ -41,7 +41,7 @@ n_exp = 10
 
 t = time.time()
 for i in range(n_exp):
-    C = serial_multiplication(A,B)
+    C = strange_tensor_multiplication(A,B)
 s = time.time()
 print('S.T.M. (python) ' + str(s-t))
 
@@ -49,7 +49,7 @@ print('S.T.M. (python) ' + str(s-t))
 n_exp = 10
 t = time.time()
 for i in range(n_exp):
-    CC = smult_c(A,B)
+    CC = serial_multiplication(A,B)
 s = time.time()
 print('S.T.M. (c) ' + str(s-t))
 
