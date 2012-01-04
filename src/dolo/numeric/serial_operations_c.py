@@ -4,6 +4,10 @@ f  = ctypes.cdll.LoadLibrary('/home/pablo/Programmation/dynare-python/dolo/src/d
 fun = f['cserop']
 
 def serial_multiplication(A,B):
+
+    A = np.ascontiguousarray(A)
+    B = np.ascontiguousarray(B)
+    
     [I,J,N] = A.shape
     K = B.shape[1]
     Z = np.zeros( (I,K,N) )

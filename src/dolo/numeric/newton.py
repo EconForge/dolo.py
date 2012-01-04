@@ -8,7 +8,7 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
     :return: solution x such that f(x) = 0
     '''
 
-    from dolo.numeric.serial_operations import strange_tensor_multiplication_vector as stv, serial_solve
+    from dolo.numeric.serial_operations import serial_multiplication as stv, serial_solve
     err = 1
     tol = 1e-8
     it = 0
@@ -65,8 +65,7 @@ if __name__ == '__main__':
     for i in range(N):
         M[:,:,i] = V
 
-    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
-    from dolo.numeric.serial_operations import strange_tensor_multiplication_vector as stv
+    from dolo.numeric.serial_operations import serial_multiplication as stm
 
 
     MM = numpy.zeros( (p,N) )

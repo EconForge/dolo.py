@@ -137,7 +137,7 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     if no_deriv:
         return res
 
-    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+    from dolo.numeric.serial_operations import serial_multiplication as stm
     SS_theta = stm( SS_xx, xx_theta)
     XX_theta = stm( XX_SS, SS_theta) + XX_t
     dF = stm(F_xx, xx_theta) + stm( F_SS, SS_theta) + stm( F_XX , XX_theta)
@@ -159,7 +159,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
         #    xx = np.tile(x, (1,n_draws))
         #ee = np.repeat(epsilons, n_g , axis=1)
 #
-        from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+        from dolo.numeric.serial_operations import serial_multiplication as stm
 #
         res = np.zeros( (n_x,n_g) )
         dres = np.zeros( (n_x,n_t,n_g))
@@ -179,7 +179,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
-    from dolo.numeric.serial_operations import strange_tensor_multiplication as stm
+    from dolo.numeric.serial_operations import serial_multiplication as stm
     ss = np.tile(s, (1,n_draws))
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
