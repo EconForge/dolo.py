@@ -125,9 +125,9 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     n_x = xx.shape[0]
 #    xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
-    [SS, SS_ss, SS_xx] = g(ss, xx, ee, parms)[:3]
-    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)[:3]
-    [F, F_ss, F_xx, F_SS, F_XX] = f(ss, xx, SS, XX, ee, parms)[:5]
+    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms)
+    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)
+    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms)
 
 
     res = np.zeros( (n_x,n_g) )
