@@ -133,7 +133,7 @@ Imports the content of a modfile into the current interpreter scope
     model.check_consistency(auto_remove_variables=False)
     return model
 
-def yaml_import(filename,names_dict={},full_output=False,verbose=False):
+def yaml_import(filename,verbose=False):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
