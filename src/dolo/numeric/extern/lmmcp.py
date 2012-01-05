@@ -346,7 +346,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
             print('{}\t{}\t{}\t{}\n'.format(k,Psix,normDPsix,t))
 
     if k == kmax:
-        Warning('No convergence')
+        raise Exception('No convergence')
     return x
 
 
