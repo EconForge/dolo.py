@@ -39,22 +39,29 @@ class cachedondisk(object):
     """
 
     def __init__(self, func):
-         self.func = func
-         self.fname = func.__name__
+
+        # create caching direcory if it is not there already
+        import os
+        if not os.path.isdir('.cache'):
+            os.mkdir('.cache')
+
+        self.func = func
+        self.fname = func.__name__
         
     def __call__(self, *args):
         import pickle
         hh = tuple(  hashable(e) for e in args )
         h = hash(hh)
         try:
-            with file('.cache.{0}.{1}.pickle'.format(self.fname,h)) as f:
+            with file('.cache/{0}.{1}.pickle'.format(self.fname,h)) as f:
                 value = pickle.load(f)
             return value
         except IOError:
             value = self.func(*args)
-            # write file with h
-            with file('.cache.{0}.{1}.pickle'.format(self.fname,h),'w') as f:
-                pickle.dump(value,f)
+            if value is not None:  # should there be other kinds of error values
+                # write file with h
+                with file('.cache/{0}.{1}.pickle'.format(self.fname,h),'w') as f:
+                    pickle.dump(value,f)
             return value
         except TypeError:
             # uncachable -- for instance, passing a list as an argument.
@@ -72,7 +79,7 @@ def clear_cache():
     import os
     
     try:
-        os.system('rm .cache.*.pickle')
+        os.system('rm -rf .cache/*.pickle')
     except:
         pass
 
