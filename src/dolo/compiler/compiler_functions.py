@@ -6,9 +6,14 @@ def full_functions(model):
 
     # auxiliaries_2 are simply replaced in all other types of equations
     a2_dict = {}
-    for eq in eq_g['auxiliary_2']:
-        a2_dict[eq.lhs] = eq.rhs
-        a2_dict[eq.lhs(1)] = timeshift( eq.rhs, 1 )
+    a2_dict_g = {}
+
+    if 'auxiliary_2' in eq_g:
+        for eq in eq_g['auxiliary_2']:
+            a2_dict[eq.lhs] = eq.rhs
+            a2_dict[eq.lhs(1)] = timeshift( eq.rhs, 1 )
+        for eq in eq_g['auxiliary_2']:
+            a2_dict_g[eq.lhs(-1)] = timeshift( eq.rhs, -1 )
 
     controls = v_g['controls']
     auxiliaries = v_g['auxiliary']
@@ -19,8 +24,7 @@ def full_functions(model):
 
     f_eqs =  [eq.gap.subs(a2_dict) for eq in eq_g['arbitrage']]
 
-
-    g_eqs =  [eq.subs(a2_dict) for eq in eq_g['transition']]
+    g_eqs =  [eq for eq in eq_g['transition']]
 
     dd = {eq.lhs: eq.rhs for eq in g_eqs}
     from dolo.misc.calculus import simple_triangular_solve
@@ -32,6 +36,9 @@ def full_functions(model):
     ds = simple_triangular_solve(dd)
     a_eqs = [ds[eq.lhs] for eq in eq_g['auxiliary']]
 
+
+    f_eqs = [eq.subs(a2_dict) for eq in f_eqs]
+    g_eqs = [eq.subs(a2_dict_g) for eq in g_eqs]
     a_eqs = [eq.subs(a2_dict) for eq in a_eqs]
 
 
@@ -49,9 +56,6 @@ def full_functions(model):
     args_a =  [states, controls]
 
     from dolo.compiler.compiling import compile_function_2
-
-    print args_a
-    print a_eqs
 
     g = compile_function_2(g_eqs, args_g, ['s','x','y','e'], parameters, 'g' )
     f = compile_function_2(f_eqs, args_f, ['s','x','snext','xnext','y','ynext'], parameters, 'f' )

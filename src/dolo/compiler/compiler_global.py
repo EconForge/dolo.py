@@ -30,6 +30,8 @@ class GlobalCompiler2:
             G_e = g_e
             return [G,G_s,G_x,G_e]
 
+    def a(self,s,x,p,derivs=True):
+        return self.__a(s,x,p,derivs=False)
 
     def f(self, s, x, snext, xnext, e, p, derivs=True):
         if not derivs:
@@ -283,7 +285,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         ub = None
 
     if verbose:
-        s = "|\tIteration\t|\tStep\t\t\t|\tTime (s)\t\t|"
+        s = "|Iteration\t|\tStep\t\t\t|\tTime (s)\t|"
         nnn = len(s.replace('\t',' '*4))
         print('-'*nnn)
         print(s)
@@ -309,7 +311,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         t_finish = time.time()
         elapsed = t_finish - t_start
         if verbose:
-            print("\t\t{}\t|\t{}\t|\t{}\t|\t{}".format(it,err,elapsed,nit))
+            print("\t\t{}\t|\t{:e}\t|\t{:f}\t|\t{}".format(it,err,elapsed,nit))
         x0 = x0 + (x-x0)
         if hook:
             hook(interp,it,err)
