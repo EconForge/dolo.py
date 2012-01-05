@@ -194,10 +194,12 @@ class SmolyakBasic(object):
 class SmolyakGrid(SmolyakBasic):
 
     def __init__(self, bounds, l, axes=None):
-        self.bounds = bounds
-        d = self.bounds.shape[1]
+
+        d = bounds.shape[1]
 
         super(SmolyakGrid, self).__init__( d, l)
+
+        self.bounds = bounds
 
         self.center = [b[0]+(b[1]-b[0])/2 for b in bounds.T]
         self.radius =  [(b[1]-b[0])/2 for b in bounds.T]
