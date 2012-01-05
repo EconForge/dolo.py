@@ -20,23 +20,23 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
 
         dx = - serial_solve(dres,res)
 
-	x = x0 + dx
+#        x = x0 + dx
 
-        #for i in range(backsteps):
-        #    xx = x0 + dx/(2**i)
-        #    if not ub==None:
-        #        xx = numpy.maximum(xx, lb)
-        #        xx = numpy.minimum(xx, ub)
-        #    new_res = f(xx)
-        #    new_fnorm = abs(new_res).max()
-        #    if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
-        #        x = xx
-        #        break
-        #    if i == backsteps -1:
-        #        if numpy.isfinite(new_fnorm):
-        #            x = xx
-        #        else:
-        #            raise Exception('Non finit value found')
+        for i in range(backsteps):
+            xx = x0 + dx/(2**i)
+            if not ub==None:
+                xx = numpy.maximum(xx, lb)
+                xx = numpy.minimum(xx, ub)
+            new_res = f(xx)[0]
+            new_fnorm = abs(new_res).max()
+            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
+                x = xx
+                break
+            if i == backsteps -1:
+                if numpy.isfinite(new_fnorm):
+                    x = xx
+                else:
+                    raise Exception('Non finite value found')
 
         err = abs(dx).max()
 
