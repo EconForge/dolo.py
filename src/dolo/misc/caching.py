@@ -74,12 +74,15 @@ class cachedondisk(object):
          """Support instance methods."""
          return functools.partial(self.__call__, obj)
 
-def clear_cache():
+def clear_cache(function_name=None):
 
     import os
     
     try:
-        os.system('rm -rf .cache/*.pickle')
+        if function_name:
+            os.system('rm -rf .cache/{}.*.pickle'.format(function_name))
+        else:
+            os.system('rm -rf .cache/*.pickle')
     except:
         pass
 

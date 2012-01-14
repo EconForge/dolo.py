@@ -1,19 +1,17 @@
-import numpy
 
 
 quantization_data = '/home/pablo/Programmation/dynare-python/dolo/src/dolo/numeric/data/quantization_grids/'
 
 
 def quantization_weights(N,sigma):
-    # currently only the diagonal matters
+    import numpy
+    import numpy.linalg
     assert( len(sigma.shape) == 2 )
-    assert ( abs( numpy.diag(numpy.diag(sigma)) - sigma).max() == 0 ) # TODO : here we don't allow for cross correlations.
     var = numpy.diag(sigma)
-    sd = numpy.sqrt(var)
-    sd = numpy.diag(sd)
     d = sigma.shape[0]
     [w, x] = standard_quantization_weights(N,d )
-    x = numpy.dot(sd, x)
+    A = numpy.linalg.cholesky(sigma)
+    x = numpy.dot(A, x)
     return [w,x]
 
 def standard_quantization_weights(N,d):

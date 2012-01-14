@@ -1,3 +1,4 @@
+import numpy
 
 def simulate(gc, dr, s0, sigma, n_exp, horizon, parms, seed=1, discard=True):
 

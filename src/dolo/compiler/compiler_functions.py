@@ -52,13 +52,13 @@ def full_functions(model):
     shocks_f = [c(1) for c in shocks]
 
     args_g =  [states_p, controls_p, auxiliaries_p, shocks]
-    args_f =  [states, controls, states_f, controls_f, auxiliaries, auxiliaries_f]
+    args_f =  [states, controls, states_f, controls_f, auxiliaries, auxiliaries_f, shocks_f]
     args_a =  [states, controls]
 
     from dolo.compiler.compiling import compile_function_2
 
     g = compile_function_2(g_eqs, args_g, ['s','x','y','e'], parameters, 'g' )
-    f = compile_function_2(f_eqs, args_f, ['s','x','snext','xnext','y','ynext'], parameters, 'f' )
+    f = compile_function_2(f_eqs, args_f, ['s','x','snext','xnext','y','ynext','e'], parameters, 'f' )
     a = compile_function_2(a_eqs, args_a, ['s','x'], parameters, 'a' )
 
     return [f,a,g]

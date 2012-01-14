@@ -22,8 +22,8 @@ class GlobalCompiler2:
             a = self.__a(s,x,p,derivs=False)[0]
             return self.__g(s,x,a,e,p,derivs=False)
         else:
-            [a,a_s,a_x] = self.__a(s,x,p)
-            [g,g_s,g_x,g_a,g_e] = self.__g(s,x,a,e,p)
+            [a,a_s,a_x] = self.__a(s,x,p,derivs=True)
+            [g,g_s,g_x,g_a,g_e] = self.__g(s,x,a,e,p,derivs=True)
             G = g
             G_s = g_s + smult(g_a,a_s)
             G_x = g_x + smult(g_a,a_x)
@@ -31,17 +31,17 @@ class GlobalCompiler2:
             return [G,G_s,G_x,G_e]
 
     def a(self,s,x,p,derivs=True):
-        return self.__a(s,x,p,derivs=False)
+        return self.__a(s,x,p,derivs=derivs)
 
     def f(self, s, x, snext, xnext, e, p, derivs=True):
         if not derivs:
             a = self.__a(s,x,p,derivs=False)[0]
             anext = self.__a(snext,xnext,p,derivs=False)[0]
-            return self.__f(s,x,snext,xnext,a,anext,p,derivs=False)
+            return self.__f(s,x,snext,xnext,a,anext,e,p,derivs=False)
         else:
-            [a,a_s,a_x] = self.__a(s,x,p)
-            [A,A_S,A_X] = self.__a(snext,xnext,p)
-            [f,f_s,f_x,f_S,f_X,f_a,f_A] = self.__f(s,x,snext,xnext,a,A,p)
+            [a,a_s,a_x] = self.__a(s,x,p,derivs=True)
+            [A,A_S,A_X] = self.__a(snext,xnext,p,derivs=True)
+            [f,f_s,f_x,f_S,f_X,f_a,f_A] = self.__f(s,x,snext,xnext,a,A,e,p)
             F = f
             F_s = f_s + smult(f_a,a_s)
             F_x = f_x + smult(f_a,a_x)
