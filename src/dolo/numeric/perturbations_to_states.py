@@ -50,12 +50,14 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
         sigma_index = [p.name for p in model.parameters].index(lambda_name)
         pert_parms = parms.copy()
         pert_parms[sigma_index] += epsilon
-        g_pert = g_fun( states_ss + controls_ss + shocks_ss, pert_parms)
+
+        g_pert = g_fun( g_args_ss, pert_parms)
         sig2 = (g_pert[0] - g[0])/epsilon*2
         sig2_s = (g_pert[1] - g[1])/epsilon*2
         pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s] )
 
     else:
+        g = g_fun( g_args_ss, parms)
         pert_sol = state_perturb(f, g, sigma )
 
     n_s = len(states_ss)
