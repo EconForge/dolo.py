@@ -4,13 +4,13 @@ import numpy as np
 
 from operator import mul
 
-from operator import mul
-
 from itertools import product
 
-from scipy import optimize
-
-from chebychev import cheb_extrema,chebychev,chebychev2
+try:
+    import pyximport;pyximport.install()
+    from dolo.numeric.chebychev_pyx import chebychev, chebychev2, cheb_extrema
+except:
+    from chebychev import cheb_extrema,chebychev,chebychev2
 
 def enum(d,l):
     r = range(l)
@@ -53,6 +53,8 @@ def smolyak_grids(d,l):
         smolyak_points.extend( [f for f in product( *ff ) ] )
 
     smolyak_points = np.c_[smolyak_points]
+
+    print smolyak_indices
     
     return [smolyak_points, smolyak_indices]
 
@@ -459,7 +461,8 @@ if __name__ == '__main__':
     from dolo.numeric.serial_operations import numdiff2, numdiff1
     
     theta2_0 = np.zeros( (2, sg2.n_points) )
-    vals = testfun(sg2.real_grid)
+    vals = testfun(sg2.grid)
+
     sg2.fit_values(vals)
 #
 #

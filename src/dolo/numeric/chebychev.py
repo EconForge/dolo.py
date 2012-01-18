@@ -39,10 +39,30 @@ if __name__ == '__main__':
 
     true_values_T = np.array([T4(i) for i in points])
     true_values = np.array([U4(i) for i in points])
-    #pyplot.plot(points, cheb[4,:])
-    pyplot.plot(points, cheb[4,:])
-    pyplot.plot(points, true_values_T)
-    pyplot.figure()
-    pyplot.plot(points, cheb2[4,:])
-    pyplot.plot(points, true_values)
-    pyplot.show()
+#    #pyplot.plot(points, cheb[4,:])
+#    pyplot.plot(points, cheb[4,:])
+#    pyplot.plot(points, true_values_T)
+#    pyplot.figure()
+#    pyplot.plot(points, cheb2[4,:])
+#    pyplot.plot(points, true_values)
+#    pyplot.show()
+
+    import pyximport;pyximport.install()
+
+    from dolo.numeric.smolyak import SmolyakGrid
+    sg = SmolyakGrid( np.row_stack( [[0]*6, [1]*6]), 6)
+    points = sg.grid
+
+    from chebychev_pyx import chebychev as cheby_pyx
+    import time
+    t = time.time()
+    for i in range(100):
+        cheb = chebychev(points, 10)
+    s = time.time()
+    for i in range(100):
+        ch_x = cheby_pyx(points, 10)
+
+    u = time.time()
+    print(s-t)
+    print(u-s)
+    print( abs(ch_x - cheb).max() )
