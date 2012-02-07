@@ -142,6 +142,19 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
             sdict = simple_triangular_solve(sdict)
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
             resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+    elif 'auxiliary_2' in eq_g:
+        sdict = {}
+        from dolo.misc.misc import timeshift
+        auxies = eq_g['auxiliary_2']
+        for eq in  auxies:
+            sdict[eq.lhs] = eq.rhs
+            sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+            sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
+        from dolo.misc.calculus import simple_triangular_solve
+        sdict = simple_triangular_solve(sdict)
+        resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
+        resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+
 
     if not allow_future_shocks:
         # future shocks are replaced by 0
@@ -385,3 +398,10 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
             return [X_s,X_ss,X_sss]
         else:
             return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
+
+
+if __name__ == '__main__':
+    from dolo import *
+    model = yaml_import('/home/pablo/Programmation/KumhofRanciere/rbc_solver/rbc.yaml')
+    dr = approximate_controls(model, substitute_auxiliary=True)
+    print dr.X_s

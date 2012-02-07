@@ -54,8 +54,6 @@ def smolyak_grids(d,l):
 
     smolyak_points = np.c_[smolyak_points]
 
-    print smolyak_indices
-    
     return [smolyak_points, smolyak_indices]
 
 class SmolyakBasic(object):
