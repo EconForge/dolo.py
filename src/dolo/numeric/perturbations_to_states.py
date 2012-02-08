@@ -104,7 +104,9 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
         X_s = X_s + X_stt/2
         if return_dr:
             S_bar = states_ss
-            return CDR([S_bar, X_bar, X_s, X_ss, X_sss])
+            dr = CDR([S_bar, X_bar, X_s, X_ss, X_sss])
+            dr.sigma = sigma
+            return dr
         return [X_bar, X_s, X_ss, X_sss]
         
 
