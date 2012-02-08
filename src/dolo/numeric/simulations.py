@@ -1,6 +1,6 @@
 import numpy
 
-def simulate(gc, dr, s0, sigma, n_exp, horizon, parms, seed=1, discard=True):
+def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard=False):
 
     '''simulates series for a compiled model'''
 
@@ -10,7 +10,17 @@ def simulate(gc, dr, s0, sigma, n_exp, horizon, parms, seed=1, discard=True):
     else:
         irf = False
 
+    from dolo.symbolic.model import Model
+    if isinstance(gc,Model):
+        from dolo.compiler.compiler_global import GlobalCompiler2
+        model = gc
+        gc = GlobalCompiler2(model)
+        [y,x,parms] = model.read_calibration()
+
+
     g = gc.g
+
+    s0 = numpy.atleast_2d(s0.flatten()).T
 
     x0 = dr(s0)
     a0 = gc.a(s0,x0, parms, derivs=False)[0]
@@ -39,17 +49,19 @@ def simulate(gc, dr, s0, sigma, n_exp, horizon, parms, seed=1, discard=True):
         a_simul[:,:,i] = a
         ss = g(s,x,epsilons,parms,derivs=False)[0]
 
-        #for p in range(s0.shape[0]):
-        #    ss[p,:] = numpy.maximum( numpy.minimum(ss[p,:], large_bounds[1,p]), large_bounds[0,p])
-
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
     from numpy import any,isnan,all
 
     if discard:
-        iA = -isnan(s_simul)
+        iA = -isnan(a_simul)
         valid = all( all( iA, axis=0 ), axis=1 )
         [s_simul, x_simul, a_simul] = [ e[:,valid,:] for e in [s_simul, x_simul, a_simul] ]
+        n_kept = s_simul.shape[1]
+        if n_exp > n_kept:
+            print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
+    if irf:
+        [s_simul, x_simul, a_simul] = [ e[:,0,:] for e in [s_simul, x_simul, a_simul] ]
 
     return [s_simul, x_simul, a_simul]
 
