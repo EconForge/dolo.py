@@ -20,14 +20,6 @@ from numpy.linalg import solve
 from numpy.matlib import diag
 import sys
 
-if sys.platform == 'win32':
-    __lapack_location__ = "c:\\Windows\\System32\\"
-    __lapack_name__ = 'lapack.dll'
-    __libio_name__ = 'libiomp5md.dll'
-else:
-    __lapack_location__ = '/usr/lib/lapack/'
-    __lapack_name__ = 'liblapack.so'    
-
 def setuplapack(lpname=None,lppath=None):
 #    '''Loads the lapack shared lib and does some input checks.
 #
@@ -40,10 +32,9 @@ def setuplapack(lpname=None,lppath=None):
     # some input checks
 
     try:
-        if sys.platform == 'win32':
-            lapack = cdll.LoadLibrary( __libio_location__+'/'+__lapack_name__)
-        else:
-            lapack = cdll.LoadLibrary( __lapack_location__+'/'+__lapack_name__)            
+		from ctypes.util import find_library
+		__lapack_path__ = find_library('lapack')
+        lapack = cdll.LoadLibrary( __lapack_path__ )
     except Exception as e:
         print e  
         return None

@@ -1,4 +1,4 @@
-set "pyinstallerpath=d:\Documents\Python\pyinstaller-1.5.1\"
+set "pyinstallerpath=..\..\..\pyinstaller\"
 set "makespec=%pyinstallerpath%Makespec.py"
 set "build=%pyinstallerpath%Build.py"
 
