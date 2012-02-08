@@ -32,8 +32,8 @@ def setuplapack(lpname=None,lppath=None):
     # some input checks
 
     try:
-		from ctypes.util import find_library
-		__lapack_path__ = find_library('lapack')
+        from ctypes.util import find_library
+        __lapack_path__ = find_library('lapack')
         lapack = cdll.LoadLibrary( __lapack_path__ )
     except Exception as e:
         print e  
