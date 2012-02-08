@@ -9,7 +9,7 @@ from dolo.compiler.compiler_functions import full_functions
 from dolo.numeric.serial_operations import serial_multiplication as smult
 
 class GlobalCompiler2:
-    def __init__(self,model,substitute_auxiliary=False, solve_systems=False):
+    def __init__(self,model):
         self.model = model
 
         [f,a,g] = full_functions(model)
