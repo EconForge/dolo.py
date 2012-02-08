@@ -26,8 +26,10 @@ class CompilerMatlab:
     def process_output(self, solution_order=False, fname=None):
 
         from dolo.numeric.perturbations_to_states import simple_global_representation
-        data = simple_global_representation(self.model, substitute_auxiliary=True, solve_systems=True)
+        data = simple_global_representation(self.model, substitute_auxiliary=True, keep_auxiliary=True, solve_systems=True)
 
+#        print data['a_eqs']
+#        print data['f_eqs']
         dmodel = self.model
         model = dmodel
 
@@ -37,6 +39,7 @@ class CompilerMatlab:
         g_eqs = [map_function_to_expression(lambda x: timeshift(x,1),eq) for eq in g_eqs]
 
 #        h_eqs = data['h_eqs']
+        auxiliaries = data['auxiliaries']
         states = data['states']
         controls = data['controls']
 #        exp_vars = data['exp_vars']
@@ -72,6 +75,7 @@ class CompilerMatlab:
     model = model_info;
     model.f = @f;
     model.g = @g;
+    model.a = @a
 end
 
 function [out1,out2,out3,out4,out5] = f(s,x,snext,xnext,p)
@@ -82,6 +86,11 @@ end
 function [out1,out2,out3] = g(s,x,e,p)
     n = size(s,1);
 {state_trans_block}
+end
+
+function [out1,out2,out3] = a(s,x,p)
+    n = size(s,1);
+{aux_block}
 end
 
 function [out1] = model_info() % informations about the model
@@ -156,7 +165,25 @@ end
                     write_der_eqs(g_eqs,controls,'out3',3)
             )
 
+        if 'a_eqs' in data:
+            a_eqs = data['a_eqs']
+            eq_a_block =  '''
+    % a
 
+{0}
+
+if nargout >=2
+    % da/ds
+    {1}
+    % da/dx
+    {2}
+end
+                    '''.format( write_eqs(a_eqs,'out1',3),
+                                write_der_eqs(a_eqs,states,'out2',3),
+                                write_der_eqs(a_eqs,controls,'out3',3)
+                        )
+        else:
+            eq_a_block = ''
 
         # if not with_param_names:
         #    eq_h_block = 's=snext;\nx=xnext;\n'+eq_h_block
@@ -174,10 +201,16 @@ end
 
         model_info = '''
     mod = struct;
+    mod.states = {states};
+    mod.controls = {controls};
+    mod.auxiliaries = {auxiliaries};
     mod.s_ss = {s_ss};
     mod.x_ss = {x_ss};
     mod.params = {params_values};
 '''.format(
+    states = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in states])),
+    controls = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in controls])),
+    auxiliaries = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in auxiliaries])),
     s_ss = value_to_mat(s_ss),
     x_ss = value_to_mat(x_ss),
     params_values = value_to_mat(params_values)
@@ -202,6 +235,7 @@ end
             mfname = fname if fname else 'mf_' + model.fname,
             eq_fun_block=eq_f_block,
             state_trans_block=eq_g_block,
+            aux_block=eq_a_block,
 #            exp_fun_block=eq_h_block,
 #            solution = solution,
             model_info = model_info

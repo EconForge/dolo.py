@@ -112,7 +112,7 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
 
 
 
-def simple_global_representation(self, substitute_auxiliary=False, allow_future_shocks=True, solve_systems=False):
+def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliary=False, allow_future_shocks=True, solve_systems=False):
 
     resp = {}
     eq_g = self['equations_groups']
@@ -128,8 +128,9 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
 
     if 'auxiliary' in eq_g:
         if not substitute_auxiliary:
-            resp['f_eqs'] += [eq.gap for eq in eq_g['auxiliary']]
-            resp['controls'] += v_g['auxiliary']
+            if not keep_auxiliary:
+                resp['f_eqs'] += [eq.gap for eq in eq_g['auxiliary']]
+                resp['controls'] += v_g['auxiliary']
         else:
             sdict = {}
             from dolo.misc.misc import timeshift
@@ -142,6 +143,8 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
                 sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
             from dolo.misc.calculus import simple_triangular_solve
             sdict = simple_triangular_solve(sdict)
+            resp['a_eqs'] = [sdict[v] for v in v_g['auxiliary']]
+            resp['auxiliaries'] = [v for v in v_g['auxiliary']]
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
             resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
     elif 'auxiliary_2' in eq_g:
