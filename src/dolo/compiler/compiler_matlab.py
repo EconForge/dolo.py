@@ -75,7 +75,7 @@ class CompilerMatlab:
     model = model_info;
     model.f = @f;
     model.g = @g;
-    model.a = @a
+    model.a = @a;
 end
 
 function [out1,out2,out3,out4,out5] = f(s,x,snext,xnext,p)
