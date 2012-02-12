@@ -3,18 +3,27 @@ def full_functions(model):
 
     eq_g = model['equations_groups']
     v_g = model['variables_groups']
+    
+    f_eqs =  [eq.gap for eq in eq_g['arbitrage']]
+    g_eqs =  [eq for eq in eq_g['transition']]
+    a_eqs =  [eq for eq in eq_g['auxiliary']]
 
     # auxiliaries_2 are simply replaced in all other types of equations
     a2_dict = {}
     a2_dict_g = {}
 
     if 'auxiliary_2' in eq_g:
-        for eq in eq_g['auxiliary_2']:
-            a2_dict[eq.lhs] = eq.rhs
-            a2_dict[eq.lhs(1)] = timeshift( eq.rhs, 1 )
-        for eq in eq_g['auxiliary_2']:
-            a2_dict_g[eq.lhs(-1)] = timeshift( eq.rhs, -1 )
-
+        aux2_eqs = eq_g['auxiliary_2']
+        dd = {eq.lhs: eq.rhs for eq in aux2_eqs}
+        dd.update( { eq.lhs(1): timeshift(eq.rhs,1) for eq in aux2_eqs } )
+        dd.update( { eq.lhs(-1): timeshift(eq.rhs,-1) for eq in aux2_eqs } )
+        from dolo.misc.calculus import simple_triangular_solve
+        ds = simple_triangular_solve(dd)
+        
+        f_eqs =  [eq.subs(ds) for eq in f_eqs]
+        a_eqs =  [eq.subs(ds) for eq in a_eqs]
+        g_eqs =  [eq.subs(ds) for eq in g_eqs]
+    
     controls = v_g['controls']
     auxiliaries = v_g['auxiliary']
     states = v_g['states']
@@ -22,24 +31,24 @@ def full_functions(model):
     parameters = model.parameters
     shocks = model.shocks
 
-    f_eqs =  [eq.gap.subs(a2_dict) for eq in eq_g['arbitrage']]
 
-    g_eqs =  [eq for eq in eq_g['transition']]
 
+
+#    f_eqs = [eq.subs(a2_dict) for eq in f_eqs]
+#    g_eqs = [eq.subs(a2_dict_g) for eq in g_eqs]
+#    a_eqs = [eq.subs(a2_dict) for eq in a_eqs]
+    
     dd = {eq.lhs: eq.rhs for eq in g_eqs}
     from dolo.misc.calculus import simple_triangular_solve
     ds = simple_triangular_solve(dd)
     g_eqs = [ds[eq.lhs] for eq in g_eqs]
 
-    dd = {eq.lhs: eq.rhs for eq in eq_g['auxiliary']}
+    dd = {eq.lhs: eq.rhs for eq in a_eqs}
     from dolo.misc.calculus import simple_triangular_solve
     ds = simple_triangular_solve(dd)
-    a_eqs = [ds[eq.lhs] for eq in eq_g['auxiliary']]
+    a_eqs = [ds[eq.lhs] for eq in a_eqs]
 
 
-    f_eqs = [eq.subs(a2_dict) for eq in f_eqs]
-    g_eqs = [eq.subs(a2_dict_g) for eq in g_eqs]
-    a_eqs = [eq.subs(a2_dict) for eq in a_eqs]
 
 
     auxiliaries_f = [c(1) for c in auxiliaries]

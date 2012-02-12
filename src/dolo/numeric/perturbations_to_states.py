@@ -133,9 +133,9 @@ def simple_global_representation(self, substitute_auxiliary=False, allow_future_
         else:
             sdict = {}
             from dolo.misc.misc import timeshift
-            auxies = eq_g['auxiliary']
+            auxies = list( eq_g['auxiliary'] )
             if 'auxiliary_2' in eq_g:
-                auxies += eq_g['auxiliary_2']
+                auxies += list( eq_g['auxiliary_2'] )
             for eq in  auxies:
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
