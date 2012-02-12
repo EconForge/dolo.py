@@ -75,7 +75,7 @@ class CompilerMatlab:
     model = model_info;
     model.f = @f;
     model.g = @g;
-    model.a = @a
+    model.a = @a;
 end
 
 function [out1,out2,out3,out4,out5] = f(s,x,snext,xnext,p)
@@ -204,6 +204,7 @@ end
     mod.states = {states};
     mod.controls = {controls};
     mod.auxiliaries = {auxiliaries};
+    mod.parameters = {parameters};
     mod.s_ss = {s_ss};
     mod.x_ss = {x_ss};
     mod.params = {params_values};
@@ -211,6 +212,7 @@ end
     states = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in states])),
     controls = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in controls])),
     auxiliaries = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in auxiliaries])),
+    parameters = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in model.parameters])),
     s_ss = value_to_mat(s_ss),
     x_ss = value_to_mat(x_ss),
     params_values = value_to_mat(params_values)
