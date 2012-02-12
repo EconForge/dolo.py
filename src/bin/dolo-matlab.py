@@ -6,6 +6,7 @@ from dolo import __version__
 
 parser = argparse.ArgumentParser(description='Matlab compiler')
 parser.add_argument('-v','--version', action='version', version=__version__)
+parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
 parser.add_argument('-s','--solve', action='store_const', const=True, default=False, help='solve for the decision rule')
 parser.add_argument('-o','--order', nargs=1, type=int, default=[1], help='solution order (1,2,3)')
 parser.add_argument('input', help='model file')
@@ -36,8 +37,14 @@ basename = os.path.basename(output_filename)
 fname = re.compile('(.*)\.m').match(basename).group(1)
 model['name'] = fname
 
-from dolo.compiler.compiler_matlab import CompilerMatlab
 
+# check steady-state
+if args.print_residuals:
+    from dolo.symbolic.model import print_residuals
+    print_residuals(model)
+
+
+from dolo.compiler.compiler_matlab import CompilerMatlab
 comp = CompilerMatlab(model)
 
 if args.solve:
