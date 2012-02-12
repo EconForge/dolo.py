@@ -304,6 +304,15 @@ def compute_residuals(model):
         residuals = [ float(eq) for eq in stateq ]
         return residuals
 
+def print_residuals(model):
+    residuals = compute_residuals(model)
+
+    print('\n{:*^90}\n'.format('Residuals'))
+    for category in residuals.keys():
+        res = residuals[category]
+        print category
+        for i,eq in enumerate(model['equations_groups'][category]):
+            print('\t{:03.4f}\t:\t{}'.format(res[i],eq))
 
 if __name__ == '__main__':
 
