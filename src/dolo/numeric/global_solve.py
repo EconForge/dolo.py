@@ -2,12 +2,12 @@ from dolo import *
 import numpy
 from numpy import *
 
-def global_solve(model, bounds=None, initial_dr=None, smolyak_order=3, T=200, n_s=2, N_e=40, maxit=500, polish=True, memory_hungry=True):
+def global_solve(model, bounds=None, initial_dr=None, pert_order=2, smolyak_order=3, T=200, n_s=2, N_e=40, maxit=500, polish=True, memory_hungry=True):
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
     
     if bounds == None or initial_dr == None:
-        pert_dr = approximate_controls(model, order=2, substitute_auxiliary=True, solve_systems=True)
+        pert_dr = approximate_controls(model, order=pert_order, substitute_auxiliary=True, solve_systems=True)
         
     if bounds == None:
         from dolo.numeric.timeseries import asymptotic_variance
