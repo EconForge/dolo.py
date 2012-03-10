@@ -220,7 +220,7 @@ end
         if solution_order:
             from dolo.numeric.perturbations_to_states import approximate_controls
 
-            ZZ = approximate_controls(self.model,order=solution_order)
+            ZZ = approximate_controls(self.model,order=solution_order, return_dr=False)
             n_c = len(controls)
 
             ZZ = [np.array(e) for e in ZZ]
