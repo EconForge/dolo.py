@@ -177,7 +177,7 @@ class Model(dict):
     def state_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
-    def read_calibration(self):
+    def read_calibration(self,to_numpy=True):
         model = self
         from dolo.misc.calculus import solve_triangular_system
 
@@ -199,10 +199,15 @@ class Model(dict):
         y = [values[v] for v in model.variables]
         x = [0 for s in model.shocks]
         params = [values[v] for v in model.parameters]
-        return [y,x,params]
+        resp = [y,x,params]
+        if to_numpy:
+            import numpy
+            return [numpy.array(e, dtype=numpy.float64) for e in resp]
+        else:
+            return resp
 
 
-    def read_covariances(self):
+    def read_covariances(self,to_numpy=True):
 
         # duplicated code
         model = self
@@ -226,9 +231,13 @@ class Model(dict):
         m = m.subs(values)
         
         import numpy
-        m = numpy.array(m).astype(numpy.float)
-        
-        return m
+        resp = numpy.array(m).astype(numpy.float)
+
+        if to_numpy:
+            import numpy
+            return numpy.array(resp, dtype=numpy.float64)
+        else:
+            return resp
 
         
 

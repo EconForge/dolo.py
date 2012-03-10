@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
+def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',verbose=False):
     
     in_shape = x0.shape
 
@@ -35,8 +35,14 @@ def solver(fobj,x0,options={},method='lmmcp',jac='default',verbose=False):
         sol = optimize.newton_krylov(ffobj,x0.flatten())
     elif method == 'lmmcp':
         from dolo.numeric.extern.lmmcp import lmmcp,Big
-        lb = -Big*np.ones(len(x0.flatten()))
-        ub = Big*np.ones(len(x0.flatten()))
+        if lb == None:
+            lb = -Big*np.ones(len(x0.flatten()))
+        else:
+            lb = lb.flatten()
+        if ub == None:
+            ub = Big*np.ones(len(x0.flatten()))
+        else:
+            ub = ub.flatten()
 
         sol = lmmcp(ffobj,Dffobj,x0.flatten(),lb,ub,verbose=verbose,options=options)
 

@@ -4,13 +4,13 @@ import numpy as np
 
 from operator import mul
 
-from operator import mul
-
 from itertools import product
 
-from scipy import optimize
-
-from chebychev import cheb_extrema,chebychev,chebychev2
+try:
+    import pyximport;pyximport.install()
+    from dolo.numeric.chebychev_pyx import chebychev, chebychev2, cheb_extrema
+except:
+    from chebychev import cheb_extrema,chebychev,chebychev2
 
 def enum(d,l):
     r = range(l)
@@ -53,7 +53,7 @@ def smolyak_grids(d,l):
         smolyak_points.extend( [f for f in product( *ff ) ] )
 
     smolyak_points = np.c_[smolyak_points]
-    
+
     return [smolyak_points, smolyak_indices]
 
 class SmolyakBasic(object):
@@ -149,7 +149,7 @@ class SmolyakBasic(object):
                     block = np.zeros( (n_v,n_t,n_obs) )
                     block[i,:,:] = ket
                     l.append(block)
-                    dval = np.concatenate( l, axis = 1 )
+                dval = np.concatenate( l, axis = 1 )
                 return [val,dder,dval]
             else:
                 return [val,dder]
@@ -194,10 +194,12 @@ class SmolyakBasic(object):
 class SmolyakGrid(SmolyakBasic):
 
     def __init__(self, bounds, l, axes=None):
-        self.bounds = bounds
-        d = self.bounds.shape[1]
+
+        d = bounds.shape[1]
 
         super(SmolyakGrid, self).__init__( d, l)
+
+        self.bounds = bounds
 
         self.center = [b[0]+(b[1]-b[0])/2 for b in bounds.T]
         self.radius =  [(b[1]-b[0])/2 for b in bounds.T]
@@ -457,7 +459,8 @@ if __name__ == '__main__':
     from dolo.numeric.serial_operations import numdiff2, numdiff1
     
     theta2_0 = np.zeros( (2, sg2.n_points) )
-    vals = testfun(sg2.real_grid)
+    vals = testfun(sg2.grid)
+
     sg2.fit_values(vals)
 #
 #

@@ -22,7 +22,7 @@ def interim_gm( model, substitute_auxiliary, solve_systems, order):
     return [gm,g_fun,f_fun]
 
 
-def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=False, solve_systems=False):
+def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=True, solve_systems=False):
 
     [gm, g_fun, f_fun] = interim_gm(model, substitute_auxiliary, solve_systems, order)
 
@@ -34,39 +34,49 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
     y = y0
     #y = model.solve_for_steady_state(y0)
 
-    sigma = numpy.array( model.covariances ).astype(float)
-    states_ss = [y[model.variables.index(v)] for v in gm['states']]
-    controls_ss = [y[model.variables.index(v)] for v in gm['controls']]
+    sigma = numpy.array( model.read_covariances() ).astype(float)
+    states_ss = numpy.array([y[model.variables.index(v)] for v in gm['states']]).astype(float)
+    controls_ss = numpy.array([y[model.variables.index(v)] for v in gm['controls']]).astype(float)
     shocks_ss = x
 
-    f = f_fun( states_ss + controls_ss + states_ss + controls_ss, parms)
-    g = g_fun( states_ss + controls_ss + shocks_ss, parms)
+    f_args_ss = numpy.concatenate( [states_ss, controls_ss, states_ss, controls_ss] )
+    g_args_ss = numpy.concatenate( [states_ss, controls_ss, shocks_ss] )
+
+    f = f_fun( f_args_ss, parms)
+    g = g_fun( g_args_ss, parms)
 
     if lambda_name:
         epsilon = 0.001
         sigma_index = [p.name for p in model.parameters].index(lambda_name)
         pert_parms = parms.copy()
         pert_parms[sigma_index] += epsilon
-        g_pert = g_fun( states_ss + controls_ss + shocks_ss, pert_parms)
+
+        g_pert = g_fun( g_args_ss, pert_parms)
         sig2 = (g_pert[0] - g[0])/epsilon*2
         sig2_s = (g_pert[1] - g[1])/epsilon*2
         pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s] )
 
     else:
+        g = g_fun( g_args_ss, parms)
         pert_sol = state_perturb(f, g, sigma )
+
+    n_s = len(states_ss)
+    n_c = len(controls_ss)
 
     if order == 1:
         if return_dr:
             S_bar = numpy.array( states_ss )
             X_bar = numpy.array( controls_ss )
             # add transitions of states to the d.r.
+
+
+
             X_s = pert_sol[0]
-            A = g[1][:,:len(states_ss)] + numpy.dot( g[1][:,len(states_ss):len(states_ss+controls_ss)], X_s )
-            B = g[1][:,len(states_ss+controls_ss):]
+            A = g[1][:,:n_s] + numpy.dot( g[1][:,n_s:n_s+n_c], X_s )
+            B = g[1][:,n_s+n_c:]
             dr = CDR([S_bar, X_bar, X_s])
             dr.A = A
             dr.B = B
-
             dr.sigma = sigma
             return dr
         return [controls_ss] + pert_sol
@@ -78,7 +88,13 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
             S_bar = states_ss
             S_bar = numpy.array(S_bar)
             X_bar = numpy.array(X_bar)
-            return CDR([S_bar, X_bar, X_s, X_ss])
+            dr = CDR([S_bar, X_bar, X_s, X_ss])
+            A = g[1][:,:n_s] + numpy.dot( g[1][:,n_s:n_s+n_c], X_s )
+            B = g[1][:,n_s+n_c:]
+            dr.sigma = sigma
+            dr.A = A
+            dr.B = B
+            return dr
         return [X_bar, X_s, X_ss]
 
 
@@ -88,7 +104,9 @@ def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=
         X_s = X_s + X_stt/2
         if return_dr:
             S_bar = states_ss
-            return CDR([S_bar, X_bar, X_s, X_ss, X_sss])
+            dr = CDR([S_bar, X_bar, X_s, X_ss, X_sss])
+            dr.sigma = sigma
+            return dr
         return [X_bar, X_s, X_ss, X_sss]
         
 
@@ -116,7 +134,10 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
         else:
             sdict = {}
             from dolo.misc.misc import timeshift
-            for eq in eq_g['auxiliary']:
+            auxies = list( eq_g['auxiliary'] )
+            if 'auxiliary_2' in eq_g:
+                auxies += list( eq_g['auxiliary_2'] )
+            for eq in  auxies:
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
                 sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
@@ -126,6 +147,19 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
             resp['auxiliaries'] = [v for v in v_g['auxiliary']]
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
             resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+    elif 'auxiliary_2' in eq_g:
+        sdict = {}
+        from dolo.misc.misc import timeshift
+        auxies = eq_g['auxiliary_2']
+        for eq in  auxies:
+            sdict[eq.lhs] = eq.rhs
+            sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+            sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
+        from dolo.misc.calculus import simple_triangular_solve
+        sdict = simple_triangular_solve(sdict)
+        resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
+        resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+
 
     if not allow_future_shocks:
         # future shocks are replaced by 0
@@ -369,3 +403,10 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
             return [X_s,X_ss,X_sss]
         else:
             return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
+
+
+if __name__ == '__main__':
+    from dolo import *
+    model = yaml_import('/home/pablo/Programmation/KumhofRanciere/rbc_solver/rbc.yaml')
+    dr = approximate_controls(model, substitute_auxiliary=True)
+    print dr.X_s
