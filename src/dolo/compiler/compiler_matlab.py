@@ -205,6 +205,7 @@ end
     mod.controls = {controls};
     mod.auxiliaries = {auxiliaries};
     mod.parameters = {parameters};
+    mod.shocks = {shocks};
     mod.s_ss = {s_ss};
     mod.x_ss = {x_ss};
     mod.params = {params_values};
@@ -213,6 +214,7 @@ end
     controls = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in controls])),
     auxiliaries = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in auxiliaries])),
     parameters = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in model.parameters])),
+    shocks = '{{ {} }}'.format(str.join(',', ["'{}'".format(v) for v in model.shocks])),
     s_ss = value_to_mat(s_ss),
     x_ss = value_to_mat(x_ss),
     params_values = value_to_mat(params_values)
