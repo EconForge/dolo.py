@@ -2,34 +2,42 @@ from dolo import *
 import numpy
 from numpy import *
 
-def global_solve(model, bounds=None, initial_dr=None, pert_order=2, smolyak_order=3, T=200, n_s=2, N_e=40, maxit=500, polish=True, memory_hungry=True):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, maxit=500, polish=True, memory_hungry=True, smolyak_order=3, interp_orders=None):
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
     
-    if bounds == None or initial_dr == None:
-        pert_dr = approximate_controls(model, order=pert_order, substitute_auxiliary=True, solve_systems=True)
+    if initial_dr == None:
+        initial_dr = approximate_controls(model, order=pert_order, substitute_auxiliary=True, solve_systems=True)
         
     if bounds == None:
         from dolo.numeric.timeseries import asymptotic_variance
-        
-        Q = asymptotic_variance(pert_dr.A.real, pert_dr.B.real, pert_dr.sigma, T=T)
+        # this will work only if initial_dr is a Taylor expansion
+        Q = asymptotic_variance(initial_dr.A.real, initial_dr.B.real, initial_dr.sigma, T=T)
         
         devs = numpy.sqrt( numpy.diag(Q) )
         bounds  = numpy.row_stack([
-                                   pert_dr.S_bar - devs * n_s,
-                                   pert_dr.S_bar + devs * n_s,
+                                   initial_dr.S_bar - devs * n_s,
+                                   initial_dr.S_bar + devs * n_s,
                                    ])
-        
-    from dolo.numeric.smolyak import SmolyakGrid
-    sg = SmolyakGrid( bounds, smolyak_order )
+
+    if interp_orders == None:
+            interp_orders = [5]*bounds.shape[1]
+    if interp_type == 'smolyak':
+        from dolo.numeric.smolyak import SmolyakGrid
+        sg = SmolyakGrid( bounds, smolyak_order )
+    elif interp_type == 'spline':
+        polish = False
+        from dolo.numeric.interpolation import SplineInterpolation
+        sg = SplineInterpolation( bounds[0,:], bounds[1,:], interp_orders )
+    elif interp_type == 'linear':
+        from dolo.numeric.interpolation import MLinInterpolation
+        sg = MLinInterpolation( bounds[0,:], bounds[1,:], interp_orders )
+
+
     
-    if initial_dr == None:
-        xinit = pert_dr(sg.grid) # initial value on the grid
-        xinit = xinit.real
-        xinit[:2,:] = numpy.maximum(xinit[:2,:],0.01)
-    else:
-        xinit = initial_dr(sg.grid)
-            
+    xinit = initial_dr(sg.grid)
+    xinit = xinit.real  # just in case...
+
     from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3
     gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
     
@@ -39,7 +47,7 @@ def global_solve(model, bounds=None, initial_dr=None, pert_order=2, smolyak_orde
     
     dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50 )
     
-    if polish:
+    if polish: # this will only work with smolyak
         from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3
         
         from dolo.numeric.solver import solver
