@@ -17,6 +17,7 @@ def portfolios_to_deterministic(model,pf_names):
                 model['equations'][i] = neq
 
     print('Warning : initial model changed')
+    model.check()
 
     return model
 
@@ -37,7 +38,7 @@ def solve_portfolio_model(model, pf_names, order=1):
 
 
     pf_parms = [Parameter('K_'+str(i)) for i in range(n_pfs)]
-    pf_dparms = [Parameter('K_'+str(i)+'_'+str(j)) for j in range(n_states) for i in range(n_pfs)]
+    pf_dparms = [[Parameter('K_'+str(i)+'_'+str(j)) for j in range(n_states)] for i in range(n_pfs)]
 
     from sympy import Matrix
 
@@ -119,7 +120,7 @@ def solve_portfolio_model(model, pf_names, order=1):
             for j in range(n_states):
                 model.parameters_values[pf_dparms[i][j]] = dx[i,j]
         if return_dr:
-            dr = approximate_controls(new_model, order=3, return_dr=True)
+            dr = approximate_controls(new_model, order=2, return_dr=True)
             return dr
         else:
             [X_bar, X_s, X_ss, X_sss] = approximate_controls(new_model, order=3, return_dr=False)
@@ -150,5 +151,6 @@ def solve_portfolio_model(model, pf_names, order=1):
 
 if __name__ == '__main__':
     from dolo import *
-    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/portfolios.yaml')
+    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy_with_pf_pert.yaml')
     sol = solve_portfolio_model(model,['x_1','x_2'])
+    print(sol.X_s)

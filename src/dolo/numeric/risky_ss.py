@@ -13,9 +13,9 @@ numpy.set_printoptions(precision=3, suppress=3)
 import numpy as np
 
 
-def solve_model_around_risky_ss(filename, verbose=False, return_dr=True, initial_sol=None):
+def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_sol=None):
 
-    model = yaml_import(filename)
+    #model = yaml_import(filename)
 
     if initial_sol == None:
         if 'model_type' in model and model['model_type'] == 'portfolios':
@@ -50,7 +50,7 @@ def solve_model_around_risky_ss(filename, verbose=False, return_dr=True, initial
     X_bar_1 = X_bar
     X_s_1 = X_s
 
-    model = yaml_import(filename)
+    #model = yaml_import(filename)
 
     #from dolo.symbolic.symbolic import Parameter
 
@@ -272,5 +272,5 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 #[S_bar, X_bar, X_s, P] = solve_model_around_risky_ss(filename)
 if __name__ == '__main__':
     #fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy.yaml'
-    fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/portfolios.yaml'
+    fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy_with_pf.yaml'
     sol = solve_model_around_risky_ss(fname, verbose=True)
