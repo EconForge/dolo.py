@@ -22,6 +22,33 @@ class RectangularDomain:
         self.nodes = nodes
         self.grid = np.row_stack(mesh)
 
+    def find_cell(self, x):
+        self.domain = self
+        inf = self.smin
+        sup = self.smax
+        indices = []
+        for i in range(self.domain.d):
+            xi =(x[i,:] - inf[i])/(sup[i]-inf[i])
+            ni = numpy.floor( xi*self.orders[i] )
+            ni = numpy.minimum(numpy.maximum(ni,0),self.orders[i]-1)
+            indices.append(ni)
+        indices = np.row_stack(indices)
+        return indices
+
+    def compute_density(self, x):
+        cell_indices = self.find_cell(x)
+        keep = numpy.isfinite( numpy.sum(cell_indices, axis=1) )
+        cell_indices = cell_indices[keep,:]
+        npoints = cell_indices.shape[1]
+        counts = numpy.zeros(self.orders, dtype=numpy.int)
+
+        #print cell_indices
+        for j in range(cell_indices.shape[1]):
+            ind = tuple( cell_indices[:,j] )
+            counts[ind] += 1
+        dens = counts/npoints
+        return dens
+
 class TriangulatedDomain:
     def __init__(self,points):
         from scipy.spatial import Delaunay
@@ -225,46 +252,28 @@ class LinearTriangulation:
 
         return [resp,dresp]
 
-# non vectorized version:
-#def interp(delaunay, zz):
-#    n_p = zz.shape[0]
-#    n_x = zz.shape[1]
-#    resp = numpy.zeros(n_p)
-#    dresp = numpy.zeros( (n_p, n_x) )
-#    for i in range(n_p):
-#        z = zz[i,:]
-#        i_v = delaunay.find_simplex(z)
-#        if i_v != -1:
-#            Tinv = delaunay.transform[i_v,:ndim,:ndim]
-#            r = delaunay.transform[i_v,ndim,:]
-#            ind = delaunay.vertices[i_v]
-#            c = numpy.dot(Tinv, z - r)
-#            values_on_vertices = values_on_points[ind]
-#            D = values_on_vertices[:-1] - values_on_vertices[-1]
-#            interp_val = numpy.dot(c, D) + values_on_vertices[-1]
-#            resp[i] = interp_val
-#            dresp[i,:] = numpy.dot( D, Tinv)
-#    return [resp,dresp.T]
+
 
 
 class MLinInterpolation:
+    # piecewise linear interpolation
 
     grid = None
     __values__ = None
 
-    def __init__(self, orders, smin, smax):
+    def __init__(self, smin, smax, orders):
         nodes = [np.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))]
         grid = cartesian(nodes).T
         self.grid = grid
         self.__nodes__ = nodes
         pass
 
-    def set_values(self,val):
+    def fit_values(self,val):
         self.__values__ = val
         self.__coeffs__ = val ##
         print self.__coeffs__
 
-    def interpolate(self, points, with_derivatives=False):
+    def interpolate(self, points, with_derivatives=True):
 
         eps = 1e-6
         points_T = points.T
