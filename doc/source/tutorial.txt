@@ -1,0 +1,4 @@
+Quick tutorial
+==============
+
+Is it how I can insert formulas like :math:`\alpha > \beta`

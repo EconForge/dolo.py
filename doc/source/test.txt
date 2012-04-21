@@ -1,0 +1,5 @@
+Testing function documentation
+==============================
+
+.. automodule:: dolo.compiler.global_solution
+   :members:
