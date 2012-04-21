@@ -39,14 +39,13 @@ class  TestInterpolation(unittest.TestCase):
         interpolated_values_simplex = interp_simplex(recdomain_ref.grid).reshape(orders_ref)
         interpolated_values_smolyak = interp_smol(recdomain_ref.grid).reshape(orders_ref)
 
-        #print numpy.row_stack([true_values,interpolated_values_spline,interpolated_values_smolyak]).T
-
-        from mayavi import mlab
-        mlab.figure(bgcolor=(1.0,1.0,1.0))
-        #mlab.surf(abs(interpolated_values_smolyak-true_values),warp_scale="auto")
-#        mlab.surf(abs(interpolated_values_spline-true_values),warp_scale="auto")
-        mlab.surf(abs(interpolated_values_simplex-true_values),warp_scale="auto")
-        mlab.colorbar()
+#
+#        from mayavi import mlab
+#        mlab.figure(bgcolor=(1.0,1.0,1.0))
+#        #mlab.surf(abs(interpolated_values_smolyak-true_values),warp_scale="auto")
+##        mlab.surf(abs(interpolated_values_spline-true_values),warp_scale="auto")
+#        mlab.surf(abs(interpolated_values_simplex-true_values),warp_scale="auto")
+#        mlab.colorbar()
         
 if __name__ == '__main__':
     unittest.main()

@@ -110,6 +110,18 @@ from dolo.compiler.compiler_mirfac import eqdiff
 
 
 def compile_function_2(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
+    """
+
+    :param equations: list of sympy expressions
+    :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
+    :param args_names: list of strings (['a','b']
+    :param parms: list of symbols to be used as parameters
+    :param fname: name of the python function to be generated
+    :param diff: include symbolic derivates in generated function
+    :param vectorize: arguments are vectorized (not parameters)
+    :param return_function: a python function f(a,b,p) where p is a vector of parameters and a, b, arrays
+    :return:
+    """
 
     if vectorize:
         template = '{0}[{1},...]'
