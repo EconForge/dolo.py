@@ -40,7 +40,11 @@ Imports the content of a modfile into the current interpreter scope
     context = dict(context)
 
     # add some common functions
-    for f in [sympy.log, sympy.exp, sympy.atan, sympy.pi]:
+    for f in [sympy.log, sympy.exp,
+              sympy.sin, sympy.cos, sympy.tan,
+              sympy.asin, sympy.acos, sympy.atan,
+              sympy.sinh, sympy.cosh, sympy.tanh,
+              sympy.pi]:
         context[str(f)] = f
     context['sqrt'] = sympy.sqrt
 
