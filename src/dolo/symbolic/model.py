@@ -297,6 +297,15 @@ def compute_residuals(model):
         from collections import OrderedDict as odict
         residuals = odict()
         for gname,geqs in model['equations_groups'].iteritems():
+            l = []
+            for eq in geqs:
+                t = eq.gap.subs(dd)
+                try:
+                    t = float(t)
+                except Exception as e:
+                    print('Failed computation of residuals in :\n'+str(eq))
+                    print('Impossible to evaluate : \n'+str(t))
+                    raise e 
             residuals[ gname ] = [ float( eq.gap.subs( dd ) ) for eq in geqs]
         return residuals
     else:

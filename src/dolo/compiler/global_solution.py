@@ -251,6 +251,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
             return [x0, x]
 
     if it == maxit:
+        import warnings
         warnings.warn(UserWarning("Maximum number of iterations reached"))
 
 
