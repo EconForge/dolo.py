@@ -51,7 +51,7 @@ class PythonCompiler(Compiler):
 # Model equations
 #
     import numpy as np
-    from numpy import exp,log
+    from numpy import exp,log, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh
 
     it_ = 1 # should remove this !
 
