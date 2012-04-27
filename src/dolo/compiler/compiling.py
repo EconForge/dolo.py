@@ -35,6 +35,11 @@ def compile_function(equations, args, parms, max_order, return_function=True):
 #
     import numpy as np
     from numpy import exp, log
+    from numpy import sin, cos, tan
+    from numpy import arcsin as asin
+    from numpy import arccos as acos
+    from numpy import arctan as atan
+    from numpy import sinh, cosh, tanh
 
 {preamble}
 
@@ -144,7 +149,13 @@ def compile_function_2(equations, args_list, args_names, parms, fname='anonymous
     text = '''
 def {fname}({args_names}, {param_names}, derivs=True):
 
+    import numpy as np
     from numpy import exp, log
+    from numpy import sin, cos, tan
+    from numpy import arcsin as asin
+    from numpy import arccos as acos
+    from numpy import arctan as atan
+    from numpy import sinh, cosh, tanh
 
     n = {var}.shape[-1]
 
