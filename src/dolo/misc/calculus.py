@@ -79,6 +79,8 @@ def simple_triangular_solve(sdict, l=0):
         
     return simple_triangular_solve(bdict,l+1)
 
+from dolo.misc.triangular_solver import solve_triangular_system as simple_triangular_solve
+
 def construct_4_blocks_matrix(blocks):
     '''construct block matrix line by line
     input : [[A1,A2],[A3,A4]] 
