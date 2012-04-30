@@ -2,7 +2,8 @@ from dolo import *
 import numpy
 from numpy import *
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, maxit=500, polish=True, memory_hungry=True, smolyak_order=3, interp_orders=None):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None):
+
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
     
@@ -39,13 +40,18 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     xinit = xinit.real  # just in case...
 
     from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3
-    gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
-    
+    if compiler == 'theano':
+        from dolo.compiler.cmodel_theano import CModel
+        cm = CModel(model)
+        gc = cm.as_type('fg')
+    else:
+        gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
+
     from dolo.numeric.quantization import quantization_weights
     # number of shocks
     [weights,epsilons] = quantization_weights(N_e, sigma)
-    
-    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50 )
+
+    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff )
     
     if polish: # this will only work with smolyak
         from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3

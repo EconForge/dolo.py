@@ -58,9 +58,9 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     n_x = xx.shape[0]
     #    xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
-    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms)
+    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms, derivs=True)
     [XX, XX_SS, XX_t] = dr.interpolate(SS, with_theta_deriv=True)
-    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms)
+    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms, derivs=True)
 
 
     res = np.zeros( (n_x,n_g) )
@@ -99,9 +99,9 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     for i in range(n_draws):
         tt = [epsilons[:,i:i+1]]*n_g
         e = numpy.column_stack(tt)
-        [S, S_s, S_x, S_e] = g(s, x, e, parms)
+        [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
         [X, X_S, X_t] = dr.interpolate(S, with_theta_deriv=True)
-        [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms)
+        [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms, derivs=True)
         res += weights[i] * F
         S_theta = stm(S_x, x_theta)
         X_theta = stm(X_S, S_theta) + X_t
@@ -117,13 +117,13 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
     if with_derivatives:
-        [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms)[:3]
+        [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms,derivs=True)[:3]
         [xxnext, xxold_ss] = dr.interpolate(ssnext)[:2]
         if x_bounds:
             [lb,ub] = x_bounds(ssnext, parms)
             xxnext = np.maximum(np.minimum(ub,xxnext),lb)
 
-        [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms)[:5]
+        [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms, derivs=True)[:5]
         dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
 
         res = np.zeros( (n_x,n_g) )
@@ -185,18 +185,21 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, options={}, serial_grid=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, options={}, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
 
     from dolo.numeric.solver import solver
     from dolo.numeric.newton import newton_solver
 
     if serial_grid:
-        #fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)[0]
-        #dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
-        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
+        if numdiff == True:
+            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)[0]
+            #dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
+        else:
+            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
     else:
         fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False, with_derivatives=False)[0]
         dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False)[1]
+
 
     #
     tol = 1e-8
@@ -230,7 +233,10 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         interp.fit_values(x0)
 
         if serial_grid:
-            [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, backsteps=backsteps, maxit=nmaxit)
+            if numdiff:
+                [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, numdiff=True, backsteps=backsteps, maxit=nmaxit)
+            else:
+                [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, backsteps=backsteps, maxit=nmaxit)
         else:
             x = solver(fun, x0, lb=lb, ub=ub, method=method, jac=dfun, verbose=verbit, options=options)
             nit = 0

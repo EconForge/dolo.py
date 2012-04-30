@@ -44,9 +44,9 @@ class CModel2:
             raise Exception('Model of type {0} cannot be cast to model of type {1}'.format(self.model_type, model_type))
         return
 
-    def g(self,s,x,e,p,derivs=True):
+    def g(self,s,x,a,e,p,derivs=True):
         if not derivs:
-            a = self.__a(s,x,p,derivs=False)[0]
+#            a = self.__a(s,x,p,derivs=False)[0]
             return self.__g(s,x,a,e,p,derivs=False)
         else:
             [a,a_s,a_x] = self.__a(s,x,p,derivs=True)

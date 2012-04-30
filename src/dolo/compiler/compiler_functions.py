@@ -1,8 +1,8 @@
 from dolo.numeric.perturbations_to_states import simple_global_representation
 from dolo.compiler.compiling import compile_function_2
 
-
 def model_to_fg(model,substitute_auxiliary=False, solve_systems=False):
+
     sgm = simple_global_representation(model,substitute_auxiliary=substitute_auxiliary, solve_systems=solve_systems)
 
     controls = sgm['controls']
@@ -31,6 +31,8 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False):
 
 def model_to_fga(model):
 
+    from dolo.misc.calculus import simple_triangular_solve
+
     from dolo.misc.misc import timeshift
 
     eq_g = model['equations_groups']
@@ -49,7 +51,6 @@ def model_to_fga(model):
         dd = {eq.lhs: eq.rhs for eq in aux2_eqs}
         dd.update( { eq.lhs(1): timeshift(eq.rhs,1) for eq in aux2_eqs } )
         dd.update( { eq.lhs(-1): timeshift(eq.rhs,-1) for eq in aux2_eqs } )
-        from dolo.misc.calculus import simple_triangular_solve
         ds = simple_triangular_solve(dd)
         
         f_eqs =  [eq.subs(ds) for eq in f_eqs]

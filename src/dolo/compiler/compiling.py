@@ -214,3 +214,5 @@ def {fname}({args_names}, {param_names}, derivs=True):
         return l[fname]
     else:
         return text
+
+#from dolo.compiler.compiling_very_fast import compile_function_2
