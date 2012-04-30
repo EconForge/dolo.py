@@ -155,6 +155,12 @@ class TSymbol(sympy.Symbol):
 
         return resp
 
+    def safe_name(self):
+        date_string = str(self.date)
+        date_string = date_string.replace('-','_')
+
+        return '_{}_{}'.format(date_string, self.name)
+
 class Variable(TSymbol):
     """
     Define a new variable with : x = Variable('x')
