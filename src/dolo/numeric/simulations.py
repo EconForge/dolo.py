@@ -4,6 +4,8 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
 
     '''simulates series for a compiled model'''
 
+    gc = gc.as_type('fga')
+
     if n_exp ==0:
         irf = True
         n_exp = 1
@@ -17,8 +19,9 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
         gc = GlobalCompiler2(model)
         [y,x,parms] = model.read_calibration()
 
+    if parms == None:
+        parms = gc.model.read_calibration()[2]
 
-    g = gc.g
 
     s0 = numpy.atleast_2d(s0.flatten()).T
 
@@ -46,8 +49,10 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
         x_simul[:,:,i] = x
 
         a = gc.a(s,x,parms,derivs=False)[0]
+
         a_simul[:,:,i] = a
-        ss = g(s,x,epsilons,parms,derivs=False)[0]
+
+        ss = gc.g(s,x,a,epsilons,parms,derivs=False)[0]
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
@@ -63,11 +68,13 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
     if irf:
         [s_simul, x_simul, a_simul] = [ e[:,0,:] for e in [s_simul, x_simul, a_simul] ]
 
-    return [s_simul, x_simul, a_simul]
+    return numpy.row_stack( [s_simul, x_simul, a_simul] )
 
 def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard=False):
 
     '''simulates series for a compiled model'''
+
+    gc = gc.as_type('fg')
 
     if n_exp ==0:
         irf = True
@@ -124,7 +131,7 @@ def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, see
     if irf:
         [s_simul, x_simul] = [ e[:,0,:] for e in [s_simul, x_simul] ]
 
-    return [s_simul, x_simul]
+    return row_stack([s_simul, x_simul])
 
 
 if __name__ == '__main__':
