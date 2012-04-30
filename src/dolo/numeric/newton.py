@@ -1,6 +1,6 @@
 import numpy
 
-def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
+def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10, numdiff=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -11,9 +11,19 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10):
     from dolo.numeric.serial_operations import serial_multiplication as stv, serial_solve
     err = 1
     tol = 1e-8
+    eps = 1e-8
     it = 0
     while err > tol and it <= maxit:
-        [res,dres] = f(x0)
+        if not numdiff:
+            [res,dres] = f(x0)
+        else:
+            res = f(x0)
+            dres = numpy.zeros( (res.shape[0], x0.shape[0], x0.shape[1]) )
+            for i in range(x0.shape[0]):
+                xi = x0.copy()
+                xi[i,:] += eps
+                resi = f(xi)
+                dres[:,i,:] = (resi - res)/eps
 #	res = f(x0)
 #        dres = df(x0)
         fnorm = abs(res).max()  # suboptimal
