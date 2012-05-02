@@ -53,15 +53,3 @@ calibration:
 
     covariances: |
       [[ 0.01 ]]
-
-############################
-
-approximation_space:
-
-    smin: [1.0, 0.6]
-    smax: [5.0, 1.4]
-    orders: [10, 10]
-
-shocks:
-    type: optimal_quantization
-    N: 20

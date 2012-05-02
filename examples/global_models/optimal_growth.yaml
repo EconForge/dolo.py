@@ -13,9 +13,6 @@ declarations:
 
 equations:
 
-    arbitrage:
-        - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  = 1     |   0 <= c <= w * dumb
-        - c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf <=  Welf <= inf
 
     transition:
         - A = 1 + rho_A*(A(-1)-1) + e_A
