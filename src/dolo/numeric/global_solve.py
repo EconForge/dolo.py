@@ -2,6 +2,8 @@ from dolo import *
 import numpy
 from numpy import *
 
+from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
+
 def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None):
 
     [y,x,parms] = model.read_calibration()
@@ -39,7 +41,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     xinit = initial_dr(sg.grid)
     xinit = xinit.real  # just in case...
 
-    from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3
+    from dolo.compiler.compiler_global import GlobalCompiler
+    from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals_3
     if compiler == 'theano':
         from dolo.compiler.cmodel_theano import CModel
         cm = CModel(model)
@@ -51,18 +54,19 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     # number of shocks
     [weights,epsilons] = quantization_weights(N_e, sigma)
 
+    from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
     dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff )
     
     if polish: # this will only work with smolyak
-        from dolo.compiler.compiler_global import GlobalCompiler, time_iteration, stochastic_residuals_2, stochastic_residuals_3
+        from dolo.compiler.compiler_global import GlobalCompiler
         
         from dolo.numeric.solver import solver
         xinit = dr(dr.grid)
         dr.fit_values(xinit)
         shape = dr.theta.shape
         theta_0 = dr.theta.copy().flatten()
-        if memory_hungry:
-            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)[0]
+        if not memory_hungry:
+            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
             dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape)[1]
         else :
             fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
@@ -70,6 +74,6 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         
         theta = solver(fobj, theta_0, jac=dfobj, verbose=True)
         dr.theta = theta.reshape(shape)
-    
+
     return dr
     

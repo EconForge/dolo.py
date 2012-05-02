@@ -139,13 +139,24 @@ def numdiff(f,x0,f0=None):
     q = x0.shape[0]
     N = x0.shape[1]
 
-    # could be made more efficiently
-    df = numpy.zeros((p,q,N))
+    df = numpy.zeros( (p,q,N) )
     for i in range(q):
         x = x0.copy()
         x[i,:] += eps
         ff = f(x)
         df[:,i,:] = (ff - f0)/eps
+
+    # could be made more efficiently by making only one call to f
+    # problem: the following doesn't work if f expects a specific dimension for x
+    #    x = numpy.column_stack( [x0]*q )
+    #    for i in range(q):
+    #        x[i, i*N:(i+1)*N] += eps
+    #
+    #    ff = f(x)
+    #    ff = ff.reshape(p,q,N)
+    #    for i in range(q):
+    #        df[:, i, :] = (ff[:, i, :] - f0)/eps
+
 
     return df
 
@@ -156,15 +167,15 @@ if __name__ == '__main__':
 
     from dolo import yaml_import, global_solve
     model = yaml_import( '../../../examples/global_models/rbc.yaml')
-    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_5/code/models/integration_A.yaml')
+#    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_5/code/models/integration_A.yaml')
 
 #    cmodel = CModel(model)
-    maxit = 2
+    maxit = 600
 
     dr_smol_1 = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False)
-    dr_smol_1b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False)
+#    dr_smol_1b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False)
     dr_smol_2 = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, compiler='theano')
-    dr_smol_2b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False, compiler='theano')
+#    dr_smol_2b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False, compiler='theano')
 #
 #    from dolo.compiler.compiler_global import GlobalCompiler2
 #    gc = GlobalCompiler2(model)

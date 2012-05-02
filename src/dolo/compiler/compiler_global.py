@@ -8,12 +8,19 @@ class CModel:
     model_type = 'fg'
 
     def __init__(self,model,substitute_auxiliary=False, solve_systems=False):
+
         self.model = model
 
         [f,g] = model_to_fg(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems)
         self.f = f
         self.g = g
 
+    def g(self,s,x,e,p):
+        print('hi')
+        return self.__g__(s,x,e,p)
+
+    def f(self,s,x,S,X,e,p):
+        return self.__f__(s,x,S,X,e,p)
 
     def as_type(self,model_type):
         if model_type == 'fg':
@@ -82,4 +89,4 @@ class CModel2:
 GlobalCompiler = CModel
 GlobalCompiler2 = CModel2
 
-from global_solution import *
+#from global_solution import *

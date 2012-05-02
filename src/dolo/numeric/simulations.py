@@ -12,12 +12,12 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
     else:
         irf = False
 
-    from dolo.symbolic.model import Model
-    if isinstance(gc,Model):
-        from dolo.compiler.compiler_global import GlobalCompiler2
-        model = gc
-        gc = GlobalCompiler2(model)
-        [y,x,parms] = model.read_calibration()
+#    from dolo.symbolic.model import Model
+#    if isinstance(gc,Model):
+#        from dolo.compiler.compiler_global import GlobalCompiler2
+#        model = gc
+#        gc = GlobalCompiler2(model)
+#        [y,x,parms] = model.read_calibration()
 
     if parms == None:
         parms = gc.model.read_calibration()[2]
@@ -58,17 +58,21 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
             s_simul[:,:,i+1] = ss
     from numpy import any,isnan,all
 
+    simul = numpy.row_stack( [s_simul, x_simul, a_simul] )
+
+    if irf:
+        simul = simul[:,0,:]
+        return simul
+
     if discard:
-        iA = -isnan(a_simul)
+        iA = -isnan(simul)
         valid = all( all( iA, axis=0 ), axis=1 )
-        [s_simul, x_simul, a_simul] = [ e[:,valid,:] for e in [s_simul, x_simul, a_simul] ]
-        n_kept = s_simul.shape[1]
+        simul = simul[:,valid,:]
+        n_kept = simul.shape[1]
         if n_exp > n_kept:
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
-    if irf:
-        [s_simul, x_simul, a_simul] = [ e[:,0,:] for e in [s_simul, x_simul, a_simul] ]
 
-    return numpy.row_stack( [s_simul, x_simul, a_simul] )
+    return simul
 
 def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard=False):
 
@@ -89,8 +93,9 @@ def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, see
         gc = GlobalCompiler(model)
         [y,x,parms] = model.read_calibration()
 
+    if parms == None:
+        parms = gc.model.read_calibration()[2]
 
-    g = gc.g
 
     s0 = numpy.atleast_2d(s0.flatten()).T
 
@@ -114,24 +119,26 @@ def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, see
         x = dr(s)
         x_simul[:,:,i] = x
 
-        ss = g(s,x,epsilons,parms,derivs=False)[0]
+        ss = gc.g(s,x,epsilons,parms,derivs=False)[0]
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
 
     from numpy import any,isnan,all
 
+    simul = numpy.row_stack([s_simul, x_simul])
+
     if discard:
         iA = -isnan(x_simul)
         valid = all( all( iA, axis=0 ), axis=1 )
-        [s_simul, x_simul] = [ e[:,valid,:] for e in [s_simul, x_simul] ]
+        simul = simul[:,valid,:]
         n_kept = s_simul.shape[1]
         if n_exp > n_kept:
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
     if irf:
-        [s_simul, x_simul] = [ e[:,0,:] for e in [s_simul, x_simul] ]
+        simul = simul[:,0,:]
 
-    return row_stack([s_simul, x_simul])
+    return simul
 
 
 if __name__ == '__main__':

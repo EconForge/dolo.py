@@ -47,6 +47,7 @@ def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
 
 
 def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+    #memory_hungry version
 
     n_t = len(theta)
     dr.theta = theta.copy().reshape(shape)
@@ -80,34 +81,48 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     return [res,dres.swapaxes(1,2)]
 
 def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
-
     import numpy
     n_t = len(theta)
     dr.theta = theta.copy().reshape(shape)
     #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
     n_draws = epsilons.shape[1]
     [n_s,n_g] = s.shape
-    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True) # should repeat theta instead
-    n_x = x.shape[0]
+
     #    xx = np.tile(x, (1,n_draws))
     #ee = np.repeat(epsilons, n_g , axis=1)
     #
     from dolo.numeric.serial_operations import serial_multiplication as stm
     #
-    res = np.zeros( (n_x,n_g) )
-    dres = np.zeros( (n_x,n_t,n_g))
-    for i in range(n_draws):
-        tt = [epsilons[:,i:i+1]]*n_g
-        e = numpy.column_stack(tt)
-        [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
-        [X, X_S, X_t] = dr.interpolate(S, with_theta_deriv=True)
-        [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms, derivs=True)
-        res += weights[i] * F
-        S_theta = stm(S_x, x_theta)
-        X_theta = stm(X_S, S_theta) + X_t
-        dF = stm(F_x, x_theta) + stm( F_S, S_theta) + stm( F_X , X_theta)
-        dres += weights[i] * dF
-    return [res,dres.swapaxes(1,2)]
+
+    if no_deriv:
+        x = dr.interpolate(s, with_theta_deriv=False, with_derivative=False) # should repeat theta instead
+        n_x = x.shape[0]
+        res = np.zeros( (n_x,n_g) )
+        for i in range(n_draws):
+            tt = [epsilons[:,i:i+1]]*n_g
+            e = numpy.column_stack(tt)
+            [S] = g(s, x, e, parms, derivs=False)
+            X = dr.interpolate(S, with_theta_deriv=False, with_derivative=False)
+            [F] = f(s, x, S, X, e, parms, derivs=False)
+            res += weights[i] * F
+        return res
+    else:
+        [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True) # should repeat theta instead
+        n_x = x.shape[0]
+        res = np.zeros( (n_x,n_g) )
+        dres = np.zeros( (n_x,n_t,n_g))
+        for i in range(n_draws):
+            tt = [epsilons[:,i:i+1]]*n_g
+            e = numpy.column_stack(tt)
+            [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
+            [X, X_S, X_t] = dr.interpolate(S, with_theta_deriv=True)
+            [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms, derivs=True)
+            res += weights[i] * F
+            S_theta = stm(S_x, x_theta)
+            X_theta = stm(X_S, S_theta) + X_t
+            dF = stm(F_x, x_theta) + stm( F_S, S_theta) + stm( F_X , X_theta)
+            dres += weights[i] * dF
+        return [res,dres.swapaxes(1,2)]
 
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
     n_draws = epsilons.shape[1]
