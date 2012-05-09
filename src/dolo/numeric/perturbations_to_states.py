@@ -219,7 +219,10 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     ])
 
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
-    
+
+    Q = Q.real # is it really necessary ?
+    Z = Z.real
+
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
     Z21 = Z[n_s:,:n_s]
@@ -252,6 +255,8 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     g_xx = g2[:,n_s:n_v,n_s:n_v]
 
     X_s = C
+
+
 
     V1_3 = g_s + dot(g_x,X_s)
     V1 = np.row_stack([
