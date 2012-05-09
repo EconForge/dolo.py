@@ -1,6 +1,6 @@
 import numpy
 
-def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10, numdiff=False):
+def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, numdiff=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -11,7 +11,7 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10, 
     from dolo.numeric.serial_operations import serial_multiplication as stv, serial_solve
     err = 1
     tol = 1e-8
-    eps = 1e-8
+    eps = 1e-5
     it = 0
     while err > tol and it <= maxit:
         if not numdiff:
@@ -29,26 +29,26 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=10, 
         fnorm = abs(res).max()  # suboptimal
 
         dx = - serial_solve(dres,res)
+        x = x0 + dx
 
-#        x = x0 + dx
+#        for i in range(backsteps):
+#            xx = x0 + dx/(2**i)
+#            if not ub==None:
+#                xx = numpy.maximum(xx, lb)
+#                xx = numpy.minimum(xx, ub)
+#            new_res = f(xx)[0]
+#            new_fnorm = abs(new_res).max()
+#            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
+#                x = xx
+#                break
+#            if i == backsteps -1:
+#                if numpy.isfinite(new_fnorm):
+#                    x = xx
+#                else:
+#                    raise Exception('Non finite value found')
 
-        for i in range(backsteps):
-            xx = x0 + dx/(2**i)
-            if not ub==None:
-                xx = numpy.maximum(xx, lb)
-                xx = numpy.minimum(xx, ub)
-            new_res = f(xx)[0]
-            new_fnorm = abs(new_res).max()
-            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
-                x = xx
-                break
-            if i == backsteps -1:
-                if numpy.isfinite(new_fnorm):
-                    x = xx
-                else:
-                    raise Exception('Non finite value found')
-
-        err = abs(dx).max()
+        #err = abs(dx).max()
+        err = abs(res).max()
 
         x0 = x
         it += 1
