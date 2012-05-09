@@ -162,11 +162,24 @@ def serial_inversion(M):
 
 
 
-
 try:
     from dolo.numeric.serial_operations_c import serial_multiplication
 except:
     pass
+
+
+#try:
+import pyximport
+pyximport.install()
+from dolo.numeric.serial_operations_cython import serial_dot_21, serial_dot_11
+#except:
+#    pass
+
+#
+#try:
+#    from dolo.numeric.serial_operations_c import serial_multiplication
+#except:
+#    pass
 
 
 strange_tensor_multiplication_vector = serial_multiplication_vector
