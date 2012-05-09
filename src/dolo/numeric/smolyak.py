@@ -84,7 +84,7 @@ class SmolyakBasic(object):
         self.bounds = np.row_stack([(0,1)]*d)
 
     def __call__(self,x):
-        return self.interpolate(x)[0]
+        return self.interpolate(x)
 
     def interpolate(self, x, with_derivative=True, with_theta_deriv=False):
         # points in x must be stacked horizontally
@@ -232,7 +232,7 @@ class SmolyakGrid(SmolyakBasic):
         Pinv = self.Pinv
         return np.dot(Pinv,y-c)
 
-    def interpolate(self, y, with_derivative=True, with_theta_deriv=False):
+    def interpolate(self, y, with_derivative=False, with_theta_deriv=False):
         x = self.B(y)
         res = super(SmolyakGrid, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv)
         if with_derivative:

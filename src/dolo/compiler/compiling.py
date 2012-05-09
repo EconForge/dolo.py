@@ -147,7 +147,7 @@ def compile_function_2(equations, args_list, args_names, parms, fname='anonymous
 
 
     text = '''
-def {fname}({args_names}, {param_names}, derivs=True):
+def {fname}({args_names}, {param_names}, derivs=False):
 
     import numpy as np
     from numpy import exp, log
@@ -186,7 +186,7 @@ def {fname}({args_names}, {param_names}, derivs=True):
     content = write_eqs(equations)
     content += '''
     if not derivs:
-        return [val]
+        return val
     '''
 
 

@@ -16,7 +16,7 @@ class RectangularDomain:
         if len(orders) == 1:
             mesh = nodes
         else:
-            mesh = np.meshgrid(*nodes)
+            mesh = np.meshgrid(*nodes)   # works only in 2d
             mesh = [m.flatten() for m in mesh]
     #        mesh.reverse()
         self.nodes = nodes

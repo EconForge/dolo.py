@@ -15,12 +15,11 @@ class CModel:
         self.f = f
         self.g = g
 
-    def g(self,s,x,e,p):
-        print('hi')
-        return self.__g__(s,x,e,p)
+    def g(self,s,x,e,p, derivs=False):
+        return self.__g__(s,x,e,p,derivs=derivs)
 
-    def f(self,s,x,S,X,e,p):
-        return self.__f__(s,x,S,X,e,p)
+    def f(self,s,x,S,X,e,p,derivs=False):
+        return self.__f__(s,x,S,X,e,p,derivs=derivs)
 
     def as_type(self,model_type):
         if model_type == 'fg':
@@ -51,7 +50,7 @@ class CModel2:
             raise Exception('Model of type {0} cannot be cast to model of type {1}'.format(self.model_type, model_type))
         return
 
-    def g(self,s,x,a,e,p,derivs=True):
+    def g(self,s,x,a,e,p,derivs=False):
         if not derivs:
 #            a = self.__a(s,x,p,derivs=False)[0]
             return self.__g(s,x,a,e,p,derivs=False)
@@ -64,13 +63,17 @@ class CModel2:
             G_e = g_e
             return [G,G_s,G_x,G_e]
 
-    def a(self,s,x,p,derivs=True):
-        return self.__a(s,x,p,derivs=derivs)
-
-    def f(self, s, x, snext, xnext, e, p, derivs=True):
+    def a(self,s,x,p,derivs=False):
         if not derivs:
-            a = self.__a(s,x,p,derivs=False)[0]
-            anext = self.__a(snext,xnext,p,derivs=False)[0]
+            return self.__a(s,x,p,derivs=False)
+        else:
+            return self.__a(s,x,p,derivs=True)
+
+
+    def f(self, s, x, snext, xnext, a, anext, e, p, derivs=False):
+        if not derivs:
+#            a = self.__a(s,x,p,derivs=False)[0]
+#            anext = self.__a(snext,xnext,p,derivs=False)[0]
             return self.__f(s,x,snext,xnext,a,anext,e,p,derivs=False)
         else:
             [a,a_s,a_x] = self.__a(s,x,p,derivs=True)

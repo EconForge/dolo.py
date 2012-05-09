@@ -121,7 +121,7 @@ def test():
 
 {computations}
 
-    f = function( [{args}], [{vars}])
+    f = function( [{args}], [{vars}],mode='FAST_RUN',on_unused_input='ignore')
 
     return f
     """
@@ -200,7 +200,7 @@ def test():
 
 {computations}
 
-    f = function([{args}], [{vars}],mode='FAST_RUN')
+    f = function([{args}], [{vars}],mode='FAST_RUN',on_unused_input='ignore')
 
     return f
     """

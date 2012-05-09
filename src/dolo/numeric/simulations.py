@@ -26,7 +26,7 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
     s0 = numpy.atleast_2d(s0.flatten()).T
 
     x0 = dr(s0)
-    a0 = gc.a(s0,x0, parms, derivs=False)[0]
+    a0 = gc.a(s0,x0, parms)
 
     s_simul = numpy.zeros( (s0.shape[0],n_exp,horizon) )
     x_simul = numpy.zeros( (x0.shape[0],n_exp,horizon) )
@@ -48,11 +48,11 @@ def simulate(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard
         x = dr(s)
         x_simul[:,:,i] = x
 
-        a = gc.a(s,x,parms,derivs=False)[0]
+        a = gc.a(s,x,parms)
 
         a_simul[:,:,i] = a
 
-        ss = gc.g(s,x,a,epsilons,parms,derivs=False)[0]
+        ss = gc.g(s,x,a,epsilons,parms)
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
@@ -119,7 +119,7 @@ def simulate_without_aux(gc, dr, s0, sigma, n_exp=0, horizon=40, parms=None, see
         x = dr(s)
         x_simul[:,:,i] = x
 
-        ss = gc.g(s,x,epsilons,parms,derivs=False)[0]
+        ss = gc.g(s,x,epsilons,parms)
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss

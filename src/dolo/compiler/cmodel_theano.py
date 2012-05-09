@@ -76,17 +76,17 @@ class CModel:
     def f(self,s,x,S,X,a,A,E,p, derivs=False):
         res = self.__f_theano__(s,x,S,X,a,A,E,p)
         res = numpy.row_stack(res)
-        return [res]
+        return res
 
     def g(self,s,x,a,e,p, derivs=False):
         res = self.__g_theano__(s,x,a,e,p)
         res = numpy.row_stack(res)
-        return [res]
+        return res
 
     def a(self,s,x,p, derivs=False):
         res = self.__a_theano__(s,x,p)
         res = numpy.row_stack(res)
-        return [res]
+        return res
 
 
 class CModel_fg:
@@ -99,31 +99,31 @@ class CModel_fg:
 
     def g(self, s, x, e, p, derivs=False):
         if not derivs:
-            a = self.model_fga.a(s,x,p)[0]
-            S = self.model_fga.g(s,x,a,e,p)[0]
-            return [S]
+            a = self.model_fga.a(s,x,p)
+            S = self.model_fga.g(s,x,a,e,p)
+            return S
         else:
-            g0 = self.g(s,x,e,p)[0]
-            g_s = numdiff( lambda l: self.g(l,x,e,p)[0], s, g0)
-            g_x = numdiff( lambda l: self.g(s,l,e,p)[0], x, g0)
-            g_e = numdiff( lambda l: self.g(s,x,l,p)[0], e, g0)
+            g0 = self.g(s,x,e,p)
+            g_s = numdiff( lambda l: self.g(l,x,e,p), s, g0)
+            g_x = numdiff( lambda l: self.g(s,l,e,p), x, g0)
+            g_e = numdiff( lambda l: self.g(s,x,l,p), e, g0)
             return [g0, g_s, g_x, g_e]
 
 
 
     def f(self, s, x, S, X, E, p, derivs=False):
         if not derivs:
-            a = self.model_fga.a(s,x,p)[0]
-            A = self.model_fga.a(S,X,p)[0]
-            rr = self.model_fga.f(s, x, S, X, a, A, E, p)[0]
-            return [rr]
+            a = self.model_fga.a(s,x,p)
+            A = self.model_fga.a(S,X,p)
+            rr = self.model_fga.f(s, x, S, X, a, A, E, p)
+            return rr
         else:
-            f0 = self.f(s,x,S,X,E,p)[0]
-            f_s = numdiff(lambda l: self.f(l,x,S,X,E,p)[0], s, f0)
-            f_x = numdiff(lambda l: self.f(s,l,S,X,E,p)[0], x, f0)
-            f_S = numdiff(lambda l: self.f(s,x,l,X,E,p)[0], S, f0)
-            f_X = numdiff(lambda l: self.f(s,x,S,l,E,p)[0], X, f0)
-            f_E = numdiff(lambda l: self.f(s,x,S,X,l,p)[0], X, f0)
+            f0 = self.f(s,x,S,X,E,p)
+            f_s = numdiff(lambda l: self.f(l,x,S,X,E,p), s, f0)
+            f_x = numdiff(lambda l: self.f(s,l,S,X,E,p), x, f0)
+            f_S = numdiff(lambda l: self.f(s,x,l,X,E,p), S, f0)
+            f_X = numdiff(lambda l: self.f(s,x,S,l,E,p), X, f0)
+            f_E = numdiff(lambda l: self.f(s,x,S,X,l,p), X, f0)
 
         return([f0, f_s, f_x, f_S, f_X, f_E])
 
@@ -166,16 +166,18 @@ def numdiff(f,x0,f0=None):
 if __name__ == '__main__':
 
     from dolo import yaml_import, global_solve
-    model = yaml_import( '../../../examples/global_models/rbc.yaml')
-#    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_5/code/models/integration_A.yaml')
+#    model = yaml_import( '../../../examples/global_models/rbc.yaml')
+    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_5/code/models/integration_A.yaml')
 
 #    cmodel = CModel(model)
-    maxit = 600
+    maxit = 5
+    so = 4
 
-    dr_smol_1 = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False)
-#    dr_smol_1b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False)
-    dr_smol_2 = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, compiler='theano')
-#    dr_smol_2b = global_solve(model, pert_order=1, n_s=1, smolyak_order=3, maxit=maxit, polish=False, numdiff=False, compiler='theano')
+
+    dr_smol_1 = global_solve(model, pert_order=1, n_s=1, smolyak_order=so, maxit=maxit, polish=False, numdiff=True)
+    dr_smol_1b = global_solve(model, pert_order=1, n_s=1, smolyak_order=so, maxit=maxit, polish=False, numdiff=False)
+    dr_smol_2 = global_solve(model, pert_order=1, n_s=1, smolyak_order=so, maxit=maxit, polish=False, numdiff=True, compiler='theano')
+    dr_smol_2b = global_solve(model, pert_order=1, n_s=1, smolyak_order=so, maxit=maxit, polish=False, numdiff=False, compiler='theano')
 #
 #    from dolo.compiler.compiler_global import GlobalCompiler2
 #    gc = GlobalCompiler2(model)
