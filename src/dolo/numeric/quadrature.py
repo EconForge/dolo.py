@@ -2,6 +2,8 @@ import pytave
 pytave.addpath('/home/pablo/Programmation/compecon/CEtools')
 import numpy
 
+from misc import cartesian
+
 def qnwnorm(orders, mu, sigma):
 
     orders = numpy.array(orders,dtype=float)
@@ -15,18 +17,49 @@ def qnwnorm(orders, mu, sigma):
 
     return [x,w]
 
+def gauss_hermite_nodes(orders, mu, sigma):
+
+    import numpy
+    from numpy.polynomial.hermite import hermgauss
+
+    herms = [hermgauss(i) for i in orders]
+
+    points = [ h[0]*numpy.sqrt(2) for h in herms]
+    weights = [ h[1]/numpy.sqrt( numpy.pi) for h in herms]
+
+
+    x = cartesian( points).T
+    w = reduce( numpy.kron, weights)
+
+    C = numpy.linalg.cholesky(sigma)
+
+    x = numpy.dot(C, x) + mu[:,numpy.newaxis]
+
+    return [x,w]
+
 if __name__ == '__main__':
 
-    orders = [5,5]
-    mu = [0.0,0.0]
-    sigma = numpy.diag([0.1,0.1])
+    orders = [8,8]
+    mu = numpy.array( [0.05,0.01] )
+    sigma = numpy.array([
+        [0.1,0.015],
+        [0.015,0.1],
+    ])
 
-    [w,x] = qnwnorm(orders, mu, sigma)
+    def f(P):
+        return P[1,:]**4 - (P[0,:]-1)*P[0,:]**2 + 2
 
-    print w
-    print x
+    [x,w] = qnwnorm(orders, mu, sigma)
 
-    from matplotlib.pyplot import *
+    [x_numpy, w_numpy] = gauss_hermite_nodes(orders, mu, sigma)
 
-    plot(w[0,:],w[1,:],'o')
-    show()
+    int_1 = ( w*f(x) ).sum()
+    int_2 = ( w_numpy*f(x_numpy) ).sum()
+
+
+    print('Integrals')
+    print(int_1)
+    print(int_2)
+
+
+    assert( abs(int_1-int_2) < 1e-15 )
