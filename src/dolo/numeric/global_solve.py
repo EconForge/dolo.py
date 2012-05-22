@@ -51,19 +51,21 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
 
     if integration == 'optimal_quantization':
-        from dolo.numeric.quantization import quantization_weights
+        from dolo.numeric.quantization import quantization_nodes
         # number of shocks
-        [weights,epsilons] = quantization_nodes(N_e, sigma)
+        [epsilons,weights] = quantization_nodes(N_e, sigma)
     elif integration == 'gauss-hermite':
         from dolo.numeric.quadrature import gauss_hermite_nodes
-        if integration_orders == []:
+        if not integration_orders:
             integration_orders = [3]*sigma.shape[0]
         [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
     from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
+    print('Starting time iteration')
     dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff )
     
     if polish: # this will only work with smolyak
+        print('\nStarting global optimization')
         from dolo.compiler.compiler_global import GlobalCompiler
         
         from dolo.numeric.solver import solver
