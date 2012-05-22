@@ -153,15 +153,27 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
         normDPsibest= normDPsix
 
     if verbose:
-        print('   k               Psi(x)                || DPsi(x) ||    stepsize\n')
-        print('====================================================================')
-        print('********************* Output at starting point *********************')
-        print('{}\t{}\t{}\n'.format(k,Psix,normDPsix))
+
+        headline = '|{0:^5} | {1:10} | {2:12} | {3:10} |'.format( 'k',' Psi(x)', '||DPsi(x)||','stepsize' )
+        stars = '-'*len(headline)
+        print stars
+        print(headline)
+        print stars
+#        print('   k               Psi(x)                || DPsi(x) ||    stepsize\n')
+#        print('====================================================================')
+        s = '|{:^' + str(len(stars)-2) + '}|'
+        print(s.format('Output at starting point'))
+        print stars
+        print('|{0:5} | {1:10.3e} | {2:12.3f} |'.format( k,Psix, normDPsix) )
+
 
     import numpy.linalg
     if preprocess==1:
         if verbose:
-            print('************************** Preprocessor ****************************')
+            s = '|{:^' + str(len(stars)-2) + '}|'
+            print stars
+            print(s.format('Preprocessor'))
+            print stars
 
         normpLM=1
         while (k < presteps) & (Psix > eps2) & (normpLM>null):
@@ -226,13 +238,19 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
           # output at each iteration
             t=1
             if verbose:
-                print('{}\t{}\t{}\t{}\n'.format(k,Psix,normDPsix,t))
+                print('|{0:5} | {1:10.3e} | {2:12.3f} | {3:10.3f} |'.format( k, Psix, normDPsix, t) )
+
+#                print('{}\t{}\t{}\t{}\n'.format(k,Psix,normDPsix,t))
 
 
     # terminate program or redefine current iterate as original initial point
     if (preprocess==1) & (Psix<eps2):
         if verbose:
-            print('Approximate solution found.')
+            s = '|{:^' + str(len(stars)-2) + '}|'
+            print stars
+            print(s.format('Approximate solution found'))
+            print stars
+            return x
 
     elif (preprocess==1) & (Psix>=eps2):
         k_main=0
@@ -246,7 +264,8 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
         DPsix=DPsix0
         normDPsi=normDPsix0
         if verbose:
-            print('******************** Restart with initial point ********************')
+            s = '|{:^' + str(len(stars)-2) + '}|'
+            print(s.format('Restart with initial point'))
             print('{}\t{}\t{}\n'.format(k_main,Psix0,normDPsix0))
 
 
@@ -255,9 +274,13 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     #   Main algorithm
     #
     if verbose:
-        print('************************** Main program ****************************')
+        s = '|{:^' + str(len(stars)-2) + '}|'
+        print stars
+        print(s.format('Main program'))
+        print stars
 
     k_main = 0
+
     while (k < kmax) & (Psix > eps2):
 
        # choice of Levenberg-Marquardt parameter, note that we do not use
