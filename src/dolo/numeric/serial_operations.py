@@ -169,9 +169,9 @@ except:
 
 
 #try:
-import pyximport
-pyximport.install()
-from dolo.numeric.serial_operations_cython import serial_dot_21, serial_dot_11
+#import pyximport
+#pyximport.install()
+#from dolo.numeric.serial_operations_cython import serial_dot_21, serial_dot_11
 #except:
 #    pass
 

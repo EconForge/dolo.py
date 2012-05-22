@@ -6,11 +6,11 @@ from operator import mul
 
 from itertools import product
 
-try:
-    import pyximport;pyximport.install()
-    from dolo.numeric.chebychev_pyx import chebychev, chebychev2, cheb_extrema
-except:
-    from chebychev import cheb_extrema,chebychev,chebychev2
+#try:
+#    import pyximport;pyximport.install()
+#    from dolo.numeric.chebychev_pyx import chebychev, chebychev2, cheb_extrema
+#except:
+from chebychev import cheb_extrema,chebychev,chebychev2
 
 def enum(d,l):
     r = range(l)
