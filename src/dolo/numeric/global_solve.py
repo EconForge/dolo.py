@@ -4,7 +4,7 @@ from numpy import *
 
 from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None):
 
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
@@ -50,9 +50,15 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     else:
         gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
 
-    from dolo.numeric.quantization import quantization_weights
-    # number of shocks
-    [weights,epsilons] = quantization_weights(N_e, sigma)
+    if integration == 'optimal_quantization':
+        from dolo.numeric.quantization import quantization_weights
+        # number of shocks
+        [weights,epsilons] = quantization_nodes(N_e, sigma)
+    elif integration == 'gauss-hermite':
+        from dolo.numeric.quadrature import gauss_hermite_nodes
+        if integration_orders == []:
+            integration_orders = [3]*sigma.shape[0]
+        [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
     from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
     dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff )

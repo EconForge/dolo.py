@@ -1,10 +1,11 @@
-import pytave
-pytave.addpath('/home/pablo/Programmation/compecon/CEtools')
 import numpy
 
 from misc import cartesian
 
 def qnwnorm(orders, mu, sigma):
+
+    import pytave
+    pytave.addpath('/home/pablo/Programmation/compecon/CEtools')
 
     orders = numpy.array(orders,dtype=float)
     mu = numpy.array(mu,dtype=float)
@@ -17,10 +18,13 @@ def qnwnorm(orders, mu, sigma):
 
     return [x,w]
 
-def gauss_hermite_nodes(orders, mu, sigma):
+def gauss_hermite_nodes(orders, sigma, mu=None):
 
     import numpy
     from numpy.polynomial.hermite import hermgauss
+
+    if mu is None:
+        mu = numpy.array( [0]*sigma.shape[0] )
 
     herms = [hermgauss(i) for i in orders]
 

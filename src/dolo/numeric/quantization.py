@@ -3,7 +3,7 @@
 quantization_data = '/home/pablo/Programmation/dynare-python/dolo/src/dolo/numeric/data/quantization_grids/'
 
 
-def quantization_weights(N,sigma):
+def quantization_nodes(N,sigma):
     import numpy
     import numpy.linalg
     assert( len(sigma.shape) == 2 )
@@ -12,6 +12,11 @@ def quantization_weights(N,sigma):
     [w, x] = standard_quantization_weights(N,d )
     A = numpy.linalg.cholesky(sigma)
     x = numpy.dot(A, x)
+    return [x,w]
+
+
+def quantization_weights(N,sigma):
+    [x,w] = quantization_nodes(N,sigma)
     return [w,x]
 
 def standard_quantization_weights(N,d):
