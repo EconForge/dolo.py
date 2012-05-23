@@ -20,6 +20,9 @@ from numpy.linalg import solve
 from numpy.matlib import diag
 import sys
 
+
+raise( Warning('Module qz.py will be deprecated as qz decomposition as been included in scipy.') )
+
 def setuplapack(lpname=None,lppath=None):
 #    '''Loads the lapack shared lib and does some input checks.
 #

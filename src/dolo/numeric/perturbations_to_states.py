@@ -187,7 +187,6 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     :param g_fun: list of derivatives of g [order0, order1, order2, ...]
     """
     import numpy as np
-    from dolo.numeric.extern.qz import qzordered
     from numpy.linalg import solve
 
     approx_order = len(f_fun) - 1 # order of approximation
@@ -218,10 +217,17 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
         np.column_stack( [ f_s, f_x ] )
     ])
 
-    [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
 
-    Q = Q.real # is it really necessary ?
-    Z = Z.real
+    try:
+        from scipy.linalg import qz
+        [S,T,Q,Z,nev] = qz(A,B,sort='ouc')
+        # n_ev should be equal to n_s
+
+    except:
+        from dolo.numeric.extern.qz import qzordered
+        [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
+        Q = Q.real # is it really necessary ?
+        Z = Z.real
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
