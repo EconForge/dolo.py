@@ -276,12 +276,13 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
             print('iteration {} failed : non finite value')
             return [x0, x]
 
-    if it == maxit:
-        import warnings
-        warnings.warn(UserWarning("Maximum number of iterations reached"))
+#    if it == maxit:
+#        import warnings
+#        warnings.warn(UserWarning("Maximum number of iterations reached"))
 
 
     t2 = time.time()
-    print('Elapsed: {}'.format(t2 - t1))
+    if verbose:
+        print('Elapsed: {}'.format(t2 - t1))
 
     return interp

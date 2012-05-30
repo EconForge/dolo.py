@@ -220,6 +220,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
 
     try:
         from scipy.linalg import qz
+        tchouk # sorry for that
         [S,T,Q,Z,nev] = qz(A,B,sort='ouc')
         # n_ev should be equal to n_s
 

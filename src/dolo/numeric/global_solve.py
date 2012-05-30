@@ -4,7 +4,7 @@ from numpy import *
 
 from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False):
 
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
@@ -82,6 +82,11 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         
         theta = solver(fobj, theta_0, jac=dfobj, verbose=True)
         dr.theta = theta.reshape(shape)
+
+    if test_solution:
+        res = stochastic_residuals_2(dr.grid, dr.theta , dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
+        if numpy.isfinite(res.flatten()).sum() > 0:
+            raise( Exception('Non finite value in residuals.'))
 
     return dr
     
