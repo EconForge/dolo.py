@@ -250,7 +250,7 @@ class DicPrinter(sympy.printing.StrPrinter):
         return self.printing_dict[expr]
 
     def _print_Shock(self, expr):
-        return self.printing_dict[expr]
-
-    def _print_Symbol(self, expr):
-        return self.printing_dict[expr]
+        if expr in self.printing_dict:
+            return self.printing_dict[expr]
+        else:
+            return str(expr)
