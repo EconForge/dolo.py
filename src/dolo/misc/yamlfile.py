@@ -44,7 +44,7 @@ Imports the content of a modfile into the current interpreter scope
               sympy.sin, sympy.cos, sympy.tan,
               sympy.asin, sympy.acos, sympy.atan,
               sympy.sinh, sympy.cosh, sympy.tanh,
-              sympy.pi]:
+              sympy.pi, sympy.sign]:
         context[str(f)] = f
     context['sqrt'] = sympy.sqrt
 

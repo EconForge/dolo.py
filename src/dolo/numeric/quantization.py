@@ -30,6 +30,10 @@ def standard_quantization_weights(N,d):
 
     w = G[:N,0]
     x = G[:N,1:d+1]
+   
+    s = numpy.dot(w, x)
+    x = x - numpy.outer(w,s)
+    
     return [w,x.T]
 
 if __name__ == '__main__':

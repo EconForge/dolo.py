@@ -42,6 +42,8 @@ class CompilerMatlab:
         auxiliaries = data['auxiliaries']
         states = data['states']
         controls = data['controls']
+
+        shocks = dmodel.shocks
 #        exp_vars = data['exp_vars']
         #inf_bounds = data['inf_bounds']
         #sup_bounds = data['sup_bounds']
@@ -49,6 +51,7 @@ class CompilerMatlab:
 
         controls_f = [v(1) for v in controls]
         states_f = [v(1) for v in states]
+        shocks_f = [v(1) for v in shocks]
 
         sub_list = dict()
 #        for i,v in enumerate(exp_vars):
@@ -64,6 +67,7 @@ class CompilerMatlab:
 
         for i,v in enumerate(dmodel.shocks):
             sub_list[v] = 'e(:,{0})'.format(i+1)
+            sub_list[v(1)] = 'enext(:,{0})'.format(i+1)
 
         for i,v in enumerate(dmodel.parameters):
             sub_list[v] = 'p({0})'.format(i+1)
@@ -78,7 +82,7 @@ class CompilerMatlab:
     model.a = @a;
 end
 
-function [out1,out2,out3,out4,out5] = f(s,x,snext,xnext,p)
+function [out1,out2,out3,out4,out5] = f(s,x,snext,xnext,enext,p)
     n = size(s,1);
 {eq_fun_block}
 end
@@ -146,6 +150,7 @@ end
                     write_der_eqs(f_eqs,controls,'out3',3),
                     write_der_eqs(f_eqs,states_f,'out4',3),
                     write_der_eqs(f_eqs,controls_f,'out5',3),
+                    write_der_eqs(f_eqs, shocks_f, 'out6',3)
 #                    write_der_eqs(f_eqs,exp_vars,'out4',3)
             )
 
