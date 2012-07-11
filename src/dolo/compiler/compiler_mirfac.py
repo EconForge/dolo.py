@@ -180,116 +180,6 @@ class MirFacCompiler(Compiler):
 
 
 
-    def process_output_python(self):
-        data = self.read_model()
-        dmodel = self.model
-        model = dmodel
-
-        f_eqs = data['f_eqs']
-        g_eqs = data['g_eqs']
-        h_eqs = data['h_eqs']
-        states_vars = data['states_vars']
-        controls = data['controls']
-        exp_vars = data['exp_vars']
-        inf_bounds = data['inf_bounds']
-        sup_bounds = data['sup_bounds']
-
-        sub_list = dict()
-        for i,v in enumerate(exp_vars):
-            sub_list[v] = 'ep[{0},:]'.format(i)
-
-        for i,v in enumerate(controls):
-            sub_list[v] = 'x[{0},:]'.format(i)
-
-        for i,v in enumerate(states_vars):
-            sub_list[v] = 's[{0},:]'.format(i)
-
-        for i,v in enumerate(dmodel.shocks):
-            sub_list[v] = 'e[{0},:]'.format(i)
-
-        for i,v in enumerate(dmodel.parameters):
-            sub_list[v] = 'p[{0}]'.format(i)
-
-
-
-        text = '''
-from __future__ import division
-import numpy as np
-inf = np.inf
-
-def model(flag,s,x,ep,e,{param_names}):
-
-
-    n = s.shape[-1]
-
-    if flag == 'b':
-{eq_bounds_block}
-        return [out1,out2]
-
-    elif flag == 'f':
-{eq_fun_block}
-        return [out1,out2,out3]
-
-    elif flag == 'g':
-{state_trans_block}
-        return [out1,out2]
-
-    elif flag == 'h':
-{exp_fun_block}
-        return [out1,out2,out3]
-
-        '''
-
-        from dolo.compiler.compiler import DicPrinter
-
-        dp = DicPrinter(sub_list)
-
-        def write_eqs(eq_l,outname='out1'):
-            eq_block = '        {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
-            for i,eq in enumerate(eq_l):
-                eq_block += '        {0}[{1},:] = {2}\n'.format(outname, i,  dp.doprint_numpy(eq,vectorize=True))
-            return eq_block
-
-        def write_der_eqs(eq_l,v_l,lhs):
-            eq_block = '        {lhs} = np.zeros( ({0},{1},n) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
-            eq_l_d = eqdiff(eq_l,v_l)
-            for i,eqq in enumerate(eq_l_d):
-                for j,eq in enumerate(eqq):
-                    s = dp.doprint_numpy( eq, vectorize=True )
-                    eq_block += '        {lhs}[{0},{1},:] = {2}\n'.format(i,j,s,lhs=lhs)
-            return eq_block
-
-        eq_bounds_block = write_eqs(inf_bounds)
-        eq_bounds_block += write_eqs(sup_bounds,'out2')
-
-        eq_f_block = write_eqs(f_eqs)
-        eq_f_block += write_der_eqs(f_eqs,controls,'out2')
-        eq_f_block += write_der_eqs(f_eqs,exp_vars,'out3')
-
-        eq_g_block = write_eqs(g_eqs)
-        eq_g_block += write_der_eqs(g_eqs,controls,'out2')
-
-        eq_h_block = write_eqs(h_eqs)
-        eq_h_block += write_der_eqs(h_eqs,controls,'out2')
-        eq_h_block += write_der_eqs(h_eqs,states_vars,'out3')
-
-        text = text.format(
-                eq_bounds_block = eq_bounds_block,
-                mfname =  model.fname,
-                eq_fun_block=eq_f_block,
-                state_trans_block=eq_g_block,
-                exp_fun_block=eq_h_block,
-                #    param_names=str.join(',',[p.name for p in dmodel.parameters])
-                param_names = 'p'
-                )
-
-        return text
-
-        #f = file('pf/optimal_growth_model.py','w')
-
-        #f.write( text )
-        #f.close()
-
     def process_output_recs(self, solution_order=False, fname=None):
 
         data = self.read_model()
@@ -328,6 +218,7 @@ def model(flag,s,x,ep,e,{param_names}):
             sub_list[v] = 'p({0})'.format(i+1)
 
 
+#        sub_list[sympy.inf] = 'Inf'
 
 
         text = '''function [out1,out2,out3,out4,out5] = {mfname}(flag,s,x,z,e,snext,xnext,p,out);
