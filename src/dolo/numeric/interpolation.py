@@ -64,7 +64,6 @@ class TriangulatedDomain:
         
 
 def SplineInterpolation(smin,smax,orders):
-    print orders
     if len(orders) == 1:
         return SplineInterpolation1(orders,smin,smax)
     elif len(orders) == 2:
@@ -92,7 +91,7 @@ class SplineInterpolation1:
         fgrid = self.grid.flatten()
         self.__splines__ = [ InterpolatedUnivariateSpline(fgrid, val[i,:]) for i in range(val.shape[0]) ]
 
-    def interpolate(self, points, with_derivatives=True, with_coeffs_derivs=False):
+    def interpolate(self, points, with_derivatives=False, with_coeffs_derivs=False):
         n_v = self.__values__.shape[0]
         n_p = points.shape[1]
         fpoints = points.flatten()
@@ -121,7 +120,10 @@ class SplineInterpolation1:
             val[i,:] = y
             dval[i,0,:] = dy
 
-        return [val,dval]
+        if not with_derivatives:
+            return val
+        else:
+            return [val,dval]
 
 class SplineInterpolation2:
 
@@ -159,7 +161,7 @@ class SplineInterpolation2:
 
         self.__splines__ = [ RectBivariateSpline( grid_x, grid_y, val[i,:].reshape((n_y,n_x)).T, bbox=bbox ) for i in range(val.shape[0]) ]
 
-    def interpolate(self, points):
+    def interpolate(self, points, with_derivatives=False):
         n_v = self.__values__.shape[0]
         n_p = points.shape[1]
         n_d = self.d
@@ -183,8 +185,10 @@ class SplineInterpolation2:
 
             dval[i,1,:] = d_y_B
 
-        return [val, dval]
-#        return [val,dval]
+        if not with_derivatives:
+            return val
+        else:
+            return [val,dval]
 
 class LinearTriangulation:
     def __init__(self,domain):
@@ -198,7 +202,7 @@ class LinearTriangulation:
     def fit_values(self, val):
         self.__values__ = val
 
-    def interpolate(self, points):
+    def interpolate(self, points, with_derivatives=False):
         n_x = self.__values__.shape[0]
         n_p = points.shape[1]
         n_d = self.domain.d
@@ -208,7 +212,10 @@ class LinearTriangulation:
             [val,dval] = self.interpolate_1v(i,points)
             resp[i,:] = val
             dresp[i,:,:] = dval
-        return [resp,dresp]
+        if not with_derivatives:
+            return resp
+        else:
+            return [resp,dresp]
 
     def interpolate_1v(self, i, points):
 
@@ -271,9 +278,8 @@ class MLinInterpolation:
     def fit_values(self,val):
         self.__values__ = val
         self.__coeffs__ = val ##
-        print self.__coeffs__
 
-    def interpolate(self, points, with_derivatives=True):
+    def interpolate(self, points, with_derivatives=False):
 
         eps = 1e-6
         points_T = points.T
