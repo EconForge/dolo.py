@@ -292,7 +292,7 @@ if __name__ == '__main__':
     sg2 = SmolyakGrid(bounds, 2)
     sg3 = SmolyakGrid(bounds, 3)
 
-    from serial_operations import numdiff2, numdiff1
+    from dolo.numeric.serial_operations import numdiff2, numdiff1
 
     theta2_0 = np.zeros( (2, sg2.n_points) )
     vals = testfun(sg2.grid)
