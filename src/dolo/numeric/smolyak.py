@@ -23,7 +23,7 @@ def enum(d,l):
 
 def build_indices_levels(l):
     return [(0,)] + [(1,2)] + [ tuple(range(2**(i-1)+1, 2**(i)+1)) for i in range(2,l) ]
-    
+
 def build_basic_grids(l):
     ll = [ np.array( [0.5] ) ]
     ll.extend( [ np.linspace(0.0,1.0,2**(i)+1) for i in range(1,l) ]  )
@@ -38,15 +38,15 @@ def build_basic_grids(l):
     return [ll,incr]
 
 def smolyak_grids(d,l):
-    
+
     ret,incr = build_basic_grids(l)
     tab =  build_indices_levels(l)
-    
+
     eee =  [ [ tab[i] for i in e] for e in enum( d, l) ]
     smolyak_indices = []
     for ee in eee:
         smolyak_indices.extend( [e for e in product( *ee ) ] )
-    
+
     fff =  [ [ incr[i] for i in e] for e in enum( d, l) ]
     smolyak_points = []
     for ff in fff:
@@ -191,6 +191,30 @@ class SmolyakBasic(object):
 
         self.theta =  theta
 
+    def plot_grid(self):
+        import matplotlib.pyplot as plt
+        grid = smolyak_grids(self.d, self.l)[0]
+        if grid.shape[1] == 2:
+            xs = grid[:, 0]
+            ys = grid[:, 1]
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.scatter(xs, ys)
+            ax.grid(True, linestyle='--',color='0.75')
+            plt.show()
+        elif grid.shape[1] == 3:
+            from mpl_toolkits.mplot3d import Axes3D
+            xs = grid[:, 0]
+            ys = grid[:, 1]
+            zs = grid[:, 2]
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.scatter(xs, ys, zs)
+            ax.grid(True, linestyle='--',color='0.75')
+            plt.show()
+        else:
+            raise ValueError('Can only plot 2 or 3 dimensional problems')
+
 class SmolyakGrid(SmolyakBasic):
 
     def __init__(self, bounds, l, axes=None):
@@ -253,8 +277,8 @@ class SmolyakGrid(SmolyakBasic):
 
 # test smolyak library
 if __name__ == '__main__':
-    
-    
+
+
     # we define a reference funcion :
     def testfun(x):
         val = np.row_stack([
@@ -262,14 +286,14 @@ if __name__ == '__main__':
             x[0,:]*(1-np.power(x[1,:],3)) + x[1,:]/4
         ])
         return val
-    
+
     bounds = np.array([[0,1],[0,1]]).T
 #    bounds = np.array([[-1,1],[-1,1]]).T
     sg2 = SmolyakGrid(bounds, 2)
     sg3 = SmolyakGrid(bounds, 3)
 
-    from dolo.numeric.serial_operations import numdiff2, numdiff1
-    
+    from serial_operations import numdiff2, numdiff1
+
     theta2_0 = np.zeros( (2, sg2.n_points) )
     vals = testfun(sg2.grid)
 
@@ -321,28 +345,28 @@ if __name__ == '__main__':
     print ddval.shape
 
     exit()
-    
+
     def fobj2(theta):
         grid = sg2.real_grid
         return testfun(grid) - sg2.interpolate(theta, grid)
     theta2_0 = np.zeros( (2, sg2.n_points) )
     res_2 = fobj2(theta2_0)
-    
+
     def fobj3(theta):
         grid = sg3.real_grid
         return testfun(grid) - sg3.interpolate(theta, grid)
     theta3_0 = np.zeros( (2, sg3.n_points) )
     res_3 = fobj3(theta3_0)
-    
+
     theta3_0[:,:5]=res_2
     #print sg2.evalfun(res_2, sg2.real_grid )[0]
     #print sg2.evalfun(res_2, sg3.real_grid )[0]
-    
+
     #print sg3.evalfun(theta3_0, sg2.real_grid )[0]
-    #print sg3.evalfun(theta3_0, sg3.real_grid )[0]    
-    
+    #print sg3.evalfun(theta3_0, sg3.real_grid )[0]
+
     theta3_0 = np.ones((2,13))
     theta3_0[:,:5] = 0
     print sg3.evalfun(theta3_0, sg3.real_grid )
-    
+
     values = testfun(sg3.real_grid)
