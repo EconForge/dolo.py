@@ -193,7 +193,7 @@ class SmolyakBasic(object):
 
     def plot_grid(self):
         import matplotlib.pyplot as plt
-        grid = smolyak_grids(self.d, self.l)[0]
+        grid = self.smolyak_points
         if grid.shape[1] == 2:
             xs = grid[:, 0]
             ys = grid[:, 1]
@@ -271,6 +271,30 @@ class SmolyakGrid(SmolyakBasic):
         else:
             return res
 
+
+    def plot_grid(self):
+        import matplotlib.pyplot as plt
+        grid = self.grid
+        if grid.shape[0] == 2:
+            xs = grid[0, :]
+            ys = grid[1, :]
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.scatter(xs, ys)
+            ax.grid(True, linestyle='--',color='0.75')
+            plt.show()
+        elif grid.shape[0] == 3:
+            from mpl_toolkits.mplot3d import Axes3D
+            xs = grid[0, :]
+            ys = grid[1, :]
+            zs = grid[2, :]
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.scatter(xs, ys, zs)
+            ax.grid(True, linestyle='--',color='0.75')
+            plt.show()
+        else:
+            raise ValueError('Can only plot 2 or 3 dimensional problems')
 #    def fit_values(self):
 #        nothing to change
 
