@@ -91,11 +91,11 @@ class SmolyakBasic(object):
 
         theta = self.theta
 
-        [n_v, n_t] = theta.shape
+        [n_v, n_t] = theta.shape  # (n_v, n_t) -> (number of variables?, ?)
         assert( n_t == self.n_points )
         n = theta.shape[1] - 1
 
-        [n_d, n_p] = x.shape
+        [n_d, n_p] = x.shape  # (n_d, n_p) -> (number of dimensions, number of points)
         n_obs = n_p # by def
         assert( n_d == self.d )
 
@@ -159,6 +159,7 @@ class SmolyakBasic(object):
 
 
     def fit_values(self,res0):
+        """ Updates self.theta parameter. No returns values"""
 
         res0 = res0.real
 
@@ -241,7 +242,7 @@ class SmolyakGrid(SmolyakBasic):
 
         self.grid = self.A( self.u_grid )
 
-
+    # A goes from [0,1] to bounds
     def A(self,x):
         '''A is the inverse of B'''
         N = x.shape[1]
@@ -249,6 +250,7 @@ class SmolyakGrid(SmolyakBasic):
         P = self.P
         return c + np.dot(P, x)
 
+    # B returns from bounds to [0,1]
     def B(self,y):
         '''B is the inverse of A'''
         N = y.shape[1]
@@ -257,8 +259,8 @@ class SmolyakGrid(SmolyakBasic):
         return np.dot(Pinv,y-c)
 
     def interpolate(self, y, with_derivative=False, with_theta_deriv=False):
-        x = self.B(y)
-        res = super(SmolyakGrid, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv)
+        x = self.B(y)  # Transform back to [0,1]
+        res = super(SmolyakGrid, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv)  # Call super class' (SmolyakGrid) interpolate func
         if with_derivative:
             if with_theta_deriv:
                 [val,dder,dval] = res
@@ -343,7 +345,7 @@ if __name__ == '__main__':
 
 
     def fobj(values):
-        sg2.fit_values(values.reshape((2,5)))
+        sg2.fit_values(values.reshape((2,5)))  # Updates theta
         return sg2.interpolate(sg2.grid, with_derivative=False)
 
 
@@ -361,36 +363,36 @@ if __name__ == '__main__':
 #    print dval0.shape
     print(dval1.shape)
 
-    exit()
-    ddval = numdiff1(sg2.interpolate,sg2.real_grid)
+    #exit()
+    ddval = numdiff1(sg2.interpolate,sg2.grid)
     print ddval
 
     print dval.shape
     print ddval.shape
 
-    exit()
+    #exit()
 
     def fobj2(theta):
-        grid = sg2.real_grid
-        return testfun(grid) - sg2.interpolate(theta, grid)
+        grid = sg2.grid
+        return testfun(grid) - sg2.interpolate(grid)
     theta2_0 = np.zeros( (2, sg2.n_points) )
     res_2 = fobj2(theta2_0)
 
     def fobj3(theta):
-        grid = sg3.real_grid
-        return testfun(grid) - sg3.interpolate(theta, grid)
+        grid = sg3.grid
+        return testfun(grid) - sg3.interpolate(grid)
     theta3_0 = np.zeros( (2, sg3.n_points) )
     res_3 = fobj3(theta3_0)
 
     theta3_0[:,:5]=res_2
-    #print sg2.evalfun(res_2, sg2.real_grid )[0]
-    #print sg2.evalfun(res_2, sg3.real_grid )[0]
+    #print sg2.evalfun(res_2, sg2.grid )[0]
+    #print sg2.evalfun(res_2, sg3.grid )[0]
 
-    #print sg3.evalfun(theta3_0, sg2.real_grid )[0]
-    #print sg3.evalfun(theta3_0, sg3.real_grid )[0]
+    #print sg3.evalfun(theta3_0, sg2.grid )[0]
+    #print sg3.evalfun(theta3_0, sg3.grid )[0]
 
     theta3_0 = np.ones((2,13))
     theta3_0[:,:5] = 0
-    print sg3.evalfun(theta3_0, sg3.real_grid )
+    print sg3.evalfun(theta3_0, sg3.grid )
 
-    values = testfun(sg3.real_grid)
+    values = testfun(sg3.grid)
