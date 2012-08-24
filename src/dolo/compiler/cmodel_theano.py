@@ -1,3 +1,5 @@
+from __future__ import division
+
 import numpy
 
 def compile_source(source):

@@ -1,3 +1,5 @@
+from __future__ import division
+
 from dolo.symbolic.symbolic import *
 
 import sympy

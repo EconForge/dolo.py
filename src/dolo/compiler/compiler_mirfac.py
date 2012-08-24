@@ -1,3 +1,5 @@
+from __future__ import division
+
 from dolo.symbolic.model import *
 from dolo.symbolic.symbolic import *
 from dolo.compiler.compiler import Compiler

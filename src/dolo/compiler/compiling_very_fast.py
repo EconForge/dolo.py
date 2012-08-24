@@ -1,3 +1,5 @@
+from __future__ import division
+
 #
 #
 #def compile_theano_old(vars, values):

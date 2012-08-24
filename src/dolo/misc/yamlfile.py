@@ -1,3 +1,5 @@
+from __future__ import division
+
 from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
 from dolo.symbolic.model import Model
 from collections import OrderedDict
