@@ -1,5 +1,23 @@
 Testing function documentation
 ==============================
 
-.. automodule:: dolo.compiler.global_solution
+hoho
+
+.. automodule:: dolo.numeric.smolyak
    :members:
+
+.. autoclass:: dolo.numeric.smolyak.SmolyakGrid
+   :members:
+
+ouhou !
+
+Testing graphs
+--------------
+
+.. graphviz::
+
+      digraph foo {
+          "symbolic model" -> "compiled model";
+          "compiled model" -> "Matlab";
+          "compiled model" -> "Python";
+      }

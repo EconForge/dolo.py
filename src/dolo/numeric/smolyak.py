@@ -1,3 +1,10 @@
+"""
+What if I document the module here ?
+Are math formulas allowed : :math:`a_1=12` ?
+"""
+
+
+
 from __future__ import division
 
 import numpy as np
@@ -218,7 +225,16 @@ class SmolyakBasic(object):
 
 class SmolyakGrid(SmolyakBasic):
 
+    '''Smolyak interpolation'''
+
     def __init__(self, bounds, l, axes=None):
+        """
+        @param bounds: matrix of bounds
+        @param l:
+        @param axes:
+        @return: a smolyak interpolator
+        """
+
 
         d = bounds.shape[1]
 
@@ -228,8 +244,9 @@ class SmolyakGrid(SmolyakBasic):
 
         self.center = [b[0]+(b[1]-b[0])/2 for b in bounds.T]
         self.radius =  [(b[1]-b[0])/2 for b in bounds.T]
-#        print self.center
+
         import numpy.linalg
+
         if not axes == None:
             self.P = np.dot( axes, np.diag(self.radius))
             self.Pinv = numpy.linalg.inv(axes)
@@ -244,7 +261,7 @@ class SmolyakGrid(SmolyakBasic):
 
     # A goes from [0,1] to bounds
     def A(self,x):
-        '''A is the inverse of B'''
+#        '''A is the inverse of B'''
         N = x.shape[1]
         c = np.tile(self.center, (N,1) ).T
         P = self.P
@@ -252,7 +269,7 @@ class SmolyakGrid(SmolyakBasic):
 
     # B returns from bounds to [0,1]
     def B(self,y):
-        '''B is the inverse of A'''
+#        '''B is the inverse of A'''
         N = y.shape[1]
         c = np.tile(self.center, (N,1) ).T
         Pinv = self.Pinv
@@ -297,8 +314,7 @@ class SmolyakGrid(SmolyakBasic):
             plt.show()
         else:
             raise ValueError('Can only plot 2 or 3 dimensional problems')
-#    def fit_values(self):
-#        nothing to change
+
 
 
 # test smolyak library
