@@ -125,6 +125,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
         return [res,dres.swapaxes(1,2)]
 
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
+
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
     from dolo.numeric.serial_operations import serial_multiplication as stm
@@ -170,7 +171,7 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
         for i in range(n_draws):
             res += weights[i] * val[:,n_g*i:n_g*(i+1)]
 
-        return [res]
+        return res
 
 
 #f = model_fun['f']
@@ -207,12 +208,12 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
 
     if serial_grid:
         if numdiff == True:
-            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)[0]
+            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
             #dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
         else:
             fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
     else:
-        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False, with_derivatives=False)[0]
+        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False, with_derivatives=False)
         dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False)[1]
 
 
