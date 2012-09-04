@@ -108,6 +108,115 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
 
     return criterium
 
+# def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
+
+def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
+
+    from dolo.compiler.global_solution import step_residual
+    from dolo.numeric.quadrature import gauss_hermite_nodes
+    from dolo.numeric.newton import newton_solver
+
+    # cmodel should be an fg model
+
+    # the code is almost duplicated from simulate_without_error
+
+    # dr is used to approximate future steps
+
+    # monkey patch:
+
+
+
+    cmodel = cmodel.as_type('fg')
+
+    if sigma is None:
+        sigma = cmodel.sigma
+
+    from dolo.symbolic.model import Model
+
+    if isinstance(cmodel,Model):
+        from dolo.compiler.compiler_global import CModel
+        model = cmodel
+        cmodel = CModel(model)
+        [y,x,parms] = model.read_calibration()
+
+
+    parms = cmodel.model.read_calibration()[2]
+
+    mean = sigma[0,:]*0
+    numpy.random.seed(seed)
+
+    epsilons = numpy.random.multivariate_normal(mean, sigma, (n_sims,horizon))  # * horizon ?
+
+    epsilons = numpy.array( numpy.rollaxis(epsilons,2), order='C')
+
+
+    orders = [5]*len(mean)
+    [nodes, weights] = gauss_hermite_nodes(orders, sigma)
+
+    s0 = numpy.atleast_2d(s0.flatten()).T
+
+    x0 = dr(s0)
+
+    # standard simulation
+
+    s_simul = numpy.zeros( (s0.shape[0],n_sims,horizon) )
+    x_simul = numpy.zeros( (x0.shape[0],n_sims,horizon) )
+
+    s_simul[:,:,0] = s0
+
+
+    for i in range(horizon):
+
+        s = s_simul[:,:,i]
+        x = dr(s)
+        x_simul[:,:,i] = x
+
+        ss = cmodel.g(s,x,epsilons[:,:,i],parms)
+
+        if i<(horizon-1):
+            s_simul[:,:,i+1] = ss
+
+    simul = numpy.row_stack([s_simul, x_simul])
+
+    # counter factual
+
+    s_check = numpy.zeros( (s0.shape[0],n_sims,horizon) )
+    x_check = x_simul.copy()
+
+    s_check[:,:,0] = s0
+
+    for i in range(horizon):
+
+        s = s_check[:,:,i]
+
+        fobj = lambda t: step_residual(s, t, dr, cmodel.f, cmodel.g, parms, nodes, weights, x_bounds=None, serial_grid=True, with_derivatives=False)
+        x = newton_solver(fobj, x_check[:,:,i], numdiff=True)
+
+        x_check[:,:,i] = x
+
+        ss = cmodel.g(s,x,epsilons[:,:,i],parms)
+
+        if i<(horizon-1):
+            s_check[:,:,i+1] = ss
+
+    check = numpy.row_stack([s_check, x_check])
+
+    diff = abs( x_check - x_simul )
+    error_1 = (diff).max(axis=2).mean(axis=1)
+    error_2 = (diff).mean(axis=2).mean(axis=1)
+
+
+    return [error_1, error_2, simul, check]
+
+
+
+    return simul
+
+
+
+
+
+
 
 
 

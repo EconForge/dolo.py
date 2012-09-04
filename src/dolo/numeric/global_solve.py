@@ -1,10 +1,16 @@
+from __future__ import print_function
+
 from dolo import *
 import numpy
 from numpy import *
 
 from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False, verbose=False):
+
+    def vprint(t):
+        if verbose:
+            print(t)
 
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
@@ -61,11 +67,11 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
     from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
-    print('Starting time iteration')
-    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff )
+    vprint('Starting time iteration')
+    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff, verbose=verbose )
     
     if polish: # this will only work with smolyak
-        print('\nStarting global optimization')
+        vprint('\nStarting global optimization')
         from dolo.compiler.compiler_global import GlobalCompiler
         
         from dolo.numeric.solver import solver
@@ -80,7 +86,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
             fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
             dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape)[1]
         
-        theta = solver(fobj, theta_0, jac=dfobj, verbose=True)
+        theta = solver(fobj, theta_0, jac=dfobj, verbose=verbose)
         dr.theta = theta.reshape(shape)
 
     if test_solution:
