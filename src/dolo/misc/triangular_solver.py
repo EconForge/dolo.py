@@ -9,8 +9,8 @@ def triangular_solver( incidence ):
     max_steps = len(incidence)
     steps = 0
 
-    while (steps < max_steps) and len(solved)<n : # there should be another termination criterium !
-        # look for an equation, which is determined, and not already solved
+    while (steps < max_steps) and len(solved)<n :
+
         possibilities = [i for i in range(n) if (i not in solved) and (len(current[i])==0)]
         for i in possibilities:
             for e in current:
@@ -50,44 +50,3 @@ def solve_triangular_system( sdict, return_order=False ):
         except: # in case d[v] is an int
             pass
     return d
-
-
-
-
-if __name__ == '__main__':
-
-    system = [
-        [1,2,3],
-        [2,3],
-        [3],
-        [],
-        []
-    ]
-
-    from pprint import pprint
-    pprint( system )
-    solution = triangular_solver(system)
-
-    pprint( solution )
-    pprint( system ) # it should have been left unmodified
-
-
-
-    import sympy
-    [w,x,y,z,t] = vars = sympy.symbols('w, x, y, z, t')
-    [a,b,c,d] = sympy.symbols('a, b, c, d')
-
-    eqs = [
-        x + y + z + t,
-        y + z,
-        z,
-        1,
-        1
-    ]
-
-    sdict = {s:eqs[i] for i,s in enumerate(vars) }
-    pprint(sdict)
-
-    solution = solve_triangular_system(sdict)
-    pprint(solution)
-    pprint(sdict) # same as before
