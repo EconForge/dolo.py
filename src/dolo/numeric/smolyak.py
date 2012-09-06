@@ -1,26 +1,84 @@
 """
-What if I document the module here ?
-Are math formulas allowed : :math:`a_1=12` ?
+
+We demonstrate the use of the ```SmolyakGrid``` object using the function
+:math:`x,y \\rightarrow \\exp \\left( -x^2 - y^2 \\right)`. We define it on a subset of :math:`[-1,1]^2` and use a
+smolyak product of chebychev polynomials to approximate it at other points.
+
+Let define the state space :math:`[-1,1]^2` and the interpolation object.
+
+
+.. code-block:: python
+
+    from dolo.numeric.smolyak import SmolyakGrid
+    import numpy
+
+
+    bounds = numpy.array([
+        [ -1, -1 ],    # lower bounds
+        [ 1, 1 ]     # upper bounds
+    ])
+
+    sg = SmolyakGrid(bounds, 3)  # 3 is the smolyak parameter l
+
+    print(sg.grid.shape)
+
+The points selected by the smolyak algorithm are accessible in ```sg.grid```  which is a ```2x13``` matrix. They can by plotted with:
+
+.. code-block:: python
+
+    sg.plot_grid()
+
+Let define a two-variables function and evaluate it on the grid and we initialize the interpolator with these values.
+
+.. code-block:: python
+
+    fun = lambda x,y: numpy.exp( -numpy.power(x,2) - numpy.power(y,2) )
+    values_on_the_grid = fun( sg.grid[0,:], sg.grid[1,:] )
+
+    sg.set_values(values_on_the_grid)
+
+Now we construct a random matrix ```s``` of size```2xN``` where each column is a point of the state space. On these
+states, we compute interpolated values and compare it with the true ones.
+
+.. code-block:: python
+
+    from  numpy.random import multivariate_normal as  mvtnorm
+    mean = numpy.zeros(2)
+    cov = numpy.eye(2)
+    s = mvtnorm(mean,cov,50).T
+
+    interpolated_values = sg.interpolate( s )
+
+    true_values = fun(s[0,:], s[1,:])
+
+    max_error = abs( true_values - interpolated_values ).max()
+
+    print( 'Maximum error : {}'.format(max_error) )
+
+
+
 """
 
 
 
 from __future__ import division
 
-import numpy as np
+import numpy
+import numpy.linalg
+
 from operator import mul
 from itertools import product
 
 def cheb_extrema(n):
-    jj = np.arange(1.0,n+1.0)
-    zeta =  np.cos( np.pi * (jj-1) / (n-1 ) )
+    jj = numpy.arange(1.0,n+1.0)
+    zeta =  numpy.cos( numpy.pi * (jj-1) / (n-1 ) )
     return zeta
 
 def chebychev(x, n):
     # computes the chebychev polynomials of the first kind
     dim = x.shape
-    results = np.zeros((n+1,) + dim)
-    results[0,...] = np.ones(dim)
+    results = numpy.zeros((n+1,) + dim)
+    results[0,...] = numpy.ones(dim)
     results[1,...] = x
     for i in range(2,n+1):
         results[i,...] = 2 * x * results[i-1,...] - results[i-2,...]
@@ -29,8 +87,8 @@ def chebychev(x, n):
 def chebychev2(x, n):
     # computes the chebychev polynomials of the second kind
     dim = x.shape
-    results = np.zeros((n+1,) + dim)
-    results[0,...] = np.ones(dim)
+    results = numpy.zeros((n+1,) + dim)
+    results[0,...] = numpy.ones(dim)
     results[1,...] = 2*x
     for i in range(2,n+1):
         results[i,...] = 2 * x * results[i-1,...] - results[i-2,...]
@@ -49,16 +107,16 @@ def build_indices_levels(l):
     return [(0,)] + [(1,2)] + [ tuple(range(2**(i-1)+1, 2**(i)+1)) for i in range(2,l) ]
 
 def build_basic_grids(l):
-    ll = [ np.array( [0.5] ) ]
-    ll.extend( [ np.linspace(0.0,1.0,2**(i)+1) for i in range(1,l) ]  )
-    ll = [ - np.cos( e * np.pi ) for e in ll]
+    ll = [ numpy.array( [0.5] ) ]
+    ll.extend( [ numpy.linspace(0.0,1.0,2**(i)+1) for i in range(1,l) ]  )
+    ll = [ - numpy.cos( e * numpy.pi ) for e in ll]
     incr = [[0.0],[-1.0,1.0]]
     for i in range(2,len(ll)):
         t = ll[i]
         n = (len(t)-1)/2
         tt =  [ t[2*n+1] for n in range( int(n) ) ]
         incr.append( tt )
-    incr = [np.array(i) for i in incr]
+    incr = [numpy.array(i) for i in incr]
     return [ll,incr]
 
 def smolyak_grids(d,l):
@@ -76,7 +134,7 @@ def smolyak_grids(d,l):
     for ff in fff:
         smolyak_points.extend( [f for f in product( *ff ) ] )
 
-    smolyak_points = np.c_[smolyak_points]
+    smolyak_points = numpy.c_[smolyak_points]
 
     return [smolyak_points, smolyak_indices]
 
@@ -101,12 +159,12 @@ class SmolyakBasic(object):
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
             coeffs.append(p)
-        coeffs = np.row_stack( coeffs )
+        coeffs = numpy.row_stack( coeffs )
 
         self.__coeffs__ = coeffs
         self.__Ts__ = Ts
 
-        self.bounds = np.row_stack([(0,1)]*d)
+        self.bounds = numpy.row_stack([(0,1)]*d)
 
     def __call__(self,s):
         return self.interpolate(s)
@@ -129,19 +187,19 @@ class SmolyakBasic(object):
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
             coeffs.append(p)
-        coeffs = np.row_stack( coeffs )
+        coeffs = numpy.row_stack( coeffs )
 
-        val = np.dot(theta,coeffs)
+        val = numpy.dot(theta,coeffs)
 #
         if with_derivative:
 
             # derivative w.r.t. arguments
             Us = chebychev2( s, self.n_points - 2 )
-            Us = np.concatenate([np.zeros( (1,n_d,n_obs) ), Us],axis=0)
+            Us = numpy.concatenate([numpy.zeros( (1,n_d,n_obs) ), Us],axis=0)
             for i in range(Us.shape[0]):
                 Us[i,:,:] = Us[i,:,:] * i
 
-            der_s = np.zeros( ( n_t, n_d, n_obs ) )
+            der_s = numpy.zeros( ( n_t, n_d, n_obs ) )
             for i in range(n_d):
                 #BB = Ts.copy()
                 #BB[:,i,:] = Us[:,i,:]
@@ -150,18 +208,18 @@ class SmolyakBasic(object):
                     #p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )
                     p = reduce( mul, [ (Ts[comb[j],j,:] if i!=j else Us[comb[j],j,:]) for j in range(self.d)] )
                     el.append(p)
-                el = np.row_stack(el)
+                el = numpy.row_stack(el)
                 der_s[:,i,:] =  el
-            dder = np.tensordot( theta, der_s, (1,0) )
+            dder = numpy.tensordot( theta, der_s, (1,0) )
 
             if with_theta_deriv:
                 # derivative w.r.t. to theta
                 l = []
                 for i in range(n_v):
-                    block = np.zeros( (n_v,n_t,n_obs) )
+                    block = numpy.zeros( (n_v,n_t,n_obs) )
                     block[i,:,:] = coeffs
                     l.append(block)
-                dval = np.concatenate( l, axis = 1 )
+                dval = numpy.concatenate( l, axis = 1 )
                 return [val,dder,dval]
             else:
                 return [val,dder]
@@ -170,33 +228,35 @@ class SmolyakBasic(object):
             return val
 
 
-    def set_values(self,res0):
+    def set_values(self,x):
         """ Updates self.theta parameter. No returns values"""
 
-        res0 = res0.real
+        x = numpy.atleast_2d(x)
+
+        x = x.real # ahem
 
         coeffs = self.__coeffs__
+
         #######
         # derivatives w.r.t theta on the grid
         l = []
-        n_v = res0.shape[0]
-        n_t = res0.shape[1]
+        n_v = x.shape[0]
+        n_t = x.shape[1]
 
         for i in range(n_v):
-            block = np.zeros( (n_v,n_t,n_t) )
+            block = numpy.zeros( (n_v,n_t,n_t) )
             block[i,:,:] = coeffs
             l.append(block)
-        self.__dval__ = np.concatenate( l, axis = 1 )
+        self.__dval__ = numpy.concatenate( l, axis = 1 )
 
-        theta0 = np.zeros(res0.shape)
+        theta0 = numpy.zeros(x.shape)
         dval = self.__dval__
 
         idv = dval.shape[1]
         jac = dval.swapaxes(1,2)
         jac = jac.reshape((idv,idv))
 
-        import numpy.linalg
-        theta = np.linalg.solve(jac,res0.flatten())
+        theta = numpy.linalg.solve(jac,x.flatten())
         theta = theta.reshape(theta0.shape)
 
         self.theta =  theta
@@ -246,17 +306,15 @@ class SmolyakGrid(SmolyakBasic):
         self.center = [b[0]+(b[1]-b[0])/2 for b in bounds.T]
         self.radius =  [(b[1]-b[0])/2 for b in bounds.T]
 
-        import numpy.linalg
-
         if not axes == None:
-            self.P = np.dot( axes, np.diag(self.radius))
+            self.P = numpy.dot( axes, numpy.diag(self.radius))
             self.Pinv = numpy.linalg.inv(axes)
         else:
-            self.P = np.diag(self.radius)
+            self.P = numpy.diag(self.radius)
             self.Pinv = numpy.linalg.inv(self.P)
 
-        base = np.eye(d)
-        image_of_base = np.dot( self.P , base)
+        base = numpy.eye(d)
+        image_of_base = numpy.dot( self.P , base)
 
         self.grid = self.A( self.u_grid )
 
@@ -264,17 +322,17 @@ class SmolyakGrid(SmolyakBasic):
     def A(self,x):
 #        '''A is the inverse of B'''
         N = x.shape[1]
-        c = np.tile(self.center, (N,1) ).T
+        c = numpy.tile(self.center, (N,1) ).T
         P = self.P
-        return c + np.dot(P, x)
+        return c + numpy.dot(P, x)
 
     # B returns from bounds to [0,1]
     def B(self,y):
 #        '''B is the inverse of A'''
         N = y.shape[1]
-        c = np.tile(self.center, (N,1) ).T
+        c = numpy.tile(self.center, (N,1) ).T
         Pinv = self.Pinv
-        return np.dot(Pinv,y-c)
+        return numpy.dot(Pinv,y-c)
 
     def interpolate(self, y, with_derivative=False, with_theta_deriv=False):
         x = self.B(y)  # Transform back to [0,1]
@@ -282,11 +340,11 @@ class SmolyakGrid(SmolyakBasic):
         if with_derivative:
             if with_theta_deriv:
                 [val,dder,dval] = res
-                dder = np.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
+                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
                 return [val,dder,dval]
             else:
                 [val,dder] = res
-                dder = np.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
+                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
                 return [val,dder]
         else:
             return res
