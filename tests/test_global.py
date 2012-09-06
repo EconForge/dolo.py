@@ -59,7 +59,7 @@ sg = SmolyakGrid( bounds, 5, P)
 [y,x,parms] = model.read_calibration()
 
 xinit = dr( sg.grid)
-sg.fit_values(xinit)
+sg.set_values(xinit)
 
 
 from dolo.compiler.compiler_global import CModel, time_iteration, deterministic_residuals

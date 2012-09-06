@@ -30,9 +30,9 @@ class  TestInterpolation(unittest.TestCase):
         interp_smol = smolyakgrid
         interp_simplex = LinearTriangulation(tridomain)
 
-        interp_rec.fit_values(values_rec)
-        interp_smol.fit_values(values_smol)
-        interp_simplex.fit_values(values_rec)
+        interp_rec.set_values(values_rec)
+        interp_smol.set_values(values_smol)
+        interp_simplex.set_values(values_rec)
         
         true_values = fun(recdomain_ref.grid).reshape(orders_ref)
         interpolated_values_spline = interp_rec(recdomain_ref.grid).reshape(orders_ref)
