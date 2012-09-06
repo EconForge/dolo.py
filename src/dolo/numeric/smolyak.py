@@ -8,16 +8,33 @@ Are math formulas allowed : :math:`a_1=12` ?
 from __future__ import division
 
 import numpy as np
-
 from operator import mul
-
 from itertools import product
 
-#try:
-#    import pyximport;pyximport.install()
-#    from dolo.numeric.chebychev_pyx import chebychev, chebychev2, cheb_extrema
-#except:
-from chebychev import cheb_extrema,chebychev,chebychev2
+def cheb_extrema(n):
+    jj = np.arange(1.0,n+1.0)
+    zeta =  np.cos( np.pi * (jj-1) / (n-1 ) )
+    return zeta
+
+def chebychev(x, n):
+    # computes the chebychev polynomials of the first kind
+    dim = x.shape
+    results = np.zeros((n+1,) + dim)
+    results[0,...] = np.ones(dim)
+    results[1,...] = x
+    for i in range(2,n+1):
+        results[i,...] = 2 * x * results[i-1,...] - results[i-2,...]
+    return results
+
+def chebychev2(x, n):
+    # computes the chebychev polynomials of the second kind
+    dim = x.shape
+    results = np.zeros((n+1,) + dim)
+    results[0,...] = np.ones(dim)
+    results[1,...] = 2*x
+    for i in range(2,n+1):
+        results[i,:] = 2 * x * results[i-1,:] - results[i-2,:]
+    return results
 
 def enum(d,l):
     r = range(l)
@@ -314,101 +331,3 @@ class SmolyakGrid(SmolyakBasic):
             plt.show()
         else:
             raise ValueError('Can only plot 2 or 3 dimensional problems')
-
-
-
-# test smolyak library
-if __name__ == '__main__':
-
-
-    # we define a reference funcion :
-    def testfun(x):
-        val = np.row_stack([
-            x[0,:]*x[0,:] * (1-np.power(x[1,:],2)),
-            x[0,:]*(1-np.power(x[1,:],3)) + x[1,:]/4
-        ])
-        return val
-
-    bounds = np.array([[0,1],[0,1]]).T
-#    bounds = np.array([[-1,1],[-1,1]]).T
-    sg2 = SmolyakGrid(bounds, 2)
-    sg3 = SmolyakGrid(bounds, 3)
-
-    from dolo.numeric.serial_operations import numdiff2, numdiff1
-
-    theta2_0 = np.zeros( (2, sg2.n_points) )
-    vals = testfun(sg2.grid)
-
-    sg2.fit_values(vals)
-#
-#
-#
-#
-#    print sg2.interpolate(sg2.real_grid)
-#
-#    [val,dval] = sg2.interpolate(sg2.real_grid)
-#    [val0,dval0] = sg2.interpolate2(sg2.real_grid)
-#    ddval = numdiff1(lambda x: sg2.interpolate(x,with_derivative=False)[0],sg2.real_grid)
-#    print ddval.shape
-#
-#    print('val - val0')
-#    print(val - val0)
-#    print('dval - dval0')
-#    print(ddval -dval)
-#    print(ddval -dval0)
-#    print ddval
-#    print(dval0)
-
-
-    def fobj(values):
-        sg2.fit_values(values.reshape((2,5)))  # Updates theta
-        return sg2.interpolate(sg2.grid, with_derivative=False)
-
-
-    print('derivatives w.r.t. parameters')
-    [val,dval] = sg2.interpolate(sg2.grid, with_theta_deriv=True, with_derivative=False)
-
-    vals = vals.reshape((1,10))
-#    [val0,dval0] = numdiff1(fobj,vals)
-    [val1,dval1] = numdiff2(fobj,vals)
-
-    print vals.shape
-    print fobj(vals).shape
-    print dval.shape
-    print dval.shape
-#    print dval0.shape
-    print(dval1.shape)
-
-    #exit()
-    ddval = numdiff1(sg2.interpolate,sg2.grid)
-    print ddval
-
-    print dval.shape
-    print ddval.shape
-
-    #exit()
-
-    def fobj2(theta):
-        grid = sg2.grid
-        return testfun(grid) - sg2.interpolate(grid)
-    theta2_0 = np.zeros( (2, sg2.n_points) )
-    res_2 = fobj2(theta2_0)
-
-    def fobj3(theta):
-        grid = sg3.grid
-        return testfun(grid) - sg3.interpolate(grid)
-    theta3_0 = np.zeros( (2, sg3.n_points) )
-    res_3 = fobj3(theta3_0)
-
-    theta3_0[:,:5]=res_2
-    #print sg2.evalfun(res_2, sg2.grid )[0]
-    #print sg2.evalfun(res_2, sg3.grid )[0]
-
-    #print sg3.evalfun(theta3_0, sg2.grid )[0]
-    #print sg3.evalfun(theta3_0, sg3.grid )[0]
-
-    theta3_0 = np.ones((2,13))
-    theta3_0[:,:5] = 0
-    print sg3.evalfun(theta3_0, sg3.grid )
-
-    values = testfun(sg3.grid)
