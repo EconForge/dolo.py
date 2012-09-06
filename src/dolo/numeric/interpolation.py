@@ -85,7 +85,7 @@ class SplineInterpolation1:
     def __call__(self,points):
         return self.interpolate(points)[0]
 
-    def fit_values(self,val):
+    def set_values(self,val):
         from scipy.interpolate import InterpolatedUnivariateSpline
         self.__values__ = val
         fgrid = self.grid.flatten()
@@ -107,7 +107,7 @@ class SplineInterpolation1:
             for i in range(n_v):
                 new_values = original_values.copy()
                 new_values[i,:] += eps
-                self.fit_values(new_values)
+                self.set_values(new_values)
                 resp[:,i,:] = self.interpolate(points,with_derivatives=False,with_coeffs_derivs=False)
             time2 = time.time()
             print('Derivative computation : ' + str(time2-time1))
@@ -144,7 +144,7 @@ class SplineInterpolation2:
     def __call__(self,points):
         return self.interpolate(points)[0]
 
-    def fit_values(self,val):
+    def set_values(self,val):
         from scipy.interpolate import RectBivariateSpline
         self.__values__ = val
 #        fgrid = self.grid.flatten()
@@ -199,7 +199,7 @@ class LinearTriangulation:
         return self.interpolate(zz)[0]
 
 
-    def fit_values(self, val):
+    def set_values(self, val):
         self.__values__ = val
 
     def interpolate(self, points, with_derivatives=False):
@@ -275,7 +275,7 @@ class MLinInterpolation:
         self.__nodes__ = nodes
         pass
 
-    def fit_values(self,val):
+    def set_values(self,val):
         self.__values__ = val
         self.__coeffs__ = val ##
 
@@ -336,7 +336,7 @@ if __name__ =='__main__':
 #    grid = interp.grid
 #
 #    vals = np.sin(grid)
-#    interp.fit_values(vals)
+#    interp.set_values(vals)
 #
 #    xvec = linspace(-1,1,100)
 #    xvec = np.atleast_2d(xvec)
@@ -363,7 +363,7 @@ if __name__ =='__main__':
 
     values = f(domain.grid)
 
-    interp.fit_values(values)
+    interp.set_values(values)
 
 
     orders = [100,100]

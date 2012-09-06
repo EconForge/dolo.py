@@ -33,7 +33,7 @@ def chebychev2(x, n):
     results[0,...] = np.ones(dim)
     results[1,...] = 2*x
     for i in range(2,n+1):
-        results[i,:] = 2 * x * results[i-1,:] - results[i-2,:]
+        results[i,...] = 2 * x * results[i-1,...] - results[i-2,...]
     return results
 
 def enum(d,l):
@@ -82,6 +82,7 @@ def smolyak_grids(d,l):
 
 class SmolyakBasic(object):
     '''Smolyak interpolation on [-1,1]^d'''
+
     def __init__(self,d,l):
 
         self.d = d
@@ -96,57 +97,44 @@ class SmolyakBasic(object):
         #self.grid = self.real_gri
 
         Ts = chebychev( self.smolyak_points.T, self.n_points - 1 )
-        ket = []
+        coeffs = []
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
-            ket.append(p)
-        ket = np.row_stack( ket )
+            coeffs.append(p)
+        coeffs = np.row_stack( coeffs )
 
-        self.__ket__ = ket
+        self.__coeffs__ = coeffs
         self.__Ts__ = Ts
 
         self.bounds = np.row_stack([(0,1)]*d)
 
-    def __call__(self,x):
-        return self.interpolate(x)
+    def __call__(self,s):
+        return self.interpolate(s)
 
-    def interpolate(self, x, with_derivative=True, with_theta_deriv=False):
+    def interpolate(self, s, with_derivative=True, with_theta_deriv=False):
         # points in x must be stacked horizontally
 
         theta = self.theta
 
         [n_v, n_t] = theta.shape  # (n_v, n_t) -> (number of variables?, ?)
         assert( n_t == self.n_points )
-        n = theta.shape[1] - 1
 
-        [n_d, n_p] = x.shape  # (n_d, n_p) -> (number of dimensions, number of points)
+        [n_d, n_p] = s.shape  # (n_d, n_p) -> (number of dimensions, number of points)
         n_obs = n_p # by def
         assert( n_d == self.d )
 
-        s = x
-
         Ts = chebychev( s, self.n_points - 1 )
 
-        ket = []
+        coeffs = []
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
-            ket.append(p)
-        ket = np.row_stack( ket )
+            coeffs.append(p)
+        coeffs = np.row_stack( coeffs )
 
-        val = np.dot(theta,ket)
+        val = np.dot(theta,coeffs)
 #
         if with_derivative:
 
-#            bounds = self.bounds
-#            bounds_delta = bounds[1,:] - bounds[0,:]
-#            # derivative w.r.t. to theta
-#            l = []
-#            for i in range(n_v):
-#                block = np.zeros( (n_v,n_t,n_obs) )
-#                block[i,:,:] = ket
-#                l.append(block)
-#                dval = np.concatenate( l, axis = 1 )
-#
             # derivative w.r.t. arguments
             Us = chebychev2( s, self.n_points - 2 )
             Us = np.concatenate([np.zeros( (1,n_d,n_obs) ), Us],axis=0)
@@ -171,7 +159,7 @@ class SmolyakBasic(object):
                 l = []
                 for i in range(n_v):
                     block = np.zeros( (n_v,n_t,n_obs) )
-                    block[i,:,:] = ket
+                    block[i,:,:] = coeffs
                     l.append(block)
                 dval = np.concatenate( l, axis = 1 )
                 return [val,dder,dval]
@@ -182,36 +170,33 @@ class SmolyakBasic(object):
             return val
 
 
-    def fit_values(self,res0):
+    def set_values(self,res0):
         """ Updates self.theta parameter. No returns values"""
 
         res0 = res0.real
 
-        ket = self.__ket__
+        coeffs = self.__coeffs__
         #######
         # derivatives w.r.t theta on the grid
         l = []
         n_v = res0.shape[0]
         n_t = res0.shape[1]
 
-        for i in range(n_v):                         # TODO : I shouldn't recompute it every time
+        for i in range(n_v):
             block = np.zeros( (n_v,n_t,n_t) )
-            block[i,:,:] = ket
+            block[i,:,:] = coeffs
             l.append(block)
         self.__dval__ = np.concatenate( l, axis = 1 )
-        ######
 
-        #res0 = f(self.real_grid)
         theta0 = np.zeros(res0.shape)
         dval = self.__dval__
-        #[val,dval,dder] = self.evalfun(theta0,self.real_grid,with_derivative=True)
 
         idv = dval.shape[1]
         jac = dval.swapaxes(1,2)
         jac = jac.reshape((idv,idv))
 
         import numpy.linalg
-        theta = + np.linalg.solve(jac,res0.flatten())
+        theta = np.linalg.solve(jac,res0.flatten())
         theta = theta.reshape(theta0.shape)
 
         self.theta =  theta
@@ -228,7 +213,6 @@ class SmolyakBasic(object):
             ax.grid(True, linestyle='--',color='0.75')
             plt.show()
         elif grid.shape[1] == 3:
-            from mpl_toolkits.mplot3d import Axes3D
             xs = grid[:, 0]
             ys = grid[:, 1]
             zs = grid[:, 2]

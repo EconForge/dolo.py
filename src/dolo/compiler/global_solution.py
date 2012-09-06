@@ -21,7 +21,7 @@ def deterministic_residuals(s, x, interp, f, g, sigma, parms):
     n_x = x.shape[0]
     n_g = x.shape[1]
     n_e = sigma.shape[0]
-    interp.fit_values(x)
+    interp.set_values(x)
     dummy_epsilons = np.zeros((n_e,n_g))
     snext = g(s,x,dummy_epsilons,parms)
     xnext = interp.interpolate(snext)
@@ -32,7 +32,7 @@ def deterministic_residuals(s, x, interp, f, g, sigma, parms):
 def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
-    dr.fit_values(x)
+    dr.set_values(x)
     ss = np.tile(s, (1,n_draws))
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
@@ -247,7 +247,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
     while err > tol and it < maxit:
         t_start = time.time()
         it +=1
-        interp.fit_values(x0)
+        interp.set_values(x0)
 
         if serial_grid:
             if numdiff:

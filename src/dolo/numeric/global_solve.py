@@ -76,7 +76,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         
         from dolo.numeric.solver import solver
         xinit = dr(dr.grid)
-        dr.fit_values(xinit)
+        dr.set_values(xinit)
         shape = dr.theta.shape
         theta_0 = dr.theta.copy().flatten()
         if not memory_hungry:

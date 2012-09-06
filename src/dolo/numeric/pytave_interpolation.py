@@ -13,7 +13,7 @@ class CEInterpolation:
         self.__interp__ = pytave.feval(1, 'create_space', atype, orders, smin,smax) # we don't really need it here..
         self.grid = self.__interp__[0]['points'][0,0].T
 
-    def fit_values(self,values):
+    def set_values(self,values):
         pytave.feval(0,'set_coeffs',values.T)[0]
 
     def __call__(self, points):
@@ -51,6 +51,6 @@ if __name__ == '__main__':
 
     print values
 
-    interp.fit_values(values)
+    interp.set_values(values)
 
     print interp(numpy.column_stack( [interp.grid, interp.grid] ) )
