@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Quick tutorial &mdash; dolo 0.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
+    <link rel="next" title="Installation instructions" href="installation.html" />
+    <link rel="prev" title="Welcome to dolo’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="installation.html" title="Installation instructions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to dolo’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quick tutorial</a><ul>
+<li><a class="reference internal" href="#quick-quick-quick">Quick quick quick</a></li>
+<li><a class="reference internal" href="#more-details">More details</a><ul>
+<li><a class="reference internal" href="#write-a-model">Write a model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to dolo&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="installation.html"
+                        title="next chapter">Installation instructions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="quick-tutorial">
+<h1>Quick tutorial<a class="headerlink" href="#quick-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="quick-quick-quick">
+<h2>Quick quick quick<a class="headerlink" href="#quick-quick-quick" title="Permalink to this headline">¶</a></h2>
+<p>Open an IPython session.</p>
+<p>Import dolo:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dolo</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+<p>Import the example file provided with dolo in <tt class="docutils literal"><span class="pre">examples/global_models</span></tt> subdirectory and display it.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">model</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s">&#39;../examples/global_models/optimal_growth&#39;</span><span class="p">)</span>
+<span class="n">display</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="c"># this prints the model equations</span>
+</pre></div>
+</div>
+<p>Solve the model at first order...</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dr_1</span> <span class="o">=</span> <span class="n">approximate_controls</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>... and at second order ...</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dr_2</span> <span class="o">=</span> <span class="n">approximate_controls</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>... and using smolyak colocation (global solution):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">dr_s</span> <span class="o">=</span> <span class="n">global_solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compute irfs for each of the methods, using deterministic steady-state as a starting point.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">s0</span> <span class="o">=</span> <span class="n">dr_1</span><span class="o">.</span><span class="n">S_bar</span> <span class="c"># deterministic steady-state is the fixed point of 1st order d.r.</span>
+
+<span class="n">irfs</span> <span class="o">=</span> <span class="p">[</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">s0</span><span class="p">)</span> <span class="k">for</span> <span class="n">dr</span> <span class="ow">in</span> <span class="p">[</span><span class="n">dr_1</span><span class="p">,</span><span class="n">dr_2_dr_s</span><span class="p">]</span> <span class="p">]</span>
+</pre></div>
+</div>
+<p>Plot the path of consumption for each solution method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">i_C</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span> <span class="n">Variable</span><span class="p">(</span><span class="n">c</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">)</span> <span class="c"># get index of consumption ( it is equal to 2 )</span>
+
+<span class="k">for</span> <span class="n">irf</span> <span class="ow">in</span> <span class="n">irfs</span><span class="p">:</span>
+    <span class="n">plot</span><span class="p">(</span> <span class="n">irf</span><span class="p">[</span><span class="n">i_C</span><span class="p">,:]</span> <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="more-details">
+<h2>More details<a class="headerlink" href="#more-details" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="write-a-model">
+<h3>Write a model<a class="headerlink" href="#write-a-model" title="Permalink to this headline">¶</a></h3>
+<p>Here is the content of the <tt class="docutils literal"><span class="pre">optimal_growth.yaml</span></tt> model:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span class="l-Scalar-Plain">declarations</span><span class="p-Indicator">:</span>
+
+    <span class="l-Scalar-Plain">states</span><span class="p-Indicator">:</span>  <span class="p-Indicator">[</span><span class="nv">A</span><span class="p-Indicator">,</span> <span class="nv">w</span><span class="p-Indicator">]</span>
+
+    <span class="l-Scalar-Plain">controls</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">c</span><span class="p-Indicator">,</span> <span class="nv">Welf</span><span class="p-Indicator">]</span>
+
+    <span class="l-Scalar-Plain">expectations</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">eh</span><span class="p-Indicator">,</span> <span class="nv">eW</span><span class="p-Indicator">]</span>
+
+    <span class="l-Scalar-Plain">shocks</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">e_A</span><span class="p-Indicator">]</span>
+
+    <span class="l-Scalar-Plain">parameters</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">beta</span><span class="p-Indicator">,</span> <span class="nv">gamma</span><span class="p-Indicator">,</span> <span class="nv">rho_A</span><span class="p-Indicator">,</span> <span class="nv">rho_r</span><span class="p-Indicator">,</span> <span class="nv">ybar</span><span class="p-Indicator">,</span> <span class="nv">rbar</span><span class="p-Indicator">,</span> <span class="nv">theta</span><span class="p-Indicator">,</span> <span class="nv">dumb</span><span class="p-Indicator">]</span>
+
+
+<span class="l-Scalar-Plain">equations</span><span class="p-Indicator">:</span>
+
+
+    <span class="l-Scalar-Plain">transition</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">A = 1 + rho_A*(A(-1)-1) + e_A</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">w = (w(-1)-c(-1))^(theta)*(  1 + rho_A*(A(-1)-1) + e_A   )  + 1</span>
+
+    <span class="l-Scalar-Plain">arbitrage</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  = 1     |   0 &lt;= c &lt;= w</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf &lt;=  Welf &lt;= inf</span>
+        
+    <span class="l-Scalar-Plain">expectation</span><span class="p-Indicator">:</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">eh = c(1)^(-gamma)*A(1)</span>
+        <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">eW = Welf(1)</span>
+
+<span class="l-Scalar-Plain">calibration</span><span class="p-Indicator">:</span>
+
+  <span class="l-Scalar-Plain">parameters</span><span class="p-Indicator">:</span>
+      <span class="l-Scalar-Plain">beta</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.96</span>
+      <span class="l-Scalar-Plain">gamma</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">4.0</span>
+      <span class="l-Scalar-Plain">rho_A</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.9</span>
+      <span class="l-Scalar-Plain">rho_r</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.5</span>
+      <span class="l-Scalar-Plain">rbar</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">1.0</span>
+      <span class="l-Scalar-Plain">ybar</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">1.0</span>
+      <span class="l-Scalar-Plain">theta</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.3</span>
+      <span class="l-Scalar-Plain">dumb</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">1</span>
+
+  <span class="l-Scalar-Plain">steady_state</span><span class="p-Indicator">:</span>
+    <span class="l-Scalar-Plain">A</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">1</span>
+    <span class="l-Scalar-Plain">w</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">((1/beta/theta)^(1/(theta-1)))^theta + 1</span>
+    <span class="l-Scalar-Plain">c</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">w - (1/beta/theta)^(1/(theta-1))</span>
+    <span class="l-Scalar-Plain">eh</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">c^(-gamma)</span>
+    <span class="l-Scalar-Plain">Welf</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">c^(1-gamma)/(1-gamma)/(1-beta)</span>
+    <span class="l-Scalar-Plain">eW</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Welf</span>
+
+  <span class="l-Scalar-Plain">covariances</span><span class="p-Indicator">:</span> <span class="p-Indicator">|</span>
+    <span class="no">[ [ 0.01 ] ]</span>
+    
+</pre></div>
+</div>
+<p>It is a valid YAML file (see <a class="reference external" href="http://yaml.org/">http://yaml.org/</a>). In particular, it is sensitive to indentation and cannot contain tabs.
+It consists in several part:</p>
+<ul class="simple">
+<li>The declaration block contains all names of variables/parameters to be used in the model. Here the model contains several
+kinds of variables: <em>controls</em>, <em>states</em> and <em>expectations</em>. There are also exogenously distributed innovations (<em>shocks</em>)
+and <em>parameters</em>.</li>
+<li>The model part contains a list of equations sorted by type.  In these equations, variables and shocks are indexed
+by time: A, A(1) and A(-1) denote variable A at date t, (t-1), and (t+1) respectively. By assumption all equations are taken
+in expectation at date t (explanation). Optionnaly, arbitrage equations can receive complementarity constraints (see
+relevant section)</li>
+<li>The calibration part contains the value of the parameters, and and initial value for endogenous variables. Parameters
+can depend upon each other and the declaration is not order dependent. Parameters are also allowed to depend on steady-state
+values.</li>
+<li>The covariance matrix of the shock can also be specified in the calibration part</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="installation.html" title="Installation instructions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to dolo’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

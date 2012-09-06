@@ -1,0 +1,193 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Model conventions &mdash; dolo 0.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
+    <link rel="next" title="Informations for developpers" href="structure.html" />
+    <link rel="prev" title="Install on windows" href="install_windows.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="Informations for developpers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install_windows.html" title="Install on windows"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Model conventions</a><ul>
+<li><a class="reference internal" href="#model-types">Model types</a><ul>
+<li><a class="reference internal" href="#state-free-approach">state-free approach</a></li>
+<li><a class="reference internal" href="#controlled-process-variants">controlled process variants</a><ul>
+<li><a class="reference internal" href="#fg-model"><em>fg</em> model</a></li>
+<li><a class="reference internal" href="#fga-model"><em>fga</em> model</a></li>
+<li><a class="reference internal" href="#not-implemented-fgh-model">not implemented ; fgh model</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#numerical-conventions">Numerical Conventions</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="install_windows.html"
+                        title="previous chapter">Install on windows</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="structure.html"
+                        title="next chapter">Informations for developpers</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/conventions.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="model-conventions">
+<h1>Model conventions<a class="headerlink" href="#model-conventions" title="Permalink to this headline">¶</a></h1>
+<p>This page describes how models are specified in dolo.</p>
+<div class="section" id="model-types">
+<h2>Model types<a class="headerlink" href="#model-types" title="Permalink to this headline">¶</a></h2>
+<p>There are several ways to represent a DSGE model. Here we list some of them:</p>
+<div class="section" id="state-free-approach">
+<h3>state-free approach<a class="headerlink" href="#state-free-approach" title="Permalink to this headline">¶</a></h3>
+<p>This approach is taken in Dynare and in most perturbation softwares. The model is specified by a vectorial function</p>
+<p><span class="math">\(f(y_{t+1},y_t,y_{t-1},\epsilon_t) = 0\)</span></p>
+<p>with the restriction that <span class="math">\(\epsilon_t\)</span> and <span class="math">\(y_{t+1}\)</span> cannot appear in the same equations.
+For this kind of models, the solver finds a solution <span class="math">\(g\)</span> such that the law of motion of <span class="math">\((y_t)\)</span> is given by: <span class="math">\(y_t = g \left( y_{t-1}, \epsilon_t \right)\)</span></p>
+</div>
+<div class="section" id="controlled-process-variants">
+<h3>controlled process variants<a class="headerlink" href="#controlled-process-variants" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="fg-model">
+<h4><em>fg</em> model<a class="headerlink" href="#fg-model" title="Permalink to this headline">¶</a></h4>
+<p>With these versions, the state-space is chosen by the user. A law of motion for the state-space must be specified (depending on the controls and on the shocks). And optimality conditions must be given to pin down all the controls.
+The model is specified by giving <span class="math">\(g\)</span> and <span class="math">\(f\)</span> such that:</p>
+<p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(E_t \left[ f \left( s_t, x_t, s_{t+1}, x_{t+1} \right) \right]=0\)</span></p>
+</div>
+<div class="section" id="fga-model">
+<h4><em>fga</em> model<a class="headerlink" href="#fga-model" title="Permalink to this headline">¶</a></h4>
+<p>In some cases, some variables can be directly expressed as a function of other variables. We call them <em>auxiliary</em> variables. Auxiliary variables are restricted
+to depend only on contemporaneous variables (controls or states).  The model can be rewritten:</p>
+<p><span class="math">\(a_t = a\left(s_t, x_t\right)\)</span></p>
+<p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, a_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(E_t \left[ f \left( s_t, x_t, a_t, s_{t+1}, x_{t+1}, a_{t+1} \right) \right]\)</span></p>
+<p>Clearly, by substituting the variables <em>a</em> everywhere, this type of model can be seen as an <em>fg</em> model. Hence when some
+algorithm is applicable to an <em>fg</em> model, it can be also be applied to an <em>fga</em> model.</p>
+</div>
+<div class="section" id="not-implemented-fgh-model">
+<h4>not implemented ; fgh model<a class="headerlink" href="#not-implemented-fgh-model" title="Permalink to this headline">¶</a></h4>
+<p>A sub-variant of this specification let the user choose equations to define expectations. This is useful for PEA approaches. The model is specified by giving <span class="math">\(g\)</span>, <span class="math">\(f\)</span> and <span class="math">\(h\)</span> such that:</p>
+<p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(f \left( s_t, x_t, z_t \right)\)</span></p>
+<p><span class="math">\(z_t = E_t h \left( s_{t+1}, x_{t+1} \right)\)</span></p>
+<p>Same remark as for <em>fga</em> model: is needed, <em>fgh</em> models can behave exactly as an <em>fg</em> model.</p>
+</div>
+</div>
+</div>
+<div class="section" id="numerical-conventions">
+<h2>Numerical Conventions<a class="headerlink" href="#numerical-conventions" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>A list of <em>N</em> points in a <em>d</em>-dimensional space is represented by a <em>d x N</em> matrix. In other words the last index always</li>
+</ul>
+<p>corresponds to the successive observations. This is consistent with default ordering in numpy: last index varies faster.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">When dolo is used to compiler a model for matlab the convention is reversed: first dimension
+denotes the successive points. This is adapted to matlab&#8217;s storage order (Fortran order).</p>
+</div>
+<ul class="simple">
+<li>In order to evaluate many times a function <span class="math">\(f: R^s \rightarrow R^x\)</span> for a list of <em>N</em> points we consider the vectorized version:</li>
+</ul>
+<dl class="docutils">
+<dt><span class="math">\(f: R^s x R^N \rightarrow R^x x R^N\)</span> . If <em>X</em> is the matrix of inputs and <em>F</em> the matrix of output, then for any i</dt>
+<dd><em>F[i,:]</em> is the image of <em>X[i,:]</em> by <em>f</em>.</dd>
+</dl>
+<ul class="simple">
+<li>In particular, the implementation of the model definition follow this convention, as well as the solution of the model.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="Informations for developpers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install_windows.html" title="Install on windows"
+             >previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
