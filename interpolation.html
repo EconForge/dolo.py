@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Interpolation &mdash; dolo 0.3 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
+    <link rel="next" title="Testing function documentation" href="test.html" />
+    <link rel="prev" title="Informations for developpers" href="structure.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test.html" title="Testing function documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="structure.html" title="Informations for developpers"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Interpolation</a><ul>
+<li><a class="reference internal" href="#module-dolo.numeric.smolyak">smolyak</a></li>
+<li><a class="reference internal" href="#linear-delaunay-tessellation">linear (delaunay tessellation)</a></li>
+<li><a class="reference internal" href="#multilinear">multilinear</a></li>
+<li><a class="reference internal" href="#splines">splines</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="structure.html"
+                        title="previous chapter">Informations for developpers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="test.html"
+                        title="next chapter">Testing function documentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/interpolation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="interpolation">
+<h1>Interpolation<a class="headerlink" href="#interpolation" title="Permalink to this headline">¶</a></h1>
+<p>There are many available methods to interpolate points when solving global models. <em>dolo</em> provides several of them.
+They can been used with exactly the same interface. By default, <em>dolo</em> uses smolyak interpolation.</p>
+<div class="section" id="module-dolo.numeric.smolyak">
+<span id="smolyak"></span><h2>smolyak<a class="headerlink" href="#module-dolo.numeric.smolyak" title="Permalink to this headline">¶</a></h2>
+<p>We demonstrate the use of the <tt class="docutils literal"><span class="pre">`SmolyakGrid`</span></tt> object using the function
+<span class="math">\(x,y \rightarrow \exp \left( -x^2 - y^2 \right)\)</span>. We define it on a subset of <span class="math">\([-1,1]^2\)</span> and use a
+smolyak product of chebychev polynomials to approximate it at other points.</p>
+<p>Let define the state space <span class="math">\([-1,1]^2\)</span> and the interpolation object.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dolo.numeric.smolyak</span> <span class="kn">import</span> <span class="n">SmolyakGrid</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<span class="n">bounds</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="p">[</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">],</span>    <span class="c"># lower bounds</span>
+    <span class="p">[</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="p">]</span>     <span class="c"># upper bounds</span>
+<span class="p">])</span>
+
+<span class="n">sg</span> <span class="o">=</span> <span class="n">SmolyakGrid</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c"># 3 is the smolyak parameter l</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points selected by the smolyak algorithm are accessible in <tt class="docutils literal"><span class="pre">`sg.grid`</span></tt>  which is a <tt class="docutils literal"><span class="pre">`2x13`</span></tt> matrix. They can by plotted with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sg</span><span class="o">.</span><span class="n">plot_grid</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Let define a two-variables function and evaluate it on the grid and we initialize the interpolator with these values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">fun</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
+<span class="n">values_on_the_grid</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span> <span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="p">)</span>
+
+<span class="n">sg</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">values_on_the_grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we construct a random matrix <tt class="docutils literal"><span class="pre">`s`</span></tt> of size```2xN``` where each column is a point of the state space. On these
+states, we compute interpolated values and compare it with the true ones.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span>  <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">multivariate_normal</span> <span class="k">as</span>  <span class="n">mvtnorm</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">cov</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">mvtnorm</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+<span class="n">interpolated_values</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span> <span class="n">s</span> <span class="p">)</span>
+
+<span class="n">true_values</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+
+<span class="n">max_error</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">true_values</span> <span class="o">-</span> <span class="n">interpolated_values</span> <span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span> <span class="s">&#39;Maximum error : {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_error</span><span class="p">)</span> <span class="p">)</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="dolo.numeric.smolyak.SmolyakBasic">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.smolyak.</tt><tt class="descname">SmolyakBasic</tt><big>(</big><em>d</em>, <em>l</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakBasic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakBasic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smolyak interpolation on [-1,1]^d</p>
+<dl class="method">
+<dt id="dolo.numeric.smolyak.SmolyakBasic.set_values">
+<tt class="descname">set_values</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakBasic.set_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakBasic.set_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates self.theta parameter. No returns values</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dolo.numeric.smolyak.SmolyakGrid">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.smolyak.</tt><tt class="descname">SmolyakGrid</tt><big>(</big><em>bounds</em>, <em>l</em>, <em>axes=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smolyak interpolation</p>
+</dd></dl>
+
+</div>
+<div class="section" id="linear-delaunay-tessellation">
+<h2>linear (delaunay tessellation)<a class="headerlink" href="#linear-delaunay-tessellation" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="multilinear">
+<h2>multilinear<a class="headerlink" href="#multilinear" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="splines">
+<h2>splines<a class="headerlink" href="#splines" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="test.html" title="Testing function documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="structure.html" title="Informations for developpers"
+             >previous</a> |</li>
+        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

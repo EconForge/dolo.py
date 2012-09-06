@@ -3,11 +3,6 @@ Testing function documentation
 
 hoho
 
-.. automodule:: dolo.numeric.smolyak
-   :members:
-
-.. autoclass:: dolo.numeric.smolyak.SmolyakGrid
-   :members:
 
 ouhou !
 
