@@ -41,7 +41,9 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     elif interp_type == 'linear':
         from dolo.numeric.interpolation import MLinInterpolation
         sg = MLinInterpolation( bounds[0,:], bounds[1,:], interp_orders )
-
+    elif interp_type == 'mlinear':
+        from dolo.numeric.multilinear import MultilinearInterpolator
+        sg = MultilinearInterpolator( bounds[0,:], bounds[1,:], interp_orders)
 
     
     xinit = initial_dr(sg.grid)
