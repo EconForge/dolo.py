@@ -33,6 +33,7 @@ class  Test_ramseyTestCase(unittest.TestCase):
 
         dynare_model = parse_dynare_text(txt)
         dynare_model.check()
+        dynare_model.check_consistency()
 
         rmodel = RamseyModel(dynare_model)
         rmodel.check(verbose=True)

@@ -231,7 +231,8 @@ def def_variables(s):
 
     frame = inspect.currentframe().f_back
     try:
-        s = re.split('\s|,', s)
+        if isinstance(s,str):
+            s = re.split('\s|,', s)
         res = []
         for t in s:
             # skip empty stringG
@@ -241,7 +242,7 @@ def def_variables(s):
                 sym = IndexedSymbol(t,Variable)
                 t = t.strip('@')
             else:
-                sym = Variable(t,0)
+                sym = Variable(t)
             frame.f_globals[t] = sym
             res.append(sym)
         if frame.f_globals.get('variables_order'):
@@ -260,7 +261,8 @@ def def_shocks(s):
 
     frame = inspect.currentframe().f_back
     try:
-        s = re.split('\s|,', s)
+        if isinstance(s,str):
+            s = re.split('\s|,', s)
         res = []
         for t in s:
             # skip empty stringG
@@ -270,7 +272,7 @@ def def_shocks(s):
                 sym = IndexedSymbol(t,Shock)
                 t = t.strip('@')
             else:
-                sym = Shock(t,0)
+                sym = Shock(t)
             frame.f_globals[t] = sym
             res.append(sym)
         if frame.f_globals.get('shocks_order'):
@@ -290,7 +292,8 @@ def def_parameters(s):
 
     frame = inspect.currentframe().f_back
     try:
-        s = re.split('\s|,', s)
+        if isinstance(s,str):
+            s = re.split('\s|,', s)
         res = []
         for t in s:
             # skip empty stringG

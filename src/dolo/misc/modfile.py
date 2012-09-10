@@ -151,7 +151,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
             latex_name = names_dict[vn]
         else:
             latex_name = None
-        v = Variable(vn,0)
+        v = Variable(vn)
         variables.append(v)
 
     shocks = []
@@ -160,7 +160,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
             latex_name = names_dict[vn]
         else:
             latex_name = None
-        s = Shock(vn,0)
+        s = Shock(vn)
         shocks.append(s)
 
     parameters = []

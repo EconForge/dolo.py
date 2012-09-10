@@ -141,8 +141,8 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
                 sdict[eq.lhs] = eq.rhs
                 sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
                 sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
-            from dolo.misc.calculus import simple_triangular_solve
-            sdict = simple_triangular_solve(sdict)
+            from dolo.misc.triangular_solver import solve_triangular_system
+            sdict = solve_triangular_system(sdict)
             resp['a_eqs'] = [sdict[v] for v in v_g['auxiliary']]
             resp['auxiliaries'] = [v for v in v_g['auxiliary']]
             resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
@@ -167,9 +167,9 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
         resp['f_eqs'] = [ eq.subs(zero_shocks) for eq in resp['f_eqs'] ]
 
     if solve_systems:
-        from dolo.misc.calculus import simple_triangular_solve
+        from dolo.misc.triangular_solver import solve_triangular_system
         system = {s: resp['g_eqs'][i] for i,s in enumerate(v_g['states'])}
-        new_geqs = simple_triangular_solve(system)
+        new_geqs = solve_triangular_system(system)
         resp['g_eqs'] = [new_geqs[s] for s in v_g['states']]
 
     resp['states'] = v_g['states']

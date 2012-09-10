@@ -27,7 +27,7 @@ Imports the content of a modfile into the current interpreter scope
         known_types = ['states','controls','expectations','auxiliary','auxiliary_2']
         for vtype in known_types:
             if vtype in declarations:
-                variables_groups[vtype] = [Variable(vn,0) for vn in declarations[vtype]]
+                variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
         variables_ordering = sum(variables_groups.values(),[])
     else:
         vnames = declarations['variables']
@@ -36,7 +36,7 @@ Imports the content of a modfile into the current interpreter scope
         
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
     
-    shocks_ordering = [Shock(vn,0) for vn in declarations['shocks']]
+    shocks_ordering = [Shock(vn) for vn in declarations['shocks']]
 
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
     context = dict(context)
@@ -111,7 +111,7 @@ Imports the content of a modfile into the current interpreter scope
             parameters_values = dict(parameters_values)
         #steady_state = raw_dict['steady_state']
         if 'steady_state' in calibration:
-            init_values = [ (Variable(vn,0), eval(str(value),context)) for vn,value in calibration['steady_state'].iteritems() ]
+            init_values = [ (Variable(vn), eval(str(value),context)) for vn,value in calibration['steady_state'].iteritems() ]
             init_values = dict(init_values)
         if 'covariances' in calibration:
             context['sympy'] = sympy

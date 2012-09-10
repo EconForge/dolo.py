@@ -179,7 +179,7 @@ class Model(dict):
 
     def read_calibration(self,to_numpy=True):
         model = self
-        from dolo.misc.calculus import solve_triangular_system
+        from dolo.misc.triangular_solver import solve_triangular_system
 
         dvars = dict()
         dvars.update(model.parameters_values)
@@ -194,7 +194,7 @@ class Model(dict):
                 dvars[p] = 0
                 raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
 
-        values = solve_triangular_system(dvars)[0]
+        values = solve_triangular_system(dvars)
 
         y = [values[v] for v in model.variables]
         x = [0 for s in model.shocks]
@@ -211,7 +211,7 @@ class Model(dict):
 
         # duplicated code
         model = self
-        from dolo.misc.calculus import solve_triangular_system
+        from dolo.misc.triangular_solver import solve_triangular_system
         dvars = dict()
         dvars.update(model.parameters_values)
         dvars.update(model.init_values)
@@ -225,7 +225,7 @@ class Model(dict):
                 dvars[p] = 0
                 raise Warning('No initial value for parameters : ' + str.join(', ', [p.name for p in undeclared_parameters]) )
 
-        values = solve_triangular_system(dvars)[0]
+        values = solve_triangular_system(dvars)
 
         m = self['covariances']
         m = m.subs(values)

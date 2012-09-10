@@ -20,13 +20,6 @@ import re
 
 class Parameter(sympy.Symbol):
 
-    def __init__(self, name):
-        super(Parameter,self).__init__()
-        self.name = name
-        self.father = self.name
-        self.is_commutative = True
-        return(None)
-
     def __repr__(self):
         return(self.name)
 
@@ -55,21 +48,24 @@ class Parameter(sympy.Symbol):
 class TSymbol(sympy.Symbol):
 
     #latex_names = {}
-
-    def __init__(self, name, date):
+    def __init__(self, name, **args):
         super(TSymbol,self).__init__()
-        self.date = date
-        self.name = name
-        self.is_commutative = True
+        if 'date' not in args:
+            self._assumptions['date'] = 0
+        else:
+            self._assumptions['date'] = args['date']
         return(None)
 
-    def __getstate__(self):
-        return {
-            'date': self.date,
-            'name': self.name,
-            'is_commutative': self.is_commutative,
-            '_mhash': self._mhash
-        }
+    def __call__(self, shift):
+        current_date = self.assumptions0['date']
+        # we forget other assumptions
+        v = type(self)
+        return v( self.name, date = current_date + shift)
+
+
+    @property
+    def date(self):
+        return self.assumptions0['date']
 
     def _hashable_content(self):
         return (self.name,self.date)
@@ -77,16 +73,6 @@ class TSymbol(sympy.Symbol):
     @property
     def lag(self):
         return self.date
-
-    def __call__(self,lead):
-        if self.lag == 'S':
-            return self
-            #raise Exception,"lags are not allowed on steady state variable"
-        else:
-            newdate = int(self.date) + lead
-            newname = str(self.name)
-            v = type(self)(newname,newdate)
-            return v
 
     @property
     def P(self):
@@ -170,13 +156,13 @@ class Variable(TSymbol):
 
     @property
     def S(self):
-        v = Variable(self.name,'S')
+        v = Variable(self.name,date='S')
         return(v)
 
 class Shock(TSymbol):
     """
     Define a new shock with : x = Shock('x')
-    Then x(k) returns the value with lag k
+    Then x(k) returns the value with la   g k
     """
 
 class Equation(sympy.Equality):

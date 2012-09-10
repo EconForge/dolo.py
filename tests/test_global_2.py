@@ -6,6 +6,8 @@ filename = '../examples/global_models/rbc.yaml'
 
 model = yaml_import(filename)
 
+import time
+
 t1 = time.time()
 
 dr = global_solve(model, pert_order=1, maxit=5, smolyak_order=5, memory_hungry=True, verbose=True)

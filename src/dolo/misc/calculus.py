@@ -25,63 +25,6 @@ def lambda_sub(expr,dic):
     f = sympy.lambdify(symbs,expr)
     res = (f(*vals))
     return(res)
-    
-
-def solve_triangular_system(sdict,return_order=False,unknown_type=sympy.Symbol):
-    oks = []
-    symbols = dict()
-    for v in sdict:
-        atoms = sympy.sympify(sdict[v]).atoms()
-        symbols[v] = set([s for s in atoms if isinstance(s,unknown_type)])
-    notfinished = True
-    while notfinished:
-        l = len(symbols)
-        symkeys = symbols.keys()
-        for s in symkeys:
-            if len(symbols[s]) == 0:
-                oks.append(s)
-                symbols.pop(s)
-                for ss in symbols:
-                    symbols[ss].discard(s)
-        if len(symbols) == 0:
-            notfinished = False
-        elif len(symbols) == l:
-            print('could not solve : ' + str(symbols))
-            raise(Exception('The system is not triangular'))
-    if return_order:
-        return(oks)
-    else:
-        res = copy.copy(sdict)
-        for s in oks:
-            try:
-                res[s] = lambda_sub(res[s],res)
-            except Exception as e:
-                print('Error evaluating: '+ str(res[s]))
-                print('with :')
-                print(res)
-                raise(e)
-
-        return [res,oks]
-
-def simple_triangular_solve(sdict, l=0):
-    if l == 0:
-        sdict = {k: sympy.sympify(sdict[k]) for k in sdict}
-    if l > len(sdict):
-        raise Exception('System is not triangular')
-    # test if work is finished
-    lhs_values = set([])
-    for val in sdict.values():
-        atoms = [v for v in val.atoms() if v in sdict]
-        lhs_values = lhs_values.union( atoms )
-    if len(lhs_values) == 0:
-        return sdict
-    bdict = dict()
-    for k in sdict:
-        bdict[k] = sdict[k].subs(sdict)
-        
-    return simple_triangular_solve(bdict,l+1)
-
-from dolo.misc.triangular_solver import solve_triangular_system as simple_triangular_solve
 
 def construct_4_blocks_matrix(blocks):
     '''construct block matrix line by line

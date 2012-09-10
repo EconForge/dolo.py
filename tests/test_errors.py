@@ -14,7 +14,7 @@ class  ErrorsTestCase(unittest.TestCase):
         from dolo.numeric.perturbations_to_states import approximate_controls
 
         dr = approximate_controls(model, substitute_auxiliary=True, solve_systems=True)
-        dr_global = global_solve(model, smolyak_order=4, verbose=False)
+        dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1)
 
 
         sigma = model.read_covariances()

@@ -2,6 +2,7 @@ from numpy import tile, dot
 from dolo.numeric.tensor import mdot
 
 class CDR:
+
     def __init__(self,l):
         self.order = len(l) - 2
         self.S_bar = l[0]
@@ -27,7 +28,6 @@ class CDR:
                 choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2
                 choice[:,i] += mdot(self.X_sss,[ds[:,i],ds[:,i],ds[:,i]]) / 6
         return choice
-
 
     def interpolate(self,x):
         return self.__call__(x)

@@ -8,7 +8,7 @@ class  PicklingTestCase(unittest.TestCase):
 
     def test_pickle_variable(self):
 
-        v = TSymbol('v',0)
+        v = TSymbol('v')
         eq = v + v(1) + v(2)
 
         to_be_pickled = {
