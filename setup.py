@@ -11,9 +11,9 @@ setup(
     install_requires = ["pyyaml","sympy","numpy","matplotlib"],
     author = "Pablo Winant",
     author_email = "pablo.winant@gmail.com",
-    description = 'DSGE modelling library',
-    license = 'BSD',
-    url = 'http://code.google.com/p/dynare-python/',
+    description = 'Economic modelling in Python',
+    license = 'BSD-2',
+    url = 'http://albop.github.com/dolo/',
 
 )
 
