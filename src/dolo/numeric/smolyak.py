@@ -59,8 +59,6 @@ states, we compute interpolated values and compare it with the true ones.
 
 """
 
-
-
 from __future__ import division
 
 import numpy
@@ -288,7 +286,7 @@ class SmolyakGrid(SmolyakBasic):
 
     '''Smolyak interpolation'''
 
-    def __init__(self, bounds, l, axes=None):
+    def __init__(self, smin, smax, l, axes=None):
         """
         @param bounds: matrix of bounds
         @param l:
@@ -296,12 +294,15 @@ class SmolyakGrid(SmolyakBasic):
         @return: a smolyak interpolator
         """
 
+        bounds = numpy.row_stack([smin,smax])
 
         d = bounds.shape[1]
 
         super(SmolyakGrid, self).__init__( d, l)
 
         self.bounds = bounds
+        self.smin = numpy.array(smin)
+        self.smax = numpy.array(smax)
 
         self.center = [b[0]+(b[1]-b[0])/2 for b in bounds.T]
         self.radius =  [(b[1]-b[0])/2 for b in bounds.T]

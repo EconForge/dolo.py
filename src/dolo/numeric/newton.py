@@ -59,6 +59,48 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, 
     else:
         return [x, it]
 
+def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdiff=False):
+    '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
+    :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
+    values in (p x p x N)
+    :param x0: initial value ( p x N )
+    :param lb: bounds for first variable
+    :param ub: bounds for second variable
+    :return: solution x such that f(x) = 0
+    '''
+
+    from numpy import row_stack
+
+    def fun_lc(xx):
+        x = row_stack([lb, xx])
+        res = f(x)
+        return res[1:,:]
+
+    def fun_uc(xx):
+        x = row_stack([ub, xx])
+        res = f(x)
+        return res[1:,:]
+
+    [sol_lc, nit0] = newton_solver(fun_lc, x0[1:,:], numdiff=True)
+    [sol_uc, nit1] = newton_solver(fun_uc, x0[1:,:], numdiff=True)
+    [sol_nc, nit2] = newton_solver(f, x0, numdiff=True)
+
+    nit = nit0 + nit1 + nit2
+
+    sol_lc = row_stack([lb, sol_lc])
+    sol_uc = row_stack([ub, sol_uc])
+
+    lower_constrained = sol_nc[0,:] < lb
+    upper_constrained = sol_nc[0,:] > ub
+    not_constrained =  - ( lower_constrained + upper_constrained )
+
+    sol = sol_lc[:,lower_constrained] + sol_uc[:,upper_constrained] + sol_nc[:,not_constrained]
+
+    return [sol, nit]
+
+
+
+
 from dolo.numeric.serial_operations import serial_inversion
 
 if __name__ == '__main__':

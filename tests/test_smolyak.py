@@ -36,13 +36,13 @@ class  TestInterpolation(unittest.TestCase):
             x[1,:] * x[1,:] - x[0,:] * x[0,:]
         ])
 
-        bounds = numpy.row_stack([
-            [0.5,0.1],
-            [2,3]
-        ])
+
+        smin = [0.5,0.1],
+        smax = [2,3]
+        bounds = numpy.row_stack([smin,smax])
 
         from dolo.numeric.smolyak import SmolyakGrid
-        sg = SmolyakGrid(bounds,3)
+        sg = SmolyakGrid(smin,smax,3)
 
         values = f(sg.grid)
         sg.set_values(values)
@@ -60,7 +60,7 @@ class  TestInterpolation(unittest.TestCase):
         from dolo.numeric.smolyak import SmolyakGrid
 
         bounds = numpy.column_stack([[-1,1]]*2)
-        sg = SmolyakGrid(bounds,3)
+        sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
         sg.plot_grid()
 
     def test_smolyak_plot_3d(selfs):
@@ -69,7 +69,7 @@ class  TestInterpolation(unittest.TestCase):
         from dolo.numeric.smolyak import SmolyakGrid
 
         bounds = numpy.column_stack([[-1,1]]*3)
-        sg = SmolyakGrid(bounds,3)
+        sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
         sg.plot_grid()
 
 
@@ -81,7 +81,7 @@ class  TestInterpolation(unittest.TestCase):
         l = 4
 
         bounds = numpy.row_stack([[-0.5]*d, [0.7]*d])
-        sg = SmolyakGrid(bounds,l)
+        sg = SmolyakGrid(bounds[0,:],bounds[1,:],l)
         f = lambda x: numpy.row_stack([
                     x[0,:] * x[1,:],
                     x[1,:] * x[1,:] - x[0,:] * x[0,:]

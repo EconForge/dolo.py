@@ -3,8 +3,6 @@
 
 import unittest
 from dolo.symbolic.symbolic import TSymbol, Parameter, Variable
-from sympy import Symbol
-
 
 class  FormalCalculusTestCase(unittest.TestCase):
 
@@ -44,7 +42,6 @@ class  FormalCalculusTestCase(unittest.TestCase):
         y = Variable('y')
         z = Variable('z')
         eq = y + 3*y(1)
-        print eq.diff(y)
         assert( eq.diff(y) == 1)
 
     def test_present_value(self):
@@ -64,7 +61,6 @@ class  FormalCalculusTestCase(unittest.TestCase):
         p = Parameter('p')
         assert( isinstance(p,Parameter) )
         assert( isinstance(p,Symbol))
-        print p.__latex__()
         assert( p.__latex__() == 'p')
         # greek letters are translated by sympy
         beta = Parameter('beta')

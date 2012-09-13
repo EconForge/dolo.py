@@ -18,7 +18,7 @@ class  TestInterpolation(unittest.TestCase):
         recdomain = RectangularDomain( smin, smax, orders )
         tridomain = TriangulatedDomain( recdomain.grid )
         recdomain_ref = RectangularDomain( smin, smax, orders_ref )
-        smolyakgrid = SmolyakGrid( bounds, l)
+        smolyakgrid = SmolyakGrid( smin, smax, l)
 
 
         fun = lambda x: 1.0/numpy.sqrt(2*numpy.pi)*numpy.exp( -( numpy.square(x[0:1,:]) + numpy.square(x[1:2,:]) ) / 2.0 )

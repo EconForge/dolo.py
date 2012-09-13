@@ -36,7 +36,7 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
 
         from dolo.numeric.smolyak import SmolyakGrid
 
-        sg = SmolyakGrid( row_stack([smin,smax]) ,3)
+        sg = SmolyakGrid( smin, smax ,3)
         sg.set_values( f(sg.grid) )
 
         smol_values = sg(finer_grid)

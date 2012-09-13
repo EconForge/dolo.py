@@ -5,6 +5,12 @@ from xml.etree import ElementTree as ET
 import copy
 import re
 
+from sympy import __version__
+from distutils.version import LooseVersion
+
+if LooseVersion(__version__) < LooseVersion('0.7.2'):
+    raise Exception('Incompatible version of sympy. Dolo needs sympy >= 0.7.2')
+
 
 #   Symbol
 # (sympy.Symbol)
@@ -52,8 +58,11 @@ class TSymbol(sympy.Symbol):
         super(TSymbol,self).__init__()
         if 'date' not in args:
             self._assumptions['date'] = 0
+            self.assumptions0['date'] = 0
         else:
             self._assumptions['date'] = args['date']
+            self.assumptions0['date'] = args['date']
+
         return(None)
 
     def __call__(self, shift):
