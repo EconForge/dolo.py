@@ -22,6 +22,17 @@ For this kind of models, the solver finds a solution :math:`g` such that the law
 controlled process variants
 ---------------------------
 
+We define several categories of models.
+
+.. graphviz::
+
+      digraph foo {
+          "fgah" -> "fga";
+          "fga" -> "fg";
+          "fgh" -> "fg";
+      }
+
+
 *fg* model
 //////////
 
@@ -62,12 +73,28 @@ A sub-variant of this specification let the user choose equations to define expe
 Same remark as for *fga* model: is needed, *fgh* models can behave exactly as an *fg* model.
 
 
+not implemented ; fgah model
+////////////////////////////
+
+A sub-variant of this specification let the user choose equations to define expectations. This is useful for PEA approaches. The model is specified by giving :math:`g`, :math:`f` and :math:`h` such that:
+
+:math:`a_t = a \left(s_t, x_t\right)`
+
+:math:`s_t = g \left( s_{t-1}, x_{t-1}, a_{t-1}, \epsilon_t \right)`
+
+:math:`f \left( s_t, x_t,a_t,  z_t \right)`
+
+:math:`z_t = E_t h \left( s_{t+1}, x_{t+1} , a_{t+1} \right)`
+
+*fgah* models can behave exactly as an *fg* model, or an *fga* model
+
 +++++++++++++++++++++
 Numerical Conventions
 +++++++++++++++++++++
 
-* A list of *N* points in a *d*-dimensional space is represented by a *d x N* matrix. In other words the last index always
-corresponds to the successive observations. This is consistent with default ordering in numpy: last index varies faster.
+* A list of *N* points in a *d*-dimensional space is represented by a *d x N* matrix.
+  In other words the last index always corresponds to the successive observations.
+  This is consistent with default ordering in numpy: last index varies faster.
 
 
 .. note::

@@ -134,9 +134,9 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     from dolo.symbolic.model import Model
 
     if isinstance(cmodel,Model):
-        from dolo.compiler.compiler_global import CModel
+        from dolo.compiler.compiler_global import CModel_fg
         model = cmodel
-        cmodel = CModel(model)
+        cmodel = CModel_fg(model)
         [y,x,parms] = model.read_calibration()
 
 
