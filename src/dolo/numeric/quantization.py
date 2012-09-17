@@ -1,6 +1,6 @@
 
 
-quantization_data = '/home/pablo/Programmation/dynare-python/dolo/src/dolo/numeric/data/quantization_grids/'
+quantization_data = '/home/pablo/quantization_grids/'
 
 
 def quantization_nodes(N,sigma):
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     N = 8
     d = 4
     import numpy
-    sigma = numpy.diag([0.01,0.01,0.01,0.01])
+    sigma = numpy.diag([0.01, 0.01, 0.01, 0.01])
     [w,x] = quantization_weights(N,sigma)
     print 'w'
     print w
