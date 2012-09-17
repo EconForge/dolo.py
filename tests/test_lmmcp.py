@@ -48,7 +48,7 @@ class  Test_LMMCPTestCase(unittest.TestCase):
         lb=np.array( [0.00, 0.00, 0.00, 0.00] )
         ub=np.array( [1e20, 1e20, 1e20, 1e20] )
 
-        resp = lmmcp.lmmcp(josephy, Djosephy, x0, lb, ub)
+        resp = lmmcp.lmmcp(josephy, Djosephy, x0, lb, ubz)
 
         sol = np.array([1.224746243, -0.0000, 0.0000, 0.5000])
 
