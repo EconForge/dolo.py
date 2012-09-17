@@ -1,13 +1,14 @@
 import functools
 
+
 class memoized(object):
     """Decorator that caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned, and
     not re-evaluated.
     """
     def __init__(self, func):
-         self.func = func
-         self.cache = {}
+        self.func = func
+        self.cache = {}
 
     def __call__(self, *args):
 
@@ -25,11 +26,11 @@ class memoized(object):
             # Better to not cache than to blow up entirely.
             return self.func(*args)
     def __repr__(self):
-         """Return the function's docstring."""
-         return self.func.__doc__
+        """Return the function's docstring."""
+        return self.func.__doc__
     def __get__(self, obj, objtype):
-         """Support instance methods."""
-         return functools.partial(self.__call__, obj)
+        """Support instance methods."""
+        return functools.partial(self.__call__, obj)
 
 
 class cachedondisk(object):
@@ -47,7 +48,7 @@ class cachedondisk(object):
 
         self.func = func
         self.fname = func.__name__
-        
+
     def __call__(self, *args):
         import pickle
         hh = tuple(  hashable(e) for e in args )
@@ -68,16 +69,16 @@ class cachedondisk(object):
             # Better to not cache than to blow up entirely.
             return self.func(*args)
     def __repr__(self):
-         """Return the function's docstring."""
-         return self.func.__doc__
+        """Return the function's docstring."""
+        return self.func.__doc__
     def __get__(self, obj, objtype):
-         """Support instance methods."""
-         return functools.partial(self.__call__, obj)
+        """Support instance methods."""
+        return functools.partial(self.__call__, obj)
 
 def clear_cache(function_name=None):
 
     import os
-    
+
     try:
         if function_name:
             os.system('rm -rf .cache/{}.*.pickle'.format(function_name))
