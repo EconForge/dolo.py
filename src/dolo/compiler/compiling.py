@@ -40,6 +40,7 @@ def compile_function(equations, args, parms, max_order, return_function=True):
     from numpy import arccos as acos
     from numpy import arctan as atan
     from numpy import sinh, cosh, tanh
+    from numpy import pi
 
 {preamble}
 
@@ -156,6 +157,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
     from numpy import arccos as acos
     from numpy import arctan as atan
     from numpy import sinh, cosh, tanh
+    from numpy import pi
 
     n = {var}.shape[-1]
 

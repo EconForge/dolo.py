@@ -31,7 +31,7 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False):
 
 def model_to_fga(model):
 
-    from dolo.misc.calculus import simple_triangular_solve
+    from dolo.misc.triangular_solver import solve_triangular_system
 
     from dolo.misc.misc import timeshift
 
@@ -51,7 +51,7 @@ def model_to_fga(model):
         dd = {eq.lhs: eq.rhs for eq in aux2_eqs}
         dd.update( { eq.lhs(1): timeshift(eq.rhs,1) for eq in aux2_eqs } )
         dd.update( { eq.lhs(-1): timeshift(eq.rhs,-1) for eq in aux2_eqs } )
-        ds = simple_triangular_solve(dd)
+        ds = solve_triangular_system(dd)
         
         f_eqs =  [eq.subs(ds) for eq in f_eqs]
         a_eqs =  [eq.subs(ds) for eq in a_eqs]
@@ -65,11 +65,11 @@ def model_to_fga(model):
     shocks = model.shocks
 
     dd = {eq.lhs: eq.rhs for eq in g_eqs}
-    ds = simple_triangular_solve(dd)
+    ds = solve_triangular_system(dd)
     g_eqs = [ds[eq.lhs] for eq in g_eqs]
 
     dd = {eq.lhs: eq.rhs for eq in a_eqs}
-    ds = simple_triangular_solve(dd)
+    ds = solve_triangular_system(dd)
     a_eqs = [ds[eq.lhs] for eq in a_eqs]
 
 
