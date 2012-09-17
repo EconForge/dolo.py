@@ -112,7 +112,7 @@ def serial_dot(A,B):
     return resp
 
 
-def serial_solve(M,Y):
+def serial_solve(M,Y, debug=False):
     '''
     :param M: a pxpxN array
     :param Y: a pxN array
@@ -132,8 +132,17 @@ def serial_solve(M,Y):
 
     X = numpy.zeros((p,N))
 
-    for i in range(N):
-        X[:,i] = solve(M[:,:,i],Y[:,i])
+    if not debug:
+        for i in range(N):
+            X[:,i] = solve(M[:,:,i],Y[:,i])
+    else:
+        for i in range(N):
+            try:
+                X[:,i] = solve(M[:,:,i],Y[:,i])
+            except Exception as e:
+                print('Derivative {}'.format(i))
+                print(M[:,:,i])
+                raise Exception('Error while solving point {}'.format(i))
 
     return X
 

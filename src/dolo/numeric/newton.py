@@ -24,36 +24,18 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, 
                 xi[i,:] += eps
                 resi = f(xi)
                 dres[:,i,:] = (resi - res)/eps
-#	res = f(x0)
-#        dres = df(x0)
-        fnorm = abs(res).max()  # suboptimal
 
-        dx = - serial_solve(dres,res)
+        try:
+            dx = - serial_solve(dres,res)
+        except:
+            dx = - serial_solve(dres,res, debug=True)
         x = x0 + dx
 
-#        for i in range(backsteps):
-#            xx = x0 + dx/(2**i)
-#            if not ub==None:
-#                xx = numpy.maximum(xx, lb)
-#                xx = numpy.minimum(xx, ub)
-#            new_res = f(xx)[0]
-#            new_fnorm = abs(new_res).max()
-#            if numpy.isfinite(new_fnorm) and new_fnorm < fnorm: # all right proceed to next iteration
-#                x = xx
-#                break
-#            if i == backsteps -1:
-#                if numpy.isfinite(new_fnorm):
-#                    x = xx
-#                else:
-#                    raise Exception('Non finite value found')
-
-        #err = abs(dx).max()
         err = abs(res).max()
 
         x0 = x
         it += 1
-#    print (it <=maxit)
-#    print(err)
+
     if not infos:
         return x
     else:
@@ -81,22 +63,33 @@ def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdi
         res = f(x)
         return res[1:,:]
 
-    [sol_lc, nit0] = newton_solver(fun_lc, x0[1:,:], numdiff=True)
-    [sol_uc, nit1] = newton_solver(fun_uc, x0[1:,:], numdiff=True)
-    [sol_nc, nit2] = newton_solver(f, x0, numdiff=True)
-
-    nit = nit0 + nit1 + nit2
-
-    sol_lc = row_stack([lb, sol_lc])
-    sol_uc = row_stack([ub, sol_uc])
-
+    [sol_nc, nit0] = newton_solver(f, x0, numdiff=True, infos=True)
     lower_constrained = sol_nc[0,:] < lb
     upper_constrained = sol_nc[0,:] > ub
     not_constrained =  - ( lower_constrained + upper_constrained )
 
-    sol = sol_lc[:,lower_constrained] + sol_uc[:,upper_constrained] + sol_nc[:,not_constrained]
 
-    return [sol, nit]
+    sol = sol_nc.copy()
+
+    sol[0,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[0,:] * not_constrained
+    nit = nit0
+
+
+#    [sol_lc, nit1] = newton_solver(fun_lc, x0[1:,:], numdiff=True, infos=True)
+#    [sol_uc, nit2] = newton_solver(fun_uc, x0[1:,:], numdiff=True, infos=True)
+#
+#    nit = nit0 + nit1 + nit2
+#
+#    sol_lc = row_stack([lb, sol_lc])
+#    sol_uc = row_stack([ub, sol_uc])
+#
+#    lower_constrained = sol_nc[0,:] < lb
+#    upper_constrained = sol_nc[0,:] > ub
+#    not_constrained =  - ( lower_constrained + upper_constrained )
+#
+#    sol = sol_lc * lower_constrained + sol_uc * upper_constrained + sol_nc * not_constrained
+
+    return [sol,nit]
 
 
 
