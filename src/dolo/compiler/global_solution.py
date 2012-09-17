@@ -134,10 +134,18 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
     ee = np.repeat(epsilons, n_g , axis=1)
     if with_derivatives:
         [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms,derivs=True)[:3]
+
+#        if False:
+#            smin = s.min(axis=1)[:,None]
+#            smax = s.max(axis=1)[:,None]
+#            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
+
         [xxnext, xxold_ss] = dr.interpolate(ssnext, with_derivative=True)[:2]
-        if x_bounds:
-            [lb,ub] = x_bounds(ssnext, parms)
-            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
+
+#        if x_bounds:
+#            lb = x_bounds[0](ssnext, parms)
+#            ub = x_bounds[1](ssnext, parms)
+#            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
 
         [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms, derivs=True)[:5]
         dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
@@ -160,10 +168,18 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
         return [res, dval]
     else:
         ssnext = g(ss,xx,ee,parms)
+
+#        if False:
+#            smin = s.min(axis=1)[:,None]
+#            smax = s.max(axis=1)[:,None]
+#            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
+
         xxnext = dr.interpolate(ssnext)
-        if x_bounds:
-            [lb,ub] = x_bounds(ssnext, parms)
-            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
+
+#        if x_bounds:
+#            lb = x_bounds[0](ssnext, parms)
+#            ub = x_bounds[1](ssnext, parms)
+#            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
 
         val = f(ss,xx,ssnext,xxnext,ee,parms)
 
@@ -173,9 +189,6 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
 
         return res
 
-
-#f = model_fun['f']
-#g = model_fun['g']
 def test_residuals(s,dr, f,g,parms, epsilons, weights):
     n_draws = epsilons.shape[1]
 
@@ -209,7 +222,6 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
     if serial_grid:
         if numdiff == True:
             fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
-            #dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)[1]
         else:
             fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
     else:
@@ -229,7 +241,8 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
     verbit = True if verbose=='full' else False
 
     if x_bounds:
-        [lb,ub] = x_bounds(grid,parms)
+        lb = x_bounds[0](grid,parms)
+        ub = x_bounds[1](grid,parms)
     else:
         lb = None
         ub = None
@@ -257,10 +270,6 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
         else:
             x = solver(fun, x0, lb=lb, ub=ub, method=method, jac=dfun, verbose=verbit, options=options)
             nit = 0
-            # we restrict the solution to lie inside the boundaries
-        if x_bounds:
-            x = np.maximum(np.minimum(ub,x),lb)
-        #        res = abs(fun(x)).max()
 
         err = abs(x-x0).max()
         err_SA = err/err_0
