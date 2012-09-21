@@ -39,7 +39,7 @@ def hp_filter(data, lam=1600):
     if Y.ndim == 2:
         resp = [hp_filter(e) for e in data]
         T = np.row_stack( [e[0] for e in resp] )
-        Cycle = np.row_stack( [e[0] for e in resp] )
+        Cycle = np.row_stack( [e[1] for e in resp] )
         return [T,Cycle]
 
     elif Y.ndim > 2:
