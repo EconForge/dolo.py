@@ -6,7 +6,6 @@ import copy
 import re
 
 
-
 #   Symbol
 # (sympy.Symbol)
 #      |
@@ -20,6 +19,13 @@ import re
 #   Variable       Shock
 
 class Parameter(sympy.Symbol):
+
+    def __init__(self, name):
+        super(Parameter,self).__init__()
+        self.name = name
+        self.father = self.name
+        self.is_commutative = True
+        return(None)
 
     def __repr__(self):
         return(self.name)
@@ -49,27 +55,21 @@ class Parameter(sympy.Symbol):
 class TSymbol(sympy.Symbol):
 
     #latex_names = {}
-    def __init__(self, name, **args):
-        super(TSymbol,self).__init__()
-        if 'date' not in args:
-            self._assumptions['date'] = 0
-            self.assumptions0['date'] = 0
-        else:
-            self._assumptions['date'] = args['date']
-            self.assumptions0['date'] = args['date']
 
+    def __init__(self, name, date):
+        super(TSymbol,self).__init__()
+        self.date = date
+        self.name = name
+        self.is_commutative = True
         return(None)
 
-    def __call__(self, shift):
-        current_date = self.assumptions0['date']
-        # we forget other assumptions
-        v = type(self)
-        return v( self.name, date = current_date + shift)
-
-
-    @property
-    def date(self):
-        return self.assumptions0['date']
+    def __getstate__(self):
+        return {
+            'date': self.date,
+            'name': self.name,
+            'is_commutative': self.is_commutative,
+            '_mhash': self._mhash
+        }
 
     def _hashable_content(self):
         return (self.name,self.date)
@@ -78,10 +78,20 @@ class TSymbol(sympy.Symbol):
     def lag(self):
         return self.date
 
+    def __call__(self,lead):
+        if self.lag == 'S':
+            return self
+            #raise Exception,"lags are not allowed on steady state variable"
+        else:
+            newdate = int(self.date) + lead
+            newname = str(self.name)
+            v = type(self)(newname,newdate)
+            return v
+
     @property
     def P(self):
         return(self(-self.lag))
-#
+    #
     def __repr__(self):
         return self.__str__(self)
 
@@ -160,17 +170,17 @@ class Variable(TSymbol):
 
     @property
     def S(self):
-        v = Variable(self.name,date='S')
+        v = Variable(self.name,'S')
         return(v)
 
 class Shock(TSymbol):
     """
     Define a new shock with : x = Shock('x')
-    Then x(k) returns the value with la   g k
+    Then x(k) returns the value with lag k
     """
 
 class Equation(sympy.Equality):
-    
+
     def __init__(self, lhs, rhs, name=None):
         super(sympy.Equality,self).__init__()
         #self.is_endogenous=is_endogenous
@@ -181,7 +191,7 @@ class Equation(sympy.Equality):
         self.tags = {}
         if name != None:
             self.tags['name'] = name
-    
+
 
     @property
     def name(self):
@@ -190,19 +200,19 @@ class Equation(sympy.Equality):
     @property
     def n(self):
         return(self.infos.get('n'))
-    
+
     def copy(self):
         # This function doesn't seem to be called
         eq = Equation(copy.copy(self.lhs),copy.copy(self.rhs),copy.copy(self.name))
         eq.n = copy.copy(self.n)
         eq.info = copy.copy(self.info)
-    
+
     #def subs_dict(self,dict):
     def subs(self,dict):
         eq = Equation(self.lhs.subs(dict),self.rhs.subs(dict),copy.copy(self.name))
         eq.tag(**self.tags)
         return eq
-    
+
     def label(self,sdict):
         self.info.update(sdict)
         return self
@@ -210,7 +220,7 @@ class Equation(sympy.Equality):
     def tag(self,**kwargs):
         self.tags.update(kwargs)
         return self
-    
+
 
     @property
     def gap(self):
@@ -247,7 +257,7 @@ class Equation(sympy.Equality):
                 terms.append( "\\mathbb{E}_t\\left[ %s \\right]"% sympy.latex(sexp).strip("$") )
             else:
                 terms.append(  sympy.latex(sexp).strip("$") )
-                
+
         return "%s = %s" % (terms[0],terms[1])
         #from misc.preview  import DDLatexPrinter
         #return( DDLatexPrinter(inline=False).doprint( ddlatex(self) ) )
@@ -311,14 +321,14 @@ def split_name_into_parts(a):
     indices = []
     for i in range(len(cont)):
         if m[i] == '_':
-          indices.append(cont[i])
+            indices.append(cont[i])
         else:
-          exponents.append(cont[i])
+            exponents.append(cont[i])
     return [rad, indices, exponents]
 
 gl = ['alpha', 'beta', 'gamma', 'delta', 'eta','epsilon', 'iota', 'kappa',
-'lambda', 'mu', 'nu', 'rho','pi', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
-'Gamma', 'Delta', 'Lambda', 'Sigma','Theta','Upsilon','Omega','Xi' , 'Pi' ,'Phi','Psi' ]
+      'lambda', 'mu', 'nu', 'rho','pi', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
+      'Gamma', 'Delta', 'Lambda', 'Sigma','Theta','Upsilon','Omega','Xi' , 'Pi' ,'Phi','Psi' ]
 greek_letters = dict([ (x,'\\' + x ) for x in gl ])
 
 def greekify(expr):
@@ -343,7 +353,7 @@ class ISymbol(sympy.Basic):
         super(sympy.Basic,self).__init__()
         self.name = name
         self.variable = variable
-        
+
     def __getitem__(self,s):
         print s.__class__
         if isinstance(s,(String,str)):
@@ -395,11 +405,37 @@ def Variant(dummy,alternatives):
     t = [(k,v) for k,v in alternatives.iteritems()]
     return SVariant( dummy, tuple(t))
 
+if __name__ == '__main__':
+    x = sympy.Symbol('x')
+    i = sympy.Symbol('i')
+    j = sympy.Symbol('j')
+    c = sympy.Symbol('c')
+    v = Variable('v',0)
+    isym = ISymbol('test',x)
+    print isym.is_Atom
+    print isym[i]
 
-from sympy import __version__
-from distutils.version import LooseVersion
+    eq = (v + isym)**2
+    #printq
+    print eq
+    print eq.subs(x,i)
+    print isym._subs_old_new(x,i)
+    print isym['paris']
 
-if LooseVersion(__version__) < LooseVersion('0.7.2'):
-    import warnings
-    warnings.warn('You have an old version of sympy (< 0.7.2). Support for older versions will be removed in later versions of dolo')
-    from dolo.symbolic.oldsymbolic import Variable, Shock, Parameter
+
+    s = Sum(i,[0,5], x**i+1+isym[i])
+    ss = Sum(c,[String('france'),'us'], isym[c])
+    print s._eval_()
+    print ss._eval_()
+    print isym['france']
+    print isym[String('france')]
+
+    from sympy import Symbol
+    dummy = Symbol
+
+
+    t =  tuple()
+    v = Variant( dummy, { i: 3, j: 43  } )
+    v = Variant( dummy, { i: 3, j: 43  } )
+
+    print v.subs(dummy,i)
