@@ -38,6 +38,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="structure.html" title="Informations for developpers"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -57,6 +60,7 @@
 <li><a class="reference internal" href="#fg-model"><em>fg</em> model</a></li>
 <li><a class="reference internal" href="#fga-model"><em>fga</em> model</a></li>
 <li><a class="reference internal" href="#not-implemented-fgh-model">not implemented ; fgh model</a></li>
+<li><a class="reference internal" href="#not-implemented-fgah-model">not implemented ; fgah model</a></li>
 </ul>
 </li>
 </ul>
@@ -113,6 +117,14 @@ For this kind of models, the solver finds a solution <span class="math">\(g\)</s
 </div>
 <div class="section" id="controlled-process-variants">
 <h3>controlled process variants<a class="headerlink" href="#controlled-process-variants" title="Permalink to this headline">¶</a></h3>
+<p>We define several categories of models.</p>
+<p class="graphviz">
+<img src="_images/graphviz-83ce62abf2a2a279153317ea7222a78fe10bf376.png" alt="digraph foo {
+    &quot;fgah&quot; -&gt; &quot;fga&quot;;
+    &quot;fga&quot; -&gt; &quot;fg&quot;;
+    &quot;fgh&quot; -&gt; &quot;fg&quot;;
+}" />
+</p>
 <div class="section" id="fg-model">
 <h4><em>fg</em> model<a class="headerlink" href="#fg-model" title="Permalink to this headline">¶</a></h4>
 <p>With these versions, the state-space is chosen by the user. A law of motion for the state-space must be specified (depending on the controls and on the shocks). And optimality conditions must be given to pin down all the controls.
@@ -138,14 +150,24 @@ algorithm is applicable to an <em>fg</em> model, it can be also be applied to an
 <p><span class="math">\(z_t = E_t h \left( s_{t+1}, x_{t+1} \right)\)</span></p>
 <p>Same remark as for <em>fga</em> model: is needed, <em>fgh</em> models can behave exactly as an <em>fg</em> model.</p>
 </div>
+<div class="section" id="not-implemented-fgah-model">
+<h4>not implemented ; fgah model<a class="headerlink" href="#not-implemented-fgah-model" title="Permalink to this headline">¶</a></h4>
+<p>A sub-variant of this specification let the user choose equations to define expectations. This is useful for PEA approaches. The model is specified by giving <span class="math">\(g\)</span>, <span class="math">\(f\)</span> and <span class="math">\(h\)</span> such that:</p>
+<p><span class="math">\(a_t = a \left(s_t, x_t\right)\)</span></p>
+<p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, a_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(f \left( s_t, x_t,a_t,  z_t \right)\)</span></p>
+<p><span class="math">\(z_t = E_t h \left( s_{t+1}, x_{t+1} , a_{t+1} \right)\)</span></p>
+<p><em>fgah</em> models can behave exactly as an <em>fg</em> model, or an <em>fga</em> model</p>
+</div>
 </div>
 </div>
 <div class="section" id="numerical-conventions">
 <h2>Numerical Conventions<a class="headerlink" href="#numerical-conventions" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>A list of <em>N</em> points in a <em>d</em>-dimensional space is represented by a <em>d x N</em> matrix. In other words the last index always</li>
+<li>A list of <em>N</em> points in a <em>d</em>-dimensional space is represented by a <em>d x N</em> matrix.
+In other words the last index always corresponds to the successive observations.
+This is consistent with default ordering in numpy: last index varies faster.</li>
 </ul>
-<p>corresponds to the successive observations. This is consistent with default ordering in numpy: last index varies faster.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">When dolo is used to compiler a model for matlab the convention is reversed: first dimension
@@ -176,6 +198,9 @@ denotes the successive points. This is adapted to matlab&#8217;s storage order (
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
         <li class="right" >
           <a href="structure.html" title="Informations for developpers"
              >next</a> |</li>

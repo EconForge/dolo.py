@@ -16,3 +16,10 @@ Testing graphs
           "compiled model" -> "Matlab";
           "compiled model" -> "Python";
       }
+
+Numpy documentation
+-------------------
+
+.. autofunction:: dolo.numeric.filters.hp_filter
+
+
