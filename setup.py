@@ -1,14 +1,24 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
-__version__ = "0.4-dev"
+__version__ = "0.4-dev-1"
 
 setup(
     name = "dolo",
     version = __version__,
     packages = find_packages('src'),
     package_dir = {'':'src'},
+
+    ext_models=[
+        Extension('serial_operations',['serial_operations_lib.c'])
+        ],
     scripts = ['src/bin/dolo-recs.py', 'src/bin/dolo-matlab.py'],
-    install_requires = ["pyyaml","sympy","numpy","matplotlib"],
+    install_requires = ["pyyaml","sympy","numpy"],
+    extras_require = {
+            'plots':  ["matplotlib"],
+            'first order solution':  ["scipy"],
+            'higher order solution':  ["Slycot"],
+    },
+
     author = "Pablo Winant",
     author_email = "pablo.winant@gmail.com",
     description = 'Economic modelling in Python',

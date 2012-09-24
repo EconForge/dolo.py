@@ -116,7 +116,7 @@ class ISymbol(Basic):
             if len(args) > 1:
                 raise Exception('Multidimensional indexing not implemented')
             elif len(args) == 0:
-                dummy  Symbol('i')
+                dummy = Symbol('i')
             else:
                 dummy = Symbol(dummy_vars[0])
         self.index = tuple([sympify(i) for i in index])
