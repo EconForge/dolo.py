@@ -1,3 +1,15 @@
+"""
+
+Symbolic expressions can be evaluated by substituting the values of each symbol. It is however an expensive operation
+ which becomes very costly when the number of evaluations grows.
+
+The functions in this module  take a list of symbolic expressions representing a function :math:`R^p \\rightarrow R^n`
+and turn it into an efficient python function, which can be evaluated repeatedly at lower cost. They use one of the next
+libraries for efficient vectorization: `numpy <http://numpy.scipy.org/>`_, `numexpr <http://code.google.com/p/numexpr/>`_ or `theano <http://deeplearning.net/software/theano/>`_:
+
+"""
+
+
 from __future__ import division
 
 from dolo.symbolic.derivatives import DerivativesTree
@@ -112,9 +124,6 @@ def compile_function(equations, args, parms, max_order, return_function=True):
         return txt
 
 
-from dolo.compiler.compiler_mirfac import eqdiff
-
-
 def compile_function_2(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
     """
 
@@ -216,5 +225,13 @@ def {fname}({args_names}, {param_names}, derivs=False):
         return l[fname]
     else:
         return text
+
+
+def eqdiff(leq,lvars):
+    resp = []
+    for eq in leq:
+        el = [ eq.diff(v) for v in lvars]
+        resp += [el]
+    return resp
 
 #from dolo.compiler.compiling_very_fast import compile_function_2

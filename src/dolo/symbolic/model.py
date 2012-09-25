@@ -82,7 +82,7 @@ class Model(dict):
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
-    def check_consistency(self,verbose=False, auto_remove_variables=True):
+    def check_consistency(self,verbose=False, auto_remove_variables=False):
 
         if auto_remove_variables:
             print_info = verbose
@@ -208,6 +208,8 @@ class Model(dict):
 
 
     def read_covariances(self,to_numpy=True):
+
+        # TODO: we could return a dict instead
 
         # duplicated code
         model = self

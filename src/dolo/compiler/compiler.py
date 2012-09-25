@@ -1,3 +1,12 @@
+"""
+Compiled models.
+
+Several kinds of models
+
+
+"""
+
+
 from dolo.symbolic.model import *
 from dolo.symbolic.symbolic import *
 

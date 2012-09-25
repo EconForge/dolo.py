@@ -75,6 +75,7 @@ class ComplementaritySolve(unittest.TestCase):
         assert_almost_equal( res, 1.0)
 
     def test_josephy(self):
+
         import numpy
 
         fun = lambda x: [-josephy(x), -Djosephy(x)]
@@ -92,6 +93,36 @@ class ComplementaritySolve(unittest.TestCase):
 
         assert_almost_equal(sol,  resp[0])
 
+    def test_lmmcp(self):
+
+        from dolo.numeric.extern import lmmcp
+
+        x0=np.array( [1.25, 0.00, 0.00, 0.50] )
+        lb=np.array( [0.00, 0.00, 0.00, 0.00] )
+        ub=np.array( [1e20, 1e20, 1e20, 1e20] )
+
+        resp = lmmcp.lmmcp(josephy, Djosephy, x0, lb, ub)
+
+        sol = np.array([1.224746243, -0.0000, 0.0000, 0.5000])
+
+        assert( abs(sol - resp).max()<1e-6 )
+
+    def test_solver(self):
+
+        from dolo.numeric.solver import solver
+
+        fun = lambda x: -josephy(x)
+        dfun = lambda x: -Djosephy(x)
+
+
+        x0=np.array( [1.25, 0.00, 0.00, 0.50] )
+        lb=np.array( [0.00, 0.00, 0.00, 0.00] )
+        ub=np.array( [1e20, 1e20, 1e20, 1e20] )
+
+        resp = solver( fun, x0, lb, ub, verbose=True, jac=dfun, method='lmmcp')
+
+        sol = np.array([1.224746243, -0.0000, 0.0000, 0.5000])
+        assert( abs(sol - resp).max()<1e-6 )
 
 if __name__ == '__main__':
 

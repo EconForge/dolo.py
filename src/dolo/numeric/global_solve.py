@@ -6,7 +6,7 @@ from numpy import *
 
 from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False, verbose=False):
+def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40, integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, compiler=None, memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False, verbose=False, serial_grid=True):
 
     def vprint(t):
         if verbose:
@@ -70,7 +70,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
 
     from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
     vprint('Starting time iteration')
-    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff, verbose=verbose)
+    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff, verbose=verbose, serial_grid=serial_grid)
     
     if polish: # this will only work with smolyak
         vprint('\nStarting global optimization')
@@ -80,6 +80,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         dr.set_values(xinit)
         shape = dr.theta.shape
         theta_0 = dr.theta.copy().flatten()
+
         if not memory_hungry:
             fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
             dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape)[1]
