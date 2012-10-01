@@ -1,6 +1,6 @@
 import numpy as np
 import ctypes
-f  = ctypes.cdll.LoadLibrary('/home/pablo/Programmation/dynare-python/dolo/src/dolo/numeric/c/serial_operations_lib.so')
+f  = ctypes.cdll.LoadLibrary('/home/pablo/Programmation/bigeco/dolo/src/dolo/numeric/c/serial_operations_lib.so')
 fun = f['cserop']
 
 def serial_multiplication(A,B):

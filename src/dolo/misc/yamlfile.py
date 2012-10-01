@@ -71,12 +71,9 @@ Imports the content of a modfile into the current interpreter scope
                     rhs = '0'
                 try:
                     lhs = eval(lhs,context)
-                except Exception as e:
-                    print("Error parsing equation ('lhs') :"  + teq)
-                try:
                     rhs = eval(rhs,context)
                 except Exception as e:
-                    print("Error parsing equation ('lhs') :"  + teq)
+                    print('Error parsing equation : ' + teq)
                     print str(e)
                     raise e
 
