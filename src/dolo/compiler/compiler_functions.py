@@ -1,5 +1,8 @@
 
-def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliary=False, allow_future_shocks=True, solve_systems=False):
+# TODO : this file deserves severe simplification !
+
+def simple_global_representation(self, allow_future_shocks=True, solve_systems=False):
+
 
     resp = {}
     eq_g = self['equations_groups']
@@ -13,27 +16,24 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
 
     resp['g_eqs'] = [eq.rhs for eq in  eq_g['transition'] ]
 
+
     if 'auxiliary' in eq_g:
-        if not substitute_auxiliary:
-            if not keep_auxiliary:
-                resp['f_eqs'] += [eq.gap for eq in eq_g['auxiliary']]
-                resp['controls'] += v_g['auxiliary']
-        else:
-            sdict = {}
-            from dolo.misc.misc import timeshift
-            auxies = list( eq_g['auxiliary'] )
-            if 'auxiliary_2' in eq_g:
-                auxies += list( eq_g['auxiliary_2'] )
-            for eq in  auxies:
-                sdict[eq.lhs] = eq.rhs
-                sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
-                sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
-            from dolo.misc.triangular_solver import solve_triangular_system
-            sdict = solve_triangular_system(sdict)
-            resp['a_eqs'] = [sdict[v] for v in v_g['auxiliary']]
-            resp['auxiliaries'] = [v for v in v_g['auxiliary']]
-            resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
-            resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
+
+        sdict = {}
+        from dolo.misc.misc import timeshift
+        auxies = list( eq_g['auxiliary'] )
+        if 'auxiliary_2' in eq_g:
+            auxies += list( eq_g['auxiliary_2'] )
+        for eq in  auxies:
+            sdict[eq.lhs] = eq.rhs
+            sdict[eq.lhs(1)] = timeshift( eq.rhs, 1)
+            sdict[eq.lhs(-1)] = timeshift( eq.rhs, -1)
+        from dolo.misc.triangular_solver import solve_triangular_system
+        sdict = solve_triangular_system(sdict)
+        resp['a_eqs'] = [sdict[v] for v in v_g['auxiliary']]
+        resp['auxiliaries'] = [v for v in v_g['auxiliary']]
+        resp['f_eqs'] = [eq.subs(sdict) for eq in resp['f_eqs']]
+        resp['g_eqs'] = [eq.subs(sdict) for eq in resp['g_eqs']]
 
     elif 'auxiliary_2' in eq_g:
         sdict = {}
@@ -69,12 +69,14 @@ def simple_global_representation(self, substitute_auxiliary=False, keep_auxiliar
 
 def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler='numpy'):
 
-    sgm = simple_global_representation(model,substitute_auxiliary=substitute_auxiliary, solve_systems=solve_systems)
+    sgm = simple_global_representation(model, solve_systems=solve_systems)
 
     controls = sgm['controls']
     states = sgm['states']
     parameters = sgm['parameters']
     shocks = sgm['shocks']
+
+
 
     f_eqs =  sgm['f_eqs']
     g_eqs =  sgm['g_eqs']
@@ -88,6 +90,13 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler=
 
     args_g =  [states_p, controls_p, shocks]
     args_f =  [states, controls, states_f, controls_f, shocks_f]
+
+    keep_auxiliary = 'a_eqs' in sgm
+
+    if keep_auxiliary:
+#        auxiliaries = sgm['auxiliaries']
+        a_eqs = sgm['a_eqs']
+        args_a = [states, controls]
 
 
     if compiler=='numpy':
@@ -103,7 +112,11 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler=
     g = compile_multiargument_function(g_eqs, args_g, ['s','x','e'], parameters, 'g' )
     f = compile_multiargument_function(f_eqs, args_f, ['s','x','snext','xnext','e'], parameters, 'f' )
 
-    return [f,g]
+    if keep_auxiliary:
+        a = compile_multiargument_function(a_eqs, args_a, ['s','x'], parameters, 'a' )
+        return [f,g,a]
+    else:
+        return [f,g]
 
 
 def model_to_fga(model, compiler='numpy'):

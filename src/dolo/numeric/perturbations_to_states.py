@@ -5,9 +5,9 @@ from dolo.misc.caching import memoized
 from dolo.compiler.compiler_functions import simple_global_representation
 
 @memoized
-def interim_gm( model, substitute_auxiliary, solve_systems, order):
+def interim_gm( model, solve_systems, order):
 
-    gm = simple_global_representation(model, substitute_auxiliary=substitute_auxiliary, allow_future_shocks=False, solve_systems=solve_systems)
+    gm = simple_global_representation(model, allow_future_shocks=False, solve_systems=solve_systems)
 
     g_eqs = gm['g_eqs']
     g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
@@ -24,9 +24,9 @@ def interim_gm( model, substitute_auxiliary, solve_systems, order):
     return [gm,g_fun,f_fun]
 
 
-def approximate_controls(model, order=1, lambda_name=None, substitute_auxiliary=False, return_dr=True, solve_systems=False):
+def approximate_controls(model, order=1, lambda_name=None, return_dr=True, solve_systems=False):
 
-    [gm, g_fun, f_fun] = interim_gm(model, substitute_auxiliary, solve_systems, order)
+    [gm, g_fun, f_fun] = interim_gm(model, solve_systems, order)
 
     # get steady_state
     import numpy

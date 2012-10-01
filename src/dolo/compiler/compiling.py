@@ -227,12 +227,6 @@ def {fname}({args_names}, {param_names}, derivs=False):
     return l[fname]
 
 
-from dolo.misc.decorators import deprecated
-@deprecated
-def compile_function_2(*args, **dargs):
-    return compile_multiargument_function(*args, **dargs)
-
-
 def eqdiff(leq,lvars):
     resp = []
     for eq in leq:

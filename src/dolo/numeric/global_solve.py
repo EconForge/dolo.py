@@ -7,7 +7,7 @@ from numpy import *
 from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
 def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40,
-                 integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True,
+                 integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, tol=1e-8,
                  compiler='numpy', memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False,
                  verbose=False, serial_grid=True):
 
@@ -19,7 +19,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     sigma = model.read_covariances()
     
     if initial_dr == None:
-        initial_dr = approximate_controls(model, order=pert_order, substitute_auxiliary=True, solve_systems=True)
+        initial_dr = approximate_controls(model, order=pert_order )
         
     if bounds is not None:
         pass
@@ -97,9 +97,9 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
             integration_orders = [3]*sigma.shape[0]
         [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
-    from dolo.compiler.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
+    from dolo.numeric.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
     vprint('Starting time iteration')
-    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, nmaxit=50, numdiff=numdiff, verbose=verbose, serial_grid=serial_grid)
+    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, serial_grid=serial_grid)
     
     if polish and interp_type=='smolyak' : # this works with smolyak only
         vprint('\nStarting global optimization')

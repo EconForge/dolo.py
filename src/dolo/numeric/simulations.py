@@ -1,6 +1,6 @@
 import numpy
 
-def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, with_auxiliaries=True, parms=None, seed=1, discard=False,):
+def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard=False,):
 
     '''
     :param cmodel: 
@@ -64,7 +64,7 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, with_auxiliaries=True, 
 
     from numpy import any,isnan,all
 
-    if not with_auxiliaries:
+    if not hasattr(cmodel,'__a__'): # TODO: find a better test than this
         simul = numpy.row_stack([s_simul, x_simul])
     else:
         a_simul = cmodel.a( s_simul.reshape((-1,n_exp*horizon)), s_simul.reshape( (-1,n_exp*horizon) ), parms)
@@ -84,14 +84,6 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, with_auxiliaries=True, 
 
     return simul
 
-
-from dolo.misc.decorators import deprecated
-
-@deprecated
-def simulate_without_aux(cmodel, dr, s0, sigma, *args, **vargs):
-    vargs['with_auxiliaries'] = False
-    return simulate(cmodel, dr, s0, sigma, *args, **vargs)
-
 if __name__ == '__main__':
     from dolo import yaml_import, approximate_controls
     model = yaml_import('../../../examples/global_models/capital.yaml')
@@ -100,26 +92,24 @@ if __name__ == '__main__':
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
 
-    from dolo.compiler.compiler_global import GlobalCompiler2
+    from dolo.compiler.compiler_global import CModel
 
     import numpy
-    cmodel = GlobalCompiler2(model)
+    cmodel = CModel(model)
     s0 = numpy.atleast_2d( dr.S_bar ).T
+    horizon = 50
 
-#    [s_simul, x_simul, a_simul] = simulate(cmodel, dr, s0, sigma, 10000, 50, parms, with_auxiliaries=True)
-    simul = simulate(cmodel, dr, s0, sigma, 10000, 50)
-    sim = simulate_without_aux(cmodel, dr, s0, sigma, 10000, 50)
+    simul = simulate(cmodel, dr, s0, sigma, n_exp=500, parms=parms, horizon=horizon)
+
     print(simul.shape)
-    print sim.shape
-
-
     from matplotlib.pyplot import hist, show, figure
 
 
     timevec = numpy.array(range(simul.shape[2]))
 
     figure()
-    for i in range( 50 ):
+    for i in range( horizon ):
         hist( simul[0,:,i], bins=50 )
+
     show()
     #plot(timevec,s_simul[0,0,:])

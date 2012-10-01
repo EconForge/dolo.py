@@ -217,7 +217,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, options={}, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
 
     from dolo.numeric.solver import solver
     from dolo.numeric.newton import newton_solver
@@ -233,7 +233,7 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
 
 
     #
-    tol = 1e-8
+
     ##
     import time
     t1 = time.time()
