@@ -1,24 +1,80 @@
+"""
+
+symbolic model -> compiled model
+
+"""
+
+
 from dolo.compiler.compiler_functions import model_to_fga, model_to_fg
-
 from dolo.numeric.serial_operations import serial_multiplication as smult
-
 from dolo.misc.caching import memoized
+
+import numpy
+
+
+def numdiff(f,x0,f0=None):
+
+    eps = 1E-6
+
+    if f0 == None:
+        f0 = f(x0)
+
+    p = f0.shape[0]
+    q = x0.shape[0]
+    N = x0.shape[1]
+
+    df = numpy.zeros( (p,q,N) )
+    for i in range(q):
+        x = x0.copy()
+        x[i,:] += eps
+        ff = f(x)
+        df[:,i,:] = (ff - f0)/eps
+
+    return df
 
 class CModel_fg:
 
     model_type = 'fg'
 
-    def __init__(self,model,substitute_auxiliary=False, solve_systems=False):
+    def __init__(self,model,substitute_auxiliary=False, solve_systems=False, compiler='numpy'):
 
         self.model = model
+        self.__compiler__ = compiler
+        [f,g] = model_to_fg(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems, compiler=compiler)
+        self.__f__ = f
+        self.__g__ = g
 
-        [f,g] = model_to_fg(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems)
-        self.f = f
-        self.g = g
+    def g(self,s,x,e,p,derivs=False):
+        if self.__compiler__ == 'numpy':
+            # evertyhing is ready
+            return self.__g__(s,x,e,p,derivs=derivs)
+        elif derivs is False:
+            return self.__g__(s,x,e,p)
+        else:
+            g0 = self.__g__(s,x,e,p)
+            g_s = numdiff( lambda l: self.__g__(l,x,e,p), s, g0)
+            g_x = numdiff( lambda l: self.__g__(s,l,e,p), x, g0)
+            g_e = numdiff( lambda l: self.__g__(s,x,l,p), e, g0)
+            return [g0, g_s, g_x, g_e]
 
 
 
-#    def g(self,s,x,e,p, derivs=False):
+    def f(self,s,x,S,X,E,p,derivs=False):
+        if self.__compiler__ == 'numpy':
+            return self.__f__(s,x,S,X,E,p,derivs=derivs)
+        elif derivs is False:
+            return self.__f__(s,x,S,X,E,p)
+        else:
+            f0 = self.__f__(s,x,S,X,E,p)
+            f_s = numdiff(lambda l: self.__f__(l,x,S,X,E,p), s, f0)
+            f_x = numdiff(lambda l: self.__f__(s,l,S,X,E,p), x, f0)
+            f_S = numdiff(lambda l: self.__f__(s,x,l,X,E,p), S, f0)
+            f_X = numdiff(lambda l: self.__f__(s,x,S,l,E,p), X, f0)
+            f_E = numdiff(lambda l: self.__f__(s,x,S,X,l,p), X, f0)
+            return [f0, f_s, f_x, f_S, f_X, f_E]
+
+
+        #    def g(self,s,x,e,p, derivs=False):
 #        return self.__g__(s,x,e,p,derivs=derivs)
 #
 #    def f(self,s,x,S,X,e,p,derivs=False):
@@ -57,10 +113,10 @@ class CModel_fga:
 
     model_type = 'fga'
 
-    def __init__(self,model):
+    def __init__(self,model, compiler='numpy'):
         self.model = model
 
-        [f,a,g] = model_to_fga(model)
+        [f,a,g] = model_to_fga(model, compiler=compiler)
         self.__f = f
         self.__a = a
         self.__g = g
@@ -110,6 +166,8 @@ class CModel_fga:
             return [F,F_s,F_x,F_S,F_X]
 
 
+
+
 # for compatibility
 
 CModel = CModel_fg
@@ -119,3 +177,4 @@ GlobalCompiler = CModel
 GlobalCompiler2 = CModel2
 
 #from global_solution import *
+

@@ -123,37 +123,6 @@ class Compiler:
             j = v.lag + minimum_endo_lag
             mat[i,j] = int(lagged_variables.index(v) + 1)
         return mat.T
-    
-#    def build_substitution_list(self,for_matlab=False,for_c=True):
-#        if for_matlab:
-#            mi = 1
-#        else:
-#            mi = 0;
-#        subs_dict = dict()
-#        for i in range(len(self.model.variables)):
-#            if for_c or for_matlab:
-#                subs_dict[self.model.variables[i]] = "y("+str(i+ mi) + ")"
-#            else:
-#                subs_dict[self.model.variables[i]] = "y["+str(i+ mi) + "]"
-#        #exovariables_index = dict()
-#        for i in range(len(self.model.shocks)):
-#            if for_c or for_matlab:
-#                subs_dict[self.model.shocks[i]] = "x("+str(i+mi)+")"
-#            else:
-#                subs_dict[self.model.shocks[i]] = "x["+str(i+mi)+"]"
-##        parameters_index = dict()
-#        for i in range(len(self.model.parameters)):
-#            if for_c or for_matlab:
-#                subs_dict[self.model.parameters[i]] = "parms("+str(i+mi)+")"
-#            else:
-#                subs_dict[self.model.parameters[i]] = "parms["+str(i+mi)+"]"
-#        for i in range(len(self.model.shocks)):
-#            # temporary
-#            if for_c or for_matlab:
-#                subs_dict[self.model.shocks[i]] = "0"
-#            else:
-#                subs_dict[self.model.shocks[i]] = "0"
-#        return subs_dict
 
     def static_tabify_expression(self,eq,for_matlab=False,for_c=True):
         #from dolo.misc.calculus import map_function_to_expression
@@ -251,7 +220,14 @@ class DicPrinter(sympy.printing.StrPrinter):
     def doprint_numpy(self,expr,vectorize=False):
         txt = self.doprint(expr)
         return txt
-    
+
+
+    def _print_Symbol(self, expr):
+        return self.printing_dict[expr]
+
+    def _print_TSymbol(self, expr):
+        return self.printing_dict[expr]
+
     def _print_Variable(self, expr):
         return self.printing_dict[expr]
 

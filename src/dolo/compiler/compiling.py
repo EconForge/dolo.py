@@ -124,9 +124,8 @@ def compile_function(equations, args, parms, max_order, return_function=True):
         return txt
 
 
-def compile_function_2(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_text=False):
     """
-
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
     :param args_names: list of strings (['a','b']
@@ -217,14 +216,21 @@ def {fname}({args_names}, {param_names}, derivs=False):
             param_names = 'p'
             )
 
-    if return_function:
-        import numpy as np
-        inf = np.inf
-        exec text in locals(), globals()
-        l = globals()
-        return l[fname]
-    else:
+
+    if return_text:
         return text
+
+    import numpy as np
+    inf = np.inf
+    exec text in locals(), globals()
+    l = globals()
+    return l[fname]
+
+
+from dolo.misc.decorators import deprecated
+@deprecated
+def compile_function_2(*args, **dargs):
+    return compile_multiargument_function(*args, **dargs)
 
 
 def eqdiff(leq,lvars):
@@ -233,5 +239,3 @@ def eqdiff(leq,lvars):
         el = [ eq.diff(v) for v in lvars]
         resp += [el]
     return resp
-
-#from dolo.compiler.compiling_very_fast import compile_function_2

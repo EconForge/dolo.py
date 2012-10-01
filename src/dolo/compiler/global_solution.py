@@ -50,17 +50,18 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     #memory_hungry version
 
     n_t = len(theta)
-    dr.theta = theta.copy().reshape(shape)
+    dr.set_values(theta.reshape(shape))  # shortcut : let's call x theta for now
+#    dr.theta = theta.copy().reshape(shape)
     #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
     n_draws = epsilons.shape[1]
     [n_s,n_g] = s.shape
     ss = np.tile(s, (1,n_draws))
-    [xx, xx_s, xx_theta] = dr.interpolate(ss, with_derivative=True,  with_theta_deriv=True) # should repeat theta instead
+    [xx, xx_s, junk, xx_theta] = dr.interpolate(ss, with_derivative=True,  with_theta_deriv=True, with_X_deriv=True) # should repeat theta instead
     n_x = xx.shape[0]
     #    xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
     [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms, derivs=True)
-    [XX, XX_SS, XX_t] = dr.interpolate(SS, with_derivative=True, with_theta_deriv=True)
+    [XX, XX_SS, junk, XX_t] = dr.interpolate(SS, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
     [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms, derivs=True)
 
 
@@ -81,10 +82,12 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     return [res,dres.swapaxes(1,2)]
 
 def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+
     import numpy
     n_t = len(theta)
-    dr.theta = theta.copy().reshape(shape)
-    #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
+
+    dr.set_values(theta.reshape(shape))  # shortcut : let's call x theta for now
+
     n_draws = epsilons.shape[1]
     [n_s,n_g] = s.shape
 
@@ -107,7 +110,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
             res += weights[i] * F
         return res
     else:
-        [x, x_s, x_theta] = dr.interpolate(s, with_derivative=True, with_theta_deriv=True) # should repeat theta instead
+        [x, x_s, junk, x_theta] = dr.interpolate(s, with_derivative=True, with_theta_deriv=True, with_X_deriv=True) # should repeat theta instead
         n_x = x.shape[0]
         res = np.zeros( (n_x,n_g) )
         dres = np.zeros( (n_x,n_t,n_g))
@@ -115,7 +118,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
             tt = [epsilons[:,i:i+1]]*n_g
             e = numpy.column_stack(tt)
             [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
-            [X, X_S, X_t] = dr.interpolate(S, with_derivative=True, with_theta_deriv=True)
+            [X, X_S, junk, X_t] = dr.interpolate(S, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
             [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms, derivs=True)
             res += weights[i] * F
             S_theta = stm(S_x, x_theta)
