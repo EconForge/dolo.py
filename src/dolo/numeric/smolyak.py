@@ -64,6 +64,8 @@ from __future__ import division
 import numpy
 import numpy.linalg
 
+from numpy import array
+
 from operator import mul
 from itertools import product
 
@@ -146,28 +148,30 @@ class SmolyakBasic(object):
 
         [self.smolyak_points, self.smolyak_indices] = smolyak_grids(d,l)
 
-        self.u_grid = self.smolyak_points.T
+        self.u_grid = array( self.smolyak_points.T, order='C')
 
         self.isup = max(max(self.smolyak_indices))
         self.n_points = len(self.smolyak_points)
         #self.grid = self.real_gri
 
         Ts = chebychev( self.smolyak_points.T, self.n_points - 1 )
-        coeffs = []
+        C = []
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
-            coeffs.append(p)
-        coeffs = numpy.row_stack( coeffs )
+            C.append(p)
+        C = numpy.row_stack( C )
 
-        self.__coeffs__ = coeffs
-        self.__Ts__ = Ts
+        # C is such that :  X = theta * C
+        self.__C__ = C
+        self.__C_inv__ = numpy.linalg.inv(C)  # would be better to store preconditioned matrix
 
         self.bounds = numpy.row_stack([(0,1)]*d)
 
     def __call__(self,s):
         return self.interpolate(s)
 
-    def interpolate(self, s, with_derivative=True, with_theta_deriv=False):
+    def interpolate(self, s, with_derivative=True, with_theta_deriv=False, with_X_deriv=False):
+
         # points in x must be stacked horizontally
 
         theta = self.theta
@@ -218,7 +222,22 @@ class SmolyakBasic(object):
                     block[i,:,:] = coeffs
                     l.append(block)
                 dval = numpy.concatenate( l, axis = 1 )
-                return [val,dder,dval]
+
+                if with_X_deriv:
+
+                    dd = dval.reshape( (dval.shape[0],) + theta.shape + (dval.shape[2],) )
+
+                    C_inv = self.__C_inv__
+
+                    d_x = numpy.tensordot( dd, C_inv.T, axes=(2,0))
+                    d_x = d_x.swapaxes(2,3)
+                    pp = theta.size
+                    d_x = d_x.reshape( (dval.shape[0],) + (pp, ) + (dval.shape[2],) )
+                    return [val,dder,dval,d_x]
+
+                else:
+                    return [val,dder,dval]
+
             else:
                 return [val,dder]
 
@@ -233,31 +252,11 @@ class SmolyakBasic(object):
 
         x = x.real # ahem
 
-        coeffs = self.__coeffs__
+        C_inv = self.__C_inv__
+        theta = numpy.dot( x, C_inv )
+        self.theta = theta
 
-        #######
-        # derivatives w.r.t theta on the grid
-        l = []
-        n_v = x.shape[0]
-        n_t = x.shape[1]
-
-        for i in range(n_v):
-            block = numpy.zeros( (n_v,n_t,n_t) )
-            block[i,:,:] = coeffs
-            l.append(block)
-        self.__dval__ = numpy.concatenate( l, axis = 1 )
-
-        theta0 = numpy.zeros(x.shape)
-        dval = self.__dval__
-
-        idv = dval.shape[1]
-        jac = dval.swapaxes(1,2)
-        jac = jac.reshape((idv,idv))
-
-        theta = numpy.linalg.solve(jac,x.flatten())
-        theta = theta.reshape(theta0.shape)
-
-        self.theta =  theta
+        return theta
 
     def plot_grid(self):
         import matplotlib.pyplot as plt
@@ -335,20 +334,26 @@ class SmolyakGrid(SmolyakBasic):
         Pinv = self.Pinv
         return numpy.dot(Pinv,y-c)
 
-    def interpolate(self, y, with_derivative=False, with_theta_deriv=False):
+    def interpolate(self, y, with_derivative=False, with_theta_deriv=False, with_X_deriv=False):
         x = self.B(y)  # Transform back to [0,1]
-        res = super(SmolyakGrid, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv)  # Call super class' (SmolyakGrid) interpolate func
-        if with_derivative:
-            if with_theta_deriv:
-                [val,dder,dval] = res
-                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
-                return [val,dder,dval]
-            else:
-                [val,dder] = res
-                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
-                return [val,dder]
-        else:
-            return res
+        res = super(SmolyakGrid, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv, with_X_deriv=with_X_deriv)  # Call super class' (SmolyakGrid) interpolate func
+        if with_derivative or with_theta_deriv or with_X_deriv:
+            dder = res[1]
+            dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
+            res[1] = dder
+        return res
+#    return res
+#        if with_derivative:
+#            if with_theta_deriv:
+#                [val,dder,dval] = res
+#                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
+#                return [val,dder,dval]
+#            else:
+#                [val,dder] = res
+#                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)
+#                return [val,dder]
+#        else:
+#            return res
 
 
     def plot_grid(self):
@@ -374,3 +379,84 @@ class SmolyakGrid(SmolyakBasic):
             plt.show()
         else:
             raise ValueError('Can only plot 2 or 3 dimensional problems')
+
+if __name__ == '__main__':
+
+    from numpy import row_stack, array
+
+    smin = [-2,-1]
+    smax = [0.5,2]
+
+    sg = SmolyakGrid(smin,smax,2)
+    sg2 = SmolyakGrid(smin,smax,3)
+
+#    print(sg.u_grid)
+    grid = sg.u_grid
+
+    grid2 = sg2.u_grid
+
+    values = row_stack( [grid[0,:] * (1-grid[1,:])/2.0, grid[1], grid[0]] )
+#    print(values)
+
+    sg.set_values(values)
+
+    print('sizes of the grids')
+    print(sg.u_grid.shape)
+    print(sg2.u_grid.shape)
+
+    sh = values.shape
+    print('values')
+    print(sh)
+
+    print('theta')
+    print(sg.theta.shape)
+
+    def fun(x):
+
+        sg.set_values(x.reshape(sh))
+        res = sg.interpolate(grid2, with_derivative=False)
+        return res
+#
+#    def fun(theta):
+#
+#        sg.theta = theta.reshape(sh).copy()
+#        res = sg.interpolate(grid2, with_derivative=False)
+#        return res
+#
+
+    from dolo.numeric.serial_operations import numdiff1, numdiff2
+
+#    x0 = sg.theta.flatten()
+    x0 = values.flatten()
+    print(x0.shape)
+
+    test = fun(x0)
+    print('image')
+    print( test.shape)
+#    dtest = numdiff1(grid[1] fun, values)
+    dtest = numdiff2( fun, x0, dv=1e-5)
+
+#    print(values.shape)
+#    print(test.shape)
+#    print(dtest)
+
+    print('numerical derivative')
+    print(dtest.shape)
+
+#    dtest = dtest.swapaxes(1,2)
+
+#    print(test.shape)
+#    print(test)
+#    [res1, res2, res3] = sg.interpolate(grid2, with_theta_deriv=True)
+#
+    print('symbolic derivative')
+    [res1, res2, res3, res4] = sg.interpolate(grid2, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
+    print(res4.shape)
+#
+    diff = dtest - res4
+
+#
+    print( abs(diff).max() )
+#
+#    print(res3.shape)
+
