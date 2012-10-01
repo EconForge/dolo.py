@@ -1,7 +1,5 @@
-from preview_latex import latex, LatexPrinter
+from dolo.stash.preview_latex import  LatexPrinter
 
-
-#    <script src="Henrici_fichiers/easyload-tags.js"></script><script src="Henrici_fichiers/jsMath-easy-load.js"></script><script src="Henrici_fichiers/jsMath.js"></script>
 def model_preview(model, output_file, eq_range=None, print_info = True,jsMathPath='jsMath',styleSheet='./style.css',latex_names={}):
     lp = LatexPrinter()
 
