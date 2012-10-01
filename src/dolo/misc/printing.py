@@ -1,5 +1,13 @@
 from sympy.printing.str import StrPrinter
 
+
+def sympy_to_dynare_string(sexpr):
+    s = str(sexpr)
+    s = s.replace("==","=")
+    s = s.replace("**","^")
+    return(s)
+
+
 class DoloPrinter(StrPrinter):
     def _print_TSymbol(self,expr):
         return expr.__str__()
@@ -12,7 +20,6 @@ dp = DoloPrinter()
 # The following functions compute the HTML representation of common objects #
 #############################################################################
 
-import dolo
 
 class HTMLString(str):
     def _repr_html_(self):

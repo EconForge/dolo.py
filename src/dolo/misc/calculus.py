@@ -49,9 +49,3 @@ def construct_4_blocks_matrix(blocks):
     m[p1:p1+p3,q1:(q1+q2)] = A4
 
     return(m)
-    
-def sympy_to_dynare_string(sexpr):
-    s = str(sexpr)
-    s = s.replace("==","=")
-    s = s.replace("**","^")
-    return(s)

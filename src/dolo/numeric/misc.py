@@ -49,11 +49,3 @@ def cartesian(arrays, out=None):
         for j in xrange(1, arrays[0].size):
             out[j*m:(j+1)*m,1:] = out[0:m,1:]
     return out
-
-
-def iszero(mat):
-    err = abs(mat).max()
-    cond = err < 0.00000001
-    if not cond:
-        print 'Error : ' + str(err)
-    return cond

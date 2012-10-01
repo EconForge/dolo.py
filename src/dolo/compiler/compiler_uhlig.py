@@ -1,4 +1,5 @@
 from dolo.compiler.compiler import *
+from sympy import Matrix
 
 class UhligCompiler(Compiler):
     '''
@@ -81,6 +82,3 @@ class UhligCompiler(Compiler):
         d['M'] = steady_state_ify(M)
         d['N'] = steady_state_ify(N)
         return d
-
-
-#print self.tabify_expression(d['G'][1,0])

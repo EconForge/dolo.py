@@ -400,6 +400,4 @@ from sympy import __version__
 from distutils.version import LooseVersion
 
 if LooseVersion(__version__) < LooseVersion('0.7.2'):
-    import warnings
-    warnings.warn('You have an old version of sympy (< 0.7.2). Support for older versions will be removed in later versions of dolo')
-    from dolo.symbolic.oldsymbolic import Variable, Shock, Parameter
+    raise Exception('You have an old version of sympy (< 0.7.2). Support for older versions will be removed in later versions of dolo')

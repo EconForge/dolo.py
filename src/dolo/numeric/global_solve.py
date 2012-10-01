@@ -97,7 +97,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
             integration_orders = [3]*sigma.shape[0]
         [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
-    from dolo.numeric.global_solution import time_iteration, stochastic_residuals_2, stochastic_residuals_3
+    from dolo.numeric.global_solution import time_iteration
+
     vprint('Starting time iteration')
     dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, serial_grid=serial_grid)
     

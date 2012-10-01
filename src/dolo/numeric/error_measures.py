@@ -1,7 +1,7 @@
 #from dolo.compiler.compiler_global import test_residuals
 from dolo.numeric.interpolation import RectangularDomain
 
-from dolo.compiler.compiler_global import GlobalCompiler
+from dolo.compiler.compiler_global import CModel
 import numpy
 import numpy as np
 
@@ -48,7 +48,7 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
 
     domain = RectangularDomain(bounds[0,:], bounds[1,:], orders)
 
-    gc = GlobalCompiler(model, substitute_auxiliary=True, solve_systems=True)
+    gc = CModel(model, substitute_auxiliary=True, solve_systems=True)
     f = gc.f
     g = gc.g
 
@@ -69,8 +69,8 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
         beta = time_weight[1]
         s0 = time_weight[2]
 
-        from dolo.numeric.simulations import simulate_without_aux as simulate
-        [s_simul, x_simul] = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
+        from dolo.numeric.simulations import simulate
+        [s_simul, x_simul] = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True, stack_series=False)
 
         densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]
 
@@ -123,7 +123,6 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     # dr is used to approximate future steps
 
     # monkey patch:
-
 
 
     cmodel = cmodel.as_type('fg')
