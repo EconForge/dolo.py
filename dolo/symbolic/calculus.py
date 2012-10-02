@@ -1,9 +1,6 @@
 from __future__ import division
 
-from dolo.symbolic.symbolic import *
-
 import sympy
-import copy
 
 def second_order_taylorization(expr,shocks,covariances):    
     h = sympy.hessian(expr,shocks)
@@ -14,17 +11,7 @@ def second_order_taylorization(expr,shocks,covariances):
     for s in shocks:
         resp = resp.subs(s,0)
     return(resp)
-    
-    
-def lambda_sub(expr,dic):
-    # This function evaluates expression expr to a float using float dictionary dic
-    # dic must contains at least all symbols of expr
-    expr = sympy.sympify(expr)
-    symbs = [s for s in expr.atoms() if isinstance(s,sympy.Symbol)]
-    vals = [ dic[s] for s in symbs]
-    f = sympy.lambdify(symbs,expr)
-    res = (f(*vals))
-    return(res)
+
 
 def construct_4_blocks_matrix(blocks):
     '''construct block matrix line by line
