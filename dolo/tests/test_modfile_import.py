@@ -6,7 +6,7 @@ from dolo.misc.modfile import parse_dynare_text
 
 import os
 
-DYNARE_MODFILES_PATH = '../examples/dynare_modfiles/'
+DYNARE_MODFILES_PATH = 'examples/dynare_modfiles/'
 exclude = [
     '.directory', # not a modfile
 

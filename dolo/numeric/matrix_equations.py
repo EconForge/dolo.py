@@ -1,5 +1,4 @@
 from dolo.numeric.tensor import sdot,mdot
-from dolo.numeric.misc import iszero
 
 import numpy as np
 

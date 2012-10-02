@@ -5,13 +5,13 @@ __version__ = "0.4-dev-1"
 setup(
     name = "dolo",
     version = __version__,
-    packages = find_packages('src'),
-    package_dir = {'':'src'},
+    packages = find_packages('dolo'),
 
-    ext_models=[
-        Extension('serial_operations',['serial_operations_lib.c'])
-        ],
-    scripts = ['src/bin/dolo-recs.py', 'src/bin/dolo-matlab.py'],
+    package_dir = {'':'dolo'},
+
+    test_suite='tests',
+    
+    scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py'],
     install_requires = ["pyyaml","sympy","numpy"],
     extras_require = {
             'plots':  ["matplotlib"],

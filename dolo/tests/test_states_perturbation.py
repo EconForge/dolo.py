@@ -10,7 +10,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
         # yield the same result.
 
         from dolo.misc.yamlfile import yaml_import
-        model = yaml_import('../examples/global_models/optimal_growth.yaml')
+        model = yaml_import('examples/global_models/optimal_growth.yaml')
 
 
         from dolo.numeric.perturbations import solve_decision_rule
@@ -36,7 +36,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
     def test_perturbation_1(self):
         from dolo.misc.yamlfile import yaml_import
-        model = yaml_import('../examples/global_models/optimal_growth.yaml')
+        model = yaml_import('examples/global_models/optimal_growth.yaml')
         from dolo.numeric.perturbations_to_states import approximate_controls
         dr = approximate_controls(model,order=1)
 
@@ -44,13 +44,13 @@ class StatesPerturbationsTestCase(unittest.TestCase):
     def test_perturbation_2(self):
         from dolo.misc.yamlfile import yaml_import
         from dolo.numeric.perturbations_to_states import approximate_controls
-        model = yaml_import('../examples/global_models/optimal_growth.yaml')
+        model = yaml_import('examples/global_models/optimal_growth.yaml')
         dr = approximate_controls(model,order=2)
 
     def test_perturbation_3(self):
         from dolo.misc.yamlfile import yaml_import
         from dolo.numeric.perturbations_to_states import approximate_controls
-        model = yaml_import('../examples/global_models/optimal_growth.yaml')
+        model = yaml_import('examples/global_models/optimal_growth.yaml')
         dr = approximate_controls(model,order=3)
 
 if __name__ == '__main__':

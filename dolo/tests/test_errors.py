@@ -7,7 +7,7 @@ class  ErrorsTestCase(unittest.TestCase):
         from dolo.misc.yamlfile import yaml_import
         from dolo.numeric.global_solve import global_solve
 
-        model = yaml_import('../examples/global_models/rbc.yaml')
+        model = yaml_import('examples/global_models/rbc.yaml')
 
 
         from dolo.compiler.compiler_global import CModel
