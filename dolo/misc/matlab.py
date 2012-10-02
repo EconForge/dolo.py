@@ -2,6 +2,25 @@ from dolo.symbolic.symbolic import Variable,Parameter
 
 import sympy
 
+def convert_struct_to_dict(s):
+    # imperfect but enough for now
+    if len(s.dtype) == 0:
+        if s.shape == (1,):
+            return str(s[0])
+        elif s.shape == (0,0):
+            return []
+        elif s.shape == (1,1):
+            return s[0,0]
+        else:
+            return s
+    else:
+        # we suppose that we found a structure
+        d = dict()
+        ss = s[0,0] # actual content of the structure
+        for n in ss.dtype.names:
+            d[n] = convert_struct_to_dict(ss[n])
+        return d
+
 def send_to_matlab(model,interactive=True,rmtemp=False,append=""):
     tempname = model.fname + ".mod"
     f = file(tempname,'w')

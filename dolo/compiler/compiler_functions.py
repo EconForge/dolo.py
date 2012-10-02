@@ -20,7 +20,7 @@ def simple_global_representation(self, allow_future_shocks=True, solve_systems=F
     if 'auxiliary' in eq_g:
 
         sdict = {}
-        from dolo.misc.misc import timeshift
+        from dolo.symbolic.symbolic import timeshift
         auxies = list( eq_g['auxiliary'] )
         if 'auxiliary_2' in eq_g:
             auxies += list( eq_g['auxiliary_2'] )

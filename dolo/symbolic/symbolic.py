@@ -391,9 +391,31 @@ class SVariant(sympy.Basic):
         else:
             return self
 
+
 def Variant(dummy,alternatives):
     t = [(k,v) for k,v in alternatives.iteritems()]
     return SVariant( dummy, tuple(t))
+
+
+def map_function_to_expression(f,expr):
+    if expr.is_Atom:
+        return( f(expr) )
+    else:
+        l = list( expr._args )
+        args = []
+        for a in l:
+            args.append(map_function_to_expression(f,a))
+        return( expr.__class__(* args) )
+
+
+def timeshift(expr, tshift):
+    from dolo.symbolic.symbolic import TSymbol
+    def fun(e):
+        if isinstance(e,TSymbol):
+            return e(tshift)
+        else:
+            return e
+    return map_function_to_expression(fun, expr)
 
 
 from sympy import __version__
