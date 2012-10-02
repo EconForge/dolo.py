@@ -1,11 +1,8 @@
-
-__author__="pablo"
-__date__ ="$3 sept. 2009 11:26:05$"
-
 from setuptools import setup,find_packages
 import py2exe
 
-from dolo import __version__ as __dolo_version__
+from dolo import __version__
+
 from glob import glob
 
 data_files = [(
@@ -19,9 +16,10 @@ excludes = ["pywin", "pywin.debugger", "pywin.debugger.dbgcon",
 
 import sys
 sys.path.append("C:\\Program Files\\pythonxy\\console\\Microsoft.VC90.CRT\\")
+
 setup (
     name = 'dolo',
-    #version = '0.3',
+    version = __version__,
 
     # Declare your packages' dependencies here, for eg:
 
@@ -31,11 +29,11 @@ setup (
     author_email = '',
 
     url = 'www.mosphere.fr',
-    license = 'BSD',
+    license = 'BSD-2',
 	
-	packages = find_packages('src'),
-    package_dir = {'':'src'},
-    scripts = ['src/bin/dolo-matlab.py'],
+	packages = ['dolo'],
+
+    scripts = ['bin/dolo-matlab.py'],
  
 	data_files = data_files,
  
@@ -47,5 +45,6 @@ setup (
                 "bundle_files" : 3
             }
     },
-    console = ['src/bin/dolo-matlab.py'],
-    )
+    console = ['bin/dolo-matlab.py'],
+
+)

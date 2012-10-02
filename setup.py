@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup
 
-__version__ = "0.4-dev-1"
+from dolo import __version__
 
 setup(
 
@@ -24,8 +24,9 @@ setup(
     author_email = "pablo.winant@gmail.com",
 
     description = 'Economic modelling in Python',
-    
+
     license = 'BSD-2',
+
     url = 'http://albop.github.com/dolo/',
 
 )
