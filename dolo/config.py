@@ -98,10 +98,3 @@ del IPC
 
 def display(obj):
     interpreter.display(obj)
-
-# monkey patch sympy so that time symbols are printed correctly
-
-from sympy.printing.str import  StrPrinter
-StrPrinter._print_TSymbol = lambda self,x: x.__str__()
-from sympy.printing.latex import LatexPrinter
-LatexPrinter._print_TSymbol = lambda self,x: x.__latex__()

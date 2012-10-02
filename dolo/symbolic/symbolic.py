@@ -19,6 +19,16 @@ import re
 #      |             |
 #   Variable       Shock
 
+
+
+# monkey patch sympy so that time symbols are printed correctly
+
+from sympy.printing.str import  StrPrinter
+StrPrinter._print_TSymbol = lambda self,x: x.__str__()
+from sympy.printing.latex import LatexPrinter
+LatexPrinter._print_TSymbol = lambda self,x: x.__latex__()
+
+
 class Parameter(sympy.Symbol):
 
     def __repr__(self):
@@ -81,6 +91,10 @@ class TSymbol(sympy.Symbol):
     @property
     def P(self):
         return(self(-self.lag))
+
+    @property
+    def S(self):
+        v = Variable(self.name,date='S')
 #
     def __repr__(self):
         return self.__str__(self)
@@ -151,23 +165,23 @@ class TSymbol(sympy.Symbol):
 
         return '_{}_{}'.format(date_string, self.name)
 
+
+# warning: at some point in the future, we will get rid of the distinction between Variable and Shock
+
 class Variable(TSymbol):
     """
     Define a new variable with : x = Variable('x')
     Then x(k) returns the value with lag k
     Internally x(-k) is a symbol with name x_bk
     """
-
-    @property
-    def S(self):
-        v = Variable(self.name,date='S')
-        return(v)
+    pass
 
 class Shock(TSymbol):
     """
     Define a new shock with : x = Shock('x')
-    Then x(k) returns the value with la   g k
+    Then x(k) returns the value with lag k
     """
+    pass
 
 class Equation(sympy.Equality):
     
@@ -263,8 +277,11 @@ class Equation(sympy.Equality):
         xmleq.text = str(self)
         return xmleq
 
-# TODO : idea : subscripts are denoted by @
-# upperscripts by $
+
+
+
+# TODO : expereiments with indexed symbols
+# subscripts are denoted by @, upperscripts by $
 
 class IndexedSymbol(sympy.Basic):
 
@@ -290,10 +307,10 @@ class IndexedSymbol(sympy.Basic):
             raise Exception, "Only integers are allowed for subscripting."
         newname = self.basename + '_' + '_'.join([str(k) for k in keys])
         if self.symbol_type == Variable:
-            v = Variable(newname,0)
+            v = Variable(newname)
             return v
         elif self.symbol_type == Shock:
-            return Shock(newname,0)
+            return Shock(newname)
         elif self.symbol_type == Parameter:
             return Parameter(newname)
 
@@ -326,8 +343,8 @@ def greekify(expr):
         return greek_letters[expr]
     else:
         return expr
-sympy.Symbol
-from sympy.core.basic import Atom
+
+
 
 class String(sympy.Basic):
     def __init__(self,name):
@@ -355,7 +372,6 @@ class ISymbol(sympy.Basic):
             return ISymbol(self.name,b)
         else:
             return self
-
 
 class Sum(sympy.Basic):
 
