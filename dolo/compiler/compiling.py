@@ -20,6 +20,15 @@ DerivativesTree.symbol_type = TSymbol
 
 def compile_function(equations, args, parms, max_order, return_function=True):
 
+    """
+    :param equations:
+    :param args:
+    :param parms:
+    :param max_order:
+    :param return_function:
+    :return:
+    """
+
     var_order = args
 
     sols = []

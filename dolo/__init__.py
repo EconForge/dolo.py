@@ -2,13 +2,13 @@ __version__ = "0.4-dev-1"
 
 from dolo.config import *
 
-from symbolic.symbolic import *
+from dolo.symbolic.symbolic import *
 
-from misc.modfile import *
-from misc.yamlfile import *
+from dolo.misc.modfile import *
+from dolo.misc.yamlfile import *
 
-from numeric.perturbations import solve_decision_rule
-from numeric.decision_rules import *
+from dolo.numeric.perturbations import solve_decision_rule
+from dolo.numeric.decision_rules import *
 
 from dolo.numeric.perturbations_to_states import approximate_controls
 from dolo.numeric.global_solve import global_solve
