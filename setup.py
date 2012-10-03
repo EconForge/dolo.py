@@ -8,7 +8,7 @@ setup(
     version = __version__,
     packages = ['dolo'],
 
-    test_suite='tests',
+    test_suite='dolo.tests',
     
     scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py'],
 
