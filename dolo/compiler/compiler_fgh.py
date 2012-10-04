@@ -1,6 +1,4 @@
 
-from dolo.symbolic.model import Model
-
 class CModel_fgah:
 
     model_type = 'fgah'

@@ -1,6 +1,6 @@
-from dolo.compiler.compiler import *
-from dolo.symbolic.derivatives import *
-
+from dolo.compiler.compiler import Compiler, DicPrinter
+from dolo.symbolic.symbolic import TSymbol, Variable, Shock
+from dolo.symbolic.derivatives import DerivativesTree
 import math
 import sympy
 
@@ -112,7 +112,7 @@ M_.params = repmat(NaN,{param_nbr}, 1);
 
         # BUG: how do we treat parameters absent from the model, but present in parameters_values ?
 
-        from dolo.misc.calculus import solve_triangular_system
+        from dolo.misc.triangular_solver import solve_triangular_system
 
         [junk,porder] = solve_triangular_system(model.parameters_values)
         porder = [p for p in porder if p in model.parameters]
@@ -237,12 +237,12 @@ M_.exo_det_length = 0; % parrot
         init_state = model.parameters_values.copy()
         init_state.update( model.init_values.copy() )
 
-        from dolo.misc.calculus import solve_triangular_system
+        from dolo.misc.triangular_solver import solve_triangular_system
         if not solve_init_state:
             itd = model.init_values
             order = solve_triangular_system(init_state,return_order=True)
         else:
-            itd,order = calculus.solve_triangular_system(init_state)
+            itd,order = solve_triangular_system(init_state)
 
 
 

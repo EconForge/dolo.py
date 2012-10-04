@@ -1,8 +1,9 @@
 from __future__ import division
 
-from dolo.symbolic.model import *
-from dolo.symbolic.symbolic import *
+from dolo.symbolic.model import Model
+from dolo.symbolic.symbolic import Equation
 from dolo.compiler.compiler import Compiler
+
 import numpy as np
 import numpy.linalg
 

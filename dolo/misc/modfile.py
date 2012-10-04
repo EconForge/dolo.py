@@ -1,5 +1,5 @@
-from dolo.symbolic.symbolic import *
-from dolo.symbolic.model import *
+from dolo.symbolic.symbolic import Variable, Shock, Parameter, Equation
+from dolo.symbolic.model import Model
 
 import sympy
 import re

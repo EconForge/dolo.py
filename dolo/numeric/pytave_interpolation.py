@@ -1,6 +1,6 @@
 import pytave
 import numpy
-import os
+
 
 
 class CEInterpolation:

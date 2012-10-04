@@ -1,8 +1,7 @@
 from __future__ import division
 
 from dolo.symbolic.derivatives import DerivativesTree
-from dolo.compiler.compiler import DicPrinter
-from dolo.symbolic.symbolic import TSymbol, Shock, Variable
+from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
 

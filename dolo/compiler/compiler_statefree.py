@@ -1,6 +1,7 @@
 from __future__ import division
 
-from dolo.compiler.compiler import *
+from dolo.compiler.compiler import Compiler, DicPrinter
+from dolo.symbolic.symbolic import Variable
 from dolo.misc.caching import memoized
 from dolo.symbolic.derivatives import *
 

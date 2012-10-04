@@ -1,10 +1,7 @@
 from __future__ import print_function
 
-from dolo import *
+from perturbations_to_states import approximate_controls
 import numpy
-from numpy import *
-
-from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals, time_iteration
 
 def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40,
                  integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, tol=1e-8,

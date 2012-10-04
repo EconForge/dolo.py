@@ -1,14 +1,11 @@
 """
 Compiled models.
 
-Several kinds of models
-
-
 """
 
-
-from dolo.symbolic.model import *
-from dolo.symbolic.symbolic import *
+from dolo.symbolic.symbolic import Variable, Shock, Parameter, map_function_to_expression
+from sympy import Symbol
+import sympy
 
 import numpy as np
 

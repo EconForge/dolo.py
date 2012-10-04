@@ -4,7 +4,6 @@
 
 from __future__ import division
 
-from dolo.misc.yamlfile import yaml_import
 from dolo.numeric.decision_rules_states import CDR
 
 import numpy
