@@ -1,4 +1,4 @@
-from dolo.compiler.compiler_python import PythonCompiler
+from dolo.compiler.compiler_statefree import PythonCompiler
 from dolo.numeric.matrix_equations import second_order_solver, solve_sylvester
 from dolo.numeric.tensor import sdot,mdot
 from dolo.numeric.decision_rules import DynareDecisionRule as DDR

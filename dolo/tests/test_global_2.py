@@ -4,9 +4,8 @@ class TestGlobal(unittest.TestCase):
  
     def test_global_solution(self):
 
-        from dolo import *
+        from dolo import yaml_import, global_solve 
         
-        from dolo.numeric.global_solve import global_solve
         
         filename = 'examples/global_models/rbc.yaml'
         
