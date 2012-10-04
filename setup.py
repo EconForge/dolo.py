@@ -1,6 +1,8 @@
 from setuptools import setup
 
-from dolo import __version__
+#from dolo import __version__
+
+__version__ = '0.4-dev-1'
 
 setup(
 
