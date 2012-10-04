@@ -1,30 +1,65 @@
-import numpy
+# Credits : both routines below are ported from the Compecon Toolbox
+# by Paul L Fackler and Mario J. Miranda. 
+# It is downloadable at http://www4.ncsu.edu/~pfackler/compecon/toolbox.html
 
+from __future__  import division
+
+import numpy
 from misc import cartesian
 
-def qnwnorm(orders, mu, sigma):
 
-    import pytave
-    pytave.addpath('/home/pablo/Programmation/compecon/CEtools')
+def hermgauss(n):
 
-    orders = numpy.array(orders,dtype=float)
-    mu = numpy.array(mu,dtype=float)
-    sigma = numpy.array(sigma)
-
-    [x,w] = pytave.feval(2,'qnwnorm',orders, mu, sigma)
-
-    w = numpy.ascontiguousarray(w.flatten())
-    x = numpy.ascontiguousarray(x.T)
+    from  numpy import pi, fix, zeros, sqrt
+    maxit = 100
+    pim4 = 1/pi**0.25
+    m = fix( (n+1)/2 )
+    x = zeros(n)
+    w = zeros(n)
+    # reasonable starting values
+    for i in range(m):
+        if i==0:
+            z = sqrt(2*n+1)-1.85575*((2*n+1)**(-1/6))
+        elif i==1:
+            z = z-1.14*(n**0.426)/z
+        elif i==2:
+            z = 1.86*z+0.86*x[0]
+        elif i==3:
+            z = 1.91*z+0.91*x[1]
+        else:
+            z = 2*z+x[i-2]
+    # root finding iterations 
+        its = 0
+        while its<maxit:
+            its += 1
+            p1 = pim4
+            p2 = 0
+            for j in range(n):
+                p3 = p2
+                p2 = p1
+                p1 = z*sqrt(2/(j+1))*p2-sqrt(j/(j+1))*p3;
+            pp = sqrt(2*n)*p2
+            z1 = z
+            z = z1-p1/pp
+            if abs(z-z1)<1e-14:
+                break
+        if its >= maxit:
+            raise Exception('Failure to converge')
+        x[n-i-1] = z
+        x[i] = -z
+        w[i] = 2/pp**2
+        w[n-i-1] = w[i]
 
     return [x,w]
+ 
 
 def gauss_hermite_nodes(orders, sigma, mu=None):
 
     import numpy
-    from numpy.polynomial.hermite import hermgauss
 
     if mu is None:
         mu = numpy.array( [0]*sigma.shape[0] )
+
 
     herms = [hermgauss(i) for i in orders]
 
@@ -41,6 +76,9 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
     return [x,w]
 
+#from numpy.polynomial.hermite import hermgauss
+
+           
 if __name__ == '__main__':
 
     orders = [8,8]
@@ -50,20 +88,9 @@ if __name__ == '__main__':
         [0.015,0.1],
     ])
 
-    def f(P):
-        return P[1,:]**4 - (P[0,:]-1)*P[0,:]**2 + 2
+    from numpy.polynomial.hermite import hermgauss as  hermgauss_numpy
 
-    [x,w] = qnwnorm(orders, mu, sigma)
-
-    [x_numpy, w_numpy] = gauss_hermite_nodes(orders, mu, sigma)
-
-    int_1 = ( w*f(x) ).sum()
-    int_2 = ( w_numpy*f(x_numpy) ).sum()
-
-
-    print('Integrals')
-    print(int_1)
-    print(int_2)
-
-
-    assert( abs(int_1-int_2) < 1e-15 )
+    [xg,wg] = hermgauss_numpy(10)
+    [x,w] = hermgauss(10)
+    print(w-wg)
+    print(x-xg)
