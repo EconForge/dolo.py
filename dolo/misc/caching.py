@@ -120,7 +120,7 @@ class DiskDictionary:
             with file(filename) as f:
                 value = pickle.load(f)
                 return value
-        except IOError:
+        except :
             return None
     
 
