@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 #from dolo import __version__
 
-__version__ = '0.4-dev-2'
+__version__ = '0.4-dev-3'
 
-packages = find_packages('.', exclude='*tests*')
+packages = find_packages( exclude='dolo/tests/*')
 print(packages)
 
 setup(
