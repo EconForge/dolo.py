@@ -1,14 +1,17 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 #from dolo import __version__
 
-__version__ = '0.4-dev-1'
+__version__ = '0.4-dev-2'
+
+packages = find_packages('.', exclude='*tests*')
+print(packages)
 
 setup(
 
     name = "dolo",
     version = __version__,
-    packages = ['dolo'],
+    packages = packages, 
 
     test_suite='dolo.tests',
     

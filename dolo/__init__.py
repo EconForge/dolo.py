@@ -1,4 +1,4 @@
-__version__ = "0.4-dev-1"
+__version__ = "0.4-dev-2"
 
 from dolo.config import *
 
