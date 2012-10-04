@@ -65,11 +65,14 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, dis
     from numpy import any,isnan,all
 
     if not hasattr(cmodel,'__a__'): # TODO: find a better test than this
-        l = numpy.row_stack([s_simul, x_simul])
+        l = [s_simul, x_simul]
     else:
-        a_simul = cmodel.a( s_simul.reshape((-1,n_exp*horizon)), s_simul.reshape( (-1,n_exp*horizon) ), parms)
-        a_simul = a_simul.reshape(-1,n_exp,horizon)
-        l = numpy.row_stack([s_simul, x_simul, a_simul])
+        n_s = s_simul.shape[0]
+        n_x = x_simul.shape[0]
+        a_simul = cmodel.a( s_simul.reshape((n_s,n_exp*horizon)), x_simul.reshape( (n_x,n_exp*horizon) ), parms)
+        n_a = a_simul.shape[0]
+        a_simul = a_simul.reshape(n_a,n_exp,horizon)
+        l = [s_simul, x_simul, a_simul]
 
     if stack_series:
         simul = numpy.row_stack(l)
