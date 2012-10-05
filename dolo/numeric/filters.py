@@ -61,9 +61,9 @@ def hp_filter(data, lam=1600):
     big_Lambda[0, 0:3] = first_last
     big_Lambda[1, 0:4] = second
 
-    # Last two rows. Second to last first
-    big_Lambda[lil_t - 2, -4:] = second
-    big_Lambda[lil_t - 1, -3:] = first_last
+    # Last two rows. Second to last first : we have to reverse arrays
+    big_Lambda[lil_t - 2, -4:] = second[::-1]
+    big_Lambda[lil_t - 1, -3:] = first_last[::-1]
 
     # Middle rows
     for i in range(2, lil_t - 2):
