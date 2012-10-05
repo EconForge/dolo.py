@@ -81,7 +81,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals_3
 
     from dolo.compiler.compiler_global import CModel
-    cm = CModel(model,  substitute_auxiliary=True, solve_systems=True, compiler=compiler)
+    cm = CModel(model,  solve_systems=True, compiler=compiler)
     gc = cm.as_type('fg')
 
     if integration == 'optimal_quantization':

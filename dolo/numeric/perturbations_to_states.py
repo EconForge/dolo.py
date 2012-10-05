@@ -1,44 +1,21 @@
 from dolo.numeric.decision_rules_states import CDR
 
-from dolo.misc.caching import memoized
+def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
 
-from dolo.compiler.compiler_functions import simple_global_representation
-
-@memoized
-def interim_gm( model, solve_systems, order):
-
-    gm = simple_global_representation(model, allow_future_shocks=False, solve_systems=solve_systems)
-
-    g_eqs = gm['g_eqs']
-    g_args = [s(-1) for s in gm['states']] + [x(-1) for x in gm['controls']] + gm['shocks']
-    f_eqs = gm['f_eqs']
-
-    f_args = gm['states'] + gm['controls'] + [s(1) for s in gm['states']] + [x(1) for x in gm['controls']]
-    p_args = gm['parameters']
-
-    from dolo.compiler.compiling import compile_function
-
-    g_fun = compile_function(g_eqs, g_args, p_args, order)
-    f_fun = compile_function(f_eqs, f_args, p_args, order)
-
-    return [gm,g_fun,f_fun]
-
-
-def approximate_controls(model, order=1, lambda_name=None, return_dr=True, solve_systems=False):
-
-    [gm, g_fun, f_fun] = interim_gm(model, solve_systems, order)
+    from dolo.compiler.compiler_functions import model_to_fg
+    [g_fun, f_fun] = model_to_fg(model, order=order)
 
     # get steady_state
     import numpy
-    [y0,x,parms] = model.read_calibration()
-    parms = numpy.array(parms)
 
-    y = y0
-    #y = model.solve_for_steady_state(y0)
+    [y,x,parms] = model.read_calibration()
+    sigma = model.read_covariances()
 
-    sigma = numpy.array( model.read_covariances() ).astype(float)
-    states_ss = numpy.array([y[model.variables.index(v)] for v in gm['states']]).astype(float)
-    controls_ss = numpy.array([y[model.variables.index(v)] for v in gm['controls']]).astype(float)
+    states = model['variables_groups']['states']
+    controls = model['variables_groups']['controls']
+
+    states_ss = numpy.array([y[model.variables.index(v)] for v in states]).astype(float)
+    controls_ss = numpy.array([y[model.variables.index(v)] for v in controls]).astype(float)
     shocks_ss = x
 
     f_args_ss = numpy.concatenate( [states_ss, controls_ss, states_ss, controls_ss] )

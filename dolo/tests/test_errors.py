@@ -13,13 +13,13 @@ class  ErrorsTestCase(unittest.TestCase):
         from dolo.compiler.compiler_global import CModel
         from dolo.numeric.perturbations_to_states import approximate_controls
 
-        dr = approximate_controls(model, solve_systems=True)
+        dr = approximate_controls(model)
         dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1)
 
 
         sigma = model.read_covariances()
 
-        cmodel = CModel(model, substitute_auxiliary=True, solve_systems=True)
+        cmodel = CModel(model, solve_systems=True)
         cmodel.sigma = sigma
 
         s_0 = dr.S_bar

@@ -17,8 +17,11 @@ class CModel:
 
     model_type = 'fg'
 
-    def __init__(self,model,substitute_auxiliary=False, keep_auxiliary=True, solve_systems=True, compiler='numpy'):
+    def __init__(self,model, keep_auxiliary=True, solve_systems=True, compiler='numpy'):
         "something to document"
+
+        if isinstance(model, CModel):
+            return model
 
         self.model = model
 
@@ -30,20 +33,22 @@ class CModel:
         self.__compiler__ = compiler
 
         if not keep_auxiliary:
-            [f,g] = model_to_fg(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems, compiler=compiler)
+            [f,g] = model_to_fg(model,solve_systems=solve_systems, compiler=compiler)
             self.__f__ = f
             self.__g__ = g
         else:
-            [f,g,a] = model_to_fg(model,substitute_auxiliary=substitute_auxiliary,solve_systems=solve_systems, compiler=compiler)
+            [f,g,a] = model_to_fg(model,solve_systems=solve_systems, compiler=compiler)
             self.__f__ = f
             self.__g__ = g
             self.__a__ = a
             self.auxiliaries = [str(v) for v in model['variables_groups']['auxiliary']]
 
+        self.__f_h__ = []
+        self.__g_h__ = []
+
 
     def g(self,s,x,e,p,derivs=False):
         if self.__compiler__ == 'numpy':
-            # evertyhing is ready
             return self.__g__(s,x,e,p,derivs=derivs)
         elif derivs is False:
             return self.__g__(s,x,e,p)
@@ -113,6 +118,22 @@ class CModel:
             return self
         else:
             raise Exception('Model of type {0} cannot be cast to model of type {1}'.format(self.model_type, model_type))
+
+
+    def f_h(self, v, p, order=1):
+#        if self.__f_h__.get(order) is None:
+        if len(self.__f_h__) == 0:
+            functions = model_to_fg(self.model, order=order)
+            self.__f_h__[order] = functions
+        return self.__f_h__[order](v,p)
+
+    def g_h(self, v, p, order=1):
+#        if self.__g_h__.get(order) is None:
+        if len(self.__g_h__) == 0:
+            functions = model_to_fg(self.model, order=order)
+            for i,f in enumerate(functions):
+                self.__g_h__[i] = f
+        return self.__g_h__[order](v,p)
 
 
 def numdiff(f,x0,f0=None):

@@ -67,7 +67,7 @@ def simple_global_representation(self, allow_future_shocks=True, solve_systems=F
     return resp
 
 
-def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler='numpy'):
+def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
 
     sgm = simple_global_representation(model, solve_systems=solve_systems)
 
@@ -91,8 +91,14 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler=
     args_g =  [states_p, controls_p, shocks]
     args_f =  [states, controls, states_f, controls_f, shocks_f]
 
-    keep_auxiliary = 'a_eqs' in sgm
+    if order is not None:
+        from dolo.compiler.compiling import compile_function
+        g_fun = compile_function( g_eqs, sum(args_g, []), parameters, order  )
+        f_fun = compile_function( f_eqs, sum([states, controls, states_f, controls_f], []), parameters, order )
+        return [g_fun, f_fun]
 
+
+    keep_auxiliary = 'a_eqs' in sgm
     if keep_auxiliary:
 #        auxiliaries = sgm['auxiliaries']
         a_eqs = sgm['a_eqs']
@@ -118,75 +124,75 @@ def model_to_fg(model,substitute_auxiliary=False, solve_systems=False, compiler=
     else:
         return [f,g]
 
-
-def model_to_fga(model, compiler='numpy'):
-
-    from dolo.misc.triangular_solver import solve_triangular_system
-
-    from dolo.misc.misc import timeshift
-
-    eq_g = model['equations_groups']
-    v_g = model['variables_groups']
-    
-    f_eqs =  [eq.gap for eq in eq_g['arbitrage']]
-    g_eqs =  [eq for eq in eq_g['transition']]
-    a_eqs =  [eq for eq in eq_g['auxiliary']]
-
-    # auxiliaries_2 are simply replaced in all other types of equations
-    a2_dict = {}
-    a2_dict_g = {}
-
-    if 'auxiliary_2' in eq_g:
-        aux2_eqs = eq_g['auxiliary_2']
-        dd = {eq.lhs: eq.rhs for eq in aux2_eqs}
-        dd.update( { eq.lhs(1): timeshift(eq.rhs,1) for eq in aux2_eqs } )
-        dd.update( { eq.lhs(-1): timeshift(eq.rhs,-1) for eq in aux2_eqs } )
-        ds = solve_triangular_system(dd)
-        
-        f_eqs =  [eq.subs(ds) for eq in f_eqs]
-        a_eqs =  [eq.subs(ds) for eq in a_eqs]
-        g_eqs =  [eq.subs(ds) for eq in g_eqs]
-    
-    controls = v_g['controls']
-    auxiliaries = v_g['auxiliary']
-    states = v_g['states']
-
-    parameters = model.parameters
-    shocks = model.shocks
-
-    dd = {eq.lhs: eq.rhs for eq in g_eqs}
-    ds = solve_triangular_system(dd)
-    g_eqs = [ds[eq.lhs] for eq in g_eqs]
-
-    dd = {eq.lhs: eq.rhs for eq in a_eqs}
-    ds = solve_triangular_system(dd)
-    a_eqs = [ds[eq.lhs] for eq in a_eqs]
-
-
-    auxiliaries_f = [c(1) for c in auxiliaries]
-    auxiliaries_p = [c(-1) for c in auxiliaries]
-
-    controls_f = [c(1) for c in controls]
-    states_f = [c(1) for c in states]
-    controls_p = [c(-1) for c in controls]
-    states_p = [c(-1) for c in states]
-    shocks_f = [c(1) for c in shocks]
-
-    args_g =  [states_p, controls_p, auxiliaries_p, shocks]
-    args_f =  [states, controls, states_f, controls_f, auxiliaries, auxiliaries_f, shocks_f]
-    args_a =  [states, controls]
-
-
-    if compiler=='numpy':
-        from dolo.compiler.compiling import compile_multiargument_function
-        compile_multiargument_function
-    elif compiler == 'theano':
-        from dolo.compiler.compiling_theano import compile_multiargument_function
-    elif compiler == 'numexpr':
-        from dolo.compiler.compiling_numexpr import compile_multiargument_function
-
-    g = compile_multiargument_function(g_eqs, args_g, ['s','x','y','e'], parameters, 'g' )
-    f = compile_multiargument_function(f_eqs, args_f, ['s','x','snext','xnext','y','ynext','e'], parameters, 'f' )
-    a = compile_multiargument_function(a_eqs, args_a, ['s','x'], parameters, 'a' )
-
-    return [f,a,g]
+#
+#def model_to_fga(model, compiler='numpy'):
+#
+#    from dolo.misc.triangular_solver import solve_triangular_system
+#
+#    from dolo.misc.misc import timeshift
+#
+#    eq_g = model['equations_groups']
+#    v_g = model['variables_groups']
+#
+#    f_eqs =  [eq.gap for eq in eq_g['arbitrage']]
+#    g_eqs =  [eq for eq in eq_g['transition']]
+#    a_eqs =  [eq for eq in eq_g['auxiliary']]
+#
+#    # auxiliaries_2 are simply replaced in all other types of equations
+#    a2_dict = {}
+#    a2_dict_g = {}
+#
+#    if 'auxiliary_2' in eq_g:
+#        aux2_eqs = eq_g['auxiliary_2']
+#        dd = {eq.lhs: eq.rhs for eq in aux2_eqs}
+#        dd.update( { eq.lhs(1): timeshift(eq.rhs,1) for eq in aux2_eqs } )
+#        dd.update( { eq.lhs(-1): timeshift(eq.rhs,-1) for eq in aux2_eqs } )
+#        ds = solve_triangular_system(dd)
+#
+#        f_eqs =  [eq.subs(ds) for eq in f_eqs]
+#        a_eqs =  [eq.subs(ds) for eq in a_eqs]
+#        g_eqs =  [eq.subs(ds) for eq in g_eqs]
+#
+#    controls = v_g['controls']
+#    auxiliaries = v_g['auxiliary']
+#    states = v_g['states']
+#
+#    parameters = model.parameters
+#    shocks = model.shocks
+#
+#    dd = {eq.lhs: eq.rhs for eq in g_eqs}
+#    ds = solve_triangular_system(dd)
+#    g_eqs = [ds[eq.lhs] for eq in g_eqs]
+#
+#    dd = {eq.lhs: eq.rhs for eq in a_eqs}
+#    ds = solve_triangular_system(dd)
+#    a_eqs = [ds[eq.lhs] for eq in a_eqs]
+#
+#
+#    auxiliaries_f = [c(1) for c in auxiliaries]
+#    auxiliaries_p = [c(-1) for c in auxiliaries]
+#
+#    controls_f = [c(1) for c in controls]
+#    states_f = [c(1) for c in states]
+#    controls_p = [c(-1) for c in controls]
+#    states_p = [c(-1) for c in states]
+#    shocks_f = [c(1) for c in shocks]
+#
+#    args_g =  [states_p, controls_p, auxiliaries_p, shocks]
+#    args_f =  [states, controls, states_f, controls_f, auxiliaries, auxiliaries_f, shocks_f]
+#    args_a =  [states, controls]
+#
+#
+#    if compiler=='numpy':
+#        from dolo.compiler.compiling import compile_multiargument_function
+#        compile_multiargument_function
+#    elif compiler == 'theano':
+#        from dolo.compiler.compiling_theano import compile_multiargument_function
+#    elif compiler == 'numexpr':
+#        from dolo.compiler.compiling_numexpr import compile_multiargument_function
+#
+#    g = compile_multiargument_function(g_eqs, args_g, ['s','x','y','e'], parameters, 'g' )
+#    f = compile_multiargument_function(f_eqs, args_f, ['s','x','snext','xnext','y','ynext','e'], parameters, 'f' )
+#    a = compile_multiargument_function(a_eqs, args_a, ['s','x'], parameters, 'a' )
+#
+#    return [f,a,g]

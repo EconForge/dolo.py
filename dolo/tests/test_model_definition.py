@@ -2,15 +2,16 @@
 # and open the template in the editor.
 
 import unittest
+from sympy import log,exp,sin,cos,tan,Matrix, zeros
 
-from dolo import *
 from dolo.misc.symbolic_interactive import def_variables, def_parameters, def_shocks
-from sympy import *
+
 
 
 class  SyntaxTestCase(unittest.TestCase):
 
     def test_special_functions(self):
+
         def_variables('x')
         expr = log(x) * exp(x) * sin(x) * cos(x) * tan(x)
 

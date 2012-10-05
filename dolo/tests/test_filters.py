@@ -2,7 +2,7 @@ import unittest
 
 
 
-def hpfilter_test( x, lam=1600 ):
+def hpfilter_dense( x, lam=1600 ):
 
     import numpy as np
     T = x.shape[-1]
@@ -53,7 +53,7 @@ class  FiltersTest(unittest.TestCase):
 
         print dumb_series.shape
 
-        trend_test = hpfilter_test(dumb_series)
+        trend_test = hpfilter_dense(dumb_series)
 
         [T, cycle] = hp_filter(dumb_series)
 

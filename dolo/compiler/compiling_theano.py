@@ -2,9 +2,6 @@ from __future__ import division
 from __future__ import print_function
 
 
-from pprint import pprint
-
-
 def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
     source = compile_theano_source(values, args_list, args_names, parms, fname=fname)
     exec(source)
