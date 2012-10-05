@@ -10,21 +10,22 @@ class memoized(object):
         self.func = func
         self.cache = {}
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kargs):
 
         targs = (e for e in args)
         hh = tuple(  hashable(e) for e in targs )
-        h = hash(hh)
+        h2 = hashable(kargs)
+        h = hash( (hh, h2) )
         try:
             return self.cache[h]
         except KeyError:
-            value = self.func(*args)
+            value = self.func(*args, **kargs)
             self.cache[h] = value
             return value
         except TypeError:
             # uncachable -- for instance, passing a list as an argument.
             # Better to not cache than to blow up entirely.
-            return self.func(*args)
+            return self.func(*args, **kargs)
     def __repr__(self):
         """Return the function's docstring."""
         return self.func.__doc__
@@ -49,16 +50,17 @@ class cachedondisk(object):
         self.func = func
         self.fname = func.__name__
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kargs):
         import pickle
         hh = tuple(  hashable(e) for e in args )
-        h = hash(hh)
+        h2 = hashable(kargs)
+        h = hash( (hh, h2) )
         try:
             with file('.cache/{0}.{1}.pickle'.format(self.fname,h)) as f:
                 value = pickle.load(f)
             return value
         except IOError:
-            value = self.func(*args)
+            value = self.func(*args, **kargs)
             if value is not None:  # should there be other kinds of error values
                 # write file with h
                 with file('.cache/{0}.{1}.pickle'.format(self.fname,h),'w') as f:
@@ -67,7 +69,7 @@ class cachedondisk(object):
         except TypeError:
             # uncachable -- for instance, passing a list as an argument.
             # Better to not cache than to blow up entirely.
-            return self.func(*args)
+            return self.func(*args, **kargs)
     def __repr__(self):
         """Return the function's docstring."""
         return self.func.__doc__

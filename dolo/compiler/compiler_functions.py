@@ -67,6 +67,9 @@ def simple_global_representation(self, allow_future_shocks=True, solve_systems=F
     return resp
 
 
+from dolo.misc.decorators import memoized
+
+@memoized
 def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
 
     sgm = simple_global_representation(model, solve_systems=solve_systems)
