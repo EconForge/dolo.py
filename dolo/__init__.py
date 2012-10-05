@@ -1,6 +1,6 @@
 __version__ = "0.4-dev-3"
 
-from dolo.config import display
+from dolo.config import *
 
 from dolo.symbolic.symbolic import Variable, Parameter, Shock, Equation
 
