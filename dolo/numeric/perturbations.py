@@ -46,9 +46,9 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
 
     res = derivatives[0]
     if abs(res).max() > TOL_RES:
-        print 'Residuals\n'
+        print('Residuals\n')
         for i,eq in enumerate(model.equations):
-            print '{0}\t:{1}\t:\t{2}'.format(i,res[i],eq)
+            print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
         raise Exception("Initial values don't satisfy static equations")
 
     derivatives_ss = None
@@ -786,8 +786,6 @@ def sigma2_correction(d,order,n_v,n_s,f1_A,f1_B, f_2, h_2, f_ss, Sigma):
         ])
 
         D = mdot( f_ss, [V_x]) + sdot( f1_A, mdot( g_aa, [ g_a , ds2 ])  )
-        print 'D'
-        print D
         dsigma2 = solve_sylvester(A,B,C,D)
         resp['dsigma2'] = dsigma2
         resp['D'] = D

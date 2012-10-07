@@ -294,17 +294,17 @@ class IndexedSymbol(sympy.Basic):
         self.nargs = name.count('@')
         self.basename = self.name.strip('@')
         if self.nargs == 0:
-            raise Exception, "Indexed symbols must have at least one index."
+            raise Exception("Indexed symbols must have at least one index.")
         return(None)
 
     def __getitem__(self, keys):
         if not isinstance(keys,(tuple,list)):
             keys = (keys, )
-        if len(keys) <> self.nargs:
-            raise Exception, "Partial subscripting is not implemented yet."
+        if len(keys) != self.nargs:
+            raise Exception( "Partial subscripting is not implemented yet." )
         s = set([type(k) for k in keys])
         if (int not in s) or len(s) > 1:
-            raise Exception, "Only integers are allowed for subscripting."
+            raise Exception( "Only integers are allowed for subscripting." )
         newname = self.basename + '_' + '_'.join([str(k) for k in keys])
         if self.symbol_type == Variable:
             v = Variable(newname)
@@ -362,7 +362,6 @@ class ISymbol(sympy.Basic):
         self.variable = variable
         
     def __getitem__(self,s):
-        print s.__class__
         if isinstance(s,(String,str)):
             return sympy.Symbol(self.name + '_' + str(s))
         return ISymbol(self.name,s)

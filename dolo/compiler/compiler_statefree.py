@@ -102,7 +102,7 @@ class PythonCompiler(Compiler):
 
         txt += "    return g\n"
         txt = txt.replace('^','**')
-        exec txt
+        exec(txt)
         return static_gaps
 
     @memoized
@@ -221,7 +221,7 @@ class PythonCompiler(Compiler):
         txt += "    return g\n"
         txt = txt.replace('^','**')
         
-        exec txt
+        exec(txt)
         return dynamic_gaps
 
 

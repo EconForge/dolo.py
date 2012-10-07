@@ -48,11 +48,6 @@ class  FiltersTest(unittest.TestCase):
 
         dumb_series = numpy.random.multivariate_normal([0,0], sig, N).T
 
-        print(dumb_series.shape)
-
-
-        print dumb_series.shape
-
         trend_test = hpfilter_dense(dumb_series)
 
         [T, cycle] = hp_filter(dumb_series)

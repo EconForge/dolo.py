@@ -332,7 +332,7 @@ def dynare_import(filename,names_dict={},full_output=False):
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.(.*)').match(basename).group(1)
-    f = file(filename)
+    f = open(filename)
     txt = f.read()
     model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
     model['name'] = fname

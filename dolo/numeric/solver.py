@@ -25,7 +25,7 @@ def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',verbo
         factor = factor if factor else 1
         [sol,infodict,ier,msg] = optimize.fsolve(ffobj,x0.flatten(),fprime=Dffobj,factor=factor,full_output=True,xtol=1e-10,epsfcn=1e-9)
         if ier != 1:
-            print msg
+            print(msg)
 
     elif method == 'anderson':
         import scipy.optimize as optimize

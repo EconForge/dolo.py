@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from perturbations_to_states import approximate_controls
+from dolo.numeric.perturbations_to_states import approximate_controls
 import numpy
 
 def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40,
@@ -78,7 +78,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     xinit = initial_dr(sg.grid)
     xinit = xinit.real  # just in case...
 
-    from dolo.compiler.global_solution import stochastic_residuals_2, stochastic_residuals_3
+    from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals_3
 
     from dolo.compiler.compiler_global import CModel
     cm = CModel(model,  solve_systems=True, compiler=compiler)

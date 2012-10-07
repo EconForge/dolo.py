@@ -57,9 +57,9 @@ class  DynareModfileImportTestCase(unittest.TestCase):
             except Exception as e:
                 res = (fname, e)
                 results.append( res )
-            print res
+            print(res)
         for r in results:
-            print r
+            print(r)
 
 if __name__ == '__main__':
     unittest.main()

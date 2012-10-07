@@ -1,6 +1,6 @@
 import functools
 
-from caching import memoized, cachedondisk
+from dolo.misc.caching import memoized, cachedondisk
 
 def deprecated(func):
     '''This is a decorator which can be used to mark functions

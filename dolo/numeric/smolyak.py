@@ -64,6 +64,8 @@ from __future__ import division
 import numpy
 import numpy.linalg
 
+from functools import reduce
+
 from numpy import array
 
 from operator import mul

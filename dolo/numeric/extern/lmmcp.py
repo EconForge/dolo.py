@@ -156,14 +156,14 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
 
         headline = '|{0:^5} | {1:10} | {2:12} | {3:10} |'.format( 'k',' Psi(x)', '||DPsi(x)||','stepsize' )
         stars = '-'*len(headline)
-        print stars
+        print(stars)
         print(headline)
-        print stars
+        print(stars)
 #        print('   k               Psi(x)                || DPsi(x) ||    stepsize\n')
 #        print('====================================================================')
         s = '|{:^' + str(len(stars)-2) + '}|'
         print(s.format('Output at starting point'))
-        print stars
+        print(stars)
         print('|{0:5} | {1:10.3e} | {2:12.3f} |'.format( k,Psix, normDPsix) )
 
 
@@ -171,9 +171,9 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     if preprocess==1:
         if verbose:
             s = '|{:^' + str(len(stars)-2) + '}|'
-            print stars
+            print(stars)
             print(s.format('Preprocessor'))
-            print stars
+            print(stars)
 
         normpLM=1
         while (k < presteps) & (Psix > eps2) & (normpLM>null):
@@ -247,9 +247,9 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     if (preprocess==1) & (Psix<eps2):
         if verbose:
             s = '|{:^' + str(len(stars)-2) + '}|'
-            print stars
+            print(stars)
             print(s.format('Approximate solution found'))
-            print stars
+            print(stars)
             return x
 
     elif (preprocess==1) & (Psix>=eps2):
@@ -275,9 +275,9 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     #
     if verbose:
         s = '|{:^' + str(len(stars)-2) + '}|'
-        print stars
+        print(stars)
         print(s.format('Main program'))
-        print stars
+        print(stars)
 
     k_main = 0
 

@@ -21,12 +21,12 @@ class  PicklingTestCase(unittest.TestCase):
         loaded = pickle.loads(save_string)
 
         v =  loaded['v']
-        print v.__class__
-        print v.date
-        print (v + v)**2
+        print(v.__class__)
+        print(v.date)
+        print( (v + v)**2 )
 
         eqq =  loaded['eq']
-        print eqq
+        print(eqq )
 
 
 if __name__ == '__main__':

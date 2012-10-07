@@ -207,6 +207,6 @@ if __name__ == "__main__":
     
     X0 = np.ones( (3, 2, 5) ) /2
     resp = numdiff1(test, X0)
-    print resp.shape
-    print resp[:, :, 1, 1, 0]
+    print(resp.shape)
+    print(resp[:, :, 1, 1, 0])
 

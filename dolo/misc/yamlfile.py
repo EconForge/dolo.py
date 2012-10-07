@@ -7,6 +7,8 @@ import yaml
 import sympy
 import re
 
+def iteritems(d):
+    return zip(d.keys(), d.values())
 
 def parse_yaml_text(txt,verbose=False):
     '''
@@ -74,7 +76,7 @@ Imports the content of a modfile into the current interpreter scope
                     rhs = eval(rhs,context)
                 except Exception as e:
                     print('Error parsing equation : ' + teq)
-                    print str(e)
+                    print( str(e) )
                     raise e
 
                 eq = Equation(lhs,rhs)
@@ -96,7 +98,7 @@ Imports the content of a modfile into the current interpreter scope
                 rhs = eval(rhs,context)
             except Exception as e:
                 print('Error parsing equations : ' + teq)
-                print str(e)
+                print(str(e))
             eq = Equation(lhs,rhs)
             equations.append(eq)
         equations_groups = None
@@ -107,11 +109,11 @@ Imports the content of a modfile into the current interpreter scope
     if 'calibration' in raw_dict:
         calibration = raw_dict['calibration']
         if 'parameters' in calibration:
-            parameters_values = [ (Parameter(k), eval(str(v),context)) for k,v in calibration['parameters'].iteritems() ]
+            parameters_values = [ (Parameter(k), eval(str(v),context)) for k,v in iteritems(calibration['parameters']) ]
             parameters_values = dict(parameters_values)
         #steady_state = raw_dict['steady_state']
         if 'steady_state' in calibration:
-            init_values = [ (Variable(vn), eval(str(value),context)) for vn,value in calibration['steady_state'].iteritems() ]
+            init_values = [ (Variable(vn), eval(str(value),context)) for vn,value in iteritems(calibration['steady_state']) ]
             init_values = dict(init_values)
         if 'covariances' in calibration:
             context['sympy'] = sympy
@@ -144,7 +146,7 @@ def yaml_import(filename,verbose=False):
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.yaml').match(basename).group(1)
-    f = file(filename)
+    f = open(filename)
     txt = f.read()
     model = parse_yaml_text(txt,verbose=verbose)
     model['name'] = fname

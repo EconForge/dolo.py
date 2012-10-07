@@ -36,7 +36,6 @@ class Compiler:
         if not brackets:
             subs_dict = dict()
             for i,v in enumerate(dyn_order):
-                print v
                 #if v.P in self.model.variables:
                 subs_dict[v] = 'y({0})'.format(i + 1)
             for i in range(len(self.model.shocks)):

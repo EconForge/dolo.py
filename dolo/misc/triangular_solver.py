@@ -24,7 +24,7 @@ def triangular_solver( incidence ):
     return solved
 
 def solve_triangular_system( sdict, return_order=False ):
-    var_order = sdict.keys()
+    var_order = list( sdict.keys() )
     var_set = set(var_order)
     expressions = [sdict[k] for k in var_order]
     incidence = []

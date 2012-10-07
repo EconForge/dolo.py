@@ -19,10 +19,10 @@ class CDR:
         choice =  dot(self.X_s, ds) +  tile( self.X_bar, (n_s,1) ).T
         n_ss = self.X_s.shape[1]
         if self.order == 2:
-			for k in range(self.X_ss.shape[0]):
-				for i in range(n_ss):
-					for j in range(n_ss):
-						choice[k,:] += self.X_ss[k,i,j]*ds[i,:]*ds[j,:]/2
+            for k in range(self.X_ss.shape[0]):
+                for i in range(n_ss):
+                    for j in range(n_ss):
+                        choice[k,:] += self.X_ss[k,i,j]*ds[i,:]*ds[j,:]/2
         if self.order == 3:
             for i in range(n_s):
                 choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2

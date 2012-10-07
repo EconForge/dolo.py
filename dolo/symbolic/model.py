@@ -78,7 +78,7 @@ class Model(dict):
     @property
     def compiler(self):
         if not(self.__compiler__):
-            from dolo.compiler.compiler_python import PythonCompiler
+            from dolo.compiler.compiler_statefree import PythonCompiler
             self.__compiler__ = PythonCompiler(self)
         return self.__compiler__
 
@@ -259,7 +259,7 @@ class Model(dict):
             sol = solver(fobj,y0,method='lmmcp',options=opts)
             return sol
         except Exception as e:
-            print 'The steady-state could not be found.'
+            print('The steady-state could not be found.')
             raise e
 
     def subs(self,a,b):
@@ -284,6 +284,9 @@ def reorder(vars, variables_order):
     res.extend( t )
     return res
 
+def iteritems(d):
+    return zip(d.keys(), d.values())
+
 def compute_residuals(model):
     [y,x,parms] = model.read_calibration()
     dd = dict()
@@ -298,7 +301,7 @@ def compute_residuals(model):
     if 'equations_groups' in model:
         from collections import OrderedDict as odict
         residuals = odict()
-        for gname,geqs in model['equations_groups'].iteritems():
+        for gname,geqs in iteritems(model['equations_groups']):
             l = []
             for eq in geqs:
                 t = eq.gap.subs(dd)
@@ -321,7 +324,7 @@ def print_residuals(model):
     print('\n{:*^90}\n'.format('Residuals'))
     for category in residuals.keys():
         res = residuals[category]
-        print category
+        print(category)
         for i,eq in enumerate(model['equations_groups'][category]):
             print('\t{:03.4f}\t:\t{}'.format(res[i],eq))
 

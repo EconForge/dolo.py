@@ -3,7 +3,7 @@ from __future__ import division
 import numpy
 import numpy as np
 
-from misc import cartesian
+from dolo.numeric.misc import cartesian
 
 class RectangularDomain:
     def __init__(self,smin,smax,orders):
@@ -384,7 +384,7 @@ if __name__ =='__main__':
     pyplot.plot(points[0,:],points[1,:],'o')
     pyplot.colorbar()
     pyplot.subplot(222)
-    print linapprox_values.shape
+    print(linapprox_values.shape)
     pyplot.imshow(linapprox_values.reshape(orders))
     pyplot.colorbar()
     pyplot.subplot(223)

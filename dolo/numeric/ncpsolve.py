@@ -32,9 +32,9 @@ def ncpsolve(f, a, b, x, tol=None, verbose=True):
     if verbose:
         headline = '|{0:^5} | {1:^12} | {2:^12} |'.format( 'k',' backsteps', '||f(x)||' )
         stars = '-'*len(headline)
-        print stars
+        print(stars)
         print(headline)
-        print stars
+        print(stars)
 
     while it < maxit:
 
