@@ -52,7 +52,10 @@ class PythonCompiler(Compiler):
 # Model equations
 #
     import numpy as np
-    from numpy import exp,log, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh
+    from numpy import exp,log, sin, cos, tan, sinh, cosh, tanh
+    from numpy import arcsin as asin
+    from numpy import arccos as acos
+    from numpy import arctan as atan
 
     it_ = 1 # should remove this !
 

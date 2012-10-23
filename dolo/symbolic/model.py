@@ -8,7 +8,7 @@ class Model(dict):
         super(Model,self).__init__(self,*kargs,**kwargs)
         self.check()
         self.check_consistency(verbose=False)
-        self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan,sympy.sqrt,sympy.Symbol('inf')]
+        self.__special_symbols__ = [sympy.exp,sympy.log,sympy.sin,sympy.cos,sympy.tan, sympy.asin, sympy.acos, sympy.atan, sympy.sqrt,sympy.Symbol('inf')]
         self.__compiler__ = None
         self.__hashno__ = None
 

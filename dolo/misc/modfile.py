@@ -7,16 +7,16 @@ import inspect
 
 
 line_regex = re.compile(
-    "(\s*)$|"
-    +"\s*//#(.*)$|"
-    +"\s*@#(.*)$|"
-    +"\s*//[^#](.*)$|"
-    +"\s*\[(.*)\]\s*$|"
-    +"(\s*[^\s].*)$"
+    "(\s*)$|"             # blank
+    +"\s*@#(.*)$|"        # macro
+    +"\s*//[^#](.*)$|"    # comment
+    +"\s*%[^#](.*)$|"    # comment
+    +"\s*\[(.*)\]\s*$|"   # tag
+    +"(\s*[^\s].*)$"      # instruction
 )
 tag_regex = re.compile("\s*(\w+)\s*=\s*'(.*)'")
 
-def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
+def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debug=False):
     '''
     Imports the content of a modfile into the current interpreter scope
     '''
@@ -61,6 +61,11 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
     instruction_groups = [Instruction_group(s) for s in txt.split(";")]
 
     instructions = [ig.instruction for ig in instruction_groups]
+
+    if debug:
+        print('Elementary instructions')
+        for i in instruction_groups:
+            print(i)
 
 
     try:
@@ -141,7 +146,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}):
                         else:
                             raise Exception("symbol %s has already been defined".format(n))
     except Exception as e:
-        raise Exception('Initval could not be read : ' + str(e) )
+        raise Exception('Init block could not be read : ' + str(e) )
     # the following instruction set the variables "variables","shocks","parameters"
 
 
@@ -282,10 +287,13 @@ class Instruction_group():
         self.span = 1 + s.count("\n")
         self.tags = {}
         self.instruction = ""
+        self.instruction_type = None
         self.process_lines()
         return None
+
     def __repr__(self):
-        return str([self.instruction,self.tags])
+        return str([self.instruction_type, self.instruction, self.tags])
+
     def process_lines(self):
         lines = []
         entire_instruction = ""
@@ -296,20 +304,14 @@ class Instruction_group():
                 raise Exception( "Parsing error" )
             else:
                 i = matches[0]
+                self.instruction_type = i
             if i == 0:
                 # this line is blank, just ignore it
                 lines.append(["blank",g[i]])
             if i == 1:
-                # this line contains tag, read them immediately
-                lines.append(["tags",g[i]])
-                keys_tags = [kt.split(":") for kt in g[i].split('#')]
-                for kt in keys_tags:
-                    if len(kt) > 1:
-                        self.tags[kt[0].strip()] = kt[1].strip()
-            if i == 2:
                 # this line contains macro instructions
                 lines.append(["macro",g[i]])
-            if i == 3:
+            if i in (2,3):
                 # there are regular comments on this line
                 lines.append(["comment",g[i]])
             if i == 4:
@@ -327,13 +329,13 @@ class Instruction_group():
 
 
 
-def dynare_import(filename,names_dict={},full_output=False):
+def dynare_import(filename,names_dict={},full_output=False, debug=True):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.(.*)').match(basename).group(1)
     f = open(filename)
     txt = f.read()
-    model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output)
+    model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output, debug=debug)
     model['name'] = fname
     return model
