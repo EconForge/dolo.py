@@ -33,7 +33,7 @@ Imports the content of a modfile into the current interpreter scope
         variables_ordering = sum(variables_groups.values(),[])
     else:
         vnames = declarations['variables']
-        variables_ordering = [Variable(vn,0) for vn in vnames]
+        variables_ordering = [Variable(vn) for vn in vnames]
         variables_groups = None
         
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
