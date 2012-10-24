@@ -21,6 +21,6 @@ try:
 
 except:
 
-    import pprint
+    from pprint import pprint
     def display(txt):
         pprint(txt)

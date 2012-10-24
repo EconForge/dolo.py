@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
-#from dolo import __version__
+from dolo import __version__
 
-__version__ = '0.4-dev-3'
+#__version__ = '0.4-dev-3'
 
 setup(
 
@@ -12,7 +12,7 @@ setup(
 
     test_suite='dolo.tests',
     
-    scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py'],
+    scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py', 'bin/dolo'],
 
     install_requires = ["pyyaml","sympy","numpy"],
 

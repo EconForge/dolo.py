@@ -11,7 +11,7 @@ def portfolios_to_deterministic(model,pf_names):
             m = regex.match(eq.tags['complementarity'])
             vs = m.group(1).strip()
             if vs in pf_names:
-                v = Variable(vs,0)
+                v = Variable(vs)
                 neq = Equation(v,0)
                 neq.tag(**eq.tags)
                 model['equations'][i] = neq
@@ -33,7 +33,7 @@ def solve_portfolio_model(model, pf_names, order=1):
     steady_states = [Parameter(v.name+'_bar') for v in pf_model['variables_groups']['states']]
     n_pfs = len(pf_names)
 
-    pf_vars = [Variable(v,0) for v in pf_names]
+    pf_vars = [Variable(v) for v in pf_names]
     res_vars = [Variable('res_'+str(i),0) for i in range(n_pfs)]
 
 

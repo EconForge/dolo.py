@@ -45,13 +45,13 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, dis
     s_simul[:,:,0] = s0
     x_simul[:,:,0] = x0
 
+    numpy.random.seed(seed)
+
     for i in range(horizon):
         mean = numpy.zeros(sigma.shape[0])
         if irf:
             epsilons = numpy.zeros( (sigma.shape[0],1) )
         else:
-            seed += 1
-            numpy.random.seed(seed)
             epsilons = numpy.random.multivariate_normal(mean, sigma, n_exp).T
         s = s_simul[:,:,i]
         x = dr(s)
