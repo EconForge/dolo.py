@@ -8,7 +8,9 @@ parser = argparse.ArgumentParser(description='Dolo command line')
 parser.add_argument('-v','--version', action='version', version=__version__)
 parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
 parser.add_argument('-s','--solve', action='store_const', const=True, default=False, help='solve for the decision rule')
-parser.add_argument('-o','--smolyak_order', type=int, default=3, help='solution order (1,2,3)')
+parser.add_argument('--smolyak_order', type=int, default=3, help='solution order (1,2,3)')
+parser.add_argument('--interp_type', default='smolyak', help='type of interpolation to perform')
+
 parser.add_argument('input', help='model file')
 parser.add_argument('output',nargs='?',type=str,default=None,help='model file')
 
@@ -39,4 +41,4 @@ from dolo import global_solve
 print args.smolyak_order
 display(model)
 
-dr = global_solve(model, smolyak_order=args.smolyak_order, verbose=True)
+dr = global_solve(model, smolyak_order=args.smolyak_order, interp_type=args.interp_type, verbose=True)

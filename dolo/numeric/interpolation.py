@@ -261,6 +261,43 @@ class LinearTriangulation:
 
 
 
+from numpy import column_stack, maximum, minimum, array
+
+class SparseLinear:
+    # linear interpolation on a sparse grid
+
+    def __init__(self, smin, smax, l):
+        from smolyak import SmolyakGrid
+        sg = SmolyakGrid(smin,smax,l)
+        self.smin = array(smin)
+        self.smax = array(smax)
+
+        self.interp = None
+        #self.grid = sg.grid
+
+        vertices = cartesian( zip(smin,smax) ).T
+        self.grid = column_stack( [sg.grid, vertices] )
+
+    def set_values(self, values):
+        from scipy.interpolate import LinearNDInterpolator 
+        self.interp = LinearNDInterpolator(self.grid.T, values.T)
+#        if self.interp is None:
+#            from scipy.interpolate import LinearNDInterpolator
+#            self.interp = LinearNDInterpolator(self.grid.T, values.T)
+#        else:
+#            self.interp.set_values( values.T )
+        self.values = values
+
+    def __call__(self, s):
+        return self.interpolate(s)
+
+    def interpolate(self, s):
+        s = maximum(s, self.smin[:,None])
+        s = minimum(s, self.smax[:,None])
+        return self.interp(s.T).T
+
+
+
 
 class MLinInterpolation:
     # piecewise linear interpolation

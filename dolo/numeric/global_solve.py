@@ -63,6 +63,9 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     if interp_type == 'smolyak':
         from dolo.numeric.smolyak import SmolyakGrid
         sg = SmolyakGrid( bounds[0,:], bounds[1,:], smolyak_order )
+    elif interp_type == 'sparse_linear':
+        from dolo.numeric.interpolation import SparseLinear
+        sg = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
     elif interp_type == 'spline':
         polish = False
         from dolo.numeric.interpolation import SplineInterpolation
