@@ -6,6 +6,8 @@
 
 # try to register printing methods if IPython is running
 
+save_plots = False
+
 try:
     import dolo.misc.printing as printing
     from numpy import ndarray

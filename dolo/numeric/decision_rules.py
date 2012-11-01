@@ -326,7 +326,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         i_s = shock
     elif isinstance(shock,str):
         from dolo.symbolic.symbolic import Shock
-        shock =  Shock(shock,0)
+        shock =  Shock(shock)
         i_s = dr.model.shocks.index( shock )
     else:
         i_s = shock
@@ -363,7 +363,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
         from dolo.symbolic.symbolic import Variable
         if not isinstance(variables,list):
             variables = [variables]
-        variables =  [Variable(str(v),0) for v in variables]
+        variables =  [Variable(str(v)) for v in variables]
         ind_vars = [dr.model.variables.index( v ) for v in variables]
         simul = simul[ind_vars, :]
 
@@ -437,7 +437,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=
         from dolo.symbolic.symbolic import Variable
         if not isinstance(variables,list):
             variables = [variables]
-        variables =  [Variable(str(v),0) for v in variables]
+        variables =  [Variable(str(v)) for v in variables]
         ind_vars = [dr.model.variables.index( v ) for v in variables]
         simul = simul[ind_vars, :]
 

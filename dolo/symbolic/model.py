@@ -298,7 +298,7 @@ def compute_residuals(model):
     dd.update( dict([(v(1),0) for v in model.shocks]) )
     dd.update( {s: 0 for s in model.shocks} )
 
-    if 'equations_groups' in model:
+    if len(model['equations_groups'])>0:
         from collections import OrderedDict as odict
         residuals = odict()
         for gname,geqs in iteritems(model['equations_groups']):

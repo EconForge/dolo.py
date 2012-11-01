@@ -51,23 +51,27 @@ def print_model( model, print_residuals=True):
     if print_residuals:
         from dolo.symbolic.model import compute_residuals
         res = compute_residuals(model)
-    if 'equations_groups' in model:
+    if len( model['equations_groups'] ) > 0:
         if print_residuals:
             eqs = [ ['', 'Equations','Residuals'] ]
         else:
             eqs = [ ['', 'Equations'] ]
-        for groupname in model['equations_groups']:
-            eqg = model['equations_groups']
-            eqs.append( [ groupname ,''] )
-            if print_residuals:
-                eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
-            else:
-                eqs.extend([ ['','${}$'.format(latex(eq))] for eq in eqg[groupname] ])
+            for groupname in model['equations_groups']:
+                eqg = model['equations_groups']
+                eqs.append( [ groupname ,''] )
+                if print_residuals:
+                    eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
+                else:
+                    eqs.extend([ ['','${}$'.format(latex(eq))] for eq in eqg[groupname] ])
         txt = print_table( eqs, header = True)
         return txt
 
     else:
-        txt = print_table([['','Equations']] + [(i+1,model.equations[i]) for i in range(len(model.equations))], header=True)
+        if print_residuals:
+            table = [ (i+1, '${}$'.format(latex(eq)), str(res[i]) ) for i,eq in enumerate(model.equations)]
+        else:
+            table = [ (i+1, '${}$'.format(latex(eq)) ) for i,eq in enumerate(model.equations)]
+        txt = print_table([['','Equations']] + table, header=True)
     return txt
 
 
