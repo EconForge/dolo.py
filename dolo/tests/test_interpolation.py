@@ -92,21 +92,25 @@ class  TestInterpolation(unittest.TestCase):
 
         print( abs(test2 - test1) ).max()
 
+        import numpy
+        if False in numpy.isfinite(test2):
+            print('Problem')
 
-        a = time.time()
-        from scipy.interpolate import LinearNDInterpolator
-        ggrid = array(sg.grid.T)
-        gvalues = array(values.T)
-        gpoints = array(points.T)
-        print ggrid.shape
-        print(gvalues.shape)
-        lininterp = LinearNDInterpolator(ggrid, gvalues)
-        b = time.time()
-        print('Triangulation : {}'.format(b-a))
-        t = time.time()
-        test2 = lininterp(gpoints)
-        s = time.time()
-        print('Linear : {}'.format(s-t))
+#
+#        a = time.time()
+#        from scipy.interpolate import LinearNDInterpolator
+#        ggrid = array(sg.grid.T)
+#        gvalues = array(values.T)
+#        gpoints = array(points.T)
+#        print ggrid.shape
+#        print(gvalues.shape)
+#        lininterp = LinearNDInterpolator(ggrid, gvalues)
+#        b = time.time()
+#        print('Triangulation : {}'.format(b-a))
+#        t = time.time()
+#        test2 = lininterp(gpoints)
+#        s = time.time()
+#        print('Linear : {}'.format(s-t))
 
 
 

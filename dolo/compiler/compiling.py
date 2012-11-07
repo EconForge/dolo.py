@@ -161,7 +161,8 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     for i,p in enumerate(parms):
         sub_list[p] = '{0}[{1}]'.format('p',i)
 
-
+    import sympy
+    sub_list[sympy.Symbol('inf')] = 'inf'
 
 
     text = '''
@@ -175,6 +176,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
     from numpy import arctan as atan
     from numpy import sinh, cosh, tanh
     from numpy import pi
+    from numpy import inf
 
     n = {var}.shape[-1]
 

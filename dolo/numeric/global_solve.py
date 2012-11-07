@@ -17,6 +17,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     
     if initial_dr == None:
         initial_dr = approximate_controls(model, order=pert_order )
+        if interp_type == 'perturbations':
+            return initial_dr
         
     if bounds is not None:
         pass
@@ -40,8 +42,12 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         smin = [expr.subs( d ) for expr in ssmin ]
         smax = [expr.subs( d ) for expr in ssmax ]
 
+        smin = numpy.array(smin, dtype=numpy.float)
+        smax = numpy.array(smax, dtype=numpy.float)
+
         bounds = numpy.row_stack([smin,smax])
         bounds = numpy.array(bounds,dtype=float)
+        vprint(bounds)
 
     else:
 
@@ -57,22 +63,37 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
                                    initial_dr.S_bar + devs * n_s,
                                    ])
 
+    smin = bounds[0,:]
+    smax = bounds[1,:]
 
     if interp_orders == None:
             interp_orders = [5]*bounds.shape[1]
+
     if interp_type == 'smolyak':
         from dolo.numeric.smolyak import SmolyakGrid
         sg = SmolyakGrid( bounds[0,:], bounds[1,:], smolyak_order )
     elif interp_type == 'sparse_linear':
         from dolo.numeric.interpolation import SparseLinear
         sg = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
+    elif interp_type == 'linear_triangulation':
+        from dolo.numeric.interpolation import SparseLinear
+        from dolo.numeric.interpolation import LinearTriangulation, TriangulatedDomain
+        sg_tt = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
+        domain = TriangulatedDomain(sg_tt.grid)
+        sg = LinearTriangulation( domain )
     elif interp_type == 'spline':
         polish = False
         from dolo.numeric.interpolation import SplineInterpolation
         sg = SplineInterpolation( bounds[0,:], bounds[1,:], interp_orders )
+    elif interp_type == 'mspline':
+        polish = False
+        from dolo.numeric.msplines import MultivariateSplines
+        sg = MultivariateSplines( smin, smax, interp_orders )
     elif interp_type == 'linear':
-        from dolo.numeric.interpolation import MLinInterpolation
-        sg = MLinInterpolation( bounds[0,:], bounds[1,:], interp_orders )
+        from dolo.numeric.interpolation import LinearTriangulation, TriangulatedDomain, RectangularDomain
+        rec =  RectangularDomain(smin, smax, interp_orders)
+        domain = TriangulatedDomain( rec.grid )
+        sg = LinearTriangulation( domain )
     elif interp_type == 'mlinear':
         from dolo.numeric.multilinear import MultilinearInterpolator
         sg = MultilinearInterpolator( bounds[0,:], bounds[1,:], interp_orders)
@@ -111,6 +132,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         if not serial_grid:
             lb = gc.x_bounds[0](sg.grid,parms)
             ub = gc.x_bounds[1](sg.grid,parms)
+            print(lb)
+            print(ub)
         else:
             lb = None
             ub = None

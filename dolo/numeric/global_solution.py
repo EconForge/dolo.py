@@ -172,10 +172,10 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
     else:
         ssnext = g(ss,xx,ee,parms)
 
-#        if False:
-#            smin = s.min(axis=1)[:,None]
-#            smax = s.max(axis=1)[:,None]
-#            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
+        if False:
+            smin = s.min(axis=1)[:,None]
+            smax = s.max(axis=1)[:,None]
+            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
 
         xxnext = dr.interpolate(ssnext)
 
@@ -193,7 +193,8 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
         return res
 
 def test_residuals(s,dr, f,g,parms, epsilons, weights):
-    n_draws = epsilons.shape[1]
+    n_draws = epsilons.shape[
+              1]
 
     n_g = s.shape[1]
     x = dr(s)
@@ -217,7 +218,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None):
+def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
     from dolo.numeric.solver import solver
     from dolo.numeric.newton import newton_solver

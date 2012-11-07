@@ -191,77 +191,81 @@ class SplineInterpolation2:
             return [val,dval]
 
 class LinearTriangulation:
+
     def __init__(self,domain):
         self.domain = domain
         self.delaunay = domain.delaunay
+        self.grid = self.domain.grid
+        self.smin = domain.smin
+        self.smax = domain.smax
+        self.bounds = np.row_stack([self.smin, self.smax])
 
     def __call__(self, zz):
-        return self.interpolate(zz)[0]
-
+        return self.interpolate(zz)
 
     def set_values(self, val):
         self.__values__ = val
 
+    def find_simplex(self,points):
+        return self.delaunay.find_simplex(points)
+
     def interpolate(self, points, with_derivatives=False):
+
+        if with_derivatives:
+            raise Exception('Option not implemented')
+
         n_x = self.__values__.shape[0]
         n_p = points.shape[1]
         n_d = self.domain.d
-        resp = np.zeros((n_x,n_p))
-        dresp = np.zeros((n_x,n_d,n_p))
-        for i in range(n_x):
-            [val,dval] = self.interpolate_1v(i,points)
-            resp[i,:] = val
-            dresp[i,:,:] = dval
-        if not with_derivatives:
-            return resp
-        else:
-            return [resp,dresp]
 
-    def interpolate_1v(self, i, points):
 
-#        points = numpy.minimum(points, self.domain.smax) # only for rectangular domains
-#        points = numpy.maximum(points, self.domain.smin) # only for rectangular domains
-#        print points
-
-        zz = points
         ndim = self.domain.d
         delaunay = self.delaunay
-        nvalues_on_points = self.__values__[i,:]
-        from dolo.numeric.serial_operations import serial_dot
-        n_p = zz.shape[1]
-        n_x = zz.shape[0]
-        resp = numpy.zeros(n_p)
-        dresp = numpy.zeros( (n_x, n_p) )
-        inds_simplices = delaunay.find_simplex(zz.T)
+
+        points = numpy.minimum(points, self.domain.smax[:,None]) # only for rectangular domains
+        points = numpy.maximum(points, self.domain.smin[:,None]) # only for rectangular domains
+
+#        inds_simplices = self.delaunay.find_simplex(points.T)
+        inds_simplices = self.find_simplex(points.T)
+
         inside = (inds_simplices != -1)
-        if True not in inside:
-            return [resp,dresp]
+
         indices = inds_simplices[inside]
-        transform = delaunay.transform[indices,:,:]
+        transform = self.delaunay.transform[indices,:,:]
         transform = numpy.rollaxis(transform,0,3)
+        vertices = self.delaunay.vertices.T[:,indices]
+
         Tinv = transform[:ndim,:ndim,:]
         r = transform[ndim,:,:]
-        vertices = delaunay.vertices.T[:,indices]
 
-        z = zz[:,inside]
+        z = points[:,inside]
 
-        values_on_vertices = nvalues_on_points[vertices]
+        from dolo.numeric.serial_operations import serial_dot
+        resp = np.zeros((n_x,n_p))
 
-        last_V = values_on_vertices[-1,:]
-        D = values_on_vertices[:-1,:] - last_V
-        z_r = z-r
-        c = serial_dot(Tinv, z_r)
-        interp_vals = serial_dot(c, D) + last_V
-        interp_dvals = serial_dot(D, Tinv)
+        if with_derivatives:
+            dresp = numpy.zeros( (n_x, n_p) )
 
-        resp[inside] = interp_vals
-        dresp[:,inside] = interp_dvals
+        all_values_on_vertices = self.__values__[:, vertices]
 
-        return [resp,dresp]
+        for i in range(n_x):
+            values_on_vertices = all_values_on_vertices[i,:,:]
+            last_V = values_on_vertices[-1,:]
+            z_r = z-r
+            c = serial_dot(Tinv, z_r)
+            D = values_on_vertices[:-1,:] - last_V
+            resp[i,inside] = serial_dot(c, D) + last_V
+
+            if with_derivatives:
+                interp_dvals = serial_dot(D, Tinv)
+                dresp[:,inside] = interp_dvals
+                return [resp,dresp]
+
+        else:
+            return resp
 
 
-
-from numpy import column_stack, maximum, minimum, array
+from numpy import row_stack, column_stack, maximum, minimum, array
 
 class SparseLinear:
     # linear interpolation on a sparse grid
@@ -271,21 +275,21 @@ class SparseLinear:
         sg = SmolyakGrid(smin,smax,l)
         self.smin = array(smin)
         self.smax = array(smax)
-
-        self.interp = None
-        #self.grid = sg.grid
-
+        self.bounds = row_stack([smin,smax])
         vertices = cartesian( zip(smin,smax) ).T
         self.grid = column_stack( [sg.grid, vertices] )
 
+
+#        from scipy.interpolate import LinearNDInterpolator
+#        self.interp = LinearNDInterpolator(self.grid.T, (self.grid*0).T)
+
+
     def set_values(self, values):
-        from scipy.interpolate import LinearNDInterpolator 
-        self.interp = LinearNDInterpolator(self.grid.T, values.T)
+
 #        if self.interp is None:
-#            from scipy.interpolate import LinearNDInterpolator
-#            self.interp = LinearNDInterpolator(self.grid.T, values.T)
-#        else:
-#            self.interp.set_values( values.T )
+        from scipy.interpolate import LinearNDInterpolator
+        self.interp = LinearNDInterpolator(self.grid.T, values.T)
+#        self.interp.set_values( values.T )
         self.values = values
 
     def __call__(self, s):
@@ -294,67 +298,9 @@ class SparseLinear:
     def interpolate(self, s):
         s = maximum(s, self.smin[:,None])
         s = minimum(s, self.smax[:,None])
-        return self.interp(s.T).T
-
-
-
-
-class MLinInterpolation:
-    # piecewise linear interpolation
-
-    grid = None
-    __values__ = None
-
-    def __init__(self, smin, smax, orders):
-        nodes = [np.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))]
-        grid = cartesian(nodes).T
-        self.grid = grid
-        self.__nodes__ = nodes
-        pass
-
-    def set_values(self,val):
-        self.__values__ = val
-        self.__coeffs__ = val ##
-
-    def interpolate(self, points, with_derivatives=False):
-
-        eps = 1e-6
-        points_T = points.T
-        
-        from scipy.interpolate import LinearNDInterpolator
-
-        interp = LinearNDInterpolator( self.grid.T, self.__values__.T )
-        val0 = interp(points_T)
-
-        if not with_derivatives:
-            return val0.T
-        else:
-            # compute derivatives
-            n_p = points_T.shape[0]
-            n_d = points_T.shape[1]
-            args_1 = [ points_T+np.tile(l,(n_p,1)) for l in np.eye(n_d)*eps]
-            args_2 = [ points_T+np.tile(l,(n_p,1)) for l in -np.eye(n_d)*eps]
-
-
-            dval1 = interp(args_1)
-            dval2 = interp(args_2)
-
-
-            dval = np.empty_like(dval1)
-            for i in range(n_d):
-                dd1 = (1- np.isnan(dval1[i,:,:])) * np.nan_to_num(dval1[i,:,:]) + np.isnan(dval1[i,:,:]) * val0
-                dd2 = (1- np.isnan(dval2[i,:,:])) * np.nan_to_num(dval2[i,:,:]) + np.isnan(dval2[i,:,:]) * val0
-                bound = np.isnan(dval1[i,:,:]) | np.isnan(dval2[i,:,:])
-                neps = bound + (1-bound)*2
-                #neps = 1/neps
-                dval[i,:,:] = (dd1-dd2)/(eps)/neps
-                #dval[i,:,:] = (dd1-dd2)/(2*eps)
-            #now the ordering of dval is: (deriv, point, outdim)
-            # reorder before sending back: (outdim,deriv,point)
-            dval = np.rollaxis(dval,2,0)
-            return [val0.T,dval]
-
-
+        resp = self.interp(s.T).T
+        resp = np.atleast_2d(resp)
+        return resp
 
 
 

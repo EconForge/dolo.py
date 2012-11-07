@@ -101,7 +101,38 @@ def serial_multiplication_vector(A,X):
 
 strange_tensor_multiplication = serial_multiplication
 
+def serial_dot_3_2(A,X):
+
+    I = A.shape[0]
+    J = A.shape[1]
+    N = A.shape[2]
+
+    assert(X.shape[0]==J)
+    assert(X.shape[1]==N)
+
+    resp = np.zeros( (I,N) )
+    for i in range(I):
+    #        T = np.zeros( N )
+        for j in range(J):
+        #            T += A[i,j,:]*B[j,k,:]
+            resp[i,:] += A[i,j,:]*X[j,:]
+    return resp
+
+def serial_dot_2_2(A,B):
+    # scalar_products
+
+    resp = (A*B).sum(axis=0)
+
+    return resp
+
 def serial_dot(A,B):
+
+    if A.ndim == 3 and B.ndim == 2:
+        return serial_dot_3_2(A,B)
+
+    if A.ndim == 2 and B.ndim == 2:
+            return serial_dot_2_2(A,B)
+
     nobs = A.shape[-1]
     test = np.dot( A[...,0], B[...,0] )
     sh = test.shape + (nobs,)

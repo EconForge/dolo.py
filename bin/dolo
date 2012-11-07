@@ -38,7 +38,5 @@ if args.print_residuals:
 
 from dolo import global_solve
 
-print args.smolyak_order
-display(model)
 
 dr = global_solve(model, smolyak_order=args.smolyak_order, interp_type=args.interp_type, verbose=True)
