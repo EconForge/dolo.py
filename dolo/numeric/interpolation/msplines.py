@@ -1,11 +1,11 @@
 from __future__ import division
 from pylab import *
-import numexpr
 
 
 expr = '(t<-2)*(t+3)**3 + (-2<=t)*(t<-1)*(-3*t**3 -15*t**2 -21*t - 5) + (-1<=t)*(t<0)*(3*t**3 + 3*t**2 - 3*t + 1) + (t>=0)*(1-t)**3'
 
 def eval_basis( t, method='numexpr' ):
+    '''Evaluate spline basis functions whose breakpoints are (-2,-1,0,1,2) at t'''
     t -= 1
     if  method == 'numexpr':
         import numexpr
@@ -20,6 +20,14 @@ import time
 class MultivariateSplines:
 
     def __init__(self,a,b,p):
+        '''Construct an multidimensional spline interpolator.
+        a: vector of lower bounds 
+        b: vector of upper bounds
+        p: number of parameters in each dimension.
+
+        The grid used to fit the spline contains (p-2) nodes in each dimension, plus two points close to the extrema.
+        '''
+
 
         a = array(a,dtype=float)
         b = array(b,dtype=float)
@@ -69,6 +77,9 @@ class MultivariateSplines:
 #        print('Time to initialize : {}'.format(s-t))
 
     def set_values(self, values):
+        '''Computes the coefficients of the splines such that values are fitted exactly on the grid.
+
+        values: (n_x x n_s) array where n_x is the number of variables and n_s the number of elements in the grid.'''
 
         n_x = values.shape[0]
         coeffs = [ dot(self.inv_big_phi, values[i,:] ) for i in range(n_x) ]
@@ -76,9 +87,11 @@ class MultivariateSplines:
         self.padded_coeffs = [pad(c, 1, mode='edge') for c in self.coeffs]
 
     def __call__(self, s):
+
         return self.interpolate(s)
 
     def interpolate_new(self, s):
+        '''complicated way to return a slightly wrong result (see interpolate)'''
 
 
     #        s = maximum( s, self.a[:,None])
@@ -136,16 +149,14 @@ class MultivariateSplines:
 
     def interpolate(self, s):
 
-
-#        s = maximum( s, self.a[:,None])
-#        s = minimum( s, self.b[:,None])
-
+        '''Evaluates the interpolated function at s.
+        s: d x N array'''
+        
+        
         t_start = time.time()
 
         N = s.shape[1]
         n_x = len(self.coeffs)
-
-        from scipy.sparse import csr_matrix, lil_matrix, kron, hstack
 
         t1 = time.time()
         phis = []
@@ -155,10 +166,9 @@ class MultivariateSplines:
                 node = self.breakpoints[i][j]
                 h = self.h[i]
                 vals[j,:] = eval_basis( (s[i,:]-node)/h )
-            vals = csr_matrix(vals)
+#            vals = csr_matrix(vals)   # sparsify
             phis.append( vals )
         t2 = time.time()
-#        print('Evaluation of basis : {}'.format(t2 -t1))
 
 
 
@@ -170,49 +180,40 @@ class MultivariateSplines:
             phi = phis[0][ind[0]:ind[0]+1,:]
             for k,i in enumerate( ind[1:] ):
                 rhs =phis[k+1][i:i+1,:]
-                phi = phi.multiply(rhs)
-#                phi = multiply(phi,rhs)
+#                phi = phi.multiply(rhs)
+                phi = phi*rhs
             phis_combinations.append(phi)
-#        phis_combinations = row_stack(phis_combinations)
-        from scipy.sparse import csr_matrix,vstack
 
-        phis_combinations = vstack(phis_combinations)
+#        from scipy.sparse import csr_matrix,vstack
+#        phis_combinations = vstack(phis_combinations)
+
+        phis_combinations = row_stack(phis_combinations)
 
 
         hh = phis_combinations.T
-        import numexpr
         vals = zeros( (n_x, N) )
         for i_x in range(n_x):
             coeffs_x = self.coeffs[i_x].flatten()
             coeffs_x = atleast_2d(coeffs_x)
-
-#            pprod = dot(coeffs_x, phis_combinations)
-
             pprod = hh.dot(coeffs_x.T)
-
             vals[i_x,:] = pprod.flatten()
 
-
-        #t_end = time.time()
-
-        t_end = time.time()
 
         return vals
 
 #        vals = zeros( (n_x, N) )
 #        from dolo.numeric.tensor import mdot
 #        for i_x in range(n_x):
-#
 #            coeffs_x = self.coeffs[i_x]
-##            inds = product( *[range(pp) for pp in self.p] )
-##            for ind in inds:
-##                tt = ones(N)
-##                for ti,ii in enumerate(ind):
-##                    tt *= phis[ti][ii,:]
-##                vals[i_x,:] += coeffs_x[ind] * tt
-#            for n in range(N):
-#                v = mdot( coeffs_x, [phi[:,n] for phi in phis] )
-#                vals[i_x,n] = v
+#            inds = product( *[range(pp) for pp in self.p] )
+#            for ind in inds:
+#                tt = ones(N)
+#                for ti,ii in enumerate(ind):
+#                    tt *= phis[ti][ii,:]
+#                vals[i_x,:] += coeffs_x[ind] * tt
+##            for n in range(N):
+##                v = mdot( coeffs_x, [phi[:,n] for phi in phis] )
+##                vals[i_x,n] = v
 #
 #
 #        return vals
@@ -229,21 +230,23 @@ if __name__ == '__main__':
     fun = lambda x :row_stack([
 #            ( sqrt( x[0,:]**2 + x[1,:]**2 + x[2,:]**2 + x[3,:]**2 + x[4,:]**2) )**(1-gamma)/1-gamma
             (sqrt( x[0,:]**2 + 2*x[1,:]**2 ) )**(1-gamma)/1-gamma,
+#            x[0,:]
             #(1+ sqrt( x[0,:]**2 + 2*x[1,:]**2 ) )**(1-gamma)/1-gamma
     ])
               #( sqrt( x[0,:]**2 + x[1,:]**2 + x[2,:]**2 + x[3,:]**2 + x[4,:]**2) )**(1-gamma)/1-gamma
 #            ( sqrt( reduce(sum, [x[i,:]**2 for i in range(d)], zeros(x[0,:].shape) ) ) )**(1-gamma)/1-gamma
 
     #fun = lambda x: x[0,:]
-    from dolo.numeric.interpolation import RectangularDomain
-    dom = RectangularDomain(smin+0.1,smax,[50]*d)
+    from dolo.numeric.interpolation.interpolation import RectangularDomain
+
+    dom = RectangularDomain(smin,smax,[50]*d)
 
     vals = fun(dom.grid)
 
 #    exit()
 
 #    if False:
-    from dolo.numeric.smolyak import SmolyakGrid
+    from dolo.numeric.interpolation.smolyak import SmolyakGrid
     sg = SmolyakGrid(smin, smax, 4)
     sg.set_values( fun(sg.grid))
 
@@ -251,14 +254,18 @@ if __name__ == '__main__':
 
     vals_sg = sg(dom.grid)
     tend = time.time()
-    print('Elapsed : {}'.format(tend-tstart))
 #
-#
+    print('Elapsed (smolyak) : {}'.format(tend-tstart))
+    t1 = time.time()
     sp = MultivariateSplines(smin,smax,orders)
+    t2 = time.time()
     sp.set_values( fun(sp.grid))
-
-    vals_sp = sp.interpolate_old(dom.grid)
+    t3 = time.time()
+    vals_sp = sp.interpolate(dom.grid)
+    t4 = time.time()
     #vals_sp = sp(dom.grid)
+
+    print('Elapsed (splines) : {}, {}, {}'.format(t2-t1, t3-t2, t4-t3))
 
 
     print(sp.grid.shape)
@@ -271,22 +278,71 @@ if __name__ == '__main__':
     print('Errors (smolyak)  : {}'.format(error_sg))
 
 
+    from scipy.ndimage.interpolation import map_coordinates
 
+    [R, C] = meshgrid(  linspace(smin[0], smax[0], orders[0]),  linspace(smin[1], smax[1], orders[1]) )
 
+    regular_grid = row_stack( [R.T.flatten(), C.T.flatten() ])
 
-
-
-
-
+#    regular_grid = test_dom.grid
+    values_on_grid = fun(regular_grid)
 
     [xg, yg] = meshgrid(  linspace(1.1,2, 50),  linspace(1.1,2, 50))
+    fine_grid = row_stack([xg.T.flatten(), yg.T.flatten()])
+
+
+    fine_grid = regular_grid
+
+    values_on_fine_grid = fun(fine_grid)
+
+    sh = array(orders)-1
+
+    print(regular_grid.shape)
+    mmin = regular_grid.min(axis=1)
+    mmax = regular_grid.max(axis=1)
+
+    coordinates = (fine_grid-mmin[:,None])/(mmax[:,None]-mmin[:,None]) * sh[:,None]
+#    coordinates = (mmax[:,None] - fine_grid)/(mmax[:,None]-mmin[:,None]) * sh[:,None]
+
+#    coordinates = row_stack([coordinates[1,:], coordinates[0,:]])
+    tt = time.time()
+    vv = values_on_grid[0,:].reshape(orders)
+    print(vv.shape)
+
+    prefilter=False
+    mode = 'nearest'
+    interp_vals_1 = map_coordinates( vv , coordinates, order=1, prefilter=prefilter, mode=mode ).flatten()
+    interp_vals_2 = map_coordinates( vv , coordinates, order=3, prefilter=prefilter, mode=mode ).flatten()
+    interp_vals_3 = map_coordinates( vv , coordinates, order=4, prefilter=prefilter, mode=mode ).flatten()
+    interp_vals_5 = map_coordinates( vv , coordinates, order=5, prefilter=prefilter, mode=mode ).flatten()
+
+    ss = time.time()
+    print('NDimage : {}'.format(ss-tt))
+    print( abs(interp_vals_1 - values_on_fine_grid).max() )
+    print( abs(interp_vals_2 - values_on_fine_grid).max() )
+    print( abs(interp_vals_3 - values_on_fine_grid).max() )
+    print( abs(interp_vals_5 - values_on_fine_grid).max() )
+
+
+
+
+    interp_vals_3 = atleast_2d(interp_vals_3)
+    print(interp_vals_3.shape)
+
+    print(xg.shape)
+
+
+
+
+
 
 
     fine_grid = row_stack([xg.flatten(), yg.flatten()])
 
     true_vals = fun(fine_grid)
     interp_vals = sp.interpolate(fine_grid)
-    interp_old_vals = sp.interpolate_old(fine_grid)
+#    interp_new_vals = sp.interpolate_new(fine_grid)
+    interp_new_vals = interp_vals_3
 
     interp_sg_vals = sg.interpolate(fine_grid)
 
@@ -295,13 +351,11 @@ if __name__ == '__main__':
 #    plot(fine_grid.flatten(), interp_vals.flatten())
 #    show()
 
-    print(true_vals.shape)
-    print(xg.shape)
 
     X = xg
     Y = yg
     Z = (true_vals[0,:]).reshape(X.shape)
-    Za = (interp_old_vals[0,:]).reshape(X.shape)
+    Za = (interp_new_vals[0,:]).reshape(X.shape)
     Zb = (interp_sg_vals[0,:]).reshape(X.shape)
     Zc = (interp_vals[0,:]).reshape(X.shape)
 
@@ -309,7 +363,6 @@ if __name__ == '__main__':
     print(sg.grid.shape)
     print(sp.grid.shape)
 
-    from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
     import matplotlib.pyplot as plt

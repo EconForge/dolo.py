@@ -9,8 +9,8 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
 
         from itertools import product
         import numpy
-        from numpy import array, column_stack, row_stack
-        from dolo.numeric.multilinear import multilinear_interpolation
+        from numpy import array, column_stack
+        from dolo.numeric.interpolation.multilinear import multilinear_interpolation
 
         d = 4
 
@@ -34,7 +34,7 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
         interpolated_values = multilinear_interpolation(smin, smax, orders, values, finer_grid)
 
 
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
 
         sg = SmolyakGrid( smin, smax ,3)
         sg.set_values( f(sg.grid) )
@@ -49,7 +49,7 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
         # both errors should be 0, because interpolated function is a 2d order polynomial
         assert_almost_equal(err_1,0)
 
-        from dolo.numeric.multilinear import MultilinearInterpolator
+        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
         mul_interp = MultilinearInterpolator(smin,smax,orders)
         mul_interp.set_values( f( mul_interp.grid) )
         interpolated_values_2 = mul_interp( finer_grid )

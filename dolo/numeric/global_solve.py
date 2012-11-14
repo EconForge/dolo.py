@@ -70,32 +70,32 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
             interp_orders = [5]*bounds.shape[1]
 
     if interp_type == 'smolyak':
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         sg = SmolyakGrid( bounds[0,:], bounds[1,:], smolyak_order )
     elif interp_type == 'sparse_linear':
-        from dolo.numeric.interpolation import SparseLinear
+        from dolo.numeric.interpolation.interpolation import SparseLinear
         sg = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
     elif interp_type == 'linear_triangulation':
-        from dolo.numeric.interpolation import SparseLinear
-        from dolo.numeric.interpolation import LinearTriangulation, TriangulatedDomain
+        from dolo.numeric.interpolation.interpolation import SparseLinear
+        from dolo.numeric.interpolation.interpolation import LinearTriangulation, TriangulatedDomain
         sg_tt = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
         domain = TriangulatedDomain(sg_tt.grid)
         sg = LinearTriangulation( domain )
     elif interp_type == 'spline':
         polish = False
-        from dolo.numeric.interpolation import SplineInterpolation
+        from dolo.numeric.interpolation.interpolation import SplineInterpolation
         sg = SplineInterpolation( bounds[0,:], bounds[1,:], interp_orders )
     elif interp_type == 'mspline':
         polish = False
-        from dolo.numeric.msplines import MultivariateSplines
+        from dolo.numeric.interpolation.msplines import MultivariateSplines
         sg = MultivariateSplines( smin, smax, interp_orders )
     elif interp_type == 'linear':
-        from dolo.numeric.interpolation import LinearTriangulation, TriangulatedDomain, RectangularDomain
+        from dolo.numeric.interpolation.interpolation import LinearTriangulation, TriangulatedDomain, RectangularDomain
         rec =  RectangularDomain(smin, smax, interp_orders)
         domain = TriangulatedDomain( rec.grid )
         sg = LinearTriangulation( domain )
     elif interp_type == 'mlinear':
-        from dolo.numeric.multilinear import MultilinearInterpolator
+        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
         sg = MultilinearInterpolator( bounds[0,:], bounds[1,:], interp_orders)
 
     

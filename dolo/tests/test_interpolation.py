@@ -52,10 +52,11 @@ class  TestInterpolation(unittest.TestCase):
         l = 5
         n_x = 1
         N = 100000
-        from numpy import row_stack, minimum, maximum, array
+        from numpy import row_stack, minimum, maximum
+
         smin = [-1]*d
         smax = [1]*d
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         sg = SmolyakGrid(smin,smax,l)
 
         from numpy import exp
@@ -69,7 +70,6 @@ class  TestInterpolation(unittest.TestCase):
         points = points.reshape( (d,N) )
 
         # I need to add the corners of the grid !
-        from dolo.numeric.interpolation import MLinInterpolation
 
         import time
         t = time.time()
@@ -78,7 +78,7 @@ class  TestInterpolation(unittest.TestCase):
         s = time.time()
         print('Smolyak : {}'.format(s-t))
 
-        from dolo.numeric.interpolation import SparseLinear
+        from dolo.numeric.interpolation.interpolation import SparseLinear
         sp = SparseLinear(smin,smax,l)
 
         xvalues = sg(sp.grid)

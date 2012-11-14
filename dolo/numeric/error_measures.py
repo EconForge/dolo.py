@@ -1,5 +1,5 @@
 #from dolo.compiler.compiler_global import test_residuals
-from dolo.numeric.interpolation import RectangularDomain
+from dolo.numeric.interpolation.interpolation import RectangularDomain
 
 from dolo.compiler.compiler_global import CModel
 import numpy

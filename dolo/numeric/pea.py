@@ -104,13 +104,9 @@ print(dr_pert.X_bar)
 
 
 
-from dolo.numeric.smolyak import SmolyakGrid
-from dolo.numeric.multilinear import MultilinearInterpolator
+from dolo.numeric.interpolation.smolyak import SmolyakGrid
 from dolo.numeric.global_solve import global_solve
 dr_smol = global_solve(model, smolyak_order=2, maxit=2, polish=True)
-
-
-from numpy import array
 
 smin = dr_smol.bounds[0,:]
 smax = dr_smol.bounds[1,:]

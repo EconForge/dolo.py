@@ -17,7 +17,7 @@ class RectangularDomain:
             mesh = nodes
         else:
             mesh = np.meshgrid(*nodes)   # works only in 2d
-            mesh = [m.flatten() for m in mesh]
+            mesh = [m.T.flatten() for m in mesh]
     #        mesh.reverse()
         self.nodes = nodes
         self.grid = np.row_stack(mesh)
@@ -271,7 +271,7 @@ class SparseLinear:
     # linear interpolation on a sparse grid
 
     def __init__(self, smin, smax, l):
-        from smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         sg = SmolyakGrid(smin,smax,l)
         self.smin = array(smin)
         self.smax = array(smax)

@@ -9,7 +9,7 @@ class  TestInterpolation(unittest.TestCase):
     def test_chebychev(self):
 
         import numpy as np
-        from dolo.numeric.smolyak import chebychev, chebychev2
+        from dolo.numeric.interpolation.smolyak import chebychev, chebychev2
 
         points = np.linspace(-1,1,100)
 
@@ -41,7 +41,7 @@ class  TestInterpolation(unittest.TestCase):
         smax = [2,3]
         bounds = numpy.row_stack([smin,smax])
 
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         sg = SmolyakGrid(smin,smax,3)
 
         values = f(sg.grid)
@@ -57,7 +57,7 @@ class  TestInterpolation(unittest.TestCase):
     def test_smolyak_plot_2d(selfs):
 
         import numpy
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
 
         bounds = numpy.column_stack([[-1,1]]*2)
         sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
@@ -66,7 +66,7 @@ class  TestInterpolation(unittest.TestCase):
     def test_smolyak_plot_3d(selfs):
 
         import numpy
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
 
         bounds = numpy.column_stack([[-1,1]]*3)
         sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
@@ -76,7 +76,7 @@ class  TestInterpolation(unittest.TestCase):
     def test_smolyak_2(self):
 
         import numpy
-        from dolo.numeric.smolyak import SmolyakGrid
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         d = 5
         l = 4
 
