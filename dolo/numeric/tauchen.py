@@ -47,5 +47,5 @@ def tauchen(N, mu, rho, sigma, m):
 
 if __name__ == '__main__':
     [Z,Zprob] = tauchen( 5,0,0.8,0.1,1.5 )
-    print Z
-    print Zprob
+    print(Z)
+    print(Zprob)

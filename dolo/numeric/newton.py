@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
     import numpy.random
     V = numpy.random.multivariate_normal([0]*p,numpy.eye(p),size=p)
-    print V
+    print(V)
 
     M = numpy.zeros((p,p,N))
     for i in range(N):
@@ -127,4 +127,4 @@ if __name__ == '__main__':
 
     tt = stm(M,T)
     for i in range(10):
-        print tt[:,:,i]
+        print(tt[:,:,i])

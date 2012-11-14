@@ -11,14 +11,14 @@ declarations:
 
   shocks: [epsilon]
 
-  parameters: [beta, gamma, delta, theta, dumb]
+  parameters: [beta, gamma, delta, theta, rho]
 
 
 equations:
 
     transition:
         - k = (1-delta)*k(-1) + i(-1)
-        - A = 1 + epsilon + dumb*A(-1)
+        - A = 1 + epsilon + rho*A(-1)
 
     auxiliary:
         - c = A*k^theta - i
@@ -46,10 +46,10 @@ calibration:
     parameters:
 
         beta: 0.96
-        gamma: 2.0
+        gamma: 4.0
         delta: 0.1
         theta: 0.3
-        dumb: 0
+        rho: 0.0
 
     covariances: |
-      [[ 0.01 ]]
+      [[ 0.00001 ]]

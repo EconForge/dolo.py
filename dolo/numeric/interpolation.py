@@ -83,7 +83,7 @@ class SplineInterpolation1:
         pass
 
     def __call__(self,points):
-        return self.interpolate(points)[0]
+        return self.interpolate(points)
 
     def set_values(self,val):
         from scipy.interpolate import InterpolatedUnivariateSpline
