@@ -1,4 +1,4 @@
-void cserop(int I, int J, int K, int N, double* A, double*B, double* C) {
+void cserop(int I, int J, int K, int N, double* A, double* B, double* C) {
 
     int rg, rm, rd;
     int i,j,k,n;

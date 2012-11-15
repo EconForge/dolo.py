@@ -56,13 +56,14 @@ def print_model( model, print_residuals=True):
             eqs = [ ['', 'Equations','Residuals'] ]
         else:
             eqs = [ ['', 'Equations'] ]
-            for groupname in model['equations_groups']:
-                eqg = model['equations_groups']
-                eqs.append( [ groupname ,''] )
-                if print_residuals:
-                    eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
-                else:
-                    eqs.extend([ ['','${}$'.format(latex(eq))] for eq in eqg[groupname] ])
+        for groupname in model['equations_groups']:
+            print(groupname)
+            eqg = model['equations_groups']
+            eqs.append( [ groupname ,''] )
+            if print_residuals:
+                eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
+            else:
+                eqs.extend([ ['','${}$'.format(latex(eq))] for eq in eqg[groupname] ])
         txt = print_table( eqs, header = True)
         return txt
 
