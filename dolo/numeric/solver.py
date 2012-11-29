@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',verbose=False):
+def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',serial_problem=False, verbose=False):
     
     in_shape = x0.shape
 
@@ -13,11 +13,11 @@ def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',verbo
             tt = t.reshape(in_shape)
             dval = jac(tt)
             return dval.reshape( (pp,pp) )
-    elif jac=='precise':
-        from numdifftools import Jacobian
-        Dffobj = Jacobian(ffobj)
+    elif serial_problem:
+        Dffobj = MySerialJacobian(fobj, in_shape)
     else:
         Dffobj = MyJacobian(ffobj)
+
 
     if method == 'fsolve':
         import scipy.optimize as optimize
@@ -79,4 +79,38 @@ def MyJacobian(fun):
             y2 = fun(x-delta)
             D[:,i] = (y1 - y2)/eps/2
         return D
+    return rfun
+
+
+
+def MySerialJacobian(fun, shape, eps=1e-6):
+
+    def rfun(x):
+
+        x = x.reshape(shape)
+
+        #        x0 = x.copy()
+        p = x.shape[0]
+        N = x.shape[1]
+
+        y0 = fun(x)
+
+        assert( y0.shape[0] == p)
+        assert( y0.shape[1] == N)
+
+        Dc = np.zeros( (p,p,N) )  # compressed jacobian
+        for i in range(p):
+            delta = np.zeros((p,N))
+            delta[i,:] = eps
+            y1 = fun(x+delta)
+            y2 = fun(x-delta)
+            Dc[i,:,:] = (y1 - y2)/eps/2
+
+        D = np.zeros((p,N,p,N))
+        for n in range(N):
+            D[:,n,:,n] = Dc[:,:,n].T
+
+        return D.reshape(p*N, p*N)
+        #return D
+
     return rfun

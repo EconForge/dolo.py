@@ -57,7 +57,6 @@ def print_model( model, print_residuals=True):
         else:
             eqs = [ ['', 'Equations'] ]
         for groupname in model['equations_groups']:
-            print(groupname)
             eqg = model['equations_groups']
             eqs.append( [ groupname ,''] )
             if print_residuals:
