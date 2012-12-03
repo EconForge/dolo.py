@@ -329,7 +329,7 @@ class Instruction_group():
 
 
 
-def dynare_import(filename,names_dict={},full_output=False, debug=True):
+def dynare_import(filename,names_dict={},full_output=False, debug=False):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
