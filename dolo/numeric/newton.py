@@ -12,6 +12,7 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, 
     err = 1
     tol = 1e-8
     eps = 1e-5
+
     it = 0
     while err > tol and it <= maxit:
         if not numdiff:
@@ -53,25 +54,27 @@ def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdi
 
     from numpy import row_stack
 
+    ind = x0.shape[0] - 1
+
     def fun_lc(xx):
         x = row_stack([lb, xx])
         res = f(x)
-        return res[1:,:]
+        return res[:ind,:]
 
     def fun_uc(xx):
         x = row_stack([ub, xx])
         res = f(x)
-        return res[1:,:]
+        return res[:ind,:]
 
     [sol_nc, nit0] = newton_solver(f, x0, numdiff=True, infos=True)
-    lower_constrained = sol_nc[0,:] < lb
-    upper_constrained = sol_nc[0,:] > ub
+    lower_constrained = sol_nc[ind,:] < lb
+    upper_constrained = sol_nc[ind,:] > ub
     not_constrained =  - ( lower_constrained + upper_constrained )
 
 
     sol = sol_nc.copy()
 
-    sol[0,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[0,:] * not_constrained
+    sol[ind,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[ind,:] * not_constrained
     nit = nit0
 
 
