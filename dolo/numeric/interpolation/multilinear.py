@@ -5,25 +5,6 @@ from numpy import array, zeros, floor, cumprod, column_stack, row_stack, reshape
 from itertools import product
 
 
-class MultilinearInterpolator:
-
-    def __init__(self, smin, smax, orders):
-        d = len(orders)
-        self.smin = smin
-        self.smax = smax
-        self.orders = orders
-        self.d = d
-        self.grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
-
-    def set_values(self,values):
-        self.values = values
-
-    def interpolate(self,s):
-        return multilinear_interpolation(self.smin,self.smax,self.orders,self.values,s)
-
-    def __call__(self,s):
-        return self.interpolate(s)
-
 
 def multilinear_interpolation( smin, smax, orders, x, y):
 
@@ -60,6 +41,9 @@ def multilinear_interpolation( smin, smax, orders, x, y):
     [b,g] = index_lookup( x, qq, orders )
 
     z = b + recursive_evaluation(d,tuple([]),mm[:,numpy.newaxis,:], g)
+
+    from multilinear_c import multilinear_c
+
 
     return z
 
@@ -115,3 +99,45 @@ def index_lookup(a, q, dims):
     g = reshape(g, (2,)*d + (n_x,M))
 
     return [b,g]
+
+#
+#try:
+#    print("using compiled linear interpolator (on gpu)")
+#    from multilinear_gpu import multilinear_interpolation
+#except Exception as e:
+#    print('Failback')
+#    pass
+
+try:
+    print("using compiled linear interpolator")
+    from multilinear_c import multilinear_c as multilinear_interpolation
+except Exception as e:
+    print('Failback')
+    pass
+
+
+class MultilinearInterpolator:
+
+    def __init__(self, smin, smax, orders):
+        d = len(orders)
+        self.smin = smin
+        self.smax = smax
+        self.orders = orders
+        self.d = d
+        self.grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
+        self.grid = numpy.ascontiguousarray(self.grid)
+
+
+    def set_values(self,values):
+        self.values = values
+
+    def interpolate(self,s):
+        a = multilinear_interpolation(self.smin,self.smax,self.orders,self.values,s)
+#        from multilinear_c import multilinear_c
+#        b = multilinear_c(self.smin,self.smax,self.orders,self.values,s)
+#        test = abs(b-a).max()
+#        print('Error : {}'.format(test))
+        return a
+
+    def __call__(self,s):
+        return self.interpolate(s)
