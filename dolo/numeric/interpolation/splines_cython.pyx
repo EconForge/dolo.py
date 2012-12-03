@@ -216,11 +216,6 @@ cdef class MSplines1d:
 
         self.__spline__ = create_multi_UBspline_1d_d(self.__grid_x__, self.__boundaries_x__, n_splines)
 
-        self.grid = np.ascontiguousarray( np.column_stack( product(*[np.linspace(smin[i], smax[i], orders[i]) for i in range(self.d)]) ).T )
-
-        self.d = 1
-
-
     def set_values(self, np.ndarray[np.double_t, ndim=2] values):
 
         cdef double* data
@@ -251,7 +246,7 @@ cdef class MSplines1d:
         cdef double* x_in = <double*> points_x.data
 
         cdef np.ndarray[np.double_t, ndim=2] output = np.empty( (n, n_v), dtype=np.double )
-        cdef np.ndarray[np.double_t, ndim=3] doutput = np.empty( (1, n, n_v), dtype=np.double )
+        cdef np.ndarray[np.double_t, ndim=3] doutput = np.empty( (n, n_v, 1), dtype=np.double )
 
         cdef double* data = <double*> output.data
         cdef double* d_data = <double*> doutput.data
@@ -296,11 +291,6 @@ cdef class MSplines2d:
 
         self.__spline__ = create_multi_UBspline_2d_d(self.__grid_x__, self.__grid_y__, self.__boundaries_x__, self.__boundaries_y__, n_splines)
 
-        self.d = 2
-
-        self.grid = np.ascontiguousarray( np.column_stack( product(*[np.linspace(smin[i], smax[i], orders[i]) for i in range(self.d)]) ).T )
-
-
     def set_values(self, np.ndarray[np.double_t, ndim=2] values):
 
         cdef double* data
@@ -333,7 +323,7 @@ cdef class MSplines2d:
         cdef double* y_in = <double*> points_y.data
 
         cdef np.ndarray[np.double_t, ndim=2] output = np.empty( (n, n_v), dtype=np.double )
-        cdef np.ndarray[np.double_t, ndim=3] doutput = np.empty( (2, n, n_v), dtype=np.double )
+        cdef np.ndarray[np.double_t, ndim=3] doutput = np.empty( (n, n_v, 2), dtype=np.double )
 
         cdef double* data = <double*> output.data
         cdef double* d_data = <double*> doutput.data
