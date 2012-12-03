@@ -203,24 +203,9 @@ def serial_inversion(M):
 
 
 try:
-    from dolo.numeric.serial_operations_c import serial_multiplication
+    from dolo.numeric.serial_operations_cython import serial_multiplication as smult
 except:
     pass
-
-
-#try:
-#import pyximport
-#pyximport.install()
-#from dolo.numeric.serial_operations_cython import serial_dot_21, serial_dot_11
-#except:
-#    pass
-
-#
-#try:
-#    from dolo.numeric.serial_operations_c import serial_multiplication
-#except:
-#    pass
-
 
 strange_tensor_multiplication_vector = serial_multiplication_vector
 #strange_tensor_multiplication = serial_multiplication
@@ -229,15 +214,36 @@ strange_tensor_multiplication_vector = serial_multiplication_vector
 
 if __name__ == "__main__":
     
-    def test(X):    
-        ret = np.zeros_like(X)
-        for n in range(X.shape[-1]):
-            x = X[..., n]
-            ret[..., n] = x**2
-        return ret
-    
-    X0 = np.ones( (3, 2, 5) ) /2
-    resp = numdiff1(test, X0)
-    print(resp.shape)
-    print(resp[:, :, 1, 1, 0])
+#    def test(X):
+#        ret = np.zeros_like(X)
+#        for n in range(X.shape[-1]):
+#            x = X[..., n]
+#            ret[..., n] = x**2
+#        return ret
+#
+#    X0 = np.ones( (3, 2, 5) ) /2
+#    resp = numdiff1(test, X0)
+#    print(resp.shape)
+#    print(resp[:, :, 1, 1, 0])
 
+    I = 50
+    J = 40
+    K = 30
+    N = 10000
+
+    import numpy.random
+    A = numpy.random.random((I,J, N))
+    B = numpy.random.random((J,K, N))
+
+    import time
+    r = time.time()
+    C0 = serial_multiplication(A,B)
+    s = time.time()
+    t = time.time()
+    C2 = smult(A,B)
+    u = time.time()
+
+    print('Py : {}'.format(s-r))
+    print('Cython : {}'.format(u-t))
+
+    print(abs(C2-C0).max())

@@ -20,20 +20,27 @@ def serial_multiplication(np.ndarray[DTYPE_t, ndim=3] A, np.ndarray[DTYPE_t, ndi
     N = A.shape[2]
     K = B.shape[1]
 
-#    assert(B.shape[0]==J)
-#    assert(B.shape[2]==N)
+    cdef np.ndarray[DTYPE_t, ndim=3] C = np.zeros( (I,K,N), dtype = np.float64 )
 
-    cdef np.ndarray[DTYPE_t, ndim=3] resp
-#    cdef np.ndarray[DTYPE_t, ndim=1] T
+    cdef double* A_d = <double*> A.data
+    cdef double* B_d = <double*> B.data
+    cdef double* C_d = <double*> C.data
 
-    resp = np.zeros( (I,K,N), dtype = np.float64 )
+    cdef int rg, rm, rd
+
     for i in range(I):
         for k in range(K):
             for j in range(J):
+                rg = i*N*K + k*N
+                rm = i*N*J + j*N
+                rd = j*N*K + k*N
                 for n in range(N):
-                    resp[i,k,n] += A[i,j,n]*B[j,k,n]
+                    C_d[rg] += A_d[rm]*B_d[rd]
+                    rg +=1
+                    rm +=1
+                    rd +=1
 
-    return resp
+    return C
 
 
 
