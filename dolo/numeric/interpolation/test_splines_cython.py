@@ -3,8 +3,8 @@ from __future__ import division
 import numpy
 from splines_cython import *
 
-d = 1
-N = 20
+d = 3
+N = 50
 smin = np.array( [0] * d )
 smax = np.array( [1] * d )
 orders = np.array( [N]*d )
@@ -47,7 +47,6 @@ minterp.set_values(values)
 
 
 K = 100*100*100
-K = 10
 points = numpy.random.random( (d, K) )
 
 #points = numpy.maximum( points, 0.0001)
