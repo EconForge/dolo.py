@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 from distutils.extension import Extension
 
-from Cython.Distutils import build_ext
+#from Cython.Distutils import build_ext
 
-from dolo import __version__
+#from dolo import __version__
 
-#__version__ = '0.4-dev-3'
+__version__ = '0.4-dev-3'
 
 setup(
 
@@ -15,11 +15,11 @@ setup(
 
     test_suite='dolo.tests',
 
-    cmdclass = {'build_ext': build_ext},
-    ext_modules = [
-        Extension('dolo.numeric.serial_operations_cython',['dolo/numeric/serial_operations_cython.pyx']),
-        Extension('dolo.numeric.interpolation.splines_cython',['dolo/numeric/interpolation/splines_cython.pyx'], library_dirs = ['/usr/local/lib'], include_dirs = ['/usr/local/include/einspline'], libraries = ['m','einspline'])
-    ],
+#    cmdclass = {'build_ext': build_ext},
+#    ext_modules = [
+#        Extension('dolo.numeric.serial_operations_cython',['dolo/numeric/serial_operations_cython.pyx']),
+#        Extension('dolo.numeric.interpolation.splines_cython',['dolo/numeric/interpolation/splines_cython.pyx'], library_dirs = ['/usr/local/lib'], include_dirs = ['/usr/local/include/einspline'], libraries = ['m','einspline'])
+#    ],
     
     scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py', 'bin/dolo'],
 

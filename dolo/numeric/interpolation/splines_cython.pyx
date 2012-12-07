@@ -264,7 +264,6 @@ cdef class MSplines2d:
     cdef BCtype_d __boundaries_x__, __boundaries_y__
     cdef int __n_splines__
     cdef np.ndarray values
-    cdef np.ndarray grid
     cdef int d
 
     def __init__(self, smin, smax, orders, boundaries=4, int n_splines=1):
@@ -342,7 +341,6 @@ cdef class MSplines3d:
     cdef BCtype_d __boundaries_x__, __boundaries_y__, __boundaries_z__
     cdef int __n_splines__
     cdef np.ndarray values
-    cdef np.ndarray grid
     cdef int d
 
     def __init__(self, smin, smax, orders, boundaries=4, int n_splines=1):
@@ -433,7 +431,6 @@ class MultivariateSplines:
         self.d = len(smin)
         assert(len(smax) == self.d)
         assert(len(orders) == self.d)
-        self.grid = np.ascontiguousarray( np.row_stack( product(*[np.linspace(smin[i], smax[i], orders[i]) for i in range(self.d)]) ).T )
         self.smin = smin
         self.smax = smax
         self.orders = orders
