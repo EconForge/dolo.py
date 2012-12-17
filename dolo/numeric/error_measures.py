@@ -18,9 +18,9 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
 
-    [ssnext] = g(ss,xx,ee,parms)[:1]
+    ssnext = g(ss,xx,ee,parms)
     xxnext = dr(ssnext)
-    [val] = f(ss,xx,ssnext,xxnext,ee,parms)[:1]
+    val = f(ss,xx,ssnext,xxnext,ee,parms)
 
     errors = np.zeros( (n_x,n_g) )
     for i in range(n_draws):
@@ -48,7 +48,7 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
 
     domain = RectangularDomain(bounds[0,:], bounds[1,:], orders)
 
-    gc = CModel(model, substitute_auxiliary=True, solve_systems=True)
+    gc = CModel(model)
     f = gc.f
     g = gc.g
 
@@ -70,7 +70,9 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
         s0 = time_weight[2]
 
         from dolo.numeric.simulations import simulate
-        [s_simul, x_simul] = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True, stack_series=False)
+        simul = simulate( gc ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
+
+        s_simul = simul[:len(gc.controls),:,:]
 
         densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]
 
@@ -115,6 +117,7 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     from dolo.compiler.global_solution import step_residual
     from dolo.numeric.quadrature import gauss_hermite_nodes
     from dolo.numeric.newton import newton_solver
+    from dolo.numeric.simulations import simulate
 
     # cmodel should be an fg model
 
@@ -142,12 +145,9 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     parms = cmodel.model.read_calibration()[2]
 
     mean = sigma[0,:]*0
-    numpy.random.seed(seed)
 
-    epsilons = numpy.random.multivariate_normal(mean, sigma, (n_sims,horizon))  # * horizon ?
-
-    epsilons = numpy.array( numpy.rollaxis(epsilons,2), order='C')
-
+    n_x = len(cmodel.controls)
+    n_s = len(cmodel.states)
 
     orders = [5]*len(mean)
     [nodes, weights] = gauss_hermite_nodes(orders, sigma)
@@ -157,52 +157,17 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     x0 = dr(s0)
 
     # standard simulation
+    simul = simulate(cmodel, dr, s0, sigma, horizon=horizon, n_exp=n_sims, parms=parms, seed=seed)
 
-    s_simul = numpy.zeros( (s0.shape[0],n_sims,horizon) )
-    x_simul = numpy.zeros( (x0.shape[0],n_sims,horizon) )
+    simul_se = simulate(cmodel, dr, s0, sigma, horizon=horizon, n_exp=n_sims, parms=parms, seed=seed, solve_expectations=True, nodes=nodes, weights=weights)
 
-    s_simul[:,:,0] = s0
+    x_simul = simul[n_s:,:,:]
+    x_simul_se = simul_se[n_s:,:,:]
 
 
-    for i in range(horizon):
-
-        s = s_simul[:,:,i]
-        x = dr(s)
-        x_simul[:,:,i] = x
-
-        ss = cmodel.g(s,x,epsilons[:,:,i],parms)
-
-        if i<(horizon-1):
-            s_simul[:,:,i+1] = ss
-
-    simul = numpy.row_stack([s_simul, x_simul])
-
-    # counter factual
-
-    s_check = numpy.zeros( (s0.shape[0],n_sims,horizon) )
-    x_check = x_simul.copy()
-
-    s_check[:,:,0] = s0
-
-    for i in range(horizon):
-
-        s = s_check[:,:,i]
-
-        fobj = lambda t: step_residual(s, t, dr, cmodel.f, cmodel.g, parms, nodes, weights, x_bounds=None, serial_grid=True, with_derivatives=False)
-        x = newton_solver(fobj, x_check[:,:,i], numdiff=True)
-
-        x_check[:,:,i] = x
-
-        ss = cmodel.g(s,x,epsilons[:,:,i],parms)
-
-        if i<(horizon-1):
-            s_check[:,:,i+1] = ss
-
-    check = numpy.row_stack([s_check, x_check])
-
-    diff = abs( x_check - x_simul )
+    diff = abs( x_simul_se - x_simul )
     error_1 = (diff).max(axis=2).mean(axis=1)
     error_2 = (diff).mean(axis=2).mean(axis=1)
 
 
-    return [error_1, error_2, simul, check]
+    return [error_1, error_2]
