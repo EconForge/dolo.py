@@ -39,7 +39,7 @@ def setuplapack(lpname=None,lppath=None):
         __lapack_path__ = find_library('lapack')
         lapack = cdll.LoadLibrary( __lapack_path__ )
     except Exception as e:
-        print e  
+        print(e)
         return None
     return lapack
 
@@ -118,12 +118,12 @@ def dgges4numpy(A,B, jobvsl='V', jobvsr='V' ):
         elif jobvsl=='N' and jobvsr=='V': return A,B,Alphar,Alphai,Beta,Vsr
         else:                             return A,B,Alphar,Alphai,Beta
     elif info.value < 0:
-        raise ValueError, 'Illegal argument (' + str(abs(info.value)) + ')'
+        raise ValueError('Illegal argument (' + str(abs(info.value)) + ')' )
     elif info.value <= rows: 
-        raise RuntimeError, 'QZ iteration failed'
+        raise RuntimeError('QZ iteration failed')
     elif info.value <= rows+3:
-        raise RuntimeError, 'something other than QZ iteration failed'
-    else: raise RuntimeError, 'INFO not updated by dgges, complete failure!?'
+        raise RuntimeError('something other than QZ iteration failed')
+    else: raise RuntimeError('INFO not updated by dgges, complete failure!?')
 
 def zgges4numpy(A,B, jobvsl='V', jobvsr='V'):
     '''Wraps lapack function zgges, no sorting done.
@@ -200,12 +200,12 @@ def zgges4numpy(A,B, jobvsl='V', jobvsr='V'):
         elif jobvsl=='N' and jobvsr=='V': return A,B,Alpha,Beta,Vsr
         else:                             return A,B,Alpha,Beta
     elif info.value < 0:
-        raise ValueError, 'Illegal argument (' + str(abs(info.value)) + ')'
+        raise ValueError('Illegal argument (' + str(abs(info.value)) + ')')
     elif info.value <= rows: 
-        raise RuntimeError, 'QZ iteration failed'
+        raise RuntimeError('QZ iteration failed')
     elif info.value <= rows+3:
-        raise RuntimeError, 'something other than QZ iteration failed'
-    else: raise RuntimeError, 'INFO not updated by zgges, complete failure!?'
+        raise RuntimeError('something other than QZ iteration failed')
+    else: raise RuntimeError('INFO not updated by zgges, complete failure!?')
 
 def qz(A,B, mode='complex'):
     '''Equivalent to Matlab's qz function [AA,BB,Q,Z] = qz(A,B).
@@ -247,7 +247,7 @@ def qz(A,B, mode='complex'):
         AA,BB,dum1,dum2,VSL,VSR = zgges4numpy(A,B)
         return AA, BB, VSL.conj().T, VSR
     else:
-        raise ValueError, 'bogus choice for mode'
+        raise ValueError('bogus choice for mode')
    
 def eig2(A,B):
     '''Calculates generalized eigenvalues of pair (A,B).

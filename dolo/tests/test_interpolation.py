@@ -90,8 +90,6 @@ class  TestInterpolation(unittest.TestCase):
         s = time.time()
         print('Sparse linear : {}'.format(s-t))
 
-        print( abs(test2 - test1) ).max()
-
         import numpy
         if False in numpy.isfinite(test2):
             print('Problem')

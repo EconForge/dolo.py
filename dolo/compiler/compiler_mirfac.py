@@ -25,7 +25,7 @@ class MirFacCompiler(Compiler):
 
         def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'auxiliary')]
 
-        from dolo.misc.misc import map_function_to_expression
+        from dolo.symbolic.symbolic import map_function_to_expression
         from dolo.symbolic.symbolic import Variable
         def timeshift(v,n):
             if isinstance(v,Variable):

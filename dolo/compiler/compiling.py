@@ -18,7 +18,7 @@ from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
 
-def compile_function(equations, args, parms, max_order, return_function=True):
+def compile_function(equations, args, parms, max_order, return_text=False):
 
     """
     :param equations:
@@ -125,12 +125,11 @@ def compile_function(equations, args, parms, max_order, return_function=True):
         txt += "    f.append(f{order})\n".format(order=current_order)
     txt += "    return f\n"
     txt = txt.replace('^','**')
-    if return_function:
-        exec txt
-        dynamic_function.__source__ = txt
-        return dynamic_function
-    else:
+
+    if return_text:
         return txt
+    else:
+        return code_to_function(txt,'dynamic_function')
 
 
 def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_text=False):
@@ -233,9 +232,15 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
     import numpy as np
     inf = np.inf
-    exec text in locals(), globals()
-    l = globals()
-    return l[fname]
+
+    return code_to_function(text,fname)
+
+
+def code_to_function(text, name):
+    d = {}
+    e = {}
+    exec(text, d, e)
+    return e[name]
 
 
 def eqdiff(leq,lvars):

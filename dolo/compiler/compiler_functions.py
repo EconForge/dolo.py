@@ -110,7 +110,6 @@ def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
 
     if compiler=='numpy':
         from dolo.compiler.compiling import compile_multiargument_function
-        compile_multiargument_function
     elif compiler == 'theano':
         from dolo.compiler.compiling_theano import compile_multiargument_function
     elif compiler == 'numexpr':

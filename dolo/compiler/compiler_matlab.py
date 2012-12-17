@@ -1,6 +1,6 @@
 # pickle
 # hash
-from dolo.misc.misc import map_function_to_expression
+from dolo.symbolic.symbolic import map_function_to_expression
 from dolo.symbolic.symbolic import Variable
 
 import numpy as np

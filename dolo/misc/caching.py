@@ -56,14 +56,14 @@ class cachedondisk(object):
         h2 = hashable(kargs)
         h = hash( (hh, h2) )
         try:
-            with open('.cache/{0}.{1}.pickle'.format(self.fname,h)) as f:
+            with open('.cache/{0}.{1}.pickle'.format(self.fname,h),'rb') as f:
                 value = pickle.load(f)
             return value
         except IOError:
             value = self.func(*args, **kargs)
             if value is not None:  # should there be other kinds of error values
                 # write file with h
-                with open('.cache/{0}.{1}.pickle'.format(self.fname,h),'w') as f:
+                with open('.cache/{0}.{1}.pickle'.format(self.fname,h),'wb') as f:
                     pickle.dump(value,f)
             return value
         except TypeError:

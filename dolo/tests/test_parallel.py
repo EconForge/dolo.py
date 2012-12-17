@@ -38,19 +38,19 @@ class TestParallel(unittest.TestCase):
 
 
 
-#    def test_solve_rbc_several_times_without_parallelization(self):
-#
-#        tstart = time.time()
-#
-#        jobs = []
-#        for i in range(10):
-#            f = solve_something('rbc', {'smolyak_order':3})
-#            jobs.append(f)
-#
-#        #        for dr in t:
-#        #            print(dr.grid)
-#
-#        tend = time.time()
-#
-#        print('It took {} seconds without parallelization.'.format(tend - tstart))
+    def test_solve_rbc_several_times_without_parallelization(self):
+
+        tstart = time.time()
+
+        jobs = []
+        for i in range(10):
+            f = solve_something('rbc', {'smolyak_order':3})
+            jobs.append(f)
+
+        #        for dr in t:
+        #            print(dr.grid)
+
+        tend = time.time()
+
+        print('It took {} seconds without parallelization.'.format(tend - tstart))
 
