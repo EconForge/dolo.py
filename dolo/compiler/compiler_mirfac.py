@@ -220,8 +220,8 @@ class MirFacCompiler(Compiler):
         for i,v in enumerate(dmodel.parameters):
             sub_list[v] = 'p({0})'.format(i+1)
 
-
-#        sub_list[sympy.inf] = 'Inf'
+        import sympy
+        sub_list[sympy.Symbol('inf')] = 'Inf'
 
 
         text = '''function [out1,out2,out3,out4,out5] = {mfname}(flag,s,x,z,e,snext,xnext,p,out);
