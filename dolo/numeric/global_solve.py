@@ -132,8 +132,6 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         if not serial_grid:
             lb = gc.x_bounds[0](sg.grid,parms)
             ub = gc.x_bounds[1](sg.grid,parms)
-            print(lb)
-            print(ub)
         else:
             lb = None
             ub = None

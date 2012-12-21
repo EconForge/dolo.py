@@ -5,7 +5,7 @@
 from __future__  import division
 
 import numpy
-from misc import cartesian
+from dolo.numeric.misc import cartesian
 
 
 def hermgauss(n):
@@ -13,7 +13,8 @@ def hermgauss(n):
     from  numpy import pi, fix, zeros, sqrt
     maxit = 100
     pim4 = 1/pi**0.25
-    m = fix( (n+1)/2 )
+    m = int( fix( (n+1)/2 ) )
+
     x = zeros(n)
     w = zeros(n)
     # reasonable starting values
@@ -68,6 +69,8 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
 
     x = cartesian( points).T
+
+    from functools import reduce
     w = reduce( numpy.kron, weights)
 
     C = numpy.linalg.cholesky(sigma)

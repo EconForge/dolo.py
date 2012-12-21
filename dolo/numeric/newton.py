@@ -1,6 +1,6 @@
 import numpy
 
-def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, numdiff=False):
+def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, tol=1e-8, eps=1e-5, numdiff=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)
@@ -57,12 +57,12 @@ def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdi
     ind = x0.shape[0] - 1
 
     def fun_lc(xx):
-        x = row_stack([lb, xx])
+        x = row_stack([xx, lb])
         res = f(x)
         return res[:ind,:]
 
     def fun_uc(xx):
-        x = row_stack([ub, xx])
+        x = row_stack([xx, ub])
         res = f(x)
         return res[:ind,:]
 
@@ -74,23 +74,23 @@ def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdi
 
     sol = sol_nc.copy()
 
-    sol[ind,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[ind,:] * not_constrained
-    nit = nit0
+#    sol[ind,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[ind,:] * not_constrained
+#    nit = nit0
 
 
-#    [sol_lc, nit1] = newton_solver(fun_lc, x0[1:,:], numdiff=True, infos=True)
-#    [sol_uc, nit2] = newton_solver(fun_uc, x0[1:,:], numdiff=True, infos=True)
+    [sol_lc, nit1] = newton_solver(fun_lc, x0[:-1,:], numdiff=True, infos=True)
+    [sol_uc, nit2] = newton_solver(fun_uc, x0[:-1,:], numdiff=True, infos=True)
 #
-#    nit = nit0 + nit1 + nit2
+    nit = nit0 + nit1 + nit2
 #
-#    sol_lc = row_stack([lb, sol_lc])
-#    sol_uc = row_stack([ub, sol_uc])
+    sol_lc = row_stack([sol_lc, lb])
+    sol_uc = row_stack([sol_uc, ub])
 #
-#    lower_constrained = sol_nc[0,:] < lb
-#    upper_constrained = sol_nc[0,:] > ub
-#    not_constrained =  - ( lower_constrained + upper_constrained )
+    lower_constrained = sol_nc[-1,:] < lb
+    upper_constrained = sol_nc[-1,:] > ub
+    not_constrained =  - ( lower_constrained + upper_constrained )
 #
-#    sol = sol_lc * lower_constrained + sol_uc * upper_constrained + sol_nc * not_constrained
+    sol = sol_lc * lower_constrained + sol_uc * upper_constrained + sol_nc * not_constrained
 
     return [sol,nit]
 

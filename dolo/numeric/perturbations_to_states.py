@@ -87,9 +87,6 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
             dr.sigma = sigma
             return dr
         return [X_bar, X_s, X_ss, X_sss]
-        
-
-
 
 def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     """
@@ -132,17 +129,11 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
     ])
 
 
-    try:
-        from scipy.linalg import qz
-        tchouk # sorry for that
-        [S,T,Q,Z,nev] = qz(A,B,sort='ouc')
-        # n_ev should be equal to n_s
 
-    except:
-        from dolo.numeric.extern.qz import qzordered
-        [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
-        Q = Q.real # is it really necessary ?
-        Z = Z.real
+    from dolo.numeric.extern.qz import qzordered
+    [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
+    Q = Q.real # is it really necessary ?
+    Z = Z.real
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]

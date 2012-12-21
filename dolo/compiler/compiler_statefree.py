@@ -224,9 +224,15 @@ class PythonCompiler(Compiler):
         txt += "    return g\n"
         txt = txt.replace('^','**')
         
-        exec(txt)
-        return dynamic_gaps
+        fun = code_to_function(txt, 'dynamic_gaps')
+        return fun
 
+
+def code_to_function(text, name):
+    d = {}
+    e = {}
+    exec(text, d, e)
+    return e[name]
 
 def factorial(n):
     math.factorial(n)

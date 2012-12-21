@@ -23,7 +23,7 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
             model = portfolios_to_deterministic(model,['x_1','x_2'])
             model.check()
         from dolo.numeric.perturbations_to_states import approximate_controls
-        perturb_sol = approximate_controls(model, order = 1, return_dr=False, substitute_auxiliary=True)
+        perturb_sol = approximate_controls(model, order = 1, return_dr=False)
         [X_bar,X_s] =  perturb_sol
     else:
         perturb_sol = initial_sol
@@ -68,13 +68,13 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
     import numpy
     from dolo.compiler.compiling import compile_function
     import time
-    from dolo.compiler.compiler_global import simple_global_representation
+    from dolo.compiler.compiler_functions import simple_global_representation
 
 
     [y,x,parms] = model.read_calibration()
     sigma = model.read_covariances()
 
-    sgm = simple_global_representation(model, substitute_auxiliary=True)
+    sgm = simple_global_representation(model)
 
     states = sgm['states']
     controls = sgm['controls']
@@ -90,8 +90,8 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 
 
 
-    g_fun = compile_function(g_eqs, g_args, p_args, 2, return_function=True)
-    f_fun = compile_function(f_eqs, f_args, p_args, 3, return_function=True)
+    g_fun = compile_function(g_eqs, g_args, p_args, 2)
+    f_fun = compile_function(f_eqs, f_args, p_args, 3)
 
 
     epsilons_0 = np.zeros((sigma.shape[0]))

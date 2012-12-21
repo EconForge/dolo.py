@@ -7,14 +7,16 @@ TOL = 1e-10
 # credits : second_order_solver is adapted from Sven Schreiber's port of Uhlig's Toolkit.
 
 def second_order_solver(FF,GG,HH):
-    from extern.qz import qz,qzdiv
+
+    from scipy.linalg import qz
+    from dolo.numeric.extern.qz import qzdiv
     
-    from numpy import mat,c_,r_,eye,zeros,real_if_close,diag,allclose,where,diagflat
+    from numpy import array,mat,c_,r_,eye,zeros,real_if_close,diag,allclose,where,diagflat
     from numpy.linalg import solve
     
-    Psi_mat = mat(FF)
-    Gamma_mat = mat(-GG)
-    Theta_mat = mat(-HH)
+    Psi_mat = array(FF)
+    Gamma_mat = array(-GG)
+    Theta_mat = array(-HH)
     m_states = FF.shape[0]
         
     Xi_mat = r_[c_[Gamma_mat, Theta_mat],
@@ -23,6 +25,7 @@ def second_order_solver(FF,GG,HH):
         
     Delta_mat = r_[c_[Psi_mat, zeros((m_states, m_states))], 
                    c_[zeros((m_states, m_states)), eye(m_states)]]
+
 
     AAA,BBB,Q,Z = qz(Delta_mat, Xi_mat)
         
@@ -57,7 +60,7 @@ def second_order_solver(FF,GG,HH):
 #    assert (abs((abs(Xi_sortval) - 1)) > TOL).all()
 
     Lambda_mat = diagflat(Xi_sortval[Xi_select])
-    VVVH = VVV.H
+    VVVH = VVV.T
     VVV_2_1 = VVVH[m_states:2*m_states, :m_states]
     VVV_2_2 = VVVH[m_states:2*m_states, m_states:2*m_states]
     UUU_2_1 = UUU[m_states:2*m_states, :m_states]
@@ -69,7 +72,9 @@ def second_order_solver(FF,GG,HH):
     PP = PP.real
     ## end of solve_qz!
 
-    return [Xi_sortval[Xi_select],PP.A]
+    print(PP.__class__)
+
+    return [Xi_sortval[Xi_select],PP]
     
 def solve_sylvester(A,B,C,D,Ainv = None):
     # Solves equation : A X + B X [C,...,C] + D = 0

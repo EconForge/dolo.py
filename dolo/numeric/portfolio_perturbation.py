@@ -34,7 +34,7 @@ def solve_portfolio_model(model, pf_names, order=1):
     n_pfs = len(pf_names)
 
     pf_vars = [Variable(v) for v in pf_names]
-    res_vars = [Variable('res_'+str(i),0) for i in range(n_pfs)]
+    res_vars = [Variable('res_'+str(i)) for i in range(n_pfs)]
 
 
     pf_parms = [Parameter('K_'+str(i)) for i in range(n_pfs)]
@@ -48,8 +48,8 @@ def solve_portfolio_model(model, pf_names, order=1):
     print('Warning: initial model has been changed.')
     new_model = copy.copy(pf_model)
     new_model['variables_groups']['controls']+=res_vars
-    new_model.check()
 
+    new_model['parameters_ordering'].extend(steady_states)
     for p in pf_parms + Matrix(pf_dparms)[:]:
         new_model['parameters_ordering'].append(p)
         new_model.parameters_values[p] = 0
@@ -79,11 +79,23 @@ def solve_portfolio_model(model, pf_names, order=1):
 
     new_model['equations'].extend(to_be_added)
     new_model.check()
-    new_model.check_consistency()
+    new_model.check_consistency(verbose=True)
+    print(new_model.parameters)
+
+    print(len(new_model['equations']))
+    print(len(new_model.equations))
+    print(len(new_model['equations_groups']['arbitrage']))
+
+    print('parameters_ordering')
+    print(new_model['parameters_ordering'])
+    print(new_model.parameters)
+
 
     # now, we need to solve for the optimal portfolio coefficients
     from dolo.numeric.perturbations_to_states import approximate_controls
 
+    dr = approximate_controls(new_model)
+    print('ok')
 
     import numpy
 
@@ -93,8 +105,8 @@ def solve_portfolio_model(model, pf_names, order=1):
         for i in range(n_pfs):
             p = pf_parms[i]
             v = pf_vars[i]
-            model.parameters_values[p] = x[i]
-            model.init_values[v] = x[i]
+            new_model.parameters_values[p] = x[i]
+            new_model.init_values[v] = x[i]
         [X_bar, X_s, X_ss] = approximate_controls(new_model, order=2, return_dr=False)
         return X_bar[n_controls-n_pfs:n_controls]
 
@@ -120,7 +132,7 @@ def solve_portfolio_model(model, pf_names, order=1):
             for j in range(n_states):
                 model.parameters_values[pf_dparms[i][j]] = dx[i,j]
         if return_dr:
-            dr = approximate_controls(new_model, order=2, return_dr=True)
+            dr = approximate_controls(new_model, order=2)
             return dr
         else:
             [X_bar, X_s, X_ss, X_sss] = approximate_controls(new_model, order=3, return_dr=False)
@@ -152,5 +164,8 @@ def solve_portfolio_model(model, pf_names, order=1):
 if __name__ == '__main__':
     from dolo import *
     model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy_with_pf_pert.yaml')
+
+    model.check_consistency(verbose=True)
+
     sol = solve_portfolio_model(model,['x_1','x_2'])
     print(sol.X_s)

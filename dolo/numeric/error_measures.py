@@ -114,7 +114,7 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
 
 def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
 
-    from dolo.compiler.global_solution import step_residual
+    from dolo.numeric.global_solution import step_residual
     from dolo.numeric.quadrature import gauss_hermite_nodes
     from dolo.numeric.newton import newton_solver
     from dolo.numeric.simulations import simulate

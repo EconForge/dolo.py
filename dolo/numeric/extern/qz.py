@@ -317,7 +317,12 @@ def qzdiv(stake, A2, B2, Q, Z):
 def qzordered(A,B,m_states):
     TOL = 1e-10
     from numpy import real_if_close,where
-    S,T,Q,Z = qz(A,B)
+    try:
+        from scipy.linalg import qz as qz_scipy
+        # [S,T,Q,Z,nev] = qz_scipy(A,B,sort='ouc') # wait until sorted output is activated in scipy
+        [S,T,Q,Z] = qz_scipy(A,B)
+    except Exception:
+        S,T,Q,Z = qz(A,B)
     S,T,Q,Z = [real_if_close(mm) for mm in (S,T,Q,Z)]
     u = np.diag(S)
     v = np.diag(T)
