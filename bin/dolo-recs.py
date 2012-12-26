@@ -5,7 +5,7 @@ import os
 import re
 from dolo import __version__
 from dolo.misc.yamlfile import yaml_import
-from dolo.compiler.compiler_mirfac import MirFacCompiler
+from dolo.compiler.compiler_recs import RecsCompiler
 
 # Parse input arguments
 parser = argparse.ArgumentParser(description='RECS compiler')
@@ -34,8 +34,8 @@ fname         = re.compile('(.*)\.m').match(basename).group(1)
 model['name'] = fname
 
 # Compilation for Matlab
-comp = MirFacCompiler(model)
-txt  = comp.process_output_recs(solution_order=None, fname=output_rad)
+comp = RecsCompiler(model)
+txt  = comp.process_output_recs()
 
 # Write output
 with file(output_filename,'w') as f:
