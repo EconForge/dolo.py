@@ -271,5 +271,5 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 #[S_bar, X_bar, X_s, P] = solve_model_around_risky_ss(filename)
 if __name__ == '__main__':
     #fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy.yaml'
-    fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy_with_pf.yaml'
+    fname = 'examples/global_models/open_economy_with_pf.yaml'
     sol = solve_model_around_risky_ss(fname, verbose=True)

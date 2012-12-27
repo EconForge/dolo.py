@@ -163,7 +163,7 @@ def solve_portfolio_model(model, pf_names, order=1):
 
 if __name__ == '__main__':
     from dolo import *
-    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy_with_pf_pert.yaml')
+    model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml')
 
     model.check_consistency(verbose=True)
 

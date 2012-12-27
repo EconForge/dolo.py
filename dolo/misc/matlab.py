@@ -28,11 +28,10 @@ def send_to_matlab(model,interactive=True,rmtemp=False,append=""):
     f.write(modtext)
     f.close()
     main_file = "%% main file for model : %s\n\n" % (model.fname)
-    main_file += "addpath('%s')\n" % ("/home/pablo/Sources/dynare_v4/matlab")
     main_file += "dynare('%s')\n" % (model.fname)
     main_file += "save -v6 %s M_ oo_ options_\n" % (model.fname + "_res.mat")
     main_file += "exit"
-    
+
     g = file( model.fname + "_main.m",'w')
     g.write(main_file)
     g.close()
