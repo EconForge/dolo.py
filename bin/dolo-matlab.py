@@ -17,20 +17,26 @@ args = parser.parse_args()
 ######
 
 input_file = args.input
+
+import os
+[input_rad, extension] = os.path.splitext(input_file)
+
+if extension == '':
+    extension = '.yaml'
+
+filename = input_rad + extension
+
 if args.output:
     output_filename = args.output
-    output_rad = output_filename.strip('.m')
 else: # we should determine some good output name in case none has been specified
-    output_rad = input_file.strip('.yaml') + '_model'
-    output_filename = output_rad + '.m'
+    output_filename = input_rad + '.m'
 
 ######
 
 from dolo.misc.yamlfile import yaml_import
 
-model = yaml_import( input_file )
+model = yaml_import( filename )
 
-import os
 import re
 
 basename = os.path.basename(output_filename)
@@ -51,7 +57,7 @@ if args.solve:
     solution_order = args.order[0]
 else:
     solution_order = None
-txt = comp.process_output( solution_order=solution_order, fname=output_rad)
+txt = comp.process_output( solution_order=solution_order, fname=input_rad)
 
 ######
 
