@@ -33,7 +33,7 @@ setup (
 	
 	packages = ['dolo'],
 
-    scripts = ['bin/dolo-matlab.py'],
+    scripts = ['bin/dolo-matlab','bin/dolo-recs'],
  
 	data_files = data_files,
  

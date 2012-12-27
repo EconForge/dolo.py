@@ -21,7 +21,7 @@ setup(
 #        Extension('dolo.numeric.interpolation.splines_cython',['dolo/numeric/interpolation/splines_cython.pyx'], library_dirs = ['/usr/local/lib'], include_dirs = ['/usr/local/include/einspline'], libraries = ['m','einspline'])
 #    ],
     
-    scripts = ['bin/dolo-recs.py', 'bin/dolo-matlab.py', 'bin/dolo'],
+    scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo'],
 
     install_requires = ["pyyaml","sympy","numpy"],
 
