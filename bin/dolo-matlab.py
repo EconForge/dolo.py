@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import os
 
 from dolo import __version__
 
@@ -18,11 +19,14 @@ args = parser.parse_args()
 
 input_file = args.input
 
-import os
+# note input_rad is the full path with truncated filename
 [input_rad, extension] = os.path.splitext(input_file)
 
 if extension == '':
     extension = '.yaml'
+elif extension != '.yaml':
+    print('Unknown filetype : {}'.format(extension))
+    exit(1)
 
 filename = input_rad + extension
 
@@ -57,7 +61,7 @@ if args.solve:
     solution_order = args.order[0]
 else:
     solution_order = None
-txt = comp.process_output( solution_order=solution_order, fname=input_rad)
+txt = comp.process_output( solution_order=solution_order)
 
 ######
 

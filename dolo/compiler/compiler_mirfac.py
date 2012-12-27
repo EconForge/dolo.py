@@ -8,14 +8,14 @@ import numpy as np
 import numpy.linalg
 
 class MirFacCompiler(Compiler):
-    
+
     def __init__(self,model):
         self.model = model
         self.__transformed_model__ = None
         # we assume model has already been checked
 
     def read_model(self):
-    
+
         if self.__transformed_model__:
             return self.__transformed_model__
 
@@ -62,7 +62,7 @@ class MirFacCompiler(Compiler):
         h_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('h','expectation')]
 
 
-        
+
         states_vars = [eq.lhs for eq in g_eqs]
         exp_vars =  [eq.lhs for eq in h_eqs]
         controls = set(dmodel.variables) - set(states_vars + exp_vars)
@@ -92,7 +92,7 @@ class MirFacCompiler(Compiler):
         locals['inf'] = sympy.Symbol('inf')
         locals['log'] = sympy.log # this should be more generic
         locals['exp'] = sympy.exp
-        
+
         for v in dmodel.variables + dmodel.parameters:
             locals[v.name] = v
         import re
@@ -107,7 +107,7 @@ class MirFacCompiler(Compiler):
 
         inf_bounds = [c[0] for c in complementarities]
         sup_bounds = [c[1] for c in complementarities]
-        
+
         data = {
             'f_eqs': f_eqs,
             'g_eqs': g_eqs,
@@ -118,7 +118,7 @@ class MirFacCompiler(Compiler):
             'inf_bounds': inf_bounds,
             'sup_bounds': sup_bounds
         }
-        
+
         self.__transformed_model__ = data # cache computation
 
         return data
@@ -134,7 +134,7 @@ class MirFacCompiler(Compiler):
 
         model = self.model
         data = self.read_model()
-        
+
         controls_i = [model.variables.index(v) for v in data['controls'] ]
         states_i = [model.variables.index(v) for v in data['states_vars'] ]
 
@@ -178,7 +178,7 @@ class MirFacCompiler(Compiler):
             ])
         else:
             bounds = None
-            
+
         return [[s_ss,x_ss],[X,Y,Z],bounds]
 
 
@@ -336,7 +336,7 @@ end
                     write_der_eqs(g_eqs,states_vars,'out2',3),
                     write_der_eqs(g_eqs,controls,'out3',3)
             )
-        
+
         eq_h_block = '''
     %h
     if output.F
@@ -372,7 +372,7 @@ end
         # param_def = 'p = [ ' + str.join(',',[p.name for p in dmodel.parameters])  + '];'
 
         from dolo.misc.matlab import value_to_mat
-        
+
         # read model informations
         [y,x,params_values] = model.read_calibration()
         #params_values = '[' + str.join(  ',', [ str( p ) for p in params] ) + '];'
@@ -395,8 +395,8 @@ end
 
             ZZ = approximate_controls(self.model,order=solution_order)
             n_c = len(controls)
-	    
-	    ZZ = [np.array(e) for e in ZZ]
+
+	        ZZ = [np.array(e) for e in ZZ]
             ZZ = [e[:n_c,...] for e in ZZ] # keep only control vars. (x) not expectations (h)
 
             solution = "    mod.X = cell({0},1);\n".format(len(ZZ))
