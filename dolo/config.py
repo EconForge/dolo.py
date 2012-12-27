@@ -25,10 +25,6 @@ try:
     from IPython.core.display import display
 
 except:
-    import re
-    import sys
-    if not re.search('dolo-recs',sys.argv[0]):
-        print("failing back on pretty_print")
 
     from pprint import pprint
     def display(txt):
