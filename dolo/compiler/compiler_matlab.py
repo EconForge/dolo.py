@@ -26,8 +26,8 @@ class CompilerMatlab:
 
     def process_output(self, solution_order=False, fname=None):
 
-        from dolo.numeric.perturbations_to_states import simple_global_representation
-        data = simple_global_representation(self.model, substitute_auxiliary=True, keep_auxiliary=True, solve_systems=True)
+        from dolo.compiler.compiler_functions import simple_global_representation
+        data = simple_global_representation(self.model, solve_systems=True)
 
 #        print data['a_eqs']
 #        print data['f_eqs']
