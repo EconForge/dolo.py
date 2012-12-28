@@ -9,6 +9,7 @@ from numpy import *
 import numpy as np
 
 import numpy
+from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation as mlininterp_cpu
 
 double_type = numpy.float32
 
@@ -17,10 +18,9 @@ sourcecode = '/home/pablo/Programmation/bigeco//dolo/dolo/numeric/interpolation/
 with file(sourcecode) as f:
     txt = f.read()
 
-import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
-from pycuda.gpuarray import GPUArray, to_gpu
+from pycuda.gpuarray import to_gpu
 mod = SourceModule(txt)
 multilinear_kernels = []
 for i in range(1,4):
@@ -106,9 +106,7 @@ if __name__ == '__main__':
     
     
     s = time.time()
-    
-    from multilinear_c import multilinear_c as mlininterp_cpu
-    
+
     u = time.time()
     check = mlininterp_cpu( smin, smax, orders, atleast_2d(values), points )
     v = time.time()
