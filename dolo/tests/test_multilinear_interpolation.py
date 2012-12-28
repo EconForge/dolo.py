@@ -7,16 +7,20 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
 
     def test_interpolation(self):
 
+        for d in range(1,5):
+            self.interpolation(d)
+
+    def interpolation(self, d):
+
         from itertools import product
         import numpy
         from numpy import array, column_stack
         from dolo.numeric.interpolation.multilinear import multilinear_interpolation
 
-        d = 4
 
-        smin = array([0]*d)
-        smax = array([1]*d)
-        orders = [4,3,5,6,3]
+        smin = array([0.0]*d)
+        smax = array([1.0]*d)
+        orders = numpy.array( [4,3,5,6,3], dtype=numpy.int )
         orders = orders[:d]
 
 
@@ -24,12 +28,27 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
 
         finer_grid = column_stack( [e for e in product(*[numpy.linspace(0,1,10)]*d) ] )
 
-        f = lambda g: numpy.row_stack([
-            g[0,:] * g[1,:],
-            (g[3,:] - g[1,:]) * g[2,:],
+        if d == 1:
+            f = lambda g: numpy.row_stack([
+                2*g[0,:]
             ])
+        elif d == 2:
+            f = lambda g: numpy.row_stack([
+                g[0,:] * g[1,:],
+            ])
+        elif d == 3:
+            f = lambda g: numpy.row_stack([
+                (g[0,:] - g[1,:]) * g[2,:],
+            ])
+        elif d== 4:
+            f = lambda g: numpy.row_stack([
+                (g[3,:] - g[1,:]) * (g[2,:] - g[0,:])
+            ])
+#
 
         values = f( grid )
+
+        finer_grid = numpy.ascontiguousarray(finer_grid)
 
         interpolated_values = multilinear_interpolation(smin, smax, orders, values, finer_grid)
 

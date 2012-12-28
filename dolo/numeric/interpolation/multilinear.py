@@ -1,9 +1,8 @@
 from __future__ import division
-
-import numpy
-from numpy import array, zeros, floor, cumprod, column_stack, row_stack, reshape
 from itertools import product
 
+import numpy
+from numpy import array, zeros, floor, cumprod, column_stack, reshape
 
 
 def multilinear_interpolation( smin, smax, orders, x, y):
@@ -41,9 +40,6 @@ def multilinear_interpolation( smin, smax, orders, x, y):
     [b,g] = index_lookup( x, qq, orders )
 
     z = b + recursive_evaluation(d,tuple([]),mm[:,numpy.newaxis,:], g)
-
-    from multilinear_c import multilinear_c
-
 
     return z
 
@@ -108,9 +104,11 @@ def index_lookup(a, q, dims):
 #    print('Failback')
 #    pass
 
+from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation
+
 try:
     print("using compiled linear interpolator")
-    from multilinear_c import multilinear_c as multilinear_interpolation
+    from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation
 except Exception as e:
     print('Failback')
     pass
@@ -120,9 +118,9 @@ class MultilinearInterpolator:
 
     def __init__(self, smin, smax, orders):
         d = len(orders)
-        self.smin = smin
-        self.smax = smax
-        self.orders = orders
+        self.smin = numpy.array( smin )
+        self.smax = numpy.array( smax )
+        self.orders = numpy.array( orders )
         self.d = d
         self.grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
         self.grid = numpy.ascontiguousarray(self.grid)
