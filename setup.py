@@ -5,7 +5,7 @@ from distutils.extension import Extension
 
 #from dolo import __version__
 
-__version__ = '0.4-dev-3'
+__version__ = '0.4.4'
 
 setup(
 

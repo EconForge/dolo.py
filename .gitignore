@@ -1,4 +1,13 @@
 *.pyc
 .idea/*
+dist/*
+dolo.egg-info/*
 build*
 .cache*
+*.m
+*.c
+*.so
+*.mat
+*.eps
+*.log
+*.html
