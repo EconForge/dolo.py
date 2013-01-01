@@ -79,7 +79,7 @@
                 <bool>false</bool>
                </property>
                <property name="text">
-                <string>You cannot edit thid field</string>
+                <string>You cannot edit this field</string>
                </property>
               </widget>
              </item>
@@ -99,7 +99,7 @@
              <x>0</x>
              <y>0</y>
              <width>376</width>
-             <height>508</height>
+             <height>462</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -158,7 +158,7 @@
      <x>0</x>
      <y>0</y>
      <width>966</width>
-     <height>22</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFil">
@@ -205,7 +205,7 @@
           <x>0</x>
           <y>0</y>
           <width>98</width>
-          <height>89</height>
+          <height>96</height>
          </rect>
         </property>
         <attribute name="label">
@@ -229,7 +229,7 @@
           <x>0</x>
           <y>0</y>
           <width>98</width>
-          <height>89</height>
+          <height>96</height>
          </rect>
         </property>
         <attribute name="label">
@@ -253,7 +253,7 @@
           <x>0</x>
           <y>0</y>
           <width>274</width>
-          <height>623</height>
+          <height>602</height>
          </rect>
         </property>
         <attribute name="label">

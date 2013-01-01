@@ -3,14 +3,16 @@
 import dolo
 import sys
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import QSettings
+
+from load_ui import loadUiType
+from PySide import QtCore, QtGui
+from PySide.QtCore import QSettings
 
 app = QtGui.QApplication(sys.argv)
 app.setOrganizationName('Dolo')
 app.setOrganizationName('Pablo')
        
-[EqWidgetUi,EqWidgetBase] = uic.loadUiType("equation_widget.ui")
+[EqWidgetUi,EqWidgetBase] = loadUiType("equation_widget.ui")
 
 class MainWindow(QtGui.QMainWindow):
 #    def accept(self):h
@@ -22,7 +24,17 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
 
         # Set up the user interface from Designer.
-        self.ui = uic.loadUi("modfile_editor.ui")
+	from PySide.QtUiTools import QUiLoader
+	from PySide.QtCore import QFile
+
+
+        loader = QUiLoader()
+        f = QFile("modfile_editor.ui")
+        f.open(QFile.ReadOnly)
+        myWidget = loader.load(f, self)
+        f.close()
+#        self.ui = loadUi("modfile_editor.ui")
+	self.ui = myWidget
 
 #        self.ew = uic.loadUi("equation_widget.ui")
 
@@ -45,15 +57,12 @@ class MainWindow(QtGui.QMainWindow):
 #        self.settings.
 
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def open(self):
         filename = QtGui.QFileDialog.getOpenFileName()
-        filename = str(filename)
-        try:
-            f = file( filename )
+        filename = str(filename[0])
+        with file(filename) as f: 
             txt = f.read()
-        finally:
-            f.close()
         try:
             model = dolo.dynare_import(filename)
             model.check_consistency(verbose=True)
@@ -110,7 +119,7 @@ class MainWindow(QtGui.QMainWindow):
             print e
 
 
-    @QtCore.pyqtSlot()            
+    @QtCore.Slot()            
     def add_widget(self):
         ew = CustomWidget()
         ew.father = self
@@ -126,7 +135,7 @@ class MainWindow(QtGui.QMainWindow):
     i = 0
     widgets = []
     
-    @QtCore.pyqtSlot(int)        
+    @QtCore.Slot(int)        
     def delete_widget(self,n):
         widget = self.widgets[n]
         self.ui.verticalLayout_3.removeWidget(widget)
@@ -136,7 +145,7 @@ class MainWindow(QtGui.QMainWindow):
         for i,w in enumerate(self.widgets):
             w.set_number(i)
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def save_as(self):
         filename = QtGui.QFileDialog.getSaveFileName()
         l = [ el.get_text() for el in self.widgets]
@@ -151,7 +160,7 @@ class MainWindow(QtGui.QMainWindow):
             f.close()
 
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def check(self):
         var_string = self.ui.lineEdit_var.text()
         shocks_string = self.ui.lineEdit_shocks.text()
@@ -181,7 +190,7 @@ end;
         from dolo.misc.modfile import parse_dynare_text
         try:
             model = parse_dynare_text(simple_mod)
-            model.check(verbose=True)
+            model.check()
             info = model.info
             info['name'] = model.fname
             txt ='''
@@ -190,24 +199,26 @@ Number of variables :  {n_variables}
 Number of equations :  {n_equations}
 Number of shocks :     {n_shocks}'''.format(**info)
         except Exception as e:
-            txt = '\nModel is not valid'
-            self.ui.textEdit.setText(txt)            
+            msg = '\nModel is not valid'
+            self.ui.textEdit.setText(msg)
+	    print(simple_mod)
+	    print(e)
             return
-        try:
-            from dolo.numeric.perturbations import solve_decision_rule
-            dr = solve_decision_rule( model, order = 1 )
-            txt += '\nBlanchard-Kahn conditions are met.'
-        except ImportError as e:
-            txt += '\nImpossible to solve the model (lapack could not be imported)'
-        except Exception as e:
-            txt += '\nImpossible to solve the model (yet).'
-            print e
+#        try:
+        from dolo.numeric.perturbations import solve_decision_rule
+        dr = solve_decision_rule( model, order = 1 )
+        txt += '\nBlanchard-Kahn conditions are met.'
+#        except ImportError as e:
+#            txt += '\nImpossible to solve the model (lapack could not be imported)'
+#        except Exception as e:
+#            txt += '\nImpossible to solve the model (yet).'
+#            print e
         self.ui.textEdit.setText(txt)
         
 
     def declared_symbols(self):
-        vars = [dolo.Variable(e,0) for e in str.split(str(self.ui.lineEdit_var.text()),' ' ) ]
-        varexos = [dolo.Shock(e,0) for e in str.split(str(self.ui.lineEdit_shocks.text()),' ' ) ]
+        vars = [dolo.Variable(e) for e in str.split(str(self.ui.lineEdit_var.text()),' ' ) ]
+        varexos = [dolo.Shock(e) for e in str.split(str(self.ui.lineEdit_shocks.text()),' ' ) ]
         parms = [dolo.Parameter(e) for e in str.split(str(self.ui.lineEdit_parameters.text()),' ') ]
         context = {}
         for s in vars + varexos + parms:
@@ -217,8 +228,7 @@ Number of shocks :     {n_shocks}'''.format(**info)
 import sympy
 
 class CustomWidget(QtGui.QWidget):
-    def do_nothing():
-        print 'do'
+    
     def setup(self,n):
 
         self.n = n
@@ -235,32 +245,32 @@ class CustomWidget(QtGui.QWidget):
         self.locals = {}
 
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def def_parameter(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_parameters.text() )
         self.father.ui.lineEdit_parameters.setText( (tt + ' ' + t).strip(' ') )
         self.check()
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def def_shock(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_shocks.text() )
         self.father.ui.lineEdit_shocks.setText(( tt + ' ' + t).strip(' '))
         self.check()
         
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def def_variable(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_var.text() )
         self.father.ui.lineEdit_var.setText( ( tt + ' ' + t) .strip(' ') )
         self.check()
                 
-    @QtCore.pyqtSlot()        
+    @QtCore.Slot()        
     def specialSignal(self):
         self.emit(QtCore.SIGNAL('hi(int)'),self.n)
 
-    @QtCore.pyqtSlot()        
+    @QtCore.Slot()        
     def check(self):
         txt = self.get_text()
         d = self.father.declared_symbols()
@@ -303,7 +313,7 @@ class CustomWidget(QtGui.QWidget):
 
 
 
-[ui_class, ui_base] = uic.loadUiType('options.ui')
+[ui_class, ui_base] = loadUiType('options.ui')
 
 
 class OptionsDialog(ui_class, ui_base):
@@ -314,7 +324,7 @@ class OptionsDialog(ui_class, ui_base):
         self.father = father
         self.connect(self.pushButton,QtCore.SIGNAL('clicked()'),self,QtCore.SLOT('open_lib_dir()'))
 
-        ld = str(QSettings().value('lib_dir').toString())
+        ld = str(QSettings().value('lib_dir'))
         if not ld:
             if sys.platform == 'win32':
                 ld = 'c:\Windows\System32'
@@ -323,7 +333,7 @@ class OptionsDialog(ui_class, ui_base):
         self.set_lib_dir(ld)
 
         
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def open_lib_dir(self):
         lib_dir = QtGui.QFileDialog.getExistingDirectory()
         print lib_dir
@@ -354,7 +364,7 @@ class OptionsDialog(ui_class, ui_base):
             import dolo.numeric.extern.qz
             dolo.numeric.extern.qz.lapack = lapack
 
-            QSettings().setValue("lib_dir" ,QtCore.QVariant(lib_dir) )
+            QSettings().setValue("lib_dir", lib_dir)
             self.label_3.setText('Loaded')
 
         except Exception as e:

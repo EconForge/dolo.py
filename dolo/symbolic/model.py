@@ -229,9 +229,12 @@ class Model(dict):
 
         values = solve_triangular_system(dvars)
 
-        m = self['covariances']
-        m = m.subs(values)
-        
+	if 'covariances' in self and self['covariances'] is not None:
+	    m = self['covariances']
+	    m = m.subs(values)
+        else:
+            m = sympy.zeros( (len(self.shocks),)*2 )
+
         import numpy
         resp = numpy.array(m).astype(numpy.float)
 
