@@ -4,14 +4,14 @@ from dolo.symbolic.symbolic import Equation
 from dolo.compiler.compiler import Compiler
 
 class RecsCompiler(Compiler):
-    
+
     def __init__(self,model):
         self.model = model
         self.__transformed_model__ = None
         # we assume model has already been checked
 
     def read_model(self):
-    
+
         import re
         import sympy
         from dolo.symbolic.symbolic import map_function_to_expression
@@ -54,7 +54,8 @@ class RecsCompiler(Compiler):
         f_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('f','arbitrage','equilibrium')]
         g_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('g','transition')]
         h_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('h','expectation')]
-        hm_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('h','expectation_mult')]
+        hm_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('h','expectation_mult')] # Need to understand the need for 'h'
+        e_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('e','equation_error')]
 
         states_vars = [eq.lhs for eq in g_eqs]
         exp_vars =  [eq.lhs for eq in h_eqs]
@@ -70,6 +71,7 @@ class RecsCompiler(Compiler):
         g_eqs = [eq.rhs for eq in g_eqs]
         h_eqs = [eq.rhs for eq in h_eqs]
         hm_eqs = [eq.rhs for eq in hm_eqs]
+        e_eqs = [eq.lhs for eq in e_eqs]
 
         g_eqs = [map_function_to_expression(lambda x: timeshift(x,1),eq) for eq in g_eqs]
         #h_eqs = [map_function_to_expression(lambda x: timeshift(x,-1),eq) for eq in h_eqs] #no
@@ -83,7 +85,7 @@ class RecsCompiler(Compiler):
         locals['inf'] = sympy.Symbol('inf')
         locals['log'] = sympy.log
         locals['exp'] = sympy.exp
-        
+
         for v in dmodel.variables + dmodel.parameters:
             locals[v.name] = v
         compregex = re.compile('(.*)<=(.*)<=(.*)')
@@ -97,17 +99,18 @@ class RecsCompiler(Compiler):
 
         inf_bounds = [c[0] for c in complementarities]
         sup_bounds = [c[1] for c in complementarities]
-        
+
         data = {'f_eqs': f_eqs,
                 'g_eqs': g_eqs,
                 'h_eqs': h_eqs,
                 'hm_eqs': hm_eqs,
+                'e_eqs':e_eqs,
                 'controls': controls,
                 'states_vars': states_vars,
                 'exp_vars': exp_vars,
                 'inf_bounds': inf_bounds,
                 'sup_bounds': sup_bounds}
-        
+
         self.__transformed_model__ = data # cache computation
 
         return data
@@ -117,7 +120,7 @@ class RecsCompiler(Compiler):
         import sympy
         from dolo.compiler.compiler import DicPrinter
         from dolo.misc.matlab import value_to_mat
-        
+
         data = self.read_model()
         dmodel = self.model
         model = dmodel
@@ -126,6 +129,7 @@ class RecsCompiler(Compiler):
         g_eqs = data['g_eqs']
         h_eqs = data['h_eqs']
         hm_eqs = data['hm_eqs']
+        e_eqs = data['e_eqs']
         states_vars = data['states_vars']
         controls = data['controls']
         exp_vars = data['exp_vars']
@@ -170,17 +174,17 @@ switch flag
   case 'f'
     n = size(s,1);
 {eq_fun_block}
-  
+
   case 'g'
     n = size(s,1);
 {state_trans_block}
-  
+
   case 'h'
     n = size(snext,1);
 {exp_fun_block}
-  
+
   case 'e'
-    out1 = [];
+{equation_error_block}
 
   case 'params'
     out1 = {model_params};
@@ -207,16 +211,16 @@ switch flag
   case 'f'
     n = size(s,1);
 {eq_fun_block}
-  
+
   case 'g'
     n = size(s,1);
 {state_trans_block}
-  
+
   case 'h'
     n = size(snext,1);
 {exp_fun_block}
 {exp_exp_mult_block}
-  
+
   case 'e'
     out1 = [];
 
@@ -303,7 +307,7 @@ end'''
         eq_g_block = '''
     % g
     if output.F
-{0}      
+{0}
     end
 
     if output.Js
@@ -323,7 +327,7 @@ end'''
                                        dg_dx[0])
         jac_struc += '    out1.gs = '+list_to_mat(dg_ds[1])+';\n'
         jac_struc += '    out1.gx = '+list_to_mat(dg_dx[1])+';\n'
-        
+
         eq_h_block = '''
     %h
     if output.F
@@ -371,6 +375,11 @@ end'''
     end'''
         eq_hm_block = eq_hm_block.format(write_eqs(hm_eqs, 'out6', 3))
 
+        if e_eqs:
+            equation_error_block = write_eqs(e_eqs, 'out1', 3)
+        else:
+            equation_error_block ='''    out1 = [];'''
+
         # Model informations
         [y,x,params_values] = model.read_calibration()
         vvs = model.variables
@@ -398,6 +407,7 @@ end'''
                                eq_fun_block = eq_f_block,
                                state_trans_block = eq_g_block,
                                exp_fun_block = eq_h_block,
+                               equation_error_block = equation_error_block,
                                model_params = value_to_mat(params_values),
                                model_ss = model_ss,
                                jac_struc = jac_struc)
