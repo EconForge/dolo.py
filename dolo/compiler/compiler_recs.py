@@ -184,6 +184,7 @@ switch flag
 {exp_fun_block}
 
   case 'e'
+    n = size(s,1);
 {equation_error_block}
 
   case 'params'
@@ -222,6 +223,7 @@ switch flag
 {exp_exp_mult_block}
 
   case 'e'
+    n = size(s,1);
 {equation_error_block}
 
   case 'params'
