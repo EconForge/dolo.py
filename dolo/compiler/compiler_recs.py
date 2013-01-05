@@ -222,7 +222,7 @@ switch flag
 {exp_exp_mult_block}
 
   case 'e'
-    out1 = [];
+{equation_error_block}
 
   case 'params'
     out1 = {model_params};
@@ -398,6 +398,7 @@ end'''
                                    state_trans_block = eq_g_block,
                                    exp_fun_block = eq_h_block,
                                    exp_exp_mult_block = eq_hm_block,
+                                   equation_error_block = equation_error_block,
                                    model_params = value_to_mat(params_values),
                                    model_ss = model_ss,
                                    jac_struc = jac_struc)
