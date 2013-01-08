@@ -1,7 +1,8 @@
 from __future__ import print_function
 
-from dolo.numeric.perturbations_to_states import approximate_controls
 import numpy
+
+from dolo.numeric.perturbations_to_states import approximate_controls
 
 def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40,
                  integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, tol=1e-8,
@@ -83,12 +84,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         sg = LinearTriangulation( domain )
     elif interp_type == 'spline':
         polish = False
-        from dolo.numeric.interpolation.interpolation import SplineInterpolation
-        sg = SplineInterpolation( bounds[0,:], bounds[1,:], interp_orders )
-    elif interp_type == 'mspline':
-        polish = False
-        from dolo.numeric.interpolation.msplines import MultivariateSplines
-        sg = MultivariateSplines( smin, smax, interp_orders )
+        from dolo.numeric.interpolation.splines import MultivariateSplines
+        sg = MultivariateSplines( bounds[0,:], bounds[1,:], interp_orders )
     elif interp_type == 'linear':
         from dolo.numeric.interpolation.interpolation import LinearTriangulation, TriangulatedDomain, RectangularDomain
         rec =  RectangularDomain(smin, smax, interp_orders)

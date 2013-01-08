@@ -95,7 +95,7 @@ def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
     args_f =  [states, controls, states_f, controls_f, shocks_f]
 
     if order is not None:
-        from dolo.compiler.compiling import compile_function
+        from dolo.compiler.function_compiler import compile_function
         g_fun = compile_function( g_eqs, sum(args_g, []), parameters, order  )
         f_fun = compile_function( f_eqs, sum([states, controls, states_f, controls_f], []), parameters, order )
         return [g_fun, f_fun]
@@ -109,11 +109,11 @@ def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
 
 
     if compiler=='numpy':
-        from dolo.compiler.compiling import compile_multiargument_function
+        from dolo.compiler.function_compiler import compile_multiargument_function
     elif compiler == 'theano':
-        from dolo.compiler.compiling_theano import compile_multiargument_function
+        from dolo.compiler.function_compiler_theano import compile_multiargument_function
     elif compiler == 'numexpr':
-        from dolo.compiler.compiling_numexpr import compile_multiargument_function
+        from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
     else:
         raise Exception('Unknown compiler type : {}'.format(compiler))
 

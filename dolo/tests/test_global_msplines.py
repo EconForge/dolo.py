@@ -15,7 +15,7 @@ class TestGlobal(unittest.TestCase):
         
         t1 = time.time()
         
-        dr = global_solve(model, pert_order=2, maxit=5, interp_type='mspline', verbose=True)
+        dr = global_solve(model, pert_order=2, maxit=5, interp_type='spline', verbose=True)
 
 
 #unittest.main()

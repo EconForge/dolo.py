@@ -229,9 +229,9 @@ class Model(dict):
 
         values = solve_triangular_system(dvars)
 
-	if 'covariances' in self and self['covariances'] is not None:
-	    m = self['covariances']
-	    m = m.subs(values)
+        if 'covariances' in self and self['covariances'] is not None:
+            m = self['covariances']
+            m = m.subs(values)
         else:
             m = sympy.zeros( (len(self.shocks),)*2 )
 
@@ -244,7 +244,7 @@ class Model(dict):
         else:
             return resp
 
-        
+
 
     def solve_for_steady_state(self,y0=None):
         import numpy as np
@@ -313,7 +313,7 @@ def compute_residuals(model):
                 except Exception as e:
                     print('Failed computation of residuals in :\n'+str(eq))
                     print('Impossible to evaluate : \n'+str(t))
-                    raise e 
+                    raise e
             residuals[ gname ] = [ float( eq.gap.subs( dd ) ) for eq in geqs]
         return residuals
     else:
