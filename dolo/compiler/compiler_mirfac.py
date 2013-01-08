@@ -395,8 +395,8 @@ end
 
             ZZ = approximate_controls(self.model,order=solution_order)
             n_c = len(controls)
-
-	        ZZ = [np.array(e) for e in ZZ]
+            
+            ZZ = [np.array(e) for e in ZZ]
             ZZ = [e[:n_c,...] for e in ZZ] # keep only control vars. (x) not expectations (h)
 
             solution = "    mod.X = cell({0},1);\n".format(len(ZZ))

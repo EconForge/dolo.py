@@ -12,7 +12,7 @@ data_files = [(
 
 excludes = ["pywin", "pywin.debugger", "pywin.debugger.dbgcon",
             "pywin.dialogs", "pywin.dialogs.list",
-            "Tkconstants","Tkinter","tcl"]
+            "Tkconstants","Tkinter","tcl","zmq"]
 
 import sys
 sys.path.append("C:\\Program Files\\pythonxy\\console\\Microsoft.VC90.CRT\\")
@@ -45,6 +45,6 @@ setup (
                 "bundle_files" : 3
             }
     },
-    console = ['bin/dolo-matlab.py'],
+    console = ['bin/dolo-matlab','bin/dolo-recs'],
 
 )

@@ -16,7 +16,7 @@ line_regex = re.compile(
 )
 tag_regex = re.compile("\s*(\w+)\s*=\s*'(.*)'")
 
-def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debug=False):
+def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debug=True):
     '''
     Imports the content of a modfile into the current interpreter scope
     '''
@@ -35,6 +35,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debu
     #    seperated by free matlab instructions in any order;
     # - all other instructions are ignored
 
+    debug = True
     otxt = txt
     otxt = otxt.replace("\r\n","\n")
     otxt = otxt.replace("^","**")
@@ -67,7 +68,8 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debu
         for i in instruction_groups:
             print(i)
 
-
+    for ins in instructions:
+        print(ins)
     try:
         imodel = [re.compile('model(\(.*\)|)').match(e) is not None for e in instructions]
         imodel = imodel.index(True)
