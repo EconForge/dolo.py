@@ -68,7 +68,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
     smax = bounds[1,:]
 
     if interp_orders == None:
-            interp_orders = [5]*bounds.shape[1]
+        interp_orders = [10]*bounds.shape[1]
 
     if interp_type == 'smolyak':
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
@@ -91,6 +91,7 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         rec =  RectangularDomain(smin, smax, interp_orders)
         domain = TriangulatedDomain( rec.grid )
         sg = LinearTriangulation( domain )
+        print(sg.grid)
     elif interp_type == 'mlinear':
         from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
         sg = MultilinearInterpolator( bounds[0,:], bounds[1,:], interp_orders)
@@ -129,6 +130,8 @@ def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', per
         if not serial_grid:
             lb = gc.x_bounds[0](sg.grid,parms)
             ub = gc.x_bounds[1](sg.grid,parms)
+            print(lb)
+            print(ub)
         else:
             lb = None
             ub = None

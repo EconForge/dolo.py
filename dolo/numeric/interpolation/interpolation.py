@@ -218,7 +218,6 @@ class LinearTriangulation:
         n_p = points.shape[1]
         n_d = self.domain.d
 
-
         ndim = self.domain.d
         delaunay = self.delaunay
 

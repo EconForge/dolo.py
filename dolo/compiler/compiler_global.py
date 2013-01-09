@@ -108,7 +108,7 @@ class CModel:
             raise Exception("Order of complementarities does not match order of declaration of controls.")
         states = model['variables_groups']['states']
         parameters = model.parameters
-        from dolo.compiler.compiling import compile_multiargument_function
+        from dolo.compiler.function_compiler import compile_multiargument_function
         lb = compile_multiargument_function( lower_bounds_symbolic, [states], ['s'], parameters, fname='lb')
         ub = compile_multiargument_function( upper_bounds_symbolic, [states], ['s'], parameters, fname='ub' )
         return [lb,ub]
