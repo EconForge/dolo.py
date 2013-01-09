@@ -3,10 +3,23 @@
 import dolo
 import sys
 
-
-from load_ui import loadUiType
-from PySide import QtCore, QtGui
-from PySide.QtCore import QSettings
+try:
+    from PyQt4.uic import loadUiType
+    from PyQt4 import QtCore, QtGui
+    from PyQt4.QtCore import QSettings
+    from PyQt4.QtCore import pyqtSignal as Signal
+    from PyQt4.QtCore import pyqtSlot as Slot
+    from PyQt4.QtCore import QFile
+    from PyQt4 import uic
+    engine = 'pyqt'
+except Exception as e:
+    raise(e)
+    from load_ui import loadUiType
+    from PySide import QtCore, QtGui
+    from PySide.QtCore import QSettings
+    from PySide.QtUiTools import QUiLoader
+    from PySide.QtCore import QFile
+    engine = 'pyside'
 
 app = QtGui.QApplication(sys.argv)
 app.setOrganizationName('Dolo')
@@ -24,14 +37,17 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
 
         # Set up the user interface from Designer.
-	from PySide.QtUiTools import QUiLoader
-	from PySide.QtCore import QFile
-
-
-        loader = QUiLoader()
+        
         f = QFile("modfile_editor.ui")
         f.open(QFile.ReadOnly)
-        myWidget = loader.load(f, self)
+		
+        if engine == 'pyside':
+            loader = QUiLoader()
+            myWidget = loader.load(f, self)
+        else:
+            myWidget = uic.loadUi(f)
+
+
         f.close()
 #        self.ui = loadUi("modfile_editor.ui")
 	self.ui = myWidget
@@ -57,7 +73,7 @@ class MainWindow(QtGui.QMainWindow):
 #        self.settings.
 
 
-    @QtCore.Slot()
+    @Slot()
     def open(self):
         filename = QtGui.QFileDialog.getOpenFileName()
         filename = str(filename[0])
@@ -119,7 +135,7 @@ class MainWindow(QtGui.QMainWindow):
             print e
 
 
-    @QtCore.Slot()            
+    @Slot()            
     def add_widget(self):
         ew = CustomWidget()
         ew.father = self
@@ -135,7 +151,7 @@ class MainWindow(QtGui.QMainWindow):
     i = 0
     widgets = []
     
-    @QtCore.Slot(int)        
+    @Slot(int)        
     def delete_widget(self,n):
         widget = self.widgets[n]
         self.ui.verticalLayout_3.removeWidget(widget)
@@ -145,7 +161,7 @@ class MainWindow(QtGui.QMainWindow):
         for i,w in enumerate(self.widgets):
             w.set_number(i)
 
-    @QtCore.Slot()
+    @Slot()
     def save_as(self):
         filename = QtGui.QFileDialog.getSaveFileName()
         l = [ el.get_text() for el in self.widgets]
@@ -160,7 +176,7 @@ class MainWindow(QtGui.QMainWindow):
             f.close()
 
 
-    @QtCore.Slot()
+    @Slot()
     def check(self):
         var_string = self.ui.lineEdit_var.text()
         shocks_string = self.ui.lineEdit_shocks.text()
@@ -245,32 +261,32 @@ class CustomWidget(QtGui.QWidget):
         self.locals = {}
 
 
-    @QtCore.Slot()
+    @Slot()
     def def_parameter(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_parameters.text() )
         self.father.ui.lineEdit_parameters.setText( (tt + ' ' + t).strip(' ') )
         self.check()
 
-    @QtCore.Slot()
+    @Slot()
     def def_shock(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_shocks.text() )
         self.father.ui.lineEdit_shocks.setText(( tt + ' ' + t).strip(' '))
         self.check()
         
-    @QtCore.Slot()
+    @Slot()
     def def_variable(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_var.text() )
         self.father.ui.lineEdit_var.setText( ( tt + ' ' + t) .strip(' ') )
         self.check()
                 
-    @QtCore.Slot()        
+    @Slot()        
     def specialSignal(self):
         self.emit(QtCore.SIGNAL('hi(int)'),self.n)
 
-    @QtCore.Slot()        
+    @Slot()        
     def check(self):
         txt = self.get_text()
         d = self.father.declared_symbols()
@@ -333,7 +349,7 @@ class OptionsDialog(ui_class, ui_base):
         self.set_lib_dir(ld)
 
         
-    @QtCore.Slot()
+    @Slot()
     def open_lib_dir(self):
         lib_dir = QtGui.QFileDialog.getExistingDirectory()
         print lib_dir
