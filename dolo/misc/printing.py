@@ -85,7 +85,6 @@ def print_dynare_decision_rule( dr ):
     #first_order_coeffs = df(column_stack([dr['g_a'],dr['g_e']]), columns = col_names, index = row_names)
     from numpy import column_stack
     [inds, state_vars] = zip( *[ [i,v] for i,v in enumerate(dr.model.variables) if v in dr.model.state_variables] )
-    print(inds)
     first_order_coeffs = column_stack([dr['g_a'][:,inds],dr['g_e']])
 
     col_names = [v(-1) for v in state_vars] + dr.model.shocks

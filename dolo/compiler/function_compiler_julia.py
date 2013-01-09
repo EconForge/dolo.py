@@ -41,10 +41,10 @@ def compile_multiargument_function(equations, args_list, args_names, parms, diff
     for i,args in enumerate(args_list):
         vec_name = args_names[i]
         for j,v in enumerate(args):
-            sub_list[v] = template.format(vec_name,j)
+            sub_list[v] = template.format(vec_name,j+1)
 
     for i,p in enumerate(parms):
-        sub_list[p] = '{0}[{1}]'.format('p',i)
+        sub_list[p] = '{0}[{1}]'.format('p',i+1)
 
     import sympy
     sub_list[sympy.Symbol('inf')] = 'inf'
@@ -67,9 +67,9 @@ end
     dp = DicPrinter(sub_list)
 
     def write_eqs(eq_l,outname='val'):
-        eq_block = '    {0} = zeros( {1}, n )\n'.format(outname, len(eq_l))
+        eq_block = '    {0} = zeros( n, {1} )\n'.format(outname, len(eq_l))
         for i,eq in enumerate(eq_l):
-            eq_block += '    {0}[:,{1}] = {2}\n'.format(outname, i,  dp.doprint_numpy(eq))
+            eq_block += '    {0}[:,{1}] = {2}\n'.format(outname, i+1,  dp.doprint_numpy(eq))
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
@@ -78,7 +78,7 @@ end
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
                 s = dp.doprint_numpy( eq )
-                eq_block += '    {lhs}[:,{1},{0}] = {2}\n'.format(i,j,s,lhs=lhs)
+                eq_block += '    {lhs}[:,{1},{0}] = {2}\n'.format(i+1,j+1,s,lhs=lhs)
         return eq_block
 
     content = write_eqs(equations)
@@ -98,6 +98,12 @@ end
             args_names = str.join(', ', args_names),
             param_names = 'p'
             )
+
+    text = text.replace('**','.^')
+    text = text.replace('*','.*')
+    text = text.replace('/','./')
+#    text = text.replace('+','.+')
+#    text = text.replace('-','.-')
 
 
     return text
