@@ -1,6 +1,6 @@
 from numpy import sqrt, finfo, inf
 
-from numpy import isinf, newaxis, diag
+from numpy import isinf, newaxis, diag, zeros
 
 
 from numpy.linalg import norm, solve
@@ -9,13 +9,15 @@ from numpy import float64
 
 import warnings
 
-def ncpsolve(f, a, b, x, tol=None, verbose=True):
+def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
     '''
     don't ask what ncpsolve can do for you...
     :param f:
     :param a:
     :param b:
     :param x:
+    :param tol:
+    :param serial:
     :return:
     '''
 
@@ -41,15 +43,23 @@ def ncpsolve(f, a, b, x, tol=None, verbose=True):
         it += 1
 
         [fval, fjac] = f(x)
-        [ftmp, fjac] = smooth(x, a, b, fval, fjac)
+        [ftmp, fjac] = smooth(x, a, b, fval, fjac, serial=serial)
+
         fnorm = norm( ftmp, ord=inf)
 
         if fnorm < tol:
             if verbose:
                 print(stars)
-            return [x,fval]
+            if infos:
+                return [x, it]
+            else:
+                return x
 
-        dx = - solve( fjac, ftmp)
+        if serial:
+            from dolo.numeric.serial_operations import serial_solve
+            dx = - serial_solve( fjac, ftmp )
+        else:
+            dx = - solve( fjac, ftmp)
 
         fnormold = inf
 
@@ -57,7 +67,7 @@ def ncpsolve(f, a, b, x, tol=None, verbose=True):
 
             xnew = x + dx
             fnew = f(xnew)[0] # TODO: don't ask for derivatives
-            fnew = smooth( xnew, a, b, fnew )
+            fnew = smooth( xnew, a, b, fnew, serial=serial)
             fnormnew = norm(fnew, ord=inf)
 
             if fnormnew < fnorm:
@@ -86,7 +96,7 @@ def ncpsolve(f, a, b, x, tol=None, verbose=True):
 
 
 
-def smooth(x, a, b, fx, J=None):
+def smooth(x, a, b, fx, J=None, serial=False):
 
     '''
     smoooth
@@ -95,10 +105,9 @@ def smooth(x, a, b, fx, J=None):
     :param b: upper bounds
     :param fx: function values at x
     :param J: jacobian of f at x
+    :param serial:
     :return:
     '''
-
-
 
     dainf = isinf(a)
     dbinf = isinf(b)
@@ -139,7 +148,21 @@ def smooth(x, a, b, fx, J=None):
     ff = dmdy*dpdy
     xx = dmdy*dpdz + dmdz
 
-    Jnew = ff[:,newaxis] * J - diag(xx)
+    if serial:
+        fff = ff[:,newaxis,:]
+    else:
+        fff = ff[:,newaxis]
+
+    if serial:
+        xxx = zeros(J.shape)
+        for i in range(xx.shape[0]):
+            xxx[i,i,:] = xx[i,:]
+
+
+    else:
+        xxx = diag(xx)
+
+    Jnew = fff*J - xxx
 
     return [fxnew, Jnew]
 
