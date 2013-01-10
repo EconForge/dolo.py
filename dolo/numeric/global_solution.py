@@ -46,12 +46,13 @@ def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
     return res
 
 
-def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+def stochastic_residuals_2(s, x, dr, f, g, parms, epsilons, weights, shape, deriv=False):
     #memory_hungry version
 
-    n_t = len(theta)
-    dr.set_values(theta.reshape(shape))  # shortcut : let's call x theta for now
-#    dr.theta = theta.copy().reshape(shape)
+    n_t = np.prod(x.shape)
+
+    dr.set_values(x)  # shortcut : let's call x theta for now
+
     #    [x, x_s, x_theta] = dr.interpolate(s, with_theta_deriv=True)
     n_draws = epsilons.shape[1]
     [n_s,n_g] = s.shape
@@ -69,7 +70,7 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     for i in range(n_draws):
         res += weights[i] * F[:,n_g*i:n_g*(i+1)]
 
-    if no_deriv:
+    if not deriv:
         return res
 
     from dolo.numeric.serial_operations import serial_multiplication as stm
@@ -81,12 +82,14 @@ def stochastic_residuals_2(s, theta, dr, f, g, parms, epsilons, weights, shape, 
         dres += weights[i] * dF[:,:,n_g*i:n_g*(i+1)]
     return [res,dres.swapaxes(1,2)]
 
-def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, no_deriv=False):
+def stochastic_residuals_3(s, x, dr, f, g, parms, epsilons, weights, deriv=False):
 
     import numpy
-    n_t = len(theta)
 
-    dr.set_values(theta.reshape(shape))  # shortcut : let's call x theta for now
+
+    n_t = np.prod(x.shape)
+
+    dr.set_values(x)  # shortcut : let's call x theta for now
 
     n_draws = epsilons.shape[1]
     [n_s,n_g] = s.shape
@@ -97,7 +100,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
     from dolo.numeric.serial_operations import serial_multiplication as stm
     #
 
-    if no_deriv:
+    if not deriv:
         x = dr.interpolate(s, with_theta_deriv=False, with_derivative=False) # should repeat theta instead
         n_x = x.shape[0]
         res = np.zeros( (n_x,n_g) )
@@ -113,7 +116,7 @@ def stochastic_residuals_3(s, theta, dr, f, g, parms, epsilons, weights, shape, 
         [x, x_s, junk, x_theta] = dr.interpolate(s, with_derivative=True, with_theta_deriv=True, with_X_deriv=True) # should repeat theta instead
         n_x = x.shape[0]
         res = np.zeros( (n_x,n_g) )
-        dres = np.zeros( (n_x,n_t,n_g))
+        dres = np.zeros( (n_x,n_t,n_x,n_t))
         for i in range(n_draws):
             tt = [epsilons[:,i:i+1]]*n_g
             e = numpy.column_stack(tt)
@@ -193,8 +196,8 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
         return res
 
 def test_residuals(s,dr, f,g,parms, epsilons, weights):
-    n_draws = epsilons.shape[
-              1]
+
+    n_draws = epsilons.shape[1]
 
     n_g = s.shape[1]
     x = dr(s)
@@ -218,25 +221,18 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='lmmcp', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
+def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
     from dolo.numeric.solver import solver
-    from dolo.numeric.newton import newton_solver
+    import time
 
-    if serial_grid:
-        if numdiff == True:
-            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
-        else:
-            fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds)
+
+    if numdiff == True:
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
     else:
-        fun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False, with_derivatives=False)
-        dfun = lambda x: step_residual(grid, x, interp, f, g, parms, epsilons, weights, x_bounds=x_bounds, serial_grid=False)[1]
-
-
-    #
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds)
 
     ##
-    import time
     t1 = time.time()
     err = 1
     x0 = xinit
@@ -264,16 +260,10 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
     while err > tol and it < maxit:
         t_start = time.time()
         it +=1
-        interp.set_values(x0)
+        dr.set_values(x0)
 
-        if serial_grid:
-            if numdiff:
-                [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, numdiff=True, backsteps=backsteps, maxit=nmaxit)
-            else:
-                [x,nit] = newton_solver(fun,x0,lb=lb,ub=ub,infos=True, backsteps=backsteps, maxit=nmaxit)
-        else:
-            x = solver(fun, x0, lb=lb, ub=ub, method=method, jac=dfun, verbose=verbit, options=options)
-            nit = 0
+        [x,nit] = solver(fun, x0, lb=lb, ub=ub, method='ncpsolve', infos=True, verbose=verbit, serial_problem=True)
+
 
         err = abs(x-x0).max()
         err_SA = err/err_0
@@ -285,18 +275,18 @@ def time_iteration(grid, interp, xinit, f, g, parms, epsilons, weights, x_bounds
             print('{0:5} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
         x0 = x0 + (x-x0)
         if hook:
-            hook(interp,it,err)
+            hook(dr,it,err)
         if False in np.isfinite(x0):
             print('iteration {} failed : non finite value')
             return [x0, x]
 
-#    if it == maxit:
-#        import warnings
-#        warnings.warn(UserWarning("Maximum number of iterations reached"))
+    if it == maxit:
+        import warnings
+        warnings.warn(UserWarning("Maximum number of iterations reached"))
 
 
     t2 = time.time()
     if verbose:
         print('Elapsed: {}'.format(t2 - t1))
 
-    return interp
+    return dr

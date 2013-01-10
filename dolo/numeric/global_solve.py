@@ -4,160 +4,165 @@ import numpy
 
 from dolo.numeric.perturbations_to_states import approximate_controls
 
-def global_solve(model, bounds=None, initial_dr=None, interp_type='smolyak', pert_order=2, T=200, n_s=2, N_e=40,
-                 integration='gauss-hermite', integration_orders=[], maxit=500, numdiff=True, polish=True, tol=1e-8,
-                 compiler='numpy', memory_hungry=True, smolyak_order=3, interp_orders=None, test_solution=False,
-                 verbose=False, serial_grid=True):
+
+def global_solve(model,
+                 bounds=None, verbose=False,
+                 initial_dr=None, pert_order=2,
+                 interp_type='smolyak', smolyak_order=3, interp_orders=None,
+                 maxit=500, numdiff=True, polish=True, tol=1e-8,
+                 integration='gauss-hermite', integration_orders=[],
+                 compiler='numpy', memory_hungry=True,
+                 T=200, n_s=2, N_e=40 ):
 
     def vprint(t):
         if verbose:
             print(t)
 
-    [y,x,parms] = model.read_calibration()
+    [y, x, parms] = model.read_calibration()
     sigma = model.read_covariances()
-    
+
     if initial_dr == None:
-        initial_dr = approximate_controls(model, order=pert_order )
+        initial_dr = approximate_controls(model, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
-        
+
     if bounds is not None:
         pass
 
     elif 'approximation' in model['original_data']:
-
         vprint('Using bounds specified by model')
 
         # this should be moved to the compiler
-        ssmin =  model['original_data']['approximation']['bounds']['smin']
-        ssmax =  model['original_data']['approximation']['bounds']['smax']
-        ssmin = [model.eval_string( str(e) ) for e in ssmin]
-        ssmax = [model.eval_string( str(e) ) for e in ssmax]
-        ssmin = [model.eval_string( str(e) ) for e in ssmin]
-        ssmax = [model.eval_string( str(e) ) for e in ssmax]
+        ssmin = model['original_data']['approximation']['bounds']['smin']
+        ssmax = model['original_data']['approximation']['bounds']['smax']
+        ssmin = [model.eval_string(str(e)) for e in ssmin]
+        ssmax = [model.eval_string(str(e)) for e in ssmax]
+        ssmin = [model.eval_string(str(e)) for e in ssmin]
+        ssmax = [model.eval_string(str(e)) for e in ssmax]
 
-        [y,x,p] = model.read_calibration()
-        d = { v: y[i] for i,v in enumerate(model.variables )}
-        d.update( { v: p[i] for i,v in enumerate(model.parameters )} )
+        [y, x, p] = model.read_calibration()
+        d = {v: y[i] for i, v in enumerate(model.variables)}
+        d.update({v: p[i] for i, v in enumerate(model.parameters)})
 
-        smin = [expr.subs( d ) for expr in ssmin ]
-        smax = [expr.subs( d ) for expr in ssmax ]
+        smin = [expr.subs(d) for expr in ssmin]
+        smax = [expr.subs(d) for expr in ssmax]
 
         smin = numpy.array(smin, dtype=numpy.float)
         smax = numpy.array(smax, dtype=numpy.float)
 
-        bounds = numpy.row_stack([smin,smax])
-        bounds = numpy.array(bounds,dtype=float)
-        vprint(bounds)
+        bounds = numpy.row_stack([smin, smax])
+        bounds = numpy.array(bounds, dtype=float)
 
     else:
-
         vprint('Using bounds given by second order solution.')
 
         from dolo.numeric.timeseries import asymptotic_variance
         # this will work only if initial_dr is a Taylor expansion
         Q = asymptotic_variance(initial_dr.A.real, initial_dr.B.real, initial_dr.sigma, T=T)
-        
-        devs = numpy.sqrt( numpy.diag(Q) )
-        bounds  = numpy.row_stack([
-                                   initial_dr.S_bar - devs * n_s,
-                                   initial_dr.S_bar + devs * n_s,
-                                   ])
 
-    smin = bounds[0,:]
-    smax = bounds[1,:]
+        devs = numpy.sqrt(numpy.diag(Q))
+        bounds = numpy.row_stack([
+            initial_dr.S_bar - devs * n_s,
+            initial_dr.S_bar + devs * n_s,
+        ])
+
+    smin = bounds[0, :]
+    smax = bounds[1, :]
 
     if interp_orders == None:
-        interp_orders = [10]*bounds.shape[1]
+        interp_orders = [5] * bounds.shape[1]
 
     if interp_type == 'smolyak':
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
-        sg = SmolyakGrid( bounds[0,:], bounds[1,:], smolyak_order )
+
+        dr = SmolyakGrid(bounds[0, :], bounds[1, :], smolyak_order)
+    elif interp_type == 'spline':
+        from dolo.numeric.interpolation.splines import MultivariateSplines
+
+        dr = MultivariateSplines(bounds[0, :], bounds[1, :], interp_orders)
+    elif interp_type == 'multilinear':
+        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
+
+        dr = MultilinearInterpolator(bounds[0, :], bounds[1, :], interp_orders)
     elif interp_type == 'sparse_linear':
         from dolo.numeric.interpolation.interpolation import SparseLinear
-        sg = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
-    elif interp_type == 'linear_triangulation':
-        from dolo.numeric.interpolation.interpolation import SparseLinear
-        from dolo.numeric.interpolation.interpolation import LinearTriangulation, TriangulatedDomain
-        sg_tt = SparseLinear( bounds[0,:], bounds[1,:], smolyak_order )
-        domain = TriangulatedDomain(sg_tt.grid)
-        sg = LinearTriangulation( domain )
-    elif interp_type == 'spline':
-        polish = False
-        from dolo.numeric.interpolation.splines import MultivariateSplines
-        sg = MultivariateSplines( bounds[0,:], bounds[1,:], interp_orders )
+
+        dr = SparseLinear(bounds[0, :], bounds[1, :], smolyak_order)
     elif interp_type == 'linear':
         from dolo.numeric.interpolation.interpolation import LinearTriangulation, TriangulatedDomain, RectangularDomain
-        rec =  RectangularDomain(smin, smax, interp_orders)
-        domain = TriangulatedDomain( rec.grid )
-        sg = LinearTriangulation( domain )
-        print(sg.grid)
-    elif interp_type == 'mlinear':
-        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
-        sg = MultilinearInterpolator( bounds[0,:], bounds[1,:], interp_orders)
+        rec = RectangularDomain(smin, smax, interp_orders)
+        domain = TriangulatedDomain(rec.grid)
+        dr = LinearTriangulation(domain)
 
-    
-    xinit = initial_dr(sg.grid)
-    xinit = xinit.real  # just in case...
 
-    from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals_3
 
     from dolo.compiler.compiler_global import CModel
-    cm = CModel(model,  solve_systems=True, compiler=compiler)
-    gc = cm.as_type('fg')
+
+    cm = CModel(model, solve_systems=True, compiler=compiler)
+    cm = cm.as_type('fg')
 
     if integration == 'optimal_quantization':
         from dolo.numeric.quantization import quantization_nodes
         # number of shocks
-        [epsilons,weights] = quantization_nodes(N_e, sigma)
+        [epsilons, weights] = quantization_nodes(N_e, sigma)
     elif integration == 'gauss-hermite':
         from dolo.numeric.quadrature import gauss_hermite_nodes
-        if not integration_orders:
-            integration_orders = [3]*sigma.shape[0]
-        [epsilons, weights] = gauss_hermite_nodes( integration_orders, sigma )
 
-    from dolo.numeric.global_solution import time_iteration
+        if not integration_orders:
+            integration_orders = [3] * sigma.shape[0]
+        [epsilons, weights] = gauss_hermite_nodes(integration_orders, sigma)
 
     vprint('Starting time iteration')
-    dr = time_iteration(sg.grid, sg, xinit, gc.f, gc.g, parms, epsilons, weights, maxit=maxit, tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, serial_grid=serial_grid)
+
+    from dolo.numeric.global_solution import time_iteration
+    from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals_3
+
+
+    xinit = initial_dr(dr.grid)
+    xinit = xinit.real  # just in case...
     
-    if polish and interp_type=='smolyak' : # this works with smolyak only
+    dr = time_iteration(dr.grid, dr, xinit, cm.f, cm.g, parms, epsilons, weights, x_bounds=cm.x_bounds, maxit=maxit,
+                        tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose)
+
+    if polish and interp_type == 'smolyak': # this works with smolyak only
+
         vprint('\nStarting global optimization')
 
         import time
+
         t1 = time.time()
 
-        if not serial_grid:
-            lb = gc.x_bounds[0](sg.grid,parms)
-            ub = gc.x_bounds[1](sg.grid,parms)
-            print(lb)
-            print(ub)
+        if cm.x_bounds is not None:
+            lb = cm.x_bounds[0](dr.grid, parms)
+            ub = cm.x_bounds[1](dr.grid, parms)
         else:
             lb = None
             ub = None
-        
-        from dolo.numeric.solver import solver
+
         xinit = dr(dr.grid)
         dr.set_values(xinit)
         shape = xinit.shape
 
         if not memory_hungry:
-            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
-            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape)[1]
+            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
         else:
-            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
-            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, gc.f, gc.g, parms, epsilons, weights, shape)[1]
+            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
 
-        x = solver(fobj, xinit.flatten(), lb=lb, ub=ub, jac=dfobj, verbose=verbose, method='lmmcp')
-        x = x.reshape(shape)
+        from dolo.numeric.solver import solver
+
+        x = solver(fobj, xinit, lb=lb, ub=ub, jac=dfobj, verbose=verbose, method='ncpsolve', serial_problem=False)
+
         dr.set_values(x) # just in case
 
         t2 = time.time()
-        vprint('Finished in {} s'.format(t2-t1))
 
-    if test_solution:
-        res = stochastic_residuals_2(dr.grid, dr.theta , dr, gc.f, gc.g, parms, epsilons, weights, shape, no_deriv=True)
-        if numpy.isfinite(res.flatten()).sum() > 0:
-            raise( Exception('Non finite value in residuals.'))
+        # test solution
+        res = stochastic_residuals_2(dr.grid, x, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
+        if numpy.isinf(res.flatten()).sum() > 0:
+            raise ( Exception('Non finite values in residuals.'))
+
+        vprint('Finished in {} s'.format(t2 - t1))
 
     return dr
