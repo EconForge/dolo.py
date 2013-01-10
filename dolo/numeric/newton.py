@@ -1,6 +1,6 @@
 import numpy
 
-def newton_solver(f, x0, lb=None, ub=None, infos=False, backsteps=10, maxit=50, tol=1e-8, eps=1e-5, numdiff=False):
+def newton_solver(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50, tol=1e-8, eps=1e-5, numdiff=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
     values in (p x p x N)

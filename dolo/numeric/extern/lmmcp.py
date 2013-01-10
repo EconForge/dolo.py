@@ -50,8 +50,8 @@ eta=0.95       # default: 0.95
 
 # initializations
 defaults = dict(
-    eps1 = 1e-6,    # default: 1e-6
-    eps2 = 1e-10,   # default: 1e-10
+    eps1 = 1e-10,    # default: 1e-6
+    eps2 = 1e-14,   # default: 1e-10
     null = 1e-8,    # default: 1e-8
     Big  = 1e10,    # default: 1e+10
 
@@ -61,6 +61,10 @@ defaults = dict(
 
 
 def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
+
+
+    # TODO: infinite bounds should be replaced by big value
+
 
 
     opts = dict(defaults)

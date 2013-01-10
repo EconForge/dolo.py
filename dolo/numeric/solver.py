@@ -1,68 +1,75 @@
 import numpy as np
 
 
-def solver(fobj,x0,lb=None,ub=None,options={},method='lmmcp',jac='default',serial_problem=False, verbose=False):
-    
+def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, serial_problem=False, verbose=False, options={}):
+
+
     in_shape = x0.shape
 
-    ffobj = lambda x: fobj(x.reshape(in_shape)).flatten()
+    if serial_problem:
+        ffobj = fobj
+    else:
+        ffobj = lambda x: fobj(x.reshape(in_shape)).flatten()
 
-    if not isinstance(jac,str):
-        pp = np.prod(in_shape)
-        def Dffobj(t):
-            tt = t.reshape(in_shape)
-            dval = jac(tt)
-            return dval.reshape( (pp,pp) )
+
+    # standardize jacobian
+    if jac is not None:
+        if not serial_problem:
+            pp = np.prod(in_shape)
+            def Dffobj(t):
+                tt = t.reshape(in_shape)
+                dval = jac(tt)
+                return dval.reshape( (pp,pp) )
+        else:
+            Dffobj = jac
     elif serial_problem:
         Dffobj = MySerialJacobian(fobj, in_shape)
     else:
         Dffobj = MyJacobian(ffobj)
 
 
+    if lb == None:
+        lb = -np.inf*np.ones(len(x0.flatten()))
+    if ub == None:
+        ub = np.inf*np.ones(len(x0.flatten())).flatten()
+
+    if not serial_problem:
+         lb = lb.flatten()
+         ub = ub.flatten()
+
+    if not serial_problem:
+        x0 = x0.flatten()
+
+
     if method == 'fsolve':
         import scipy.optimize as optimize
         factor = options.get('factor')
         factor = factor if factor else 1
-        [sol,infodict,ier,msg] = optimize.fsolve(ffobj,x0.flatten(),fprime=Dffobj,factor=factor,full_output=True,xtol=1e-10,epsfcn=1e-9)
+        [sol,infodict,ier,msg] = optimize.fsolve(ffobj, x0, fprime=Dffobj, factor=factor, full_output=True, xtol=1e-10, epsfcn=1e-9)
         if ier != 1:
             print(msg)
 
-    elif method == 'anderson':
-        import scipy.optimize as optimize
-        sol = optimize.anderson(ffobj,x0.flatten())
-
-    elif method == 'newton_krylov':
-        import scipy.optimize as optimize
-        sol = optimize.newton_krylov(ffobj,x0.flatten())
+    elif method == 'newton':
+        from dolo.numeric.newton import newton_solver
+        fun = lambda x: [ffobj(x), Dffobj(x) ]
+        [sol,nit] = newton_solver(fun,x0, verbose=verbose, infos=True)
 
     elif method == 'lmmcp':
-
-        from dolo.numeric.extern.lmmcp import lmmcp,Big
-        if lb == None:
-            lb = -Big*np.ones(len(x0.flatten()))
-        else:
-            lb = lb.flatten()
-        if ub == None:
-            ub = Big*np.ones(len(x0.flatten()))
-        else:
-            ub = ub.flatten()
-        sol = lmmcp(lambda t: -ffobj(t), lambda u: -Dffobj(u),x0.flatten(),lb,ub,verbose=verbose,options=options)
+        from dolo.numeric.extern.lmmcp import lmmcp
+        sol = lmmcp(lambda t: -ffobj(t), lambda u: -Dffobj(u),x0,lb,ub,verbose=verbose,options=options)
 
     elif method == 'ncpsolve':
-
         from dolo.numeric.ncpsolve import ncpsolve
-        if lb == None:
-            lb = -np.inf*np.ones(len(x0.flatten()))
-        else:
-            lb = lb.flatten()
-        if ub == None:
-            ub = np.inf*np.ones(len(x0.flatten())).flatten()
-        else:
-            ub = ub.flatten()
-        fun = lambda x: [ffobj(x),Dffobj(x)]
-        [sol,fval] = ncpsolve(fun,lb,ub,x0.flatten(), verbose=verbose)
+        fun = lambda x: [ffobj(x), Dffobj(x) ]
+        [sol,nit] = ncpsolve(fun,lb,ub,x0, verbose=verbose, infos=True, serial=serial_problem)
 
-    return sol.reshape(in_shape)
+
+    sol = sol.reshape(in_shape)
+
+    if infos:
+        return [sol, nit]
+    else:
+        return sol
 
 
 def MyJacobian(fun):
@@ -106,11 +113,13 @@ def MySerialJacobian(fun, shape, eps=1e-6):
             y2 = fun(x-delta)
             Dc[i,:,:] = (y1 - y2)/eps/2
 
-        D = np.zeros((p,N,p,N))
-        for n in range(N):
-            D[:,n,:,n] = Dc[:,:,n].T
+        return Dc.swapaxes(0,1)
 
-        return D.reshape(p*N, p*N)
-        #return D
+#        D = np.zeros((p,N,p,N))
+#        for n in range(N):
+#            D[:,n,:,n] = Dc[:,:,n].T
+#
+#        return D.reshape(p*N, p*N)
+#        #return D
 
     return rfun
