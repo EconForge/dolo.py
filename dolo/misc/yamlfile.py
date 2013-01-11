@@ -24,20 +24,19 @@ Imports the content of a modfile into the current interpreter scope
 
     declarations = raw_dict['declarations']
     # check
-    if 'controls' in declarations:
+    if 'variables' not in declarations:
         variables_groups = OrderedDict()
-        known_types = ['states','controls','expectations','auxiliary','auxiliary_2']
-        for vtype in known_types:
-            if vtype in declarations:
+        for vtype in declarations.keys():
+            if vtype not in ('shocks','parameters'):
                 variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
         variables_ordering = sum(variables_groups.values(),[])
     else:
         vnames = declarations['variables']
         variables_ordering = [Variable(vn) for vn in vnames]
         variables_groups = None
-        
+
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
-    
+
     shocks_ordering = [Shock(vn) for vn in declarations['shocks']]
 
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
@@ -136,7 +135,7 @@ Imports the content of a modfile into the current interpreter scope
     if 'model_type' in raw_dict:
         model_dict['model_type'] = raw_dict['model_type']
     model_dict['original_data'] = raw_dict
-    
+
     model = Model(**model_dict)
     model.check_consistency(auto_remove_variables=False)
     return model
