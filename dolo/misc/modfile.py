@@ -67,8 +67,6 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debu
         for i in instruction_groups:
             print(i)
 
-    for ins in instructions:
-        print(ins)
     try:
         imodel = [re.compile('model(\(.*\)|)').match(e) is not None for e in instructions]
         imodel = imodel.index(True)
