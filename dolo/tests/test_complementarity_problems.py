@@ -103,9 +103,10 @@ class ComplementaritySolve(unittest.TestCase):
 
         resp = lmmcp.lmmcp(josephy, Djosephy, x0, lb, ub)
 
-        sol = np.array([1.224746243, -0.0000, 0.0000, 0.5000])
-
-        assert( abs(sol - resp).max()<1e-6 )
+        sol = np.array([1.22474487, -0.0000, 0.0000, 0.5000])
+        print(sol)
+        print(resp)
+        assert( abs(sol - resp).max()<1e-5 )
 
     def test_solver(self):
 
@@ -121,14 +122,14 @@ class ComplementaritySolve(unittest.TestCase):
 
         resp = solver( fun, x0, lb, ub, verbose=True, jac=dfun, method='lmmcp')
 
-        sol = np.array([1.224746243, -0.0000, 0.0000, 0.5000])
+        sol = np.array([1.22474487, -0.0000, 0.0000, 0.5000])
         assert( abs(sol - resp).max()<1e-6 )
 
 
     def test_serial_solver(self):
 
         import numpy
-        N = 100
+        N = 10
         d = 4
         jac = numpy.zeros((d,d,N))
         for i in range(d):
@@ -146,37 +147,4 @@ class ComplementaritySolve(unittest.TestCase):
 
 if __name__ == '__main__':
 
-#    unittest.main()
-#    cs = ComplementaritySolve()
-   # cs.test_serial_solver()
-
-
-    import numpy
-    N = 10000
-    d = 4
-    jac = numpy.zeros((d,d,N))
-    for i in range(d):
-        jac[i,i,:] = 1
-
-
-    from dolo.numeric.serial_operations import serial_inversion
-    from time import time
-    t = time()
-    ijac = serial_inversion(jac)
-    u = time()
-    print('elapsed : {}'.format(u-t))
-
-
-    from scipy.sparse import block_diag
-    from scipy.sparse import linalg as splinalg
-
-
-    jac = numpy.ascontiguousarray( jac.swapaxes(1,2).swapaxes(0,1) )
-
-    sjac = block_diag(jac.tolist() , format='csc')
-
-    t = time()
-
-    print(splinalg.inv(sjac))
-    u = time()
-    print('elapsed : {}'.format(u-t))
+    unittest.main()
