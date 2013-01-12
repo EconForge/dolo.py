@@ -41,7 +41,7 @@ class CModel_fgah:
         args_a =  [states, controls]
         args_h =  [states_f, controls_f, auxiliary_f]
 
-        from compiling import compile_multiargument_function
+        from dolo.compiler.function_compiler import compile_multiargument_function
 
         self.__g__ = compile_multiargument_function(g_eqs, args_g, ['s','x','a','e'], parameters, 'g' )
         self.__f__ = compile_multiargument_function(f_eqs, args_f, ['s','x','a','z'], parameters, 'f' )
@@ -137,11 +137,14 @@ if __name__  == '__main__':
 
     from dolo.misc.yamlfile import yaml_import
     from dolo.numeric.perturbations_to_states import approximate_controls
-    from dolo.numeric.global_solve import global_solve, global_solve_new
+    from dolo.numeric.global_solve import global_solve
 
 
-    model = yaml_import( '../../../examples/global_models/rbc_fgah.yaml')
-    model_bis = yaml_import( '../../../examples/global_models/rbc.yaml')
+    model = yaml_import( 'examples/global_models/rbc_fgah.yaml')
+    model_bis = yaml_import( 'examples/global_models/rbc.yaml')
+
+    print(model)
+    print(model)
 
     dr_pert = approximate_controls(model_bis)
 
@@ -155,13 +158,13 @@ if __name__  == '__main__':
 
     t = time.time()
     for n in range(10):
-        global_solve(model_bis, initial_dr=dr_pert, polish=False, interp_type='mlinear')
+        global_solve(model_bis, initial_dr=dr_pert, polish=False, interp_type='multilinear')
     s = time.time()
     print('Elapsed : {}'.format(s-t) )
 
 
-    t = time.time()
-    for n in range(10):
-        global_solve_new(cm, initial_dr=dr_pert, polish=False, interp_type='mlinear')
-    s = time.time()
-    print('Elapsed : {}'.format(s-t) )
+#    t = time.time()
+#    for n in range(10):
+#        global_solve_new(cm, initial_dr=dr_pert, polish=False, interp_type='multilinear')
+#    s = time.time()
+#    print('Elapsed : {}'.format(s-t) )
