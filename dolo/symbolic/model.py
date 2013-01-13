@@ -143,39 +143,26 @@ class Model(dict):
         return self['name']
 
     @property
-    def dyn_var_order(self):
-        # returns a list of dynamic variables ordered as in Dynare's dynamic function
-        if hasattr(self,'__dyn_var_order__') :
-            return self.__dyn_var_order__
-        d = dict()
-        for eq in self.equations:
-            all_vars = eq.variables
-            for v in all_vars:
-                if not v.lag in d:
-                    d[v.lag] = set()
-                d[v.lag].add(v)
-        maximum = max(d.keys())
-        minimum = min(d.keys())
-        ord = []
-        for i in range(minimum,maximum+1):
-            if i in d.keys():
-                ord += [v(i) for v in self.variables if v(i) in d[i]]
-        self.__dyn_var_order__ = ord
-        return ord
+    def calibration(self):
+        [y,x,p] = self.read_calibration(to_numpy=False)
+        sigma = self.read_covariances(to_numpy=False)
+        variables = self.variables
+        from collections import OrderedDict
+        calib = dict()
 
-    @property
-    def dr_var_order(self):
-        dvo = self.dyn_var_order
-        purely_backward_vars = [v for v in self.variables if (v(1) not in dvo) and (v(-1) in dvo)]
-        purely_forward_vars = [v for v in self.variables if (v(-1) not in dvo) and (v(1) in dvo)]
-        static_vars =  [v for v in self.variables if (v(-1) not in dvo) and (v(1) not in dvo) ]
-        mixed_vars = [v for v in self.variables if not v in purely_backward_vars+purely_forward_vars+static_vars ]
-        dr_order = static_vars + purely_backward_vars + mixed_vars + purely_forward_vars
-        return dr_order
+        steady_state = OrderedDict()
 
-    @property
-    def state_variables(self):
-        return [v for v in self.variables if v(-1) in self.dyn_var_order ]
+        for vg in self['variables_groups']:
+            vars = self['variables_groups'][vg]
+            values = [y[variables.index(v)] for v in vars ]
+            steady_state[vg] = values
+
+        calib['steady_state'] = steady_state
+        calib['parameters'] = p
+        calib['sigma'] = sigma
+
+        return calib
+
 
     def read_calibration(self,to_numpy=True):
         model = self
@@ -278,6 +265,48 @@ class Model(dict):
 
         nmodel.check()
         return nmodel
+
+
+
+    ## the methods below should probably be deprecated
+
+
+
+    @property
+    def dyn_var_order(self):
+        # returns a list of dynamic variables ordered as in Dynare's dynamic function
+        if hasattr(self,'__dyn_var_order__') :
+            return self.__dyn_var_order__
+        d = dict()
+        for eq in self.equations:
+            all_vars = eq.variables
+            for v in all_vars:
+                if not v.lag in d:
+                    d[v.lag] = set()
+                d[v.lag].add(v)
+        maximum = max(d.keys())
+        minimum = min(d.keys())
+        ord = []
+        for i in range(minimum,maximum+1):
+            if i in d.keys():
+                ord += [v(i) for v in self.variables if v(i) in d[i]]
+        self.__dyn_var_order__ = ord
+        return ord
+
+    @property
+    def dr_var_order(self):
+        dvo = self.dyn_var_order
+        purely_backward_vars = [v for v in self.variables if (v(1) not in dvo) and (v(-1) in dvo)]
+        purely_forward_vars = [v for v in self.variables if (v(-1) not in dvo) and (v(1) in dvo)]
+        static_vars =  [v for v in self.variables if (v(-1) not in dvo) and (v(1) not in dvo) ]
+        mixed_vars = [v for v in self.variables if not v in purely_backward_vars+purely_forward_vars+static_vars ]
+        dr_order = static_vars + purely_backward_vars + mixed_vars + purely_forward_vars
+        return dr_order
+
+    @property
+    def state_variables(self):
+        return [v for v in self.variables if v(-1) in self.dyn_var_order ]
+
 
 def reorder(vars, variables_order):
     arg = list(vars)
