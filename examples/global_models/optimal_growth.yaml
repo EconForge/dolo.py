@@ -1,3 +1,5 @@
+model_type: fgh
+
 declarations:
 
     states:  [A, w]

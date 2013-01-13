@@ -1,17 +1,27 @@
 
 class CompilerJulia:
 
-    def __init__(self, model):
+    def __init__(self, model, model_type=None):
+
+        if model_type is None:
+            model_type = model['original_data']['model_type']
+
 
         self.model = model
 
         from dolo.symbolic.validator import validate
-        validate(model,'fga')
+        if isinstance(model_type, str):
+            validate(model, model_type)
+            from dolo.symbolic.recipes import recipes
+            self.recipe = recipes[model_type]
+        else:
+            # if model_type is not a string, we assume it is a recipe
+            self.recipe = model_type
+
 
     def process_output(self, recipe=None):
 
-        if recipe is None:
-            from dolo.symbolic.recipes import recipe_fga as recipe
+        recipe = self.recipe
 
         model = self.model
         parms = model['parameters_ordering']
@@ -54,7 +64,6 @@ class CompilerJulia:
                 equations = [eq.gap for eq in equations]
 
             from dolo.compiler.function_compiler_julia import compile_multiargument_function
-
             txt = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg)
 
             fun_text += txt
@@ -62,41 +71,57 @@ class CompilerJulia:
 
         # the following part only makes sense for fga models
 
-        [y,x,p] = model.read_calibration(to_numpy=False)
+        calib = model.calibration
 
-        s_ss = [y[model.variables.index(v)] for v in model['variables_groups']['states'] ]
-        x_ss = [y[model.variables.index(v)] for v in model['variables_groups']['controls'] ]
-        a_ss = [y[model.variables.index(v)] for v in model['variables_groups']['controls'] ]
+        steady_state = calib['steady_state']
+        parameters_values = calib['parameters']
 
+
+        funs_text = "functions = {\n"
+        for fun_name in recipe['equation_type']:
+            funs_text += '\t"{0}" => {0},\n'.format(fun_name)
+        funs_text += '}'
+
+        ss_text = "steady_state = {\n"
+        for k,v in steady_state.iteritems():
+            ss_text += '\t"{0}" => {1},\n'.format( k, str(v) )
+        ss_text += '}'
+
+        var_text = "variables = {\n"
+        for vn, vg in model['variables_groups'].iteritems():
+            var_text += '\t"{0}" => [{1}],\n'.format(vn, str.join(',', ['"{}"'.format(e ) for e in vg]))
+
+        var_text += '\t"parameters" => [{}],\n'.format(str.join(',', ['"{}"'.format(e ) for e in model['parameters_ordering']]))
+        var_text += '\t"shocks" => [{}]\n'.format(str.join(',', ['"{}"'.format(e ) for e in model['shocks_ordering']]))
+
+        var_text += '}'
 
         full_text = '''
 {function_definitions}
 
+{funs_text}
+
+{ss_text}
+
+{var_text}
+
+
+calibration = {{
+    "steady_state" => steady_state,
+    "parameters" => {params}
+}}
+
 model = {{
-    "states" => [{states}],
-    "controls" => [{controls}],
-    "auxiliaries" => [{auxiliaries}],
-    "parameters" => [{parameters}],
-    "shocks" => [{shocks}],
-    "transition" => transition,
-    "arbitrage" => arbitrage,
-    "auxiliary" => auxiliary,
-    "params" => {params},
-    "s_ss" => {s_ss},
-    "x_ss" => {x_ss},
-    "a_ss" => {a_ss}
+    "variables" => variables,
+    "functions" => functions,
+    "calibration" => calibration
 }}
 '''.format(
             function_definitions = fun_text,
-            states = str.join(',', ['"{}"'.format(e ) for e in model['variables_groups']['states']]),
-            controls = str.join(',', ['"{}"'.format(e ) for e in model['variables_groups']['controls']]),
-            auxiliaries = str.join(',', ['"{}"'.format(e ) for e in model['variables_groups']['auxiliary']]),
-            parameters = str.join(',', ['"{}"'.format(e ) for e in model['parameters_ordering']]),
-            shocks = str.join(',', ['"{}"'.format(e ) for e in model['shocks_ordering']]),
-            params = str(p),
-            s_ss = str(s_ss),
-            x_ss = str(x_ss),
-            a_ss = str(a_ss)
+            funs_text = funs_text,
+            ss_text = ss_text,
+            var_text = var_text,
+            params = str(parameters_values)
 
         )
 
@@ -107,7 +132,15 @@ if __name__ == '__main__':
     from dolo import *
 
     model = yaml_import('examples/global_models/rbc.yaml')
+    comp = CompilerJulia(model)
 
+    print  comp.process_output()
+
+    print("******10")
+    print("******10")
+    print("******10")
+
+    model = yaml_import('examples/global_models/optimal_growth.yaml')
     comp = CompilerJulia(model)
 
     print  comp.process_output()

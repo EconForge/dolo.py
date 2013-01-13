@@ -45,6 +45,51 @@ recipe_fga = dict(
     )
 )
 
+recipe_fgh = dict(
+
+    model_type = 'fgh',
+
+    variable_type = ['states', 'controls', 'expectations'],
+
+    equation_type = dict(
+
+        arbitrage = [
+            ('states',0),
+            ('controls',0),
+            ('expectations',0),
+        ],
+
+        transition = {
+            'definition': True,
+            'lhs': [
+                ('states',0),
+                ],
+            'rhs': [
+                ('states',-1),
+                ('controls',-1),
+                ('shocks',0)
+            ]
+        },
+
+        expectation = {
+
+            'definition': True,
+
+            'lhs': [
+                ('expectations',0),
+                ],
+
+            'rhs': [
+                ('states',1),
+                ('controls',1)
+            ]
+        }
+
+    )
+)
+
+
 recipes = {
-    'fga': recipe_fga
+    'fga': recipe_fga,
+    'fgh': recipe_fgh,
 }

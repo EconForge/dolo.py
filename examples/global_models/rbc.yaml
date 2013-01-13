@@ -1,3 +1,5 @@
+model_type: fga
+
 declarations:
 
    states:  [z, k]
