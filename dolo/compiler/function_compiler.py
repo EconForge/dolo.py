@@ -13,7 +13,7 @@ libraries for efficient vectorization: `numpy <http://numpy.scipy.org/>`_, `nume
 from __future__ import division
 
 from dolo.symbolic.derivatives import DerivativesTree
-from dolo.compiler.compiler import DicPrinter
+from dolo.compiler.common import DicPrinter
 from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
@@ -184,7 +184,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
     return {return_names}
     '''
 
-    from dolo.compiler.compiler import DicPrinter
+    from dolo.compiler.common import DicPrinter
 
     dp = DicPrinter(sub_list)
 

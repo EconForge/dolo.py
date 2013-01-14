@@ -28,7 +28,7 @@ def compile_theano_source(values, args_list, args_names, parms, fname='anonymous
             sn = '_'+str(e)
         sub_dict[e] = sn
 
-    from dolo.compiler.compiler import DicPrinter
+    from dolo.compiler.common import DicPrinter
 
     dec = ''
 

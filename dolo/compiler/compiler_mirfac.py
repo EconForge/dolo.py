@@ -2,12 +2,11 @@ from __future__ import division
 
 from dolo.symbolic.model import Model
 from dolo.symbolic.symbolic import Equation
-from dolo.compiler.compiler import Compiler
 
 import numpy as np
 import numpy.linalg
 
-class MirFacCompiler(Compiler):
+class MirFacCompiler(object):
 
     def __init__(self,model):
         self.model = model
@@ -270,7 +269,7 @@ switch flag
 end
 '''
 
-        from dolo.compiler.compiler import DicPrinter
+        from dolo.compiler.common import DicPrinter
 
         dp = DicPrinter(sub_list)
 

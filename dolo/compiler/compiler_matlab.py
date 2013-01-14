@@ -1,5 +1,5 @@
 
-class CompilerMatlab:
+class CompilerMatlab(object):
 
     def __init__(self, model, model_type=None):
 
@@ -63,7 +63,7 @@ class CompilerMatlab:
             else:
                 equations = [eq.gap for eq in equations]
 
-            from dolo.compiler.function_compiler_julia import compile_multiargument_function
+            from dolo.compiler.function_compiler_matlab import compile_multiargument_function
             txt = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg)
 
             fun_text += txt
@@ -108,9 +108,9 @@ calibration.parameters = {params}
 {funs_text}
 
 model = {{
-    "variables" => variables,
-    "functions" => functions,
-    "calibration" => calibration
+    variables = variables,
+    functions = functions,
+    calibration = calibration
 }}
 
 end

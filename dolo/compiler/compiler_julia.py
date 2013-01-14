@@ -1,5 +1,5 @@
 
-class CompilerJulia:
+class CompilerJulia(object):
 
     def __init__(self, model, model_type=None):
 

@@ -1,9 +1,8 @@
 from __future__ import division
 from dolo.symbolic.model import Model
 from dolo.symbolic.symbolic import Equation
-from dolo.compiler.compiler import Compiler
 
-class RecsCompiler(Compiler):
+class RecsCompiler(object):
 
     def __init__(self,model):
         self.model = model
@@ -118,7 +117,7 @@ class RecsCompiler(Compiler):
     def process_output_recs(self):
         '''Main function that formats the model in recs format'''
         import sympy
-        from dolo.compiler.compiler import DicPrinter
+        from dolo.compiler.common import DicPrinter
         from dolo.misc.matlab import value_to_mat
 
         data = self.read_model()

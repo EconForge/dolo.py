@@ -52,7 +52,7 @@ def {fname}({args_names}, {param_names}, derivs=True):
     return {return_names}
     '''
 
-    from dolo.compiler.compiler import DicPrinter
+    from dolo.compiler.common import DicPrinter
 
     dp = DicPrinter(sub_list)
 

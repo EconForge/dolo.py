@@ -1,0 +1,48 @@
+"""
+Compiled models.
+
+"""
+
+import sympy
+
+
+class DicPrinter(sympy.printing.StrPrinter):
+
+    def __init__(self,printing_dict):
+        super(DicPrinter,self).__init__()
+        self.printing_dict = printing_dict
+
+    def doprint_matlab(self,expr,vectorize=False):
+        txt = self.doprint(expr)
+        txt = txt.replace('**','^')
+        if vectorize:
+            txt = txt.replace('^','.^')
+            txt = txt.replace('*','.*')
+            txt = txt.replace('/','./')
+            #txt = txt.replace('+','.+')
+            #txt = txt.replace('-','.-')
+
+        return txt
+
+    def doprint_numpy(self,expr,vectorize=False):
+        txt = self.doprint(expr)
+        return txt
+
+
+    def _print_Symbol(self, expr):
+        return self.printing_dict[expr]
+
+    def _print_TSymbol(self, expr):
+        return self.printing_dict[expr]
+
+    def _print_Variable(self, expr):
+        return self.printing_dict[expr]
+
+    def _print_Parameter(self, expr):
+        return self.printing_dict[expr]
+
+    def _print_Shock(self, expr):
+        if expr in self.printing_dict:
+            return self.printing_dict[expr]
+        else:
+            return str(expr)

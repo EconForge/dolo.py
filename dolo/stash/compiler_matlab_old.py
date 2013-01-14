@@ -103,7 +103,7 @@ function [out1] = model_info() % informations about the model
 end
 '''
 
-        from dolo.compiler.compiler import DicPrinter
+        from dolo.compiler.common import DicPrinter
 
         dp = DicPrinter(sub_list)
 

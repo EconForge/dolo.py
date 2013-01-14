@@ -1,4 +1,3 @@
-from dolo.compiler.compiler import Compiler
 from sympy import Matrix
 
 class UhligCompiler(Compiler):
