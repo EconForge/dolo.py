@@ -51,7 +51,7 @@ class  TestInterpolation(unittest.TestCase):
         d = 3
         l = 5
         n_x = 1
-        N = 100000
+        N = 1000
         from numpy import row_stack, minimum, maximum
 
         smin = [-1]*d
