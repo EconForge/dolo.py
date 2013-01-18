@@ -1,6 +1,6 @@
 import numpy as np
 cimport numpy as np
-
+from numpy.linalg import inv
 
 
 DTYPE = np.float64
@@ -91,6 +91,9 @@ def serial_dot_11(np.ndarray[DTYPE_t, ndim=2] A, np.ndarray[DTYPE_t, ndim=2] B):
 
     return resp
 
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def serial_inversion(np.ndarray[DTYPE_t, ndim=3] M):
     '''
 
@@ -101,23 +104,22 @@ def serial_inversion(np.ndarray[DTYPE_t, ndim=3] M):
     import numpy
     from numpy.linalg import inv
 
-    cdef np.ndarray[DTYPE_t, ndim=3] MM
     cdef np.ndarray[DTYPE_t, ndim=3] T
     cdef np.ndarray[DTYPE_t, ndim=2] tmp
     cdef int i
-
-    MM = numpy.ascontiguousarray(M.swapaxes(0,2))
 
     p = M.shape[0]
     assert(M.shape[1] == p)
     N = M.shape[2]
 
-    T = numpy.zeros((N,p,p))
+    M = np.asfortranarray(M)
 
+    T = np.zeros((p,p,N),order='F')
 
     for i in range(N):
-        tmp = MM[i,:,:]
-        T[i,:,:] = inv(tmp)
+        tmp = M[:,:,i]
+        T[:,:,i] = inv(tmp)
 
-    return numpy.ascontiguousarray( T.swapaxes(0,2) )
+    T = numpy.ascontiguousarray(T)
 
+    return T

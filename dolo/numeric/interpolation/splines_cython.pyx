@@ -437,6 +437,10 @@ class MultivariateSplines:
         self.__splines__ = None
 
     def set_values(self, values):
+
+        if not np.all( np.isfinite(values)):
+            raise Exception('Trying to interpolate non-finite values')
+
         n_v = values.shape[0]
         if self.__splines__ is None:
             self.n_v = n_v
@@ -452,6 +456,9 @@ class MultivariateSplines:
         self.__splines__.set_values(values)
 
     def interpolate(self, points, with_derivatives=False):
+
+        if not np.all( np.isfinite(points)):
+            raise Exception('Spline interpolator evaluated at non-finite points.')
 
         projection = np.minimum( points, self.smax[:,None]-0.0000000001)
         projection = np.maximum( projection, self.smin[:,None]+0.0000000001)

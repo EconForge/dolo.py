@@ -5,6 +5,7 @@ except:
     raise Exception('Impossible to import spline library. You need to compile it with cython first')
 
 import numpy
+import numpy as np
 
 class MultivariateSplines(MultivariateSplinesCython):
 

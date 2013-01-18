@@ -104,7 +104,6 @@ def index_lookup(a, q, dims):
 #    print('Failback')
 #    pass
 
-from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation
 
 try:
     print("using compiled linear interpolator")
