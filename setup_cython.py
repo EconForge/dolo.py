@@ -7,6 +7,8 @@ import numpy as np
 
 __version__ = '0.4.4'
 
+print setup
+
 setup(
 
     name = "dolo",
@@ -16,14 +18,32 @@ setup(
     test_suite='dolo.tests',
 
     cmdclass = {'build_ext': build_ext},
+
     ext_modules = [
+
         Extension(
-		'dolo.numeric.serial_operations_cython',
-		['dolo/numeric/serial_operations_cython.pyx']
+		    'dolo.numeric.interpolation.multilinear_cython',
+		    ['dolo/numeric/interpolation/multilinear_cython.pyx'],
+            extra_compile_args=['-O3']
         ),
-#        Extension('dolo.numeric.interpolation.splines_cython',['dolo/numeric/interpolation/splines_cython.pyx'], library_dirs = ['/usr/local/lib'], include_dirs = ['/usr/local/include/einspline'], libraries = ['m','einspline'])
+
+        Extension(
+            'dolo.numeric.interpolation.serial_operations_cython',
+            ['dolo/numeric/serial_operations_cython.pyx'],
+            extra_compile_args=['-O3']
+
+        ),
+#        Extension(
+#            'dolo.numeric.interpolation.splines_cython',
+#            ['dolo/numeric/interpolation/splines_cython.pyx'],
+#            library_dirs = [ '/home/pablo/.local/lib'],
+#            include_dirs = [ np.get_include() ],
+#            libraries = ['m','einspline']
+#        )
     ],
+
     include_dirs = [np.get_include()],
+
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo'],
 
     install_requires = ["pyyaml","sympy","numpy"],
