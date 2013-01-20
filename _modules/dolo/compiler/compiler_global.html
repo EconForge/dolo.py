@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dolo.compiler.compiler_global &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dolo.compiler.compiler_global</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">symbolic model -&gt; compiled model</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">dolo.compiler.compiler_functions</span> <span class="kn">import</span> <span class="n">model_to_fg</span>
+<span class="kn">from</span> <span class="nn">dolo.misc.caching</span> <span class="kn">import</span> <span class="n">memoized</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<div class="viewcode-block" id="CModel"><a class="viewcode-back" href="../../../compilation.html#dolo.compiler.compiler_global.CModel">[docs]</a><span class="k">class</span> <span class="nc">CModel</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    something to document</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">model_type</span> <span class="o">=</span> <span class="s">&#39;fg&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model</span><span class="p">,</span> <span class="n">keep_auxiliary</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">solve_systems</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">compiler</span><span class="o">=</span><span class="s">&#39;numpy&#39;</span><span class="p">):</span>
+        <span class="s">&quot;something to document&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">CModel</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">model</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;states&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controls</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;controls&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shocks</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;parameters_ordering&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;parameters_ordering&#39;</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__compiler__</span> <span class="o">=</span> <span class="n">compiler</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_auxiliary</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_to_fg</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">solve_systems</span><span class="o">=</span><span class="n">solve_systems</span><span class="p">,</span> <span class="n">compiler</span><span class="o">=</span><span class="n">compiler</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span> <span class="o">=</span> <span class="n">f</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span> <span class="o">=</span> <span class="n">g</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">f</span><span class="p">,</span><span class="n">g</span><span class="p">,</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_to_fg</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">solve_systems</span><span class="o">=</span><span class="n">solve_systems</span><span class="p">,</span> <span class="n">compiler</span><span class="o">=</span><span class="n">compiler</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span> <span class="o">=</span> <span class="n">f</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span> <span class="o">=</span> <span class="n">g</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__a__</span> <span class="o">=</span> <span class="n">a</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">auxiliaries</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;auxiliary&#39;</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__f_h__</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__g_h__</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+    <span class="k">def</span> <span class="nf">g</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__compiler__</span> <span class="o">==</span> <span class="s">&#39;numpy&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="n">derivs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">derivs</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">g_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">g_s</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">s</span><span class="p">,</span> <span class="n">g_0</span><span class="p">)</span>
+            <span class="n">g_x</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">e</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">g_0</span><span class="p">)</span>
+            <span class="n">g_e</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span> <span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">e</span><span class="p">,</span> <span class="n">g_0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">g_0</span><span class="p">,</span> <span class="n">g_s</span><span class="p">,</span> <span class="n">g_x</span><span class="p">,</span> <span class="n">g_e</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__compiler__</span> <span class="o">==</span> <span class="s">&#39;numpy&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="n">derivs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">derivs</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">f_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">f_s</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">s</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="n">f_x</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="n">f_S</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">S</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="n">f_X</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">E</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="n">f_E</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">X</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">f_0</span><span class="p">,</span> <span class="n">f_s</span><span class="p">,</span> <span class="n">f_x</span><span class="p">,</span> <span class="n">f_S</span><span class="p">,</span> <span class="n">f_X</span><span class="p">,</span> <span class="n">f_E</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">a</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__compiler__</span> <span class="o">==</span> <span class="s">&#39;numpy&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__a__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">derivs</span><span class="o">=</span><span class="n">derivs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">derivs</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__a__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">a_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__a__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+            <span class="n">a_s</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">s</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="n">a_x</span> <span class="o">=</span> <span class="n">numdiff</span><span class="p">(</span><span class="k">lambda</span> <span class="n">l</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="n">l</span><span class="p">,</span><span class="n">p</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">f_0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">a_0</span><span class="p">,</span> <span class="n">a_s</span><span class="p">,</span> <span class="n">a_x</span><span class="p">]</span>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@memoized</span>
+    <span class="k">def</span> <span class="nf">x_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c"># TODO : bounds should be compiled in __init__ (after sgm cleanup)</span>
+
+
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+        <span class="n">complementarities_tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">eq</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;complementarity&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;equations_groups&#39;</span><span class="p">][</span><span class="s">&#39;arbitrage&#39;</span><span class="p">]]</span>
+        <span class="kn">import</span> <span class="nn">re</span>
+        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;(.*)&lt;=(.*)&lt;=(.*)&#39;</span><span class="p">)</span>
+        <span class="n">parsed</span>  <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">eval_string</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="p">()]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">complementarities_tags</span><span class="p">]</span>
+        <span class="n">lower_bounds_symbolic</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span>
+        <span class="n">controls</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span>
+        <span class="n">upper_bounds_symbolic</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">controls</span> <span class="o">==</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;controls&#39;</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Order of complementarities does not match order of declaration of controls.&quot;</span><span class="p">)</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;states&#39;</span><span class="p">]</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="kn">from</span> <span class="nn">dolo.compiler.function_compiler</span> <span class="kn">import</span> <span class="n">compile_multiargument_function</span>
+        <span class="n">lb</span> <span class="o">=</span> <span class="n">compile_multiargument_function</span><span class="p">(</span> <span class="n">lower_bounds_symbolic</span><span class="p">,</span> <span class="p">[</span><span class="n">states</span><span class="p">],</span> <span class="p">[</span><span class="s">&#39;s&#39;</span><span class="p">],</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;lb&#39;</span><span class="p">)</span>
+        <span class="n">ub</span> <span class="o">=</span> <span class="n">compile_multiargument_function</span><span class="p">(</span> <span class="n">upper_bounds_symbolic</span><span class="p">,</span> <span class="p">[</span><span class="n">states</span><span class="p">],</span> <span class="p">[</span><span class="s">&#39;s&#39;</span><span class="p">],</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;ub&#39;</span> <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">lb</span><span class="p">,</span><span class="n">ub</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">as_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model_type</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s">&#39;fg&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&#39;Model of type {0} cannot be cast to model of type {1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_type</span><span class="p">,</span> <span class="n">model_type</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">f_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="c">#        if self.__f_h__.get(order) is None:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__f_h__</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="n">model_to_fg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__f_h__</span><span class="p">[</span><span class="n">order</span><span class="p">]</span> <span class="o">=</span> <span class="n">functions</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__f_h__</span><span class="p">[</span><span class="n">order</span><span class="p">](</span><span class="n">v</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">g_h</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="c">#        if self.__g_h__.get(order) is None:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__g_h__</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">functions</span> <span class="o">=</span> <span class="n">model_to_fg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">functions</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__g_h__</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__g_h__</span><span class="p">[</span><span class="n">order</span><span class="p">](</span><span class="n">v</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+
+</div>
+<span class="k">def</span> <span class="nf">numdiff</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">x0</span><span class="p">,</span><span class="n">f0</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1E-6</span>
+
+    <span class="k">if</span> <span class="n">f0</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">f0</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">f0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">q</span><span class="p">,</span><span class="n">N</span><span class="p">)</span> <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">q</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">,:]</span> <span class="o">+=</span> <span class="n">eps</span>
+        <span class="n">ff</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[:,</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">ff</span> <span class="o">-</span> <span class="n">f0</span><span class="p">)</span><span class="o">/</span><span class="n">eps</span>
+
+    <span class="k">return</span> <span class="n">df</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

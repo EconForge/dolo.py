@@ -1,0 +1,192 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Compilation &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="up" title="Advanced topics" href="api.html" />
+    <link rel="next" title="Model conventions" href="conventions.html" />
+    <link rel="prev" title="Interpolation" href="interpolation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="conventions.html" title="Model conventions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="interpolation.html" title="Interpolation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Compilation</a><ul>
+<li><a class="reference internal" href="#compiled-model">Compiled model</a></li>
+<li><a class="reference internal" href="#compile-a-generic-symbolic-expression">Compile a generic symbolic expression</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="interpolation.html"
+                        title="previous chapter">Interpolation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="conventions.html"
+                        title="next chapter">Model conventions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/compilation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="compilation">
+<h1>Compilation<a class="headerlink" href="#compilation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="compiled-model">
+<h2>Compiled model<a class="headerlink" href="#compiled-model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="dolo.compiler.compiler_global.CModel">
+<em class="property">class </em><tt class="descclassname">dolo.compiler.compiler_global.</tt><tt class="descname">CModel</tt><big>(</big><em>model</em>, <em>keep_auxiliary=True</em>, <em>solve_systems=True</em>, <em>compiler='numpy'</em><big>)</big><a class="reference internal" href="_modules/dolo/compiler/compiler_global.html#CModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.compiler.compiler_global.CModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>something to document</p>
+</dd></dl>
+
+</div>
+<div class="section" id="compile-a-generic-symbolic-expression">
+<h2>Compile a generic symbolic expression<a class="headerlink" href="#compile-a-generic-symbolic-expression" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dolo.compiler.function_compiler.compile_function">
+<tt class="descclassname">dolo.compiler.function_compiler.</tt><tt class="descname">compile_function</tt><big>(</big><em>equations</em>, <em>args</em>, <em>parms</em>, <em>max_order</em>, <em>return_text=False</em><big>)</big><a class="reference internal" href="_modules/dolo/compiler/function_compiler.html#compile_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.compiler.function_compiler.compile_function" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>equations</strong> &#8211; </li>
+<li><strong>args</strong> &#8211; </li>
+<li><strong>parms</strong> &#8211; </li>
+<li><strong>max_order</strong> &#8211; </li>
+<li><strong>return_function</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="dolo.compiler.function_compiler.compile_multiargument_function">
+<tt class="descclassname">dolo.compiler.function_compiler.</tt><tt class="descname">compile_multiargument_function</tt><big>(</big><em>equations</em>, <em>args_list</em>, <em>args_names</em>, <em>parms</em>, <em>fname='anonymous_function'</em>, <em>diff=True</em>, <em>vectorize=True</em>, <em>return_text=False</em><big>)</big><a class="reference internal" href="_modules/dolo/compiler/function_compiler.html#compile_multiargument_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.compiler.function_compiler.compile_multiargument_function" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>equations</strong> &#8211; list of sympy expressions</li>
+<li><strong>args_list</strong> &#8211; list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])</li>
+<li><strong>args_names</strong> &#8211; list of strings ([&#8216;a&#8217;,&#8217;b&#8217;]</li>
+<li><strong>parms</strong> &#8211; list of symbols to be used as parameters</li>
+<li><strong>fname</strong> &#8211; name of the python function to be generated</li>
+<li><strong>diff</strong> &#8211; include symbolic derivates in generated function</li>
+<li><strong>vectorize</strong> &#8211; arguments are vectorized (not parameters)</li>
+<li><strong>return_function</strong> &#8211; a python function f(a,b,p) where p is a vector of parameters and a, b, arrays</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="conventions.html" title="Model conventions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="interpolation.html" title="Interpolation"
+             >previous</a> |</li>
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" >Advanced topics</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
