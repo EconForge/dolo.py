@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Interpolation &mdash; dolo 0.3 documentation</title>
+    <title>Interpolation &mdash; dolo 0.4.4 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4.4',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,9 +26,10 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
-    <link rel="next" title="Testing function documentation" href="test.html" />
-    <link rel="prev" title="Informations for developpers" href="structure.html" /> 
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="up" title="Advanced topics" href="api.html" />
+    <link rel="next" title="Compilation" href="compilation.html" />
+    <link rel="prev" title="Structure of dolo" href="structure.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,12 +42,13 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="test.html" title="Testing function documentation"
+          <a href="compilation.html" title="Compilation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="structure.html" title="Informations for developpers"
+          <a href="structure.html" title="Structure of dolo"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -54,7 +56,7 @@
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Interpolation</a><ul>
-<li><a class="reference internal" href="#module-dolo.numeric.smolyak">smolyak</a></li>
+<li><a class="reference internal" href="#module-dolo.numeric.interpolation.smolyak">smolyak</a></li>
 <li><a class="reference internal" href="#linear-delaunay-tessellation">linear (delaunay tessellation)</a></li>
 <li><a class="reference internal" href="#multilinear">multilinear</a></li>
 <li><a class="reference internal" href="#splines">splines</a></li>
@@ -64,10 +66,10 @@
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="structure.html"
-                        title="previous chapter">Informations for developpers</a></p>
+                        title="previous chapter">Structure of dolo</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="test.html"
-                        title="next chapter">Testing function documentation</a></p>
+  <p class="topless"><a href="compilation.html"
+                        title="next chapter">Compilation</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/interpolation.txt"
@@ -98,8 +100,8 @@
 <h1>Interpolation<a class="headerlink" href="#interpolation" title="Permalink to this headline">¶</a></h1>
 <p>There are many available methods to interpolate points when solving global models. <em>dolo</em> provides several of them.
 They can been used with exactly the same interface. By default, <em>dolo</em> uses smolyak interpolation.</p>
-<div class="section" id="module-dolo.numeric.smolyak">
-<span id="smolyak"></span><h2>smolyak<a class="headerlink" href="#module-dolo.numeric.smolyak" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-dolo.numeric.interpolation.smolyak">
+<span id="smolyak"></span><h2>smolyak<a class="headerlink" href="#module-dolo.numeric.interpolation.smolyak" title="Permalink to this headline">¶</a></h2>
 <p>We demonstrate the use of the <tt class="docutils literal"><span class="pre">`SmolyakGrid`</span></tt> object using the function
 <span class="math">\(x,y \rightarrow \exp \left( -x^2 - y^2 \right)\)</span>. We define it on a subset of <span class="math">\([-1,1]^2\)</span> and use a
 smolyak product of chebychev polynomials to approximate it at other points.</p>
@@ -146,23 +148,21 @@ states, we compute interpolated values and compare it with the true ones.</p>
 </pre></div>
 </div>
 <dl class="class">
-<dt id="dolo.numeric.smolyak.SmolyakBasic">
-<em class="property">class </em><tt class="descclassname">dolo.numeric.smolyak.</tt><tt class="descname">SmolyakBasic</tt><big>(</big><em>d</em>, <em>l</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakBasic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakBasic" title="Permalink to this definition">¶</a></dt>
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakBasic">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.interpolation.smolyak.</tt><tt class="descname">SmolyakBasic</tt><big>(</big><em>d</em>, <em>l</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakBasic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakBasic" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smolyak interpolation on [-1,1]^d</p>
-<p class="rubric">Methods</p>
 <dl class="method">
-<dt id="dolo.numeric.smolyak.SmolyakBasic.set_values">
-<tt class="descname">set_values</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakBasic.set_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakBasic.set_values" title="Permalink to this definition">¶</a></dt>
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakBasic.set_values">
+<tt class="descname">set_values</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakBasic.set_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakBasic.set_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Updates self.theta parameter. No returns values</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
-<dt id="dolo.numeric.smolyak.SmolyakGrid">
-<em class="property">class </em><tt class="descclassname">dolo.numeric.smolyak.</tt><tt class="descname">SmolyakGrid</tt><big>(</big><em>smin</em>, <em>smax</em>, <em>l</em>, <em>axes=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/smolyak.html#SmolyakGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.smolyak.SmolyakGrid" title="Permalink to this definition">¶</a></dt>
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakGrid">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.interpolation.smolyak.</tt><tt class="descname">SmolyakGrid</tt><big>(</big><em>smin</em>, <em>smax</em>, <em>l</em>, <em>axes=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakGrid" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smolyak interpolation</p>
-<p class="rubric">Methods</p>
 </dd></dl>
 
 </div>
@@ -193,12 +193,13 @@ states, we compute interpolated values and compare it with the true ones.</p>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="test.html" title="Testing function documentation"
+          <a href="compilation.html" title="Compilation"
              >next</a> |</li>
         <li class="right" >
-          <a href="structure.html" title="Informations for developpers"
+          <a href="structure.html" title="Structure of dolo"
              >previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" >Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

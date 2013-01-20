@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to dolo’s documentation! &mdash; dolo 0.3 documentation</title>
+    <title>Welcome to dolo’s documentation! &mdash; dolo 0.4.4 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4.4',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,8 +26,8 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="dolo 0.3 documentation" href="#" />
-    <link rel="next" title="Quick tutorial" href="tutorial.html" /> 
+    <link rel="top" title="dolo 0.4.4 documentation" href="#" />
+    <link rel="next" title="Installation" href="installation.html" /> 
   </head>
   <body>
     <div class="related">
@@ -40,9 +40,9 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Quick tutorial"
+          <a href="installation.html" title="Installation"
              accesskey="N">next</a> |</li>
-        <li><a href="#">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="#">dolo 0.4.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -50,14 +50,18 @@
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Welcome to dolo&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#what-is-dolo">What is dolo ?</a></li>
+<li><a class="reference internal" href="#contents">Contents</a><ul>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
 </ul>
+</li>
+</ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="tutorial.html"
-                        title="next chapter">Quick tutorial</a></p>
+  <p class="topless"><a href="installation.html"
+                        title="next chapter">Installation</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/index.txt"
@@ -84,55 +88,57 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <dl class="docutils">
-<dt>. dolo documentation master file, created by</dt>
-<dd>sphinx-quickstart on Sat Apr 21 19:33:32 2012.
-You can adapt this file completely to your liking, but it should at least
-contain the root <cite>toctree</cite> directive.</dd>
-</dl>
-<div class="section" id="welcome-to-dolo-s-documentation">
+  <div class="section" id="welcome-to-dolo-s-documentation">
 <h1>Welcome to dolo&#8217;s documentation!<a class="headerlink" href="#welcome-to-dolo-s-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
+<div class="section" id="what-is-dolo">
+<h2>What is dolo ?<a class="headerlink" href="#what-is-dolo" title="Permalink to this headline">¶</a></h2>
+<p>Dolo is a tool to assist researchers in solving several types of DSGE models, using either local of global approximation methods.</p>
+<p>Users are can separate the definition of their models from the solution algorithm. A simple syntax is
+provided in YAML files to define variables and equations of several types. This syntax integrates the specification
+of occasionally binding constraints (a.k.a. complementarity conditions)</p>
+<p>Dolo then checks consistency of the model and computes an efficient numerical representation. This includes producing
+vectorized code with symbolic derivatives (if needed).</p>
+<p>The user can then implement his own preferred solution method using one of the provided tools (various types of interpolation,
+solvers, ...) or use one of the already implemented procedures. Currently, only time-iteration is supported but in the near future,
+there will also be value function iteration and parametrized expectations. High level functions are provided so that
+should be extremely easy in most of the cases.</p>
+<p>Dolo is written in python and so are his solution routines. If you prefer or need to use another language for the solution
+(such as a legacy scientific Fortran wrapper edited by Mathworks...), you can always use dolo as a preprocessor. In
+that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and
+Julia are supported.</p>
+</div>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#compiled-extensions">Compiled extensions</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">Quick tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#quick-quick-quick">Quick quick quick</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#more-details">More details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#write-a-model">Write a model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial.html#solving-the-rbc-model">Solving the RBC model</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation instructions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="install_linux.html">Install on linux</a></li>
-<li class="toctree-l2"><a class="reference internal" href="install_windows.html">Install on windows</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="conventions.html">Model conventions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="conventions.html#model-types">Model types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conventions.html#numerical-conventions">Numerical Conventions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="structure.html">Informations for developpers</a></li>
-<li class="toctree-l1"><a class="reference internal" href="interpolation.html">Interpolation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="interpolation.html#module-dolo.numeric.smolyak">smolyak</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interpolation.html#linear-delaunay-tessellation">linear (delaunay tessellation)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interpolation.html#multilinear">multilinear</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interpolation.html#splines">splines</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="test.html">Testing function documentation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="test.html#testing-graphs">Testing graphs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="test.html#numpy-documentation">Numpy documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Advanced topics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="structure.html">Structure of dolo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolation.html">Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compilation.html">Compilation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="conventions.html">Model conventions</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <div class="section" id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
 <li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
 <li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
 </ul>
+</div>
 </div>
 
 
@@ -151,9 +157,9 @@ contain the root <cite>toctree</cite> directive.</dd>
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Quick tutorial"
+          <a href="installation.html" title="Installation"
              >next</a> |</li>
-        <li><a href="#">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="#">dolo 0.4.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

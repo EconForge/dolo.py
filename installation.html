@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation instructions &mdash; dolo 0.3 documentation</title>
+    <title>Installation &mdash; dolo 0.4.4 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4.4',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,9 +26,9 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
-    <link rel="next" title="Install on linux" href="install_linux.html" />
-    <link rel="prev" title="Quick tutorial" href="tutorial.html" /> 
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="next" title="Quick tutorial" href="tutorial.html" />
+    <link rel="prev" title="Welcome to dolo’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -41,22 +41,30 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install_linux.html" title="Install on linux"
+          <a href="tutorial.html" title="Quick tutorial"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Quick tutorial"
+          <a href="index.html" title="Welcome to dolo’s documentation!"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#compiled-extensions">Compiled extensions</a></li>
+</ul>
+</li>
+</ul>
+
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tutorial.html"
-                        title="previous chapter">Quick tutorial</a></p>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to dolo&#8217;s documentation!</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="install_linux.html"
-                        title="next chapter">Install on linux</a></p>
+  <p class="topless"><a href="tutorial.html"
+                        title="next chapter">Quick tutorial</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/installation.txt"
@@ -83,13 +91,38 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="installation-instructions">
-<h1>Installation instructions<a class="headerlink" href="#installation-instructions" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="install_linux.html">Install on linux</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install_windows.html">Install on windows</a></li>
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>Dolo can be installed using the standard python command <tt class="docutils literal"><span class="pre">pip</span></tt>.
+You can choose between one of the three following options.</p>
+<ul class="simple">
+<li>To install last version from <cite>PyPI</cite> directories:</li>
 </ul>
+<div class="highlight-bash"><div class="highlight"><pre><span class="sb">`</span>pip install dolo<span class="sb">`</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>To install last version from github (requires git on your computer):</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre>pip install git+https://github.com/albop/dolo.git
+</pre></div>
+</div>
+<ul class="simple">
+<li>To install <cite>dolo</cite> from your own clone of the dolo repository. Type from this directory:</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre>pip install -e .
+</pre></div>
+</div>
+<p>The option -e tells the installer to make symlinks so that the installed version is automatically updated when a new
+version is pulled.</p>
+<div class="section" id="compiled-extensions">
+<h2>Compiled extensions<a class="headerlink" href="#compiled-extensions" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div>In case, you have used the last option you can also build the <tt class="docutils literal"><span class="pre">cython</span></tt> extension with:</div></blockquote>
+<div class="highlight-bash"><div class="highlight"><pre>python setup_cython.py --build-ext --inplace
+</pre></div>
+</div>
+<p>Eventually, this will be enabled by default.</p>
 </div>
 </div>
 
@@ -109,12 +142,12 @@
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="install_linux.html" title="Install on linux"
+          <a href="tutorial.html" title="Quick tutorial"
              >next</a> |</li>
         <li class="right" >
-          <a href="tutorial.html" title="Quick tutorial"
+          <a href="index.html" title="Welcome to dolo’s documentation!"
              >previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">

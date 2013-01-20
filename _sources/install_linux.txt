@@ -1,3 +1,38 @@
+Install
+=======
+
+Dolo can be installed using the standard python command `pip`.
+
+You can choose between one of the three following options.
+
+- To install last version from `PyPI` directories:
+
+.. code-block:: bash
+
+    `pip install dolo`
+
+- To install last version from github (requires git on your computer):
+
+
+.. code-block:: bash
+
+    pip install git+https://github.com/albop/dolo.git
+
+- To install `dolo` from your own clone of the repository:
+
+.. code-block:: bash
+
+    pip install -e .
+
+The option -e tells the installer to make symlinks so that the installed version is automatically updated when a new
+version is pulled.
+
+
+
+
+
+
+
 Install on linux
 ================
 
@@ -28,5 +63,5 @@ If it is not working create the directories
 ~/.local//lib/python2.7/site-packages/
 
 If it is not done already, add this line to the ~/.bashrc file export PATH=~/.local/bin:$PATH
-
+extra_compile_args=['-O3']
 With this set of commands, the installed version of dolo will always be the one being in the git repository, so that it you pull (git pull) the last revision or if you make modifications, it will affect the installed version.

@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Install on linux &mdash; dolo 0.3 documentation</title>
+    <title>Install &mdash; dolo 0.3 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -39,9 +39,6 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="install_windows.html" title="Install on windows"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -53,6 +50,12 @@
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Install</a></li>
+<li><a class="reference internal" href="#install-on-linux">Install on linux</a></li>
+</ul>
+
   <h4>Previous topic</h4>
   <p class="topless"><a href="installation.html"
                         title="previous chapter">Installation instructions</a></p>
@@ -85,7 +88,32 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="install-on-linux">
+  <div class="section" id="install">
+<h1>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h1>
+<p>Dolo can be installed using the standard python command <cite>pip</cite>.</p>
+<p>You can choose between one of the three following options.</p>
+<ul class="simple">
+<li>To install last version from <cite>PyPI</cite> directories:</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre><span class="sb">`</span>pip install dolo<span class="sb">`</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>To install last version from github (requires git on your computer):</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre>pip install git+https://github.com/albop/dolo.git
+</pre></div>
+</div>
+<ul class="simple">
+<li>To install <cite>dolo</cite> from your own clone of the repository:</li>
+</ul>
+<div class="highlight-bash"><div class="highlight"><pre>pip install -e .
+</pre></div>
+</div>
+<p>The option -e tells the installer to make symlinks so that the installed version is automatically updated when a new
+version is pulled.</p>
+</div>
+<div class="section" id="install-on-linux">
 <h1>Install on linux<a class="headerlink" href="#install-on-linux" title="Permalink to this headline">¶</a></h1>
 <p>Here is the currently recommended way to install Dolo on linux:</p>
 <p>Install the dependencies. On debian/ubuntu:</p>
@@ -100,8 +128,9 @@
 <p>python setup.py develop &#8211;prefix=~/.local/</p>
 <p>If it is not working create the directories</p>
 <p>~/.local//lib/python2.7/site-packages/</p>
-<p>If it is not done already, add this line to the ~/.bashrc file export PATH=~/.local/bin:$PATH</p>
-<p>With this set of commands, the installed version of dolo will always be the one being in the git repository, so that it you pull (git pull) the last revision or if you make modifications, it will affect the installed version.</p>
+<p>If it is not done already, add this line to the ~/.bashrc file export PATH=~/.local/bin:$PATH
+extra_compile_args=[&#8216;-O3&#8217;]
+With this set of commands, the installed version of dolo will always be the one being in the git repository, so that it you pull (git pull) the last revision or if you make modifications, it will affect the installed version.</p>
 </div>
 
 
@@ -116,9 +145,6 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="install_windows.html" title="Install on windows"
              >next</a> |</li>

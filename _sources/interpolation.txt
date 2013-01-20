@@ -7,7 +7,7 @@ They can been used with exactly the same interface. By default, *dolo* uses smol
 smolyak
 -------
 
-.. automodule:: dolo.numeric.smolyak
+.. automodule:: dolo.numeric.interpolation.smolyak
    :members:
 
 

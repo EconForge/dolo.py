@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Informations for developpers &mdash; dolo 0.3 documentation</title>
+    <title>Structure of dolo &mdash; dolo 0.4.4 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.3',
+        VERSION:     '0.4.4',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -26,9 +26,10 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="dolo 0.3 documentation" href="index.html" />
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="up" title="Advanced topics" href="api.html" />
     <link rel="next" title="Interpolation" href="interpolation.html" />
-    <link rel="prev" title="Model conventions" href="conventions.html" /> 
+    <link rel="prev" title="Advanced topics" href="api.html" /> 
   </head>
   <body>
     <div class="related">
@@ -44,16 +45,17 @@
           <a href="interpolation.html" title="Interpolation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="conventions.html" title="Model conventions"
+          <a href="api.html" title="Advanced topics"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h4>Previous topic</h4>
-  <p class="topless"><a href="conventions.html"
-                        title="previous chapter">Model conventions</a></p>
+  <p class="topless"><a href="api.html"
+                        title="previous chapter">Advanced topics</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="interpolation.html"
                         title="next chapter">Interpolation</a></p>
@@ -83,47 +85,49 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="informations-for-developpers">
-<h1>Informations for developpers<a class="headerlink" href="#informations-for-developpers" title="Permalink to this headline">¶</a></h1>
-<p>Current folder organization</p>
-<ul class="simple">
-<li>model file (dynare modfile or yamlfile)</li>
-<li>symbolic model (sympy only)</li>
-<li>compiler (sympy only)</li>
-<li>numeric (everything with numerical calculations)</li>
-</ul>
-<p>New structure</p>
+  <div class="section" id="structure-of-dolo">
+<h1>Structure of dolo<a class="headerlink" href="#structure-of-dolo" title="Permalink to this headline">¶</a></h1>
+<p>Here is the current structure of dolo :</p>
 <ol class="arabic">
-<li><p class="first">serialized model: YAML file / modfile</p>
-</li>
 <li><dl class="first docutils">
-<dt>symbolic model</dt>
+<dt>import serialized model: YAML file / modfile</dt>
 <dd><ul class="first last simple">
-<li>generic</li>
-<li>implements type checkers</li>
+<li>currently in <tt class="docutils literal"><span class="pre">dolo.misc.yamlfile</span></tt> and <tt class="docutils literal"><span class="pre">dolo.misc.modfile</span></tt></li>
 </ul>
 </dd>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt>compiled models (complies with numeric interface)</dt>
+<dt>symbolic model: <tt class="docutils literal"><span class="pre">dolo.symbolic.*</span></tt></dt>
 <dd><ul class="first last simple">
-<li>can be Matlab/Python/...</li>
+<li>timed symbols and taggable equations (<tt class="docutils literal"><span class="pre">dolo.symbolic.symbolic</span></tt>)</li>
+<li>symbolic model object (<tt class="docutils literal"><span class="pre">dolo.symbolic.model</span></tt>)</li>
+<li>model-types definitions (<tt class="docutils literal"><span class="pre">dolo.symbolic.recipes</span></tt>)</li>
+<li>model-type checkers (<tt class="docutils literal"><span class="pre">dolo.symbolic.validate</span></tt>)</li>
 </ul>
 </dd>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt>numerical methods</dt>
+<dt>compilation routines: <tt class="docutils literal"><span class="pre">dolo.compiler.*</span></tt></dt>
 <dd><ul class="first last simple">
-<li>pure algorithms: take matrices as input</li>
-<li>model aware: take compiled models as input</li>
+<li>generic function to transform a multiargument symbolic function to a python/matlab/julia numeric function: <tt class="docutils literal"><span class="pre">dolo.compiler.compiler_function*</span></tt></li>
+<li>transform a symbolic model to a numeric model according recipes: <tt class="docutils literal"><span class="pre">dolo.compiler.compiler_*</span></tt></li>
 </ul>
 </dd>
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt>commands</dt>
+<dt>numerical methods:  <tt class="docutils literal"><span class="pre">dolo.numeric.*</span></tt></dt>
+<dd><ul class="first last simple">
+<li>pure algorithms: take matrices or numerical functions as input</li>
+<li>solution algorithms: can take compiled models of certified type as input</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>commands (to be done)</dt>
 <dd><ul class="first last simple">
 <li>define user-friendly commands</li>
 </ul>
@@ -152,9 +156,10 @@
           <a href="interpolation.html" title="Interpolation"
              >next</a> |</li>
         <li class="right" >
-          <a href="conventions.html" title="Model conventions"
+          <a href="api.html" title="Advanced topics"
              >previous</a> |</li>
-        <li><a href="index.html">dolo 0.3 documentation</a> &raquo;</li> 
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" >Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
