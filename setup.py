@@ -3,9 +3,7 @@ from distutils.extension import Extension
 
 #from Cython.Distutils import build_ext
 
-#from dolo import __version__
-
-__version__ = '0.4.4'
+from dolo import __version__
 
 setup(
 

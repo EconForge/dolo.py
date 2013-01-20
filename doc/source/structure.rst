@@ -1,27 +1,24 @@
-Informations for developpers
-================================
+Structure of dolo
+=================
 
-Current folder organization
+Here is the current structure of dolo :
 
-- model file (dynare modfile or yamlfile)
-- symbolic model (sympy only)
-- compiler (sympy only)
-- numeric (everything with numerical calculations)
+1. import serialized model: YAML file / modfile
+    - currently in ``dolo.misc.yamlfile`` and ``dolo.misc.modfile``
 
-New structure
+2. symbolic model: ``dolo.symbolic.*``
+    - timed symbols and taggable equations (``dolo.symbolic.symbolic``)
+    - symbolic model object (``dolo.symbolic.model``)
+    - model-types definitions (``dolo.symbolic.recipes``)
+    - model-type checkers (``dolo.symbolic.validate``)
 
-1. serialized model: YAML file / modfile
+3. compilation routines: ``dolo.compiler.*``
+    - generic function to transform a multiargument symbolic function to a python/matlab/julia numeric function: ``dolo.compiler.compiler_function*``
+    - transform a symbolic model to a numeric model according recipes: ``dolo.compiler.compiler_*``
 
-2. symbolic model
-    - generic
-    - implements type checkers
+4. numerical methods:  ``dolo.numeric.*``
+    - pure algorithms: take matrices or numerical functions as input
+    - solution algorithms: can take compiled models of certified type as input
 
-3. compiled models (complies with numeric interface)
-    - can be Matlab/Python/...
-
-4. numerical methods
-    - pure algorithms: take matrices as input
-    - model aware: take compiled models as input
-
-5. commands
+5. commands (to be done)
     - define user-friendly commands

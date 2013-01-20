@@ -3,9 +3,8 @@ from distutils.extension import Extension
 
 from Cython.Distutils import build_ext
 import numpy as np
-#from dolo import __version__
 
-__version__ = '0.4.4'
+from dolo import __version__
 
 print setup
 
