@@ -71,7 +71,7 @@ end
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
-        eq_block = '    {lhs} = np.zeros( (n,{1},{0}) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        eq_block = '    {lhs} = np.zeros( n,{1},{0} )\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
