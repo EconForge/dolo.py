@@ -84,7 +84,7 @@ end
     if diff:
         for i,a_g in enumerate(args_list):
             lhs = 'val_' + args_names[i]
-            content += "\n    # Derivatives w.r.t: {0}\n\n".format(args_names[i])
+            content += "\n    % Derivatives w.r.t: {0}\n\n".format(args_names[i])
             content += write_der_eqs(equations, a_g, lhs)
 
     return_names = str.join(', ', [ 'val_'+ str(a) for a in args_names] ) if diff else 'val'
