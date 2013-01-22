@@ -7,7 +7,7 @@ from dolo import __version__
 
 parser = argparse.ArgumentParser(description='Matlab compiler')
 parser.add_argument('-v','--version', action='version', version=__version__)
-
+parser.add_argument('-d','--diff',  action='store_const', const=True, default=False, help='compute symbolic derivatives')
 parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
 #parser.add_argument('-t','--model_type', nargs=1, type=str,  default=None, help='type of model')
 parser.add_argument('--recipes', nargs=1, type=str, default=None, help='file containing recipes')
@@ -63,10 +63,15 @@ if args.recipes:
 else:
     recipes = None
 
+if args.diff:
+    diff = True
+else:
+    diff = False
+
 from dolo.compiler.compiler_matlab import CompilerMatlab
 comp = CompilerMatlab(model, recipes=recipes)
 
-txt = comp.process_output( )
+txt = comp.process_output( diff=diff )
 
 ######
 

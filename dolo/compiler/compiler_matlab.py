@@ -21,7 +21,7 @@ class CompilerMatlab(object):
             self.recipe = model_type
 
 
-    def process_output(self, recipe=None):
+    def process_output(self, recipe=None, diff=False):
 
         recipe = self.recipe
 
@@ -66,7 +66,7 @@ class CompilerMatlab(object):
                 equations = [eq.gap for eq in equations]
 
             from dolo.compiler.function_compiler_matlab import compile_multiargument_function
-            txt = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg)
+            txt = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg, diff=diff)
 
             fun_text += txt
 
