@@ -71,7 +71,7 @@ end
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
-        eq_block = '    {lhs} = np.zeros( n,{1},{0} )\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        eq_block = '    {lhs} = zeros( n,{1},{0} )\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
@@ -81,13 +81,19 @@ end
 
     content = write_eqs(equations)
 
+    content += '''
+    if nargout <= 1
+        return
+    end
+'''
+
     if diff:
         for i,a_g in enumerate(args_list):
             lhs = 'val_' + args_names[i]
             content += "\n    % Derivatives w.r.t: {0}\n\n".format(args_names[i])
             content += write_der_eqs(equations, a_g, lhs)
 
-    return_names = str.join(', ', [ 'val_'+ str(a) for a in args_names] ) if diff else 'val'
+    return_names = str.join(', ', ['val'] + [ 'val_'+ str(a) for a in args_names] ) if diff else 'val'
     text = text.format(
             fname = fname,
             var = args_names[0],
