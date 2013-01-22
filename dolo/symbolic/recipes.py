@@ -45,6 +45,10 @@ recipe_fga = dict(
     )
 )
 
+#import copy
+#recipe_fgae = copy.deepcopy(recipe_fga)
+#recipe_fgae['equation_type']['arbitrage'].append( ('shocks',1) )
+
 recipe_fgh = dict(
 
     model_type = 'fgh',
@@ -91,5 +95,6 @@ recipe_fgh = dict(
 
 recipes = {
     'fga': recipe_fga,
+#    'fgae': recipe_fgae,
     'fgh': recipe_fgh,
 }

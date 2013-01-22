@@ -5,9 +5,9 @@ from dolo.symbolic.recipes import recipes
 
 def validate(model, recipe):
 
-    if isinstance(recipe, str):
-        validate(model, recipes[recipe])
-        return
+#    if isinstance(recipe, str):
+#        validate(model, recipes[recipe])
+#        return
 
     for vg in model['variables_groups']:
         assert( vg in recipe['variable_type'])
