@@ -1,7 +1,7 @@
 
 class CompilerMatlab(object):
 
-    def __init__(self, model, model_type=None):
+    def __init__(self, model, model_type=None, recipes=None):
 
         if model_type is None:
             model_type = model['original_data']['model_type']
@@ -11,11 +11,13 @@ class CompilerMatlab(object):
 
         from dolo.symbolic.validator import validate
         if isinstance(model_type, str):
-            validate(model, model_type)
-            from dolo.symbolic.recipes import recipes
-            self.recipe = recipes[model_type]
+            from dolo.symbolic.recipes import recipes as recipes_dict
+            if recipes is not None:
+                recipes_dict.update(recipes)
+            self.recipe = recipes_dict[model_type]
+            validate(model, self.recipe)
         else:
-            # if model_type is not a string, we assume it is a recipe
+            # if model_type is not a string, we assume it is a recipe (why ?)
             self.recipe = model_type
 
 
@@ -76,6 +78,12 @@ class CompilerMatlab(object):
         steady_state = calib['steady_state']
         parameters_values = calib['parameters']
 
+        if 'sigma' in calib:
+            sigma_calib = 'calibration.sigma = {}\n'.format( str(calib['sigma']).replace('\n',';') )
+        else:
+            sigma_calib = {}
+
+
 
         funs_text = "functions = struct;\n"
         for fun_name in recipe['equation_type']:
@@ -89,8 +97,8 @@ class CompilerMatlab(object):
         for vn, vg in model['variables_groups'].iteritems():
             var_text += 'variables.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
 
-        var_text += 'variables.parameters = {{{}}},\n'.format(str.join(',', ["'{}'".format(e ) for e in model['parameters_ordering']]))
-        var_text += 'variables.shocks = {{{}}}\n'.format(str.join(',', ["'{}'".format(e ) for e in model['shocks_ordering']]))
+        var_text += 'variables.parameters = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['parameters_ordering']]))
+        var_text += 'variables.shocks = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['shocks_ordering']]))
 
 
         full_text = '''
@@ -103,15 +111,15 @@ function [model] = get_model()
 
 calibration = struct;
 calibration.steady_state = steady_state;
-calibration.parameters = {params}
+calibration.parameters = {params};
+{sigma_calib}
 
 {funs_text}
 
-model = {{
-    variables = variables,
-    functions = functions,
-    calibration = calibration
-}}
+model = struct;
+model.variables = variables;
+model.functions = functions;
+model.calibration = calibration;
 
 end
 
@@ -125,6 +133,7 @@ end
             function_definitions = fun_text,
             funs_text = funs_text,
             ss_text = ss_text,
+            sigma_calib = sigma_calib,
             var_text = var_text,
             params = str(parameters_values)
 

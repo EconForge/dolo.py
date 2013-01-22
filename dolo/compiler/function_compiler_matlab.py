@@ -51,13 +51,11 @@ def compile_multiargument_function(equations, args_list, args_names, parms, diff
 
 
     text = '''
-function {fname}({args_names}, {param_names})
+function [{return_names}] = {fname}({args_names}, {param_names})
 
     n = size({var},1)
 
 {content}
-
-    return {return_names}
 
 end
     '''

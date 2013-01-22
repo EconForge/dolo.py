@@ -9,7 +9,8 @@ parser = argparse.ArgumentParser(description='Matlab compiler')
 parser.add_argument('-v','--version', action='version', version=__version__)
 
 parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
-parser.add_argument('-t','--model_type', nargs=1, type=str,  default=None, help='type of model')
+#parser.add_argument('-t','--model_type', nargs=1, type=str,  default=None, help='type of model')
+parser.add_argument('--recipes', nargs=1, type=str, default=None, help='file containing recipes')
 
 parser.add_argument('input', help='model file')
 parser.add_argument('output',nargs='?',type=str,default=None,help='model file')
@@ -55,13 +56,15 @@ if args.print_residuals:
     print_residuals(model)
 
 
-if args.model_type:
-    model_type = args.model_type[0]
+if args.recipes:
+    import yaml
+    with file(args.recipes[0]) as f:
+        recipes = yaml.load(f)
 else:
-    model_type = None
+    recipes = None
 
 from dolo.compiler.compiler_matlab import CompilerMatlab
-comp = CompilerMatlab(model, model_type=model_type)
+comp = CompilerMatlab(model, recipes=recipes)
 
 txt = comp.process_output( )
 
