@@ -79,7 +79,7 @@ class CompilerMatlab(object):
         parameters_values = calib['parameters']
 
         if 'sigma' in calib:
-            sigma_calib = 'calibration.sigma = {}\n'.format( str(calib['sigma']).replace('\n',';') )
+            sigma_calib = 'calibration.sigma = {};\n'.format( str(calib['sigma']).replace('\n',';') )
         else:
             sigma_calib = {}
 

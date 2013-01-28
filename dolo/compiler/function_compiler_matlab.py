@@ -53,7 +53,7 @@ def compile_multiargument_function(equations, args_list, args_names, parms, diff
     text = '''
 function [{return_names}] = {fname}({args_names}, {param_names})
 
-    n = size({var},1)
+    n = size({var},1);
 
 {content}
 
@@ -65,18 +65,18 @@ end
     dp = DicPrinter(sub_list)
 
     def write_eqs(eq_l,outname='val'):
-        eq_block = '    {0} = zeros( n, {1} )\n'.format(outname, len(eq_l))
+        eq_block = '    {0} = zeros( n, {1} );\n'.format(outname, len(eq_l))
         for i,eq in enumerate(eq_l):
-            eq_block += '    {0}(:,{1}) = {2}\n'.format(outname, i+1,  dp.doprint_numpy(eq))
+            eq_block += '    {0}(:,{1}) = {2};\n'.format(outname, i+1,  dp.doprint_matlab(eq, vectorize=True))
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
-        eq_block = '    {lhs} = zeros( n,{1},{0} )\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        eq_block = '    {lhs} = zeros( n,{0},{1} );\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
-                s = dp.doprint_numpy( eq )
-                eq_block += '    {lhs}(:,{1},{0}) = {2}\n'.format(i+1,j+1,s,lhs=lhs)
+                s = dp.doprint_matlab( eq, vectorize=True )
+                eq_block += '    {lhs}(:,{0},{1}) = {2};\n'.format(i+1,j+1,s,lhs=lhs)
         return eq_block
 
     content = write_eqs(equations)
@@ -103,9 +103,6 @@ end
             param_names = 'p'
             )
 
-    text = text.replace('**','.^')
-    text = text.replace('*','.*')
-    text = text.replace('/','./')
 #    text = text.replace('+','.+')
 #    text = text.replace('-','.-')
 

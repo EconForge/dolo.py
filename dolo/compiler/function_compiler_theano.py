@@ -74,7 +74,7 @@ from theano.tensor import exp
 
 res = T.stack({vars})
 
-f = function([{args}], res, mode='FAST_RUN',name="{fname}") #,on_unused_input='ignore')
+f = function([{args}], res, mode='FAST_RUN',name="{fname}", on_unused_input='ignore')
 
 """
 
