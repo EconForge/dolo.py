@@ -1,3 +1,14 @@
+'''
+ideas :
+-  recursive blocks           [by default]
+- (order left hand side ?)    [by default]
+- dependency across blocks
+- dummy blocks that are basically substituted everywhere else
+'''
+
+
+
+
 recipe_fga = dict(
 
     model_type = 'fga',
