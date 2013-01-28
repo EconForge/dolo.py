@@ -117,9 +117,9 @@ class MultilinearInterpolator:
 
     def __init__(self, smin, smax, orders):
         d = len(orders)
-        self.smin = numpy.array( smin )
-        self.smax = numpy.array( smax )
-        self.orders = numpy.array( orders )
+        self.smin = numpy.array( smin, dtype=numpy.double )
+        self.smax = numpy.array( smax, dtype=numpy.double )
+        self.orders = numpy.array( orders, dtype=numpy.int )
         self.d = d
         self.grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
         self.grid = numpy.ascontiguousarray(self.grid)

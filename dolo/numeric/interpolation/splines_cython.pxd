@@ -31,7 +31,7 @@ cdef extern from "bspline.h":
 
     UBspline_1d_d * create_UBspline_1d_d (Ugrid x_grid, BCtype_d xBC, double *data)
     UBspline_2d_d * create_UBspline_2d_d (Ugrid x_grid, Ugrid y_grid, BCtype_d xBC, BCtype_d yBC, double *data)
-    UBspline_3d_d * create_UBspline_3d_d (Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC,double *data)
+    UBspline_3d_d * create_UBspline_3d_d (Ugrid x_grid, Ugrid y_grid, Ugrid z_grid, BCtype_d xBC, BCtype_d yBC, BCtype_d zBC, double *data)
 
     void eval_UBspline_1d_d (UBspline_1d_d * spline, double x, double* val) nogil
     void eval_UBspline_2d_d (UBspline_2d_d * spline, double x, double y, double* val) nogil
