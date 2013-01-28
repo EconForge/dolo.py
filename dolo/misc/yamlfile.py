@@ -42,6 +42,13 @@ Imports the content of a modfile into the current interpreter scope
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
     context = dict(context)
 
+    from dolo.symbolic.symbolic import timeshift as TS
+    context['TS'] = TS
+    if 'horrible_hack' in raw_dict:
+        tt = raw_dict['horrible_hack']
+        exec(raw_dict['horrible_hack'],context)
+
+
     # add some common functions
     for f in [sympy.log, sympy.exp,
               sympy.sin, sympy.cos, sympy.tan,
