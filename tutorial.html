@@ -224,11 +224,14 @@ and <tt class="docutils literal"><span class="pre">parameters</span></tt>.</p>
 </li>
 <li><p class="first">The model part consists of a list of equations sorted by type.  In these equations, variables and shocks are indexed
 by time: <tt class="docutils literal"><span class="pre">A</span></tt>, <tt class="docutils literal"><span class="pre">A(1)</span></tt> and <tt class="docutils literal"><span class="pre">A(-1)</span></tt> denote variable <tt class="docutils literal"><span class="pre">A</span></tt> at date <tt class="docutils literal"><span class="pre">t</span></tt>, <tt class="docutils literal"><span class="pre">(t-1)</span></tt>, and <tt class="docutils literal"><span class="pre">t+1</span></tt> respectively.
-By assumption all equations are taken in expectation at date t (explanation).
-Optionnaly, arbitrage equations can receive complementarity constraints separated by <tt class="docutils literal"><span class="pre">|</span></tt>.
+By assumption al equations are taken in expectation at date t (explanation).</p>
+<p><tt class="docutils literal"><span class="pre">transition</span></tt> and <tt class="docutils literal"><span class="pre">auxiliary</span></tt> are <em>definition</em> equations, You must define variables in the same order as in the declaration header.
+Definition equation can be defined recursively, meaning that you can use a just defined variable on the right hand side.</p>
+<p><tt class="docutils literal"><span class="pre">arbitrage</span></tt> equations can receive complementarity constraints separated by <tt class="docutils literal"><span class="pre">|</span></tt>.
 The meaning of <tt class="docutils literal"><span class="pre">f</span> <span class="pre">|</span> <span class="pre">a&lt;=x&lt;=b</span></tt> is interpreted as follows: either <tt class="docutils literal"><span class="pre">f=0</span></tt> or <tt class="docutils literal"><span class="pre">f&gt;0</span></tt> and <tt class="docutils literal"><span class="pre">x=b</span></tt>
 or <tt class="docutils literal"><span class="pre">f&lt;0</span></tt> and <tt class="docutils literal"><span class="pre">x=a</span></tt>. This is very useful when representing the langrangian positivity conditions coming from an
-objective maximization. In that case the lagrangian would always be equal to <tt class="docutils literal"><span class="pre">f</span></tt>.</p>
+objective maximization. In that case the lagrangian would always be equal to <tt class="docutils literal"><span class="pre">f</span></tt>. Complementarity conditions must
+be expressed directly as a function of the state.</p>
 </li>
 <li><p class="first">The calibration part contains</p>
 <blockquote>
