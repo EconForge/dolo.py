@@ -435,9 +435,10 @@ def list_to_mat(l):
     return mat
 
 if __name__ == "__main__":
-    from dolo import dynare_import
-    model = dynare_import('../../../examples/global_models/optimal_growth.mod')
-    model.check()
-    recscp = RecsCompiler(model)
-    print recscp.process_output_recs()
+
+    from dolo import *
+
+    model = yaml_import('examples/global_models/sto1.yaml')
+    comp  = RecsCompiler(model)
+    print comp.process_output_recs()
 
