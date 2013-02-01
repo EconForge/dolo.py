@@ -1,8 +1,8 @@
 Structure of dolo
 =================
 
-Here is the current structure of dolo :
-
+Here is how the code in dolo is organized :
+the
 1. import serialized model: YAML file / modfile
     - currently in ``dolo.misc.yamlfile`` and ``dolo.misc.modfile``
 
@@ -22,3 +22,6 @@ Here is the current structure of dolo :
 
 5. commands (to be done)
     - define user-friendly commands
+
+.. image:: structure.png
+    :width: 100 %
