@@ -1,7 +1,7 @@
 Model conventions
 =================
 
-This page describes how models are specified in dolo.
+This page describes various conventions used in dolo.
 
 +++++++++++
 Model types
@@ -99,7 +99,7 @@ Numerical Conventions
 
 .. note::
 
-   When dolo is used to compiler a model for matlab the convention is reversed: first dimension
+   When dolo is used to compile a model for matlab the convention is reversed: first dimension
    denotes the successive points. This is adapted to matlab's storage order (Fortran order).
 
 

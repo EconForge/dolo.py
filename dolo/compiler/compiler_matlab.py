@@ -61,6 +61,8 @@ class CompilerMatlab(object):
             equations = self.model['equations_groups'][eqg]
 
             if is_a_definition:
+                from dolo.compiler.common import solve_recursive_block
+                equations = solve_recursive_block(equations)
                 equations = [eq.rhs for eq in equations]
             else:
                 equations = [eq.gap for eq in equations]
@@ -93,12 +95,12 @@ class CompilerMatlab(object):
         for k,v in steady_state.iteritems():
             ss_text += 'steady_state.{0} = {1};\n'.format( k, str(v) )
 
-        var_text = "variables = struct;\n"
+        var_text = "symbols = struct;\n"
         for vn, vg in model['variables_groups'].iteritems():
-            var_text += 'variables.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
+            var_text += 'symbols.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
 
-        var_text += 'variables.parameters = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['parameters_ordering']]))
-        var_text += 'variables.shocks = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['shocks_ordering']]))
+        var_text += 'symbols.parameters = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['parameters_ordering']]))
+        var_text += 'symbols.shocks = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['shocks_ordering']]))
 
 
         full_text = '''
@@ -117,7 +119,7 @@ calibration.parameters = {params};
 {funs_text}
 
 model = struct;
-model.variables = variables;
+model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
 

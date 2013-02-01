@@ -22,7 +22,7 @@ class TestGlobal(unittest.TestCase):
 
         t2 = time.time()
 
-        dr = global_solve(model, pert_order=2, maxit=5, interp_type='multilinear', verbose=True, polish=False)
+        dr = global_solve(model, pert_order=1, maxit=5, interp_type='multilinear', verbose=True, polish=False)
 
         t3 = time.time()
 

@@ -160,6 +160,9 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
         sub_list[p] = '{0}_{1}'.format('p',i)
         declarations += "    {0}_{1} = {0}[{1}]\n".format('p', i)
 
+    import sympy
+    # TODO: construct a common list of symbol that should be understood everywhere
+    sub_list[sympy.Symbol('inf')] = 'inf'
 
     text = '''
 def {fname}({args_names}, {param_names}, derivs=False):
@@ -242,8 +245,6 @@ def {fname}({args_names}, {param_names}, derivs=False):
     if return_text:
         return text
 
-    import numpy as np
-    inf = np.inf
 
     return code_to_function(text,fname)
 

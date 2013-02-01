@@ -59,6 +59,8 @@ class CompilerJulia(object):
             equations = self.model['equations_groups'][eqg]
 
             if is_a_definition:
+                from dolo.compiler.common import solve_recursive_block
+                equations = solve_recursive_block(equations)
                 equations = [eq.rhs for eq in equations]
             else:
                 equations = [eq.gap for eq in equations]
@@ -87,7 +89,7 @@ class CompilerJulia(object):
             ss_text += '\t"{0}" => {1},\n'.format( k, str(v) )
         ss_text += '}'
 
-        var_text = "variables = {\n"
+        var_text = "symbols = {\n"
         for vn, vg in model['variables_groups'].iteritems():
             var_text += '\t"{0}" => [{1}],\n'.format(vn, str.join(',', ['"{}"'.format(e ) for e in vg]))
 
@@ -112,7 +114,7 @@ calibration = {{
 }}
 
 model = {{
-    "variables" => variables,
+    "symbols" => symbols,
     "functions" => functions,
     "calibration" => calibration
 }}

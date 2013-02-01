@@ -16,5 +16,3 @@ class TestGlobal(unittest.TestCase):
 
         dr = global_solve(model, pert_order=2, maxit=5, interp_type='spline', verbose=True)
 
-
-unittest.main()

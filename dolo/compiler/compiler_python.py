@@ -59,6 +59,8 @@ class GModel(object):
             equations = self.model['equations_groups'][eqg]
 
             if is_a_definition:
+                from dolo.compiler.common import solve_recursive_block
+                equations = solve_recursive_block(equations)
                 equations = [eq.rhs for eq in equations]
             else:
                 equations = [eq.gap for eq in equations]
@@ -84,14 +86,14 @@ class GModel(object):
             else:
                 calibration[k] = numpy.array(calibration[k], dtype=numpy.double)
 
-        variables = {}
+        symbols = {}
         for vn, vg in model['variables_groups'].iteritems():
-            variables[vn] = [str(v) for v in vg]
-        variables['shocks'] = [str(v) for v in model.shocks]
-        variables['parameters'] = [str(v) for v in model.parameters]
+            symbols[vn] = [str(v) for v in vg]
+        symbols['shocks'] = [str(v) for v in model.shocks]
+        symbols['parameters'] = [str(v) for v in model.parameters]
 
         self.calibration = calibration
-        self.variables = variables
+        self.symbols = symbols
         self.functions = functions
 
 if __name__ == '__main__':
