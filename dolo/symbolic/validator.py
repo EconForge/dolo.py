@@ -33,7 +33,6 @@ def validate(model, recipe):
         equations = model['equations_groups'][eqg]
 
         if eq_recipe.get('definition'):
-            print(equations)
             from dolo.compiler.common import solve_recursive_block
             try:
                 temp = solve_recursive_block(equations)

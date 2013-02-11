@@ -10,7 +10,7 @@ import re
 def iteritems(d):
     return zip(d.keys(), d.values())
 
-def parse_yaml_text(txt,verbose=False):
+def parse_yaml_text(txt,verbose=False, compiler=None):
     '''
 Imports the content of a modfile into the current interpreter scope
 '''
@@ -145,15 +145,21 @@ Imports the content of a modfile into the current interpreter scope
 
     model = Model(**model_dict)
     model.check_consistency(auto_remove_variables=False)
+
+    if compiler is not None:
+        from dolo.compiler.compiler_python import GModel
+        return GModel(model, compiler=compiler)
+
     return model
 
-def yaml_import(filename,verbose=False):
+def yaml_import(filename,verbose=False, compiler=None):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.yaml').match(basename).group(1)
     f = open(filename)
     txt = f.read()
-    model = parse_yaml_text(txt,verbose=verbose)
-    model['name'] = fname
+    model = parse_yaml_text(txt,verbose=verbose, compiler=compiler)
+    if compiler is None:
+        model['name'] = fname
     return model

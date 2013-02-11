@@ -30,7 +30,7 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
         pert_parms = parms.copy()
         pert_parms[sigma_index] += epsilon
 
-        g_pert = g_fun( g_args_ss, pert_parms)
+        g_pert = g_fun(g_args_ss, pert_parms)
         sig2 = (g_pert[0] - g[0])/epsilon*2
         sig2_s = (g_pert[1] - g[1])/epsilon*2
         pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s] )
@@ -89,13 +89,40 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
         return [X_bar, X_s, X_ss, X_sss]
 
 def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
-    """
-    Compute the perturbation of a system in the form:
-    $E_t f(s_t,x_t,s_{t+1},x_{t+1})$
-    $s_t = g(s_{t-1},x_{t-1},\\epsilon_t$
-    
+    """Computes a Taylor approximation of decision rules, given the supplied derivatives.
+
+    The original system is assumed to be in the the form:
+
+    .. math::
+
+        E_t f(s_t,x_t,s_{t+1},x_{t+1})
+
+        s_t = g(s_{t-1},x_{t-1}, \\sigma \\epsilon_t)
+
+    where :math:`\\lambda` is a scalar scaling down the risk.  the solution is a function :math:`\\varphi` such that:
+
+    .. math::
+
+        x_t = \\varphi ( s_t, \\sigma )
+
+    The user supplies, a list of derivatives of f and g.
+
     :param f_fun: list of derivatives of f [order0, order1, order2, ...]
     :param g_fun: list of derivatives of g [order0, order1, order2, ...]
+    :param sigma: covariance matrix of :math:`\\epsilon_t`
+    :param sigma2_correction: (optional) first and second derivatives of g w.r.t. sigma if :math:`g` explicitely depends
+        :math:`sigma`
+
+
+    Assuming :math:`s_t` ,  :math:`x_t` and :math:`\\epsilon_t` are vectors of size
+    :math:`n_s`, :math:`n_x`  and :math:`n_x`  respectively.
+    In general the derivative of order :math:`i` of :math:`f`  is a multimensional array of size :math:`n_x \\times (N, ..., N)`
+    with :math:`N=2(n_s+n_x)` repeated :math:`i` times (possibly 0).
+    Similarly the derivative of order :math:`i` of :math:`g`  is a multidimensional array of size :math:`n_s \\times (M, ..., M)`
+    with :math:`M=n_s+n_x+n_2` repeated :math:`i` times (possibly 0).
+
+    
+
     """
     import numpy as np
     from numpy.linalg import solve

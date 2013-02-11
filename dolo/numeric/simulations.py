@@ -3,7 +3,7 @@ import numpy as np
 from dolo.numeric.global_solution import step_residual
 
 
-def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True,
+def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True,
              solve_expectations=False, nodes=None, weights=None):
 
     '''
@@ -40,9 +40,16 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, dis
 
 
 
-    if parms == None:
-        parms = cmodel.model.read_calibration()[2] # TODO : remove reference to symbolic model
+    calib = cmodel.model.calibration
 
+    if parms is None:
+        parms = numpy.array( calib['parameters'] ) # TODO : remove reference to symbolic model
+
+    if sigma is None:
+        sigma = numpy.array( calib['sigma'] )
+
+    if s0 is None:
+        s0 = numpy.array( calib['steady_state']['states'] )
 
     s0 = numpy.atleast_2d(s0.flatten()).T
 
@@ -111,6 +118,39 @@ def simulate(cmodel, dr, s0, sigma, n_exp=0, horizon=40, parms=None, seed=1, dis
         simul = simul[:,0,:]
 
     return simul
+
+
+def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=10, s0=None, **kwargs):
+
+    import numpy
+
+    states_names = [str(s) for s in model['variables_groups']['states']]
+    controls_names = [str(s) for s in model['variables_groups']['controls']]
+    index = states_names.index(str(state))
+    if bounds is None:
+        bounds = [dr.smin[index], dr.smax[index]]
+    values = numpy.linspace(bounds[0], bounds[1], n_steps)
+    if s0 is None:
+        s0 = model.calibration['steady_state']['states']
+    svec = numpy.column_stack([s0]*n_steps)
+    svec[index,:] = values
+    xvec = dr(svec)
+
+    if plot_controls is None:
+        return [svec, xvec]
+    else:
+        from matplotlib import pyplot
+        if isinstance(plot_controls, str):
+            i = controls_names.index(plot_controls)
+            pyplot.plot(values, xvec[i,:], **kwargs)
+        else:
+            for cn in  plot_controls:
+                i = controls_names.index(cn)
+                pyplot.plot(values, xvec[i,:], label=cn)
+            pyplot.legend()
+        pyplot.xlabel(state)
+
+
 
 if __name__ == '__main__':
     from dolo import yaml_import, approximate_controls

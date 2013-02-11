@@ -166,3 +166,6 @@ def global_solve(model,
         vprint('Finished in {} s'.format(t2 - t1))
 
     return dr
+
+
+# def plot_decision_rule():

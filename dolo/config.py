@@ -9,6 +9,7 @@
 # try to register printing methods if IPython is running
 
 save_plots = False
+real_type = 'double'
 
 try:
     import dolo.misc.printing as printing
