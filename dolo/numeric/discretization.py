@@ -59,8 +59,6 @@ def rouwenhorst(rho, sigma, N):
     q = p
     nu = sqrt( (N-1)/(1-rho**2) )*sigma
 
-    print(nu)
-    print(N)
     nodes = linspace( -nu, nu, N)
     sig_a = sigma
     n = 1
@@ -105,15 +103,15 @@ def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
     elif method=='rouwenhorst':
         [nodes_1d, probas_1d] = rouwenhorst(rho, 1, N)
 
-    markov_nodes = numpy.array( list( product( *([nodes_1d]*d))) ).T
-    markov_indices = numpy.array( list( product( *([range(N)]*d)  )  ) ).T
+    markov_nodes = np.array( list( product( *([nodes_1d]*d))) ).T
+    markov_indices = np.array( list( product( *([range(N)]*d)  )  ) ).T
 
     markov_nodes = np.dot(L, markov_nodes)
 
 
     transition_matrix = 1
     for i in range(d):
-        transition_matrix = numpy.kron(transition_matrix, probas_1d)
+        transition_matrix = np.kron(transition_matrix, probas_1d)
 
     return [markov_nodes, transition_matrix]
 
