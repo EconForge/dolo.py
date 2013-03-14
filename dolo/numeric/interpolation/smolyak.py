@@ -426,7 +426,7 @@ if __name__ == '__main__':
 #        return res
 #
 
-    from dolo.numeric.serial_operations import numdiff1, numdiff2
+#    from dolo.numeric.serial_operations import numdiff1, numdiff2
 
 #    x0 = sg.theta.flatten()
     x0 = values.flatten()

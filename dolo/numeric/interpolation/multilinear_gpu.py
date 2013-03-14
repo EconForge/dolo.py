@@ -9,7 +9,7 @@ from numpy import *
 import numpy as np
 
 import numpy
-from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation as mlininterp_cpu
+from multilinear_cython import multilinear_interpolation as mlininterp_cpu
 
 real_type = numpy.single
 
