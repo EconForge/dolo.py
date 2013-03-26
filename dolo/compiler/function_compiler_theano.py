@@ -1,6 +1,11 @@
 from __future__ import division
 from __future__ import print_function
 
+from distutils.version import LooseVersion
+from theano import __version__
+
+theano_less_than_6 = (LooseVersion(__version__) < LooseVersion('0.6.0') )
+
 
 def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
     source = compile_theano_source(values, args_list, args_names, parms, fname=fname)
@@ -74,7 +79,7 @@ from theano.tensor import exp
 
 res = T.stack({vars})
 
-f = function([{args}], res, mode='FAST_RUN',name="{fname}", on_unused_input='ignore')
+f = function([{args}], res, mode='FAST_RUN',name="{fname}"{on_unused_input})
 
 """
 
@@ -84,7 +89,8 @@ f = function([{args}], res, mode='FAST_RUN',name="{fname}", on_unused_input='ign
         declarations = dec,
         vars = str.join(', ', [str(v) for v in vars]),
         args = str.join(', ', [str(v) for v in args_names] + ['p'] ),
-        fname = fname
+        fname = fname,
+        on_unused_input = ",on_unused_input='ignore'" if not theano_less_than_6 else ""
 
     )
 
