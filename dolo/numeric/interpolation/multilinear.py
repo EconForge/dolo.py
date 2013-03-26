@@ -79,9 +79,10 @@ class MultilinearInterpolator:
         return self.__grid__
 
     def set_values(self,values):
-        self.values = values
+        self.values = np.ascontiguousarray(values)
 
     def interpolate(self,s):
+        s = np.ascontiguousarray(s)
         a = multilinear_interpolation(self.smin,self.smax,self.orders,self.values,s)
         return a
 
