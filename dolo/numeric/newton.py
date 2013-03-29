@@ -8,10 +8,10 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50,
     :return: solution x such that f(x) = 0
     '''
 
+    precision = x0.dtype   # default tolerance should depend on precision
+
     from dolo.numeric.serial_operations import serial_multiplication as stv, serial_solve
     err = 1
-    tol = 1e-8
-    eps = 1e-5
 
     it = 0
     while err > tol and it <= maxit:
@@ -19,7 +19,7 @@ def newton_solver(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50,
             [res,dres] = f(x0)
         else:
             res = f(x0)
-            dres = numpy.zeros( (res.shape[0], x0.shape[0], x0.shape[1]) )
+            dres = numpy.zeros( (res.shape[0], x0.shape[0], x0.shape[1]), dtype=precision )
             for i in range(x0.shape[0]):
                 xi = x0.copy()
                 xi[i,:] += eps
