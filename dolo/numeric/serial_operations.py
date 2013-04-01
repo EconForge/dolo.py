@@ -212,24 +212,30 @@ strange_tensor_multiplication_vector = serial_multiplication_vector
 
 ################################################################################    
 
-if __name__ == "__main__":
-    
-#    def test(X):
-#        ret = np.zeros_like(X)
-#        for n in range(X.shape[-1]):
-#            x = X[..., n]
-#            ret[..., n] = x**2
-#        return ret
-#
-#    X0 = np.ones( (3, 2, 5) ) /2
-#    resp = numdiff1(test, X0)
-#    print(resp.shape)
-#    print(resp[:, :, 1, 1, 0])
+from numbapro import guvectorize, void, f8, f4
 
-    I = 50
-    J = 40
-    K = 30
-    N = 10000
+@guvectorize([ void(f4[:,:], f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:], f8[:,:])], '(I,J),(J,K)->(I,K)', backend='ast')#, target='gpu')
+def serial_mult_numba(A,B,C):
+    m, n = A.shape
+    n, p = B.shape
+    for i in range(m):
+        for j in range(p):
+            C[i, j] = 0
+            for k in range(n):
+                C[i, j] += A[i, k] * B[k, j]
+
+
+from numpy.linalg import inv
+@guvectorize([ void(f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:])], '(I,I)->(I,I)', backend='ast')#, target='gpu')
+def serial_solve_numba(A,B):
+    m, m = A.shape
+    m, m = B.shape
+    B[...] = inv(A)
+
+
+
+if __name__ == "__main__":
+
 
     import numpy.random
     A = numpy.random.random((I,J, N))
@@ -243,7 +249,18 @@ if __name__ == "__main__":
     C2 = smult(A,B)
     u = time.time()
 
+
+    AA = numpy.rollaxis(A,2).copy()
+    BB = numpy.rollaxis(B,2).copy()
+
+    x = time.time()
+    CC = numpy.zeros( (A.shape[2], A.shape[0], B.shape[1]))
+    serial_mult_numba(AA,BB,CC)
+    y = time.time()
+
     print('Py : {}'.format(s-r))
     print('Cython : {}'.format(u-t))
+    print('Numba : {}'.format(y-x))
 
     print(abs(C2-C0).max())
+
