@@ -30,8 +30,8 @@ class DynareDecisionRule(TaylorExpansion):
     def __init__(self,d,model):
         super(DynareDecisionRule,self).__init__(d)
         self.model = model
-        self.dr_var_order_i = [model.variables.index(v) for v in model.dr_var_order]
-        self.dr_states_order = [v for v in model.dr_var_order if v in model.state_variables]
+        self.dr_var_order_i = [model.variables.index(v) for v in self.dr_var_order]
+        self.dr_states_order = [v for v in self.dr_var_order if v in self.state_variables]
         self.dr_states_i = [model.variables.index(v) for v in self.dr_states_order]
 
     @property
@@ -178,6 +178,7 @@ class DynareDecisionRule(TaylorExpansion):
 
         return fold( g_3 ) / 2 / 3
 
+
     def __str__(self):
         txt = '''
 Decision rule (order {order}) :
@@ -252,6 +253,42 @@ Decision rule (order {order}) :
             res += np.dot(self['g_ess'],e)/2
         return res
 
+    @property
+    def dyn_var_order(this):
+        self = this.model
+        # returns a list of dynamic variables ordered as in Dynare's dynamic function
+        if hasattr(self,'__dyn_var_order__') :
+            return self.__dyn_var_order__
+        d = dict()
+        for eq in self.equations:
+            all_vars = eq.variables
+            for v in all_vars:
+                if not v.lag in d:
+                    d[v.lag] = set()
+                d[v.lag].add(v)
+        maximum = max(d.keys())
+        minimum = min(d.keys())
+        ord = []
+        for i in range(minimum,maximum+1):
+            if i in d.keys():
+                ord += [v(i) for v in self.variables if v(i) in d[i]]
+        self.__dyn_var_order__ = ord
+        return ord
+
+    @property
+    def state_variables(self):
+        return [v for v in self.model.variables if v(-1) in self.dyn_var_order ]
+
+    @property
+    def dr_var_order(self):
+        dvo = self.dyn_var_order
+        purely_backward_vars = [v for v in self.model.variables if (v(1) not in dvo) and (v(-1) in dvo)]
+        purely_forward_vars = [v for v in self.model.variables if (v(-1) not in dvo) and (v(1) in dvo)]
+        static_vars =  [v for v in self.model.variables if (v(-1) not in dvo) and (v(1) not in dvo) ]
+        mixed_vars = [v for v in self.model.variables if not v in purely_backward_vars+purely_forward_vars+static_vars ]
+        dr_order = static_vars + purely_backward_vars + mixed_vars + purely_forward_vars
+        return dr_order
+
 DecisionRule = DynareDecisionRule
 
 def theoretical_moments(dr,with_correlations=True):
@@ -274,6 +311,7 @@ def theoretical_moments(dr,with_correlations=True):
         d = np.diag( 1/np.sqrt( np.diag(cov) ) )
         correl = np.dot(d, np.dot(cov,d.T) )
         return [M,correl]
+
 
 
     

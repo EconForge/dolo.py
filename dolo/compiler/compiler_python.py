@@ -7,7 +7,7 @@ class GModel(object):
         # this part is actually common to all compilers
 
         if model_type is None:
-            model_type = model['original_data']['model_type']
+            model_type = model.__data__['model_type']
 
         self.model = model
 
@@ -30,11 +30,11 @@ class GModel(object):
         recipe = self.recipe
 
         model = self.model
-        parms = model['parameters_ordering']
+        parms = model.symbols_s['parameters']
 
         functions = {}
 
-        for eqg in self.model['equations_groups']:
+        for eqg in self.model.equations_groups:
             args = []
             is_a_definition = 'definition' in recipe['equation_type'][eqg]
             if is_a_definition:
@@ -45,9 +45,9 @@ class GModel(object):
             for syms in arg_specs:
                 [sgn,time] = syms
                 if syms[0] == 'shocks':
-                    args.append( [ s(time) for s in model['shocks_ordering'] ] )
+                    args.append( [ s(time) for s in model.symbols_s['shocks'] ] )
                 else:
-                    args.append( [ s(time) for s in model['variables_groups'][sgn] ] )
+                    args.append( [ s(time) for s in model.symbols_s[sgn] ] )
                 if time == 1:
                     stime = '_f'
                 elif time == -1:
@@ -56,7 +56,7 @@ class GModel(object):
                     stime = ''
                 arg_names.append( sgn + stime)
 
-            equations = self.model['equations_groups'][eqg]
+            equations = self.model.equations_groups[eqg]
 
             if is_a_definition:
                 from dolo.compiler.common import solve_recursive_block
@@ -87,10 +87,8 @@ class GModel(object):
                 calibration[k] = numpy.array(calibration[k], dtype=numpy.double)
 
         symbols = {}
-        for vn, vg in model['variables_groups'].iteritems():
+        for vn, vg in model.symbols_s.iteritems(): # I don't need to do that
             symbols[vn] = [str(v) for v in vg]
-        symbols['shocks'] = [str(v) for v in model.shocks]
-        symbols['parameters'] = [str(v) for v in model.parameters]
 
         self.calibration = calibration
         self.symbols = symbols
@@ -103,13 +101,14 @@ if __name__ == '__main__':
 
     model = yaml_import('examples/global_models/rbc.yaml')
 
+    print(model.__class__)
     gm = GModel(model, compiler='numexpr')
-#    gm = GModel(model, compiler='theano')
+    # gm = GModel(model, compiler='theano')
 #    gm = GModel(model)
 
-    ss = gm.calibration['steady_state']['states']
-    xx = gm.calibration['steady_state']['controls']
-    aa = gm.calibration['steady_state']['auxiliary']
+    ss = gm.calibration['states']
+    xx = gm.calibration['controls']
+    aa = gm.calibration['auxiliary']
     p = gm.calibration['parameters']
 
     ee = numpy.array([0],dtype=numpy.double)

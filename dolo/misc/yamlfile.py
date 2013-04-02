@@ -1,7 +1,7 @@
 from __future__ import division
 
 from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
-from dolo.symbolic.model import Model
+from dolo.symbolic.model import SModel
 from collections import OrderedDict
 import yaml
 import sympy
@@ -91,7 +91,7 @@ Imports the content of a modfile into the current interpreter scope
                     comp = teqg[1]
                     eq.tag(complementarity=comp)
                 equations.append(eq)
-                #equations_groups[groupname].append( eq )
+                equations_groups[groupname].append( eq )
     else:
         for teq in raw_equations:
             if '=' in teq:
@@ -127,24 +127,19 @@ Imports the content of a modfile into the current interpreter scope
         else:
             covariances = None # to avoid importing numpy
 
-    model_dict = {
-        'variables_ordering': variables_ordering,
-        'parameters_ordering': parameters_ordering,
-        'shocks_ordering': shocks_ordering,
-        'variables_groups': variables_groups,
-        'equations_groups': equations_groups,
-        'equations': equations,
-        'parameters_values': parameters_values,
-        'init_values': init_values,
-        'covariances': covariances
-    }
+    symbols = variables_groups
 
-    if 'model_type' in raw_dict:
-        model_dict['model_type'] = raw_dict['model_type']
-    model_dict['original_data'] = raw_dict
+    symbols['shocks'] = shocks_ordering
+    symbols['parameters'] = parameters_ordering
 
-    model = Model(**model_dict)
-    model.check_consistency(auto_remove_variables=False)
+    calibration_s = {}
+    calibration_s.update(parameters_values)
+    calibration_s.update(init_values)
+
+    from dolo.symbolic.model import SModel
+
+    model = SModel( equations_groups, symbols, calibration_s, covariances )
+    model.__data__ = raw_dict
 
     if compiler is not None:
         from dolo.compiler.compiler_python import GModel
@@ -161,5 +156,5 @@ def yaml_import(filename,verbose=False, compiler=None):
     txt = f.read()
     model = parse_yaml_text(txt,verbose=verbose, compiler=compiler)
     if compiler is None:
-        model['name'] = fname
+        model.fname = fname
     return model

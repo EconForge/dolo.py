@@ -1,6 +1,6 @@
 from __future__ import division
 
-from dolo.symbolic.model import Model
+from dolo.symbolic.model import SModel
 from dolo.symbolic.symbolic import Equation
 
 import numpy as np
@@ -19,7 +19,7 @@ class MirFacCompiler(object):
             return self.__transformed_model__
 
 
-        dmodel = Model(**self.model) # copy the model
+        dmodel = SModel(**self.model) # copy the model
         dmodel.check_consistency(auto_remove_variables=False)
 
         def_eqs = [eq for eq in dmodel.equations if eq.tags['eq_type'] in ('def', 'auxiliary')]

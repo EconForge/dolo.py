@@ -2,7 +2,9 @@ import unittest
 
 
 class TestGlobal(unittest.TestCase):
+
     def test_global_solution(self):
+
         from dolo import yaml_import, global_solve
 
 

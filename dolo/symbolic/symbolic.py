@@ -4,7 +4,7 @@ import sympy
 from xml.etree import ElementTree as ET
 import copy
 import re
-
+import copy
 
 
 #   Symbol
@@ -208,8 +208,12 @@ class Equation(sympy.Equality):
     def copy(self):
         # This function doesn't seem to be called
         eq = Equation(copy.copy(self.lhs),copy.copy(self.rhs),copy.copy(self.name))
-        eq.n = copy.copy(self.n)
-        eq.info = copy.copy(self.info)
+        # eq.n = copy.copy(self.n)
+        # eq.info = copy.copy(self.info)
+        ntags = copy.deepcopy(self.tags)
+        eq.tag(ntags)
+        return eq
+
     
     #def subs_dict(self,dict):
     def subs(self,dict):

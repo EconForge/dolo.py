@@ -4,7 +4,7 @@ class CompilerMatlab(object):
     def __init__(self, model, model_type=None, recipes=None):
 
         if model_type is None:
-            model_type = model['original_data']['model_type']
+            model_type = model.__data__['model_type']
 
 
         self.model = model
@@ -26,12 +26,12 @@ class CompilerMatlab(object):
         recipe = self.recipe
 
         model = self.model
-        parms = model['parameters_ordering']
+        parms = model.symbols_s['parameters']
 
 
         fun_text = ''
 
-        for eqg in self.model['equations_groups']:
+        for eqg in self.model.equations_groups:
 
             args = []
 
@@ -46,10 +46,7 @@ class CompilerMatlab(object):
             arg_names = []
             for syms in arg_specs:
                 [sgn,time] = syms
-                if syms[0] == 'shocks':
-                    args.append( [ s(time) for s in model['shocks_ordering'] ] )
-                else:
-                    args.append( [ s(time) for s in model['variables_groups'][sgn] ] )
+                args.append( [ s(time) for s in model.symbols_s[sgn] if sgn not in ('parameters',) ] )
                 if time == 1:
                     stime = '_f'
                 elif time == -1:
@@ -58,7 +55,7 @@ class CompilerMatlab(object):
                     stime = ''
                 arg_names.append( sgn + stime)
 
-            equations = self.model['equations_groups'][eqg]
+            equations = self.model.equations_groups[eqg]
 
             if is_a_definition:
                 from dolo.compiler.common import solve_recursive_block
@@ -76,12 +73,15 @@ class CompilerMatlab(object):
         # the following part only makes sense for fga models
 
         calib = model.calibration
-
-        steady_state = calib['steady_state']
+        cc = calib.copy()
+        cc.pop('parameters')
+        cc.pop('shocks')
+        cc.pop('covariances')
+        steady_state = cc
         parameters_values = calib['parameters']
 
-        if 'sigma' in calib:
-            sigma_calib = 'calibration.sigma = {};\n'.format( str(calib['sigma']).replace('\n',';') )
+        if 'covariances' in calib:
+            sigma_calib = 'calibration.sigma = {};\n'.format( str(calib['covariances']).replace('\n',';') )
         else:
             sigma_calib = {}
 
@@ -93,15 +93,11 @@ class CompilerMatlab(object):
 
         ss_text = "steady_state = struct;\n"
         for k,v in steady_state.iteritems():
-            ss_text += 'steady_state.{0} = {1};\n'.format( k, str(v) )
+            ss_text += 'steady_state.{0} = {1};\n'.format( k, str(v).replace('\n',' ')  )
 
         var_text = "symbols = struct;\n"
-        for vn, vg in model['variables_groups'].iteritems():
+        for vn, vg in model.symbols_s.iteritems():
             var_text += 'symbols.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
-
-        var_text += 'symbols.parameters = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['parameters_ordering']]))
-        var_text += 'symbols.shocks = {{{}}};\n'.format(str.join(',', ["'{}'".format(e ) for e in model['shocks_ordering']]))
-
 
         full_text = '''
 
@@ -137,7 +133,7 @@ end
             ss_text = ss_text,
             sigma_calib = sigma_calib,
             var_text = var_text,
-            params = str(parameters_values)
+            params = str(parameters_values).replace('\n',' ')
 
         )
 

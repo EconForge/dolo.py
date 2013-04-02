@@ -22,10 +22,10 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     '''
 
     from dolo.compiler.compiler_global import CModel
-    from dolo.symbolic.model import Model
+    from dolo.symbolic.model import SModel
 
     if isinstance(cmodel, Model):
-        from dolo.symbolic.model import Model
+        from dolo.symbolic.model import SModel
         model = cmodel
         cmodel = CModel(model)
         [y,x,parms] = model.read_calibration()

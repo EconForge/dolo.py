@@ -18,8 +18,9 @@ def global_solve(model,
         if verbose:
             print(t)
 
-    [y, x, parms] = model.read_calibration()
-    sigma = model.read_covariances()
+    # [y, x, parms] = model.read_calibration()
+    parms = model.calibration['parameters']
+    sigma = model.calibration['covariances']
 
     if initial_dr == None:
         initial_dr = approximate_controls(model, order=pert_order)
@@ -29,12 +30,12 @@ def global_solve(model,
     if bounds is not None:
         pass
 
-    elif 'approximation' in model['original_data']:
+    elif model.__data__ and 'approximation' in model.__data__:
         vprint('Using bounds specified by model')
 
         # this should be moved to the compiler
-        ssmin = model['original_data']['approximation']['bounds']['smin']
-        ssmax = model['original_data']['approximation']['bounds']['smax']
+        ssmin = model.__data__['approximation']['bounds']['smin']
+        ssmax = model.__data__['approximation']['bounds']['smax']
         ssmin = [model.eval_string(str(e)) for e in ssmin]
         ssmax = [model.eval_string(str(e)) for e in ssmax]
         ssmin = [model.eval_string(str(e)) for e in ssmin]

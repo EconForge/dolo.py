@@ -13,6 +13,21 @@ class TestPerturbationCase(unittest.TestCase):
         # at first order the decision rule is such that:
         # y_{t} - ybar = A (y_{t-1} - ybar) + B e_t
 
+
+
+    def test_dynare_compatibility(self):
+
+        from dolo import solve_decision_rule, dynare_import
+
+        model = dynare_import('examples/dynare_modfiles/example1.mod')
+
+        dr = solve_decision_rule(model, order=1)
+
+        # at first order the decision rule is such that:
+        # y_{t} - ybar = A (y_{t-1} - ybar) + B e_t
+
+        from dolo.numeric.decision_rules import DynareDecisionRule
+        dr = DynareDecisionRule(dr, model)
         print(dr['ys'])
         print(dr['g_a'])
         print(dr['g_e'])

@@ -1,10 +1,9 @@
 from dolo.symbolic.symbolic import Variable, Shock, Parameter, Equation
-from dolo.symbolic.model import Model
+from dolo.symbolic.model import SModel
 
 import sympy
 import re
 import inspect
-
 
 line_regex = re.compile(
     "(\s*)$|"             # blank
@@ -16,7 +15,7 @@ line_regex = re.compile(
 )
 tag_regex = re.compile("\s*(\w+)\s*=\s*'(.*)'")
 
-def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debug=False):
+def parse_dynare_text(txt,add_model=True,full_output=False, debug=False):
     '''
     Imports the content of a modfile into the current interpreter scope
     '''
@@ -151,28 +150,16 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debu
 
     variables = []
     for vn in var_names:
-        if vn in names_dict:
-            latex_name = names_dict[vn]
-        else:
-            latex_name = None
         v = Variable(vn)
         variables.append(v)
 
     shocks = []
     for vn in varexo_names:
-        if vn in names_dict:
-            latex_name = names_dict[vn]
-        else:
-            latex_name = None
         s = Shock(vn)
         shocks.append(s)
 
     parameters = []
     for vn in parameters_names:
-        if vn in names_dict:
-            latex_name = names_dict[vn]
-        else:
-            latex_name = None
         p = Parameter(vn)
         parameters.append(p)
 
@@ -263,19 +250,16 @@ def parse_dynare_text(txt,add_model=True,full_output=False,names_dict = {}, debu
             covariances[i,j] = eval(value,parse_dict)
             covariances[j,i] = eval(value,parse_dict)
 
+    calibration = {}
+    calibration.update(parameters_values)
+    calibration.update(init_values)
+    symbols = {'variables': variables, 'shocks': shocks, 'parameters': parameters}
 
-    resp = dict()
-    resp['variables_ordering'] = variables
-    resp['parameters_ordering'] = parameters
-    resp['shocks_ordering'] = shocks
-    resp['equations'] = equations
-    resp['parameters_values'] = parameters_values
-    resp['init_values'] = init_values
-    resp['covariances'] = covariances
-    if fname:
-        resp['name'] = fname
+    for eq in equations:
+        print eq.tags
 
-    model = Model(**resp)
+    from dolo.symbolic.model import SModel
+    model = SModel({'dynare_block': equations}, symbols, calibration, covariances)
     return model
 
 
@@ -328,13 +312,13 @@ class Instruction_group():
 
 
 
-def dynare_import(filename,names_dict={},full_output=False, debug=False):
+def dynare_import(filename,full_output=False, debug=False):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.(.*)').match(basename).group(1)
     f = open(filename)
     txt = f.read()
-    model = parse_dynare_text(txt,names_dict=names_dict,full_output=full_output, debug=debug)
-    model['name'] = fname
+    model = parse_dynare_text(txt,full_output=full_output, debug=debug)
+    model.name = fname
     return model
