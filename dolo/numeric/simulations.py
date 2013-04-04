@@ -24,11 +24,9 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     from dolo.compiler.compiler_global import CModel
     from dolo.symbolic.model import SModel
 
-    if isinstance(cmodel, Model):
-        from dolo.symbolic.model import SModel
+    if isinstance(cmodel, SModel):
         model = cmodel
         cmodel = CModel(model)
-        [y,x,parms] = model.read_calibration()
     else:
         cmodel = cmodel.as_type('fg')
 
@@ -124,14 +122,14 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     import numpy
 
-    states_names = [str(s) for s in model['variables_groups']['states']]
-    controls_names = [str(s) for s in model['variables_groups']['controls']]
+    states_names = [str(s) for s in model.symbols_s['states']]
+    controls_names = [str(s) for s in model.symbols_s['controls']]
     index = states_names.index(str(state))
     if bounds is None:
         bounds = [dr.smin[index], dr.smax[index]]
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
     if s0 is None:
-        s0 = model.calibration['steady_state']['states']
+        s0 = model.calibration['states']
     svec = numpy.column_stack([s0]*n_steps)
     svec[index,:] = values
     xvec = dr(svec)
