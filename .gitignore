@@ -11,3 +11,4 @@ build*
 *.eps
 *.log
 *.html
+*.exe
