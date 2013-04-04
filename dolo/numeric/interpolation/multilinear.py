@@ -1,139 +1,90 @@
 from __future__ import division
-from itertools import product
 
 import numpy
-from numpy import array, zeros, floor, cumprod, column_stack, reshape
+import numpy as np
 
-
-def multilinear_interpolation( smin, smax, orders, x, y):
-
-    '''
-    :param smin: dx1 array : lower bounds
-    :param smax: dx1 array : upper bounds
-    :param orders: dx1 array : number of points in each dimension
-    :param x: Nxd array : values on the grid
-    :param y: Mxd array : points where to interpolate
-    :return: Mxd array : interpolated values
-    '''
-
-    d = len(orders)
-
-    n_x, N = x.shape
-    n_s, M = y.shape
-
-    assert(d == n_s)
-
-    qq = zeros( (d,M) )
-    mm = zeros( (d,M) )
-
-    for i in range(n_s):
-        s = (y[i,:]-smin[i])/(smax[i]-smin[i])
-        n = orders[i]
-        delta = 1/(n-1)
-        r = s/delta
-        q = floor(r)
-        q = (q<0) * 0 + (q>=n-2)*(n-2) + (0<=q)*(q<n-2)*q
-        m = r-q
-        mm[i,:] = m
-        qq[i,:] = q
-
-    [b,g] = index_lookup( x, qq, orders )
-
-    z = b + recursive_evaluation(d,tuple([]),mm[:,numpy.newaxis,:], g)
-
-    return z
-
-def recursive_evaluation(d,ind,mm,g):
-    if len(ind) == d:
-        return g[ind]
-    else:
-        j = len(ind)
-        ind1 = ind + (0,)
-        ind2 = ind + (1,)
-        return (1-mm[j,:]) * recursive_evaluation(d,ind1,mm,g) + mm[j,:] * recursive_evaluation(d,ind2,mm,g)
-
-
-def index_lookup(a, q, dims):
-    '''
-
-    :param a: (l1*...*ld)*n_x array
-    :param q: k x M array
-    :param dims: M: array
-    :return: 2**k array (nx*2*...*2)
-    '''
-
-    M = q.shape[1]
-    n_x = a.shape[0]
-
-    d = len(dims)
-
-    cdims  = (cumprod(dims[::-1]))
-    cdims = cdims[::-1]
-
-    q = array(q,dtype=numpy.int)
-
-    lin_q = q[d-1,:]
-
-    for i in reversed(range(d-1)):
-        lin_q += q[i,:] * cdims[i+1]
-
-    cart_prod = column_stack( [e for e in product(*[(0,1)]*d)] )
-
-    lin_cp = cart_prod[d-1,:]
-    for i in reversed(range(d-1)):
-        lin_cp += cart_prod[i,:] * cdims[i+1]
-
-    b = a[:,lin_q]
-
-    g = zeros( (cart_prod.shape[1], n_x, M) )
-
-    for i in range(cart_prod.shape[1]):
-        t = a[:,lin_q + lin_cp[i]] - b
-        g[i,:,:] = t
-
-
-    g = reshape(g, (2,)*d + (n_x,M))
-
-    return [b,g]
-
+#from multilinear_cython import multilinear_interpolation
 #
-#try:
-#    print("using compiled linear interpolator (on gpu)")
-#    from multilinear_gpu import multilinear_interpolation
-#except Exception as e:
-#    print('Failback')
-#    pass
+# try:
+#     print("Using compiled linear interpolator")
+# except Exception as e:
+from multilinear_python import multilinear_interpolation
+#     from multilinear_python import multilinear_interpolation as multilinear_interpolation_double
+#     print('Failing back on python implementation')
 
-
-try:
-    print("using compiled linear interpolator")
-    from dolo.numeric.interpolation.multilinear_cython import multilinear_interpolation
-except Exception as e:
-    print('Failback')
-    pass
-
+def mlinspace(smin,smax,orders):
+    if len(orders) == 1:
+        res = np.atleast_2d( np.linspace(np.array(smin),np.array(smax),np.array(orders)) )
+        return res.copy() ## workaround for strange bug
+    else:
+        meshes = np.meshgrid( *[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))], indexing='ij' )
+        return np.row_stack( [l.flatten() for l in meshes])
 
 class MultilinearInterpolator:
+    '''Multilinear interpolation
 
-    def __init__(self, smin, smax, orders):
-        d = len(orders)
-        self.smin = numpy.array( smin, dtype=numpy.double )
-        self.smax = numpy.array( smax, dtype=numpy.double )
+    Methods
+    -------
+    smin, smax, orders : iterable objects
+        Specifies the boundaries of a cartesian grid, with the number of points along each dimension.
+    values : array_like (2D), optional
+        Each line enumerates values taken by a function on the cartesian grid, with last index varying faster.
+
+
+    Attributes
+    ----------
+    smin, smax, orders :
+        Boundaries and number of points along each dimension.
+    d : number of dimensions
+    grid : array_like (2D)
+        Enumerate the approximation grid. Each column contains coordinates of a point in R^d.
+    values :
+        Values on the grid to be interpolated.
+
+    Example
+    -------
+
+    smin = [-1,-1]
+    smax = [1,1]
+    orders = [5,5]
+
+    f: lambda x: np.row_stack([
+        np.sqrt( x[0,:]**2 + x[1,:]**2 )
+        np.pow( x[0,:]**3 + x[1,:]**3, 1.0/3.0 )
+    ])
+
+    interp = MultilinearInterpolator(smin,smax,orders)
+    interp.set_values( f(interp.grid) )
+
+    random_points = np.random.random( (2, 1000) )
+
+    interpolated_values = interp(random_points)
+    exact_values = f(random_points)
+    '''
+
+    __grid__ = None
+
+    def __init__(self, smin, smax, orders, values=None, dtype=numpy.float64):
+        self.smin = numpy.array( smin, dtype=dtype )
+        self.smax = numpy.array( smax, dtype=dtype )
         self.orders = numpy.array( orders, dtype=numpy.int )
-        self.d = d
-        self.grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
-        self.grid = numpy.ascontiguousarray(self.grid)
+        self.d = len(orders)
+        self.dtype = dtype
+        if values is not None:
+            self.set_values(values)
 
+    @property
+    def grid(self):
+        if self.__grid__ is None:
+            self.__grid__ = mlinspace(self.smin, self.smax, self.orders)
+        return self.__grid__
 
     def set_values(self,values):
-        self.values = values
+        self.values = numpy.ascontiguousarray(values,dtype=self.dtype)
 
     def interpolate(self,s):
+        s = numpy.ascontiguousarray(s, dtype=self.dtype)
         a = multilinear_interpolation(self.smin,self.smax,self.orders,self.values,s)
-#        from multilinear_c import multilinear_c
-#        b = multilinear_c(self.smin,self.smax,self.orders,self.values,s)
-#        test = abs(b-a).max()
-#        print('Error : {}'.format(test))
         return a
 
     def __call__(self,s):

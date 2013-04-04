@@ -46,3 +46,11 @@ class DicPrinter(sympy.printing.StrPrinter):
             return self.printing_dict[expr]
         else:
             return str(expr)
+
+def solve_recursive_block(equations):
+    from dolo.symbolic.symbolic import Equation
+    system = {eq.lhs: eq.rhs for eq in equations}
+    from dolo.misc.triangular_solver import solve_triangular_system
+    sol = solve_triangular_system(system)
+    solved_equations = [Equation(eq.lhs, sol[eq.lhs]) for eq in equations]
+    return solved_equations

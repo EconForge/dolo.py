@@ -31,11 +31,17 @@ It consists in several part:
 
 3. The model part consists of a list of equations sorted by type.  In these equations, variables and shocks are indexed
    by time: ``A``, ``A(1)`` and ``A(-1)`` denote variable ``A`` at date ``t``, ``(t-1)``, and ``t+1`` respectively.
-   By assumption all equations are taken in expectation at date t (explanation).
-   Optionnaly, arbitrage equations can receive complementarity constraints separated by ``|``.
+   By assumption al equations are taken in expectation at date t (explanation).
+
+   ``transition`` and ``auxiliary`` are *definition* equations, You must define variables in the same order as in the declaration header.
+   Definition equation can be defined recursively, meaning that you can use a just defined variable on the right hand side.
+
+
+   ``arbitrage`` equations can receive complementarity constraints separated by ``|``.
    The meaning of ``f | a<=x<=b`` is interpreted as follows: either ``f=0`` or ``f>0`` and ``x=b``
    or ``f<0`` and ``x=a``. This is very useful when representing the langrangian positivity conditions coming from an
-   objective maximization. In that case the lagrangian would always be equal to ``f``.
+   objective maximization. In that case the lagrangian would always be equal to ``f``. Complementarity conditions must
+   be expressed directly as a function of the state.
 
 4. The calibration part contains
 

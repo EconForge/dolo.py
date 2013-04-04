@@ -132,7 +132,7 @@ def compile_function(equations, args, parms, max_order, return_text=False):
         return code_to_function(txt,'dynamic_function')
 
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_text=False):
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False):
     """
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
@@ -145,24 +145,24 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     :return:
     """
 
-    if vectorize:
-        template = '{0}[{1},...]'
-    else:
-        template = '{0}[{1}]'
+    template = '{0}_{1}'
 
+    declarations = ""
     sub_list = {}
 
     for i,args in enumerate(args_list):
         vec_name = args_names[i]
         for j,v in enumerate(args):
             sub_list[v] = template.format(vec_name,j)
+            declarations += "    {0}_{1} = {0}[{1},...]\n".format(vec_name, j)
 
     for i,p in enumerate(parms):
-        sub_list[p] = '{0}[{1}]'.format('p',i)
+        sub_list[p] = '{0}_{1}'.format('p',i)
+        declarations += "    {0}_{1} = {0}[{1}]\n".format('p', i)
 
     import sympy
+    # TODO: construct a common list of symbol that should be understood everywhere
     sub_list[sympy.Symbol('inf')] = 'inf'
-
 
     text = '''
 def {fname}({args_names}, {param_names}, derivs=False):
@@ -176,6 +176,11 @@ def {fname}({args_names}, {param_names}, derivs=False):
     from numpy import sinh, cosh, tanh
     from numpy import pi
     from numpy import inf
+
+    {use_numexpr}
+
+{declarations}
+
 
     n = {var}.shape[-1]
 
@@ -191,7 +196,11 @@ def {fname}({args_names}, {param_names}, derivs=False):
     def write_eqs(eq_l,outname='val'):
         eq_block = '    {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
         for i,eq in enumerate(eq_l):
-            eq_block += '    {0}[{1},:] = {2}\n'.format(outname, i,  dp.doprint_numpy(eq))
+            eq_string = dp.doprint_numpy(eq)
+            if use_numexpr:
+                eq_block += "    {0}[{1},:] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
+            else:
+                eq_block += '    {0}[{1},:] = {2}\n'.format(outname, i, eq_string)
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
@@ -199,8 +208,13 @@ def {fname}({args_names}, {param_names}, derivs=False):
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
-                s = dp.doprint_numpy( eq )
-                eq_block += '    {lhs}[{0},{1},:] = {2}\n'.format(i,j,s,lhs=lhs)
+                if not eq == 0:
+                    if use_numexpr:
+                        eq_string = dp.doprint_numpy( eq )
+                        eq_block += "    {lhs}[{0},{1},:] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
+                    else:
+                        eq_string = dp.doprint( eq )
+                        eq_block += "    {lhs}[{0},{1},:] = {2}\n".format(i,j,eq_string,lhs=lhs)
         return eq_block
 
     content = write_eqs(equations)
@@ -219,6 +233,8 @@ def {fname}({args_names}, {param_names}, derivs=False):
     return_names = '[val, ' + str.join(', ', [ 'val_'+ str(a) for a in args_names] ) + ']' if diff else 'val'
     text = text.format(
             fname = fname,
+            use_numexpr = "import numexpr\n" if use_numexpr else "",
+            declarations = declarations,
             var = args_names[0],
             content = content,
             return_names = return_names,
@@ -226,12 +242,9 @@ def {fname}({args_names}, {param_names}, derivs=False):
             param_names = 'p'
             )
 
-
     if return_text:
         return text
 
-    import numpy as np
-    inf = np.inf
 
     return code_to_function(text,fname)
 

@@ -6,6 +6,7 @@ import numpy as np
 from dolo.numeric.misc import cartesian
 
 class RectangularDomain:
+
     def __init__(self,smin,smax,orders):
         self.d = len(smin)
         self.smin = smin
@@ -50,6 +51,7 @@ class RectangularDomain:
         return dens
 
 class TriangulatedDomain:
+
     def __init__(self,points):
         from scipy.spatial import Delaunay
         self.d = points.shape[0]
@@ -61,134 +63,7 @@ class TriangulatedDomain:
         self.smax = numpy.max(points,axis=1)
         self.bounds = np.array( [self.smin,self.smax] )
         
-        
 
-def SplineInterpolation(smin,smax,orders):
-    if len(orders) == 1:
-        return SplineInterpolation1(orders,smin,smax)
-    elif len(orders) == 2:
-        return SplineInterpolation2(orders,smin,smax)
-
-class SplineInterpolation1:
-
-    grid = None
-    __values__ = None
-
-    def __init__(self, orders, smin, smax):
-        order = orders[0]
-        smin = smin[0]
-        smax = smax[0]
-        grid = np.row_stack([np.linspace(smin, smax, order)])
-        self.grid = grid
-        pass
-
-    def __call__(self,points):
-        return self.interpolate(points)
-
-    def set_values(self,val):
-        from scipy.interpolate import InterpolatedUnivariateSpline
-        self.__values__ = val
-        fgrid = self.grid.flatten()
-        self.__splines__ = [ InterpolatedUnivariateSpline(fgrid, val[i,:]) for i in range(val.shape[0]) ]
-
-    def interpolate(self, points, with_derivatives=False, with_coeffs_derivs=False):
-        n_v = self.__values__.shape[0]
-        n_p = points.shape[1]
-        fpoints = points.flatten()
-        val = np.zeros((n_v,n_p))
-        dval = np.zeros((n_v,1,n_p))
-
-        if with_coeffs_derivs:
-            import time
-            time1 = time.time()
-            eps = 1e-5
-            original_values = self.__values__
-            resp = np.zeros((n_v,n_v,n_p))
-            for i in range(n_v):
-                new_values = original_values.copy()
-                new_values[i,:] += eps
-                self.set_values(new_values)
-                resp[:,i,:] = self.interpolate(points,with_derivatives=False,with_coeffs_derivs=False)
-            time2 = time.time()
-            print('Derivative computation : ' + str(time2-time1))
-
-
-        for i in range(self.__values__.shape[0]):
-            spline = self.__splines__[i]
-            y = spline(fpoints)
-            dy = spline(fpoints,1)
-            val[i,:] = y
-            dval[i,0,:] = dy
-
-        if not with_derivatives:
-            return val
-        else:
-            return [val,dval]
-
-class SplineInterpolation2:
-
-    grid = None
-    __values__ = None
-
-    def __init__(self, orders, smin, smax):
-        self.d = 2
-        nodes = [np.linspace(smin[i], smax[i], orders[i]) for i in range(len(orders))]
-#        nodes.reverse()
-        mesh = np.meshgrid(*nodes)
-        mesh = [m.flatten() for m in mesh]
-#        mesh.reverse()
-        self.nodes = nodes
-        self.grid = np.row_stack(mesh)
-        pass
-    
-    def __call__(self,points):
-        return self.interpolate(points)[0]
-
-    def set_values(self,val):
-        from scipy.interpolate import RectBivariateSpline
-        self.__values__ = val
-#        fgrid = self.grid.flatten()
-        [grid_x, grid_y] = self.nodes
-#        grid_x = self.grid[0,:]
-#        grid_y = self.grid[1,:]
-#        print grid_x
-#        print grid_y
-        n_x = len(grid_x)
-        n_y = len(grid_y)
-        # TODO: options to change 0.1
-        margin = 0.5
-        bbox = [min(grid_x)- margin, max(grid_x) + margin,min(grid_y)-margin, max(grid_y) + margin]
-
-        self.__splines__ = [ RectBivariateSpline( grid_x, grid_y, val[i,:].reshape((n_y,n_x)).T, bbox=bbox ) for i in range(val.shape[0]) ]
-
-    def interpolate(self, points, with_derivatives=False):
-        n_v = self.__values__.shape[0]
-        n_p = points.shape[1]
-        n_d = self.d
-#        fpoints = points.flatten()
-
-        val = np.zeros((n_v,n_p))
-        dval = np.zeros((n_v,n_d,n_p))
-
-        for i in range(self.__values__.shape[0]):
-            spline = self.__splines__[i]
-            A = points[0,:] # .reshape((n_x,n_y))
-            B = points[1,:] # .reshape((n_x,n_y))
-
-            eps = 0.0001
-            y = spline.ev(A, B)
-            d_y_A = ( spline.ev(A + eps, B) - y ) / eps
-            d_y_B = ( spline.ev(A, B + eps) - y ) / eps
-
-            val[i,:] = y
-            dval[i,0,:] = d_y_A
-
-            dval[i,1,:] = d_y_B
-
-        if not with_derivatives:
-            return val
-        else:
-            return [val,dval]
 
 class LinearTriangulation:
 
