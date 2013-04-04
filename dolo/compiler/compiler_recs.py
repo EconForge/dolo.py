@@ -266,10 +266,6 @@ end'''
                         jac_struc[i][j] = 1
             return [eq_block,jac_struc]
 
-        eq_bounds_block = write_eqs(inf_bounds, ntabs=2, default='-inf')
-        eq_bounds_block += '\n'
-        eq_bounds_block += write_eqs(sup_bounds, 'out2', ntabs=2, default='inf')
-
         eq_bounds_block = '''
     % b
 {0}
