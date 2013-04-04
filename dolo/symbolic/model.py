@@ -123,8 +123,13 @@ class SModel:
 
     def copy(self):
 
-        from copy import deepcopy
-        eq_groups = deepcopy(self.equations_groups)
+        from copy import copy,  deepcopy
+        eq_groups = OrderedDict()
+        for k in self.equations_groups:
+            eg = self.equations_groups[k]
+            egg = [eq.copy() for eq in eg]
+            eq_groups[k] = egg
+
         symbols_s = deepcopy(self.symbols_s)
         calibration_s = deepcopy(self.calibration_s)
         covariances_s = deepcopy(self.covariances_s)
@@ -149,6 +154,33 @@ class SModel:
                 else:
                     txt += "\t\t{}\n".format(eq)
         return txt
+
+
+
+    @property
+    def dyn_var_order(self):
+        # returns a list of dynamic variables ordered as in Dynare's dynamic function
+        d = dict()
+        for eq in self.equations:
+            all_vars = eq.variables
+            for v in all_vars:
+                if not v.lag in d:
+                    d[v.lag] = set()
+                d[v.lag].add(v)
+        maximum = max(d.keys())
+        minimum = min(d.keys())
+        ord = []
+        for i in range(minimum,maximum+1):
+            if i in d.keys():
+                ord += [v(i) for v in self.variables if v(i) in d[i]]
+        self.__dyn_var_order__ = ord
+        return ord
+
+
+    @property
+    def predetermined_variables(self):
+        return [v for v in self.variables if v(-1) in self.dyn_var_order ]
+
 
 def iteritems(d):
     return zip(d.keys(), d.values())
@@ -185,18 +217,6 @@ def compute_residuals(model):
     #     return residuals
 
 
-def standardize_potfolio_model(model_pf):
-
-    model = model_pf.copy()
-    pf_variables = []
-    for i,eq in  enumerate( model.equations_groups['dynare_block'] ):
-        if 'portfolio' in eq.tags:
-            pfn = eq.tags['portfolios']
-            s = Variable(pfn)
-            pf_variables.append(pfn)
-            model.equations_groups[i] = Equation( pfn, 0 )
-    model.update()
-    return [model, pf_variables]
 
 
 if __name__ == '__main__':

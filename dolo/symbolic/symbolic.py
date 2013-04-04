@@ -76,6 +76,12 @@ class TSymbol(sympy.Symbol):
         v = type(self)
         return v( self.name, date = current_date + shift)
 
+    def __copy__(self):
+        from copy import copy
+        v = type(self)
+        name = copy(self.name)
+        return v( name, date = self.date)
+
 
     @property
     def date(self):
@@ -204,14 +210,19 @@ class Equation(sympy.Equality):
     @property
     def n(self):
         return(self.infos.get('n'))
-    
+
+
+    # def __copy__(self):
+    #     return self.__deepcopy__()
+
     def copy(self):
         # This function doesn't seem to be called
+
         eq = Equation(copy.copy(self.lhs),copy.copy(self.rhs),copy.copy(self.name))
         # eq.n = copy.copy(self.n)
         # eq.info = copy.copy(self.info)
         ntags = copy.deepcopy(self.tags)
-        eq.tag(ntags)
+        eq.tag(**ntags)
         return eq
 
     
@@ -439,11 +450,11 @@ def timeshift(expr, tshift):
 
 from sympy import __version__
 from distutils.version import LooseVersion
-
-if LooseVersion(__version__) < LooseVersion('0.7.2'):
-
-    print('Importing old symbolics')
-    from dolo.stash.symbolic_old import TSymbol, Shock, Equation, Variable, Parameter
-
-    import warnings
-    warnings.warn('You have an old version of sympy (< 0.7.2). Support for older versions will be removed in later versions of dolo')
+#
+# if LooseVersion(__version__) < LooseVersion('0.7.2'):
+#
+#     print('Importing old symbolics')
+#     from dolo.symbolic.symbolic_old import TSymbol, Shock, Equation, Variable, Parameter
+#
+#     import warnings
+#     warnings.warn('You have an old version of sympy (< 0.7.2). Support for older versions will be removed in later versions of dolo')

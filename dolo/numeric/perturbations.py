@@ -9,7 +9,7 @@ import numpy as np
 TOL = 1E-10
 TOL_RES = 1E-8
 
-def solve_decision_rule(model, order=2, method='default', mlab=None, steady_state=None, solve_ss=False):
+def solve_decision_rule(model, order=2, method='default',check_residuals=True, mlab=None, steady_state=None, solve_ss=False):
 
 #    Sigma = model.read_covariances()
 #    Sigma = np.array(model.covariances).astype(np.float64)
@@ -17,10 +17,6 @@ def solve_decision_rule(model, order=2, method='default', mlab=None, steady_stat
     y = model.calibration['variables']
     x = model.calibration['shocks']
     parms = model.calibration['parameters']
-
-    print(y)
-    print(x)
-    print(parms)
 
     if steady_state != None:
         y0 = steady_state
@@ -53,11 +49,12 @@ def solve_decision_rule(model, order=2, method='default', mlab=None, steady_stat
     derivatives = p_dynamic(yy,xx,parms)
 
     res = derivatives[0]
-    if abs(res).max() > TOL_RES:
-        print('Residuals\n')
-        for i,eq in enumerate(model.equations):
-            print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
-        raise Exception("Initial values don't satisfy static equations")
+    if check_residuals:
+        if abs(res).max() > TOL_RES:
+            print('Residuals\n')
+            for i,eq in enumerate(model.equations):
+                print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
+            raise Exception("Initial values don't satisfy static equations")
 
     derivatives_ss = None
     

@@ -157,4 +157,5 @@ def yaml_import(filename,verbose=False, compiler=None):
     model = parse_yaml_text(txt,verbose=verbose, compiler=compiler)
     if compiler is None:
         model.fname = fname
+        model.name = fname
     return model
