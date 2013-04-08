@@ -5,8 +5,8 @@ def simple_global_representation(self, allow_future_shocks=True, solve_systems=F
 
 
     resp = {}
-    eq_g = self['equations_groups']
-    v_g = self['variables_groups']
+    eq_g = self.equations_groups
+    v_g = self.symbols_s
     if 'expectation' in eq_g:
         resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage'] + eq_g['expectation']] # TODO: complementarity conditions
         resp['controls'] = v_g['controls'] + v_g['expectations']

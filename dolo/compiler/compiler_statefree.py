@@ -115,6 +115,8 @@ class PythonCompiler(Compiler):
 
     def compute_dynamic_pfile(self,max_order=1,compact_order=True,with_parameters=False):
 
+        # patch
+
         if with_parameters:
             DerivativesTree.symbol_type = sympy.Symbol
         else:
@@ -122,6 +124,7 @@ class PythonCompiler(Compiler):
 
 
         model = self.model
+
 
         if compact_order:
             var_order = model.dyn_var_order + model.shocks

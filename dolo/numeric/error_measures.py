@@ -133,7 +133,7 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     if sigma is None:
         sigma = cmodel.sigma
 
-    from dolo.symbolic.model import Model
+    from dolo.symbolic.model import SModel
 
     if isinstance(cmodel,Model):
         from dolo.compiler.compiler_global import CModel_fg

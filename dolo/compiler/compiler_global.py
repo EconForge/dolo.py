@@ -25,10 +25,10 @@ class CModel:
 
         self.model = model
 
-        self.states = [str(v) for v in model['variables_groups']['states']]
-        self.controls = [str(v) for v in model['variables_groups']['controls']]
-        self.shocks = [str(v) for v in model['parameters_ordering']]
-        self.parameters = [str(v) for v in model['parameters_ordering']]
+        self.states = [str(v) for v in model.symbols_s['states']]
+        self.controls = [str(v) for v in model.symbols_s['controls']]
+        self.shocks = [str(v) for v in model.symbols_s['shocks']]
+        self.parameters = [str(v) for v in model.symbols_s['parameters']]
 
         self.__compiler__ = compiler
 
@@ -41,7 +41,7 @@ class CModel:
             self.__f__ = f
             self.__g__ = g
             self.__a__ = a
-            self.auxiliaries = [str(v) for v in model['variables_groups']['auxiliary']]
+            self.auxiliaries = [str(v) for v in model.symbols_s['auxiliary']]
 
         self.__f_h__ = []
         self.__g_h__ = []
@@ -95,7 +95,7 @@ class CModel:
 
 
         model = self.model
-        complementarities_tags = [eq.tags.get('complementarity') for eq in model['equations_groups']['arbitrage']]
+        complementarities_tags = [eq.tags.get('complementarity') for eq in model.equations_groups['arbitrage']]
         import re
         regex = re.compile('(.*)<=(.*)<=(.*)')
         parsed  = [ [model.eval_string(e) for e in regex.match(s).groups()] for s in complementarities_tags]
@@ -103,10 +103,10 @@ class CModel:
         controls = [p[1] for p in parsed]
         upper_bounds_symbolic = [p[2] for p in parsed]
         try:
-            controls == model['variables_groups']['controls']
+            controls == model.symbols_s['controls']
         except:
             raise Exception("Order of complementarities does not match order of declaration of controls.")
-        states = model['variables_groups']['states']
+        states = model.symbols_s['states']
         parameters = model.parameters
         from dolo.compiler.function_compiler import compile_multiargument_function
         lb = compile_multiargument_function( lower_bounds_symbolic, [states], ['s'], parameters, fname='lb')

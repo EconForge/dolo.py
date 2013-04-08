@@ -17,7 +17,7 @@ class  ErrorsTestCase(unittest.TestCase):
         dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1)
 
 
-        sigma = model.read_covariances()
+        sigma = model.calibration['covariances']
 
         cmodel = CModel(model)
         cmodel.sigma = sigma

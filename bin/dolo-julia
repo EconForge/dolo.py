@@ -45,7 +45,7 @@ import re
 
 basename = os.path.basename(output_filename)
 fname = re.compile('(.*)\.jl').match(basename).group(1)
-model['name'] = fname
+model.name = fname
 
 
 # check steady-state

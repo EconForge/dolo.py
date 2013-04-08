@@ -72,7 +72,6 @@ def second_order_solver(FF,GG,HH):
     PP = PP.real
     ## end of solve_qz!
 
-    print(PP.__class__)
 
     return [Xi_sortval[Xi_select],PP]
     

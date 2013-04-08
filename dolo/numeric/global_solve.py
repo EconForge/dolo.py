@@ -5,7 +5,7 @@ import numpy
 from dolo.numeric.perturbations_to_states import approximate_controls
 
 
-def global_solve(model,
+def global_solve(cmodel,
                  bounds=None, verbose=False,
                  initial_dr=None, pert_order=2,
                  interp_type='smolyak', smolyak_order=3, interp_orders=None,
@@ -18,8 +18,22 @@ def global_solve(model,
         if verbose:
             print(t)
 
-    [y, x, parms] = model.read_calibration()
-    sigma = model.read_covariances()
+    # this is horrible ! (when the user passes a compiled model, I compile it again !)
+    from dolo.compiler.compiler_python import GModel
+    from dolo.compiler.compiler_global import CModel # old class
+    from dolo.symbolic.model import SModel # old class
+
+    if isinstance(cmodel, GModel):
+        model = cmodel.model
+    if not isinstance(cmodel, CModel):
+        cmodel = CModel(model)
+
+    model = cmodel.model
+    cm = cmodel
+
+    # [y, x, parms] = model.read_calibration()
+    parms = model.calibration['parameters']
+    sigma = model.calibration['covariances']
 
     if initial_dr == None:
         initial_dr = approximate_controls(model, order=pert_order)
@@ -29,12 +43,12 @@ def global_solve(model,
     if bounds is not None:
         pass
 
-    elif 'approximation' in model['original_data']:
+    elif model.__data__ and 'approximation' in model.__data__:
         vprint('Using bounds specified by model')
 
         # this should be moved to the compiler
-        ssmin = model['original_data']['approximation']['bounds']['smin']
-        ssmax = model['original_data']['approximation']['bounds']['smax']
+        ssmin = model.__data__['approximation']['bounds']['smin']
+        ssmax = model.__data__['approximation']['bounds']['smax']
         ssmin = [model.eval_string(str(e)) for e in ssmin]
         ssmax = [model.eval_string(str(e)) for e in ssmax]
         ssmin = [model.eval_string(str(e)) for e in ssmin]
@@ -96,10 +110,10 @@ def global_solve(model,
 
 
 
-    from dolo.compiler.compiler_global import CModel
-
-    cm = CModel(model, solve_systems=True, compiler=compiler)
-    cm = cm.as_type('fg')
+    # from dolo.compiler.compiler_global import CModel
+    #
+    # cm = CModel(model, solve_systems=True, compiler=compiler)
+    # cm = cm.as_type('fg')
 
     if integration == 'optimal_quantization':
         from dolo.numeric.quantization import quantization_nodes
