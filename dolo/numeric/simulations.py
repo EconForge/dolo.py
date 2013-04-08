@@ -27,8 +27,6 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     if isinstance(cmodel, SModel):
         model = cmodel
         cmodel = CModel(model)
-    else:
-        cmodel = cmodel.as_type('fg')
 
     if n_exp ==0:
         irf = True

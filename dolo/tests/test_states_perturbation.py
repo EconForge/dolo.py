@@ -10,7 +10,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
         # yield the same result.
 
         from dolo.misc.yamlfile import yaml_import
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/global_models/rbc.yaml', compiler=None)
 
 
         from dolo.numeric.perturbations import solve_decision_rule
@@ -22,7 +22,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
         dr = solve_decision_rule(model)
         statefree_perturb = dr['ys'] + dr['g_ss']/2.0
-        ctls = model['variables_groups']['controls']
+        ctls = model.variables_groups['controls']
         ctls_ind = [model.variables.index(v) for v in ctls]
 
         # the two methods should yield exactly the same result

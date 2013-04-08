@@ -16,10 +16,12 @@ try:
     from numpy import ndarray
     from dolo.symbolic.model import SModel
     from dolo.numeric.decision_rules import DynareDecisionRule
+    from dolo.compiler.compiler_python import GModel
 
     ip = get_ipython()
 
-    # there could be some kind of autodecovery there
+    # there could be some kind of auto-discovery there
+    ip.display_formatter.formatters['text/html'].for_type( GModel, printing.print_cmodel )
     ip.display_formatter.formatters['text/html'].for_type( ndarray, printing.print_array )
     ip.display_formatter.formatters['text/html'].for_type( SModel, printing.print_model )
     ip.display_formatter.formatters['text/html'].for_type( DynareDecisionRule, printing.print_dynare_decision_rule )

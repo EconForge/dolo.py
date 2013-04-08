@@ -1,6 +1,12 @@
 from dolo.numeric.decision_rules_states import CDR
 
-def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
+def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True):
+
+    from dolo.symbolic.model import SModel
+    if not isinstance(cmodel, SModel):
+        model = cmodel.model
+    else:
+        model = cmodel
 
     from dolo.compiler.compiler_functions import model_to_fg
     [g_fun, f_fun] = model_to_fg(model, order=order)

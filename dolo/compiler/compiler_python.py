@@ -2,9 +2,15 @@
 class GModel(object):
     '''Generic compiled model'''
 
+    model = None
+    calibration = None
+    functions = None
+    symbols = None
+
     def __init__(self, model, model_type=None, recipes=None, compiler=None):
 
         # this part is actually common to all compilers
+
 
         if model_type is None:
             model_type = model.__data__['model_type']
@@ -75,24 +81,49 @@ class GModel(object):
             functions[eqg] = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg)
 
 
-        calibration = model.calibration
+        self.__update_calibration__()
 
+        symbols = {}
+        for vn, vg in model.symbols_s.iteritems(): # I don't need to do that
+            symbols[vn] = [str(v) for v in vg]
+
+
+        self.symbols = symbols
+        self.functions = functions
+
+    def __update_calibration__(self):
         import numpy
         from collections import OrderedDict
+        calibration = self.model.calibration
         for k,v in calibration.iteritems():
             if isinstance(v, OrderedDict):
                 for l in v:
                     v[l] = numpy.array(v[l], dtype=numpy.double)
             else:
                 calibration[k] = numpy.array(calibration[k], dtype=numpy.double)
-
-        symbols = {}
-        for vn, vg in model.symbols_s.iteritems(): # I don't need to do that
-            symbols[vn] = [str(v) for v in vg]
-
         self.calibration = calibration
-        self.symbols = symbols
-        self.functions = functions
+
+    def set_calibration(self,*args):
+        if len(args) == 2:
+            d = {args[0]:args[1]}
+        else:
+            d = args[0]
+        self.model.set_calibration(d)
+        self.__update_calibration__()
+
+    def get_calibration(self,name):
+
+        name = str(name)
+        # get symbol group containing name
+        group = [sg for sg in self.symbols if name in self.symbols[sg]]
+        if len(group)==0:
+            raise Exception('Symbol {} is not defined for this model'.format(name))
+        assert(len(group)==1)
+        group = group[0]
+
+        ind = self.symbols[group].index(name)
+        return self.calibration[group][ind]
+
 
 if __name__ == '__main__':
     from dolo import *

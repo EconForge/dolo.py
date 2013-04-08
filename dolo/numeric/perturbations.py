@@ -14,7 +14,7 @@ def solve_decision_rule(model, order=2, method='default',check_residuals=True, m
 #    Sigma = model.read_covariances()
 #    Sigma = np.array(model.covariances).astype(np.float64)
     Sigma = model.calibration['covariances']
-    y = model.calibration['variables']
+    y = np.array([model.calibration_dict[v] for v in model.variables])
     x = model.calibration['shocks']
     parms = model.calibration['parameters']
 

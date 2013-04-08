@@ -30,6 +30,18 @@ setup(
             extra_compile_args=['-O3']
         ),
 
+        Extension(
+            'dolo.numeric.interpolation.splines_filter',
+            ['dolo/numeric/interpolation/splines_filter.pyx'],
+            extra_compile_args=['-O3']
+        ),
+
+        Extension(
+            'dolo.numeric.interpolation.splines_cython',
+            ['dolo/numeric/interpolation/splines_cython.pyx'],
+            extra_compile_args=['-O3']
+        ),
+
     ],
 
     include_dirs = [np.get_include()],

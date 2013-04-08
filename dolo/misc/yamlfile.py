@@ -141,13 +141,11 @@ Imports the content of a modfile into the current interpreter scope
     model = SModel( equations_groups, symbols, calibration_s, covariances )
     model.__data__ = raw_dict
 
-    if compiler is not None:
-        from dolo.compiler.compiler_python import GModel
-        return GModel(model, compiler=compiler)
+
 
     return model
 
-def yaml_import(filename,verbose=False, compiler=None):
+def yaml_import(filename,verbose=False, compiler='numpy', **kwargs):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
@@ -155,7 +153,11 @@ def yaml_import(filename,verbose=False, compiler=None):
     f = open(filename)
     txt = f.read()
     model = parse_yaml_text(txt,verbose=verbose, compiler=compiler)
-    if compiler is None:
-        model.fname = fname
-        model.name = fname
+    model.fname = fname
+    model.name = fname
+
+    if compiler is not None:
+        from dolo.compiler.compiler_python import GModel
+        model = GModel(model, compiler=compiler, **kwargs)
+
     return model
