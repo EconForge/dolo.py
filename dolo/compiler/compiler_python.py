@@ -1,6 +1,22 @@
 
 class GModel(object):
-    '''Generic compiled model'''
+    '''Generic compiled model object
+
+    :param  model: (SModel)  a symbolic model
+    :param  model_type: (str) model type (e.g. ``"fg"`` or ``"fga"``
+    :param recipes: (dict) dictionary of recipes (must contain ``model_type`` as a key)
+    :param compiler: (str) compiler to use. One of ``numpy``, ``numexpr``, ``theano``
+
+    The class contains the following fields:
+
+    :attr symbols: (dict) symbol groups -> list of symbol names defining each group
+    :attr functions: (dict) equation names -> compiled functions
+    :attr calibration: (dict) symbol groups -> vector of calibrated values for each group
+
+    :attr model: (optional) link to the original symbolic model
+
+
+    '''
 
     model = None
     calibration = None
@@ -10,7 +26,6 @@ class GModel(object):
     def __init__(self, model, model_type=None, recipes=None, compiler=None):
 
         # this part is actually common to all compilers
-
 
         if model_type is None:
             model_type = model.__data__['model_type']
@@ -87,7 +102,6 @@ class GModel(object):
         for vn, vg in model.symbols_s.iteritems(): # I don't need to do that
             symbols[vn] = [str(v) for v in vg]
 
-
         self.symbols = symbols
         self.functions = functions
 
@@ -104,6 +118,10 @@ class GModel(object):
         self.calibration = calibration
 
     def set_calibration(self,*args):
+        """Updates the model calibration while respecting dependences between parameters.
+        :param args: either two parameters ``key``, ``value`` or a dictionary mapping several keys to several values
+             each key must be a string among the symbols of the model
+        """
         if len(args) == 2:
             d = {args[0]:args[1]}
         else:
@@ -112,6 +130,13 @@ class GModel(object):
         self.__update_calibration__()
 
     def get_calibration(self,name):
+        """Get the calibrated value for one or several variables
+        :param name: string or list of string with the parameter names to query
+        :return: parameter(s) name(s)
+        """
+
+        if iterable(name):
+            return [get_calibration(n) for n in name]
 
         name = str(name)
         # get symbol group containing name
