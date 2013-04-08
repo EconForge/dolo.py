@@ -1,0 +1,146 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Perturbation algorithm &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="up" title="Advanced topics" href="api.html" />
+    <link rel="prev" title="Model conventions" href="conventions.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="conventions.html" title="Model conventions"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="conventions.html"
+                        title="previous chapter">Model conventions</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/perturbations.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="perturbation-algorithm">
+<h1>Perturbation algorithm<a class="headerlink" href="#perturbation-algorithm" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="dolo.numeric.perturbations_to_states.state_perturb">
+<tt class="descclassname">dolo.numeric.perturbations_to_states.</tt><tt class="descname">state_perturb</tt><big>(</big><em>f_fun</em>, <em>g_fun</em>, <em>sigma</em>, <em>sigma2_correction=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/perturbations_to_states.html#state_perturb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.perturbations_to_states.state_perturb" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a Taylor approximation of decision rules, given the supplied derivatives.</p>
+<p>The original system is assumed to be in the the form:</p>
+<div class="math">
+\[E_t f(s_t,x_t,s_{t+1},x_{t+1})\]\[s_t = g(s_{t-1},x_{t-1}, \sigma \epsilon_t)\]</div>
+<p>where <span class="math">\(\lambda\)</span> is a scalar scaling down the risk.  the solution is a function <span class="math">\(\varphi\)</span> such that:</p>
+<div class="math">
+\[x_t = \varphi ( s_t, \sigma )\]</div>
+<p>The user supplies, a list of derivatives of f and g.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>f_fun</strong> &#8211; list of derivatives of f [order0, order1, order2, ...]</li>
+<li><strong>g_fun</strong> &#8211; list of derivatives of g [order0, order1, order2, ...]</li>
+<li><strong>sigma</strong> &#8211; covariance matrix of <span class="math">\(\epsilon_t\)</span></li>
+<li><strong>sigma2_correction</strong> &#8211; (optional) first and second derivatives of g w.r.t. sigma if <span class="math">\(g\)</span> explicitely depends
+<span class="math">\(sigma\)</span></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Assuming <span class="math">\(s_t\)</span> ,  <span class="math">\(x_t\)</span> and <span class="math">\(\epsilon_t\)</span> are vectors of size
+<span class="math">\(n_s\)</span>, <span class="math">\(n_x\)</span>  and <span class="math">\(n_x\)</span>  respectively.
+In general the derivative of order <span class="math">\(i\)</span> of <span class="math">\(f\)</span>  is a multimensional array of size <span class="math">\(n_x \times (N, ..., N)\)</span>
+with <span class="math">\(N=2(n_s+n_x)\)</span> repeated <span class="math">\(i\)</span> times (possibly 0).
+Similarly the derivative of order <span class="math">\(i\)</span> of <span class="math">\(g\)</span>  is a multidimensional array of size <span class="math">\(n_s \times (M, ..., M)\)</span>
+with <span class="math">\(M=n_s+n_x+n_2\)</span> repeated <span class="math">\(i\)</span> times (possibly 0).</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="conventions.html" title="Model conventions"
+             >previous</a> |</li>
+        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="api.html" >Advanced topics</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

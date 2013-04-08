@@ -1,0 +1,451 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dolo.numeric.perturbations_to_states &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dolo.numeric.perturbations_to_states</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">dolo.numeric.decision_rules_states</span> <span class="kn">import</span> <span class="n">CDR</span>
+
+<span class="k">def</span> <span class="nf">approximate_controls</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lambda_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">return_dr</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.compiler.compiler_functions</span> <span class="kn">import</span> <span class="n">model_to_fg</span>
+    <span class="p">[</span><span class="n">g_fun</span><span class="p">,</span> <span class="n">f_fun</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_to_fg</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+    <span class="c"># get steady_state</span>
+    <span class="kn">import</span> <span class="nn">numpy</span>
+
+    <span class="p">[</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">parms</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">read_calibration</span><span class="p">()</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">read_covariances</span><span class="p">()</span>
+
+    <span class="n">states</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;states&#39;</span><span class="p">]</span>
+    <span class="n">controls</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;controls&#39;</span><span class="p">]</span>
+
+    <span class="n">states_ss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">y</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">states</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">controls_ss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">y</span><span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">v</span><span class="p">)]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">controls</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">shocks_ss</span> <span class="o">=</span> <span class="n">x</span>
+
+    <span class="n">f_args_ss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">states_ss</span><span class="p">,</span> <span class="n">controls_ss</span><span class="p">,</span> <span class="n">states_ss</span><span class="p">,</span> <span class="n">controls_ss</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">g_args_ss</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">states_ss</span><span class="p">,</span> <span class="n">controls_ss</span><span class="p">,</span> <span class="n">shocks_ss</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f_fun</span><span class="p">(</span> <span class="n">f_args_ss</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">(</span> <span class="n">g_args_ss</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">lambda_name</span><span class="p">:</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="mf">0.001</span>
+        <span class="n">sigma_index</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">lambda_name</span><span class="p">)</span>
+        <span class="n">pert_parms</span> <span class="o">=</span> <span class="n">parms</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">pert_parms</span><span class="p">[</span><span class="n">sigma_index</span><span class="p">]</span> <span class="o">+=</span> <span class="n">epsilon</span>
+
+        <span class="n">g_pert</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">(</span><span class="n">g_args_ss</span><span class="p">,</span> <span class="n">pert_parms</span><span class="p">)</span>
+        <span class="n">sig2</span> <span class="o">=</span> <span class="p">(</span><span class="n">g_pert</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">g</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="n">epsilon</span><span class="o">*</span><span class="mi">2</span>
+        <span class="n">sig2_s</span> <span class="o">=</span> <span class="p">(</span><span class="n">g_pert</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="n">epsilon</span><span class="o">*</span><span class="mi">2</span>
+        <span class="n">pert_sol</span> <span class="o">=</span> <span class="n">state_perturb</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">sigma2_correction</span> <span class="o">=</span> <span class="p">[</span><span class="n">sig2</span><span class="p">,</span> <span class="n">sig2_s</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">(</span> <span class="n">g_args_ss</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
+        <span class="n">pert_sol</span> <span class="o">=</span> <span class="n">state_perturb</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">sigma</span> <span class="p">)</span>
+
+    <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">states_ss</span><span class="p">)</span>
+    <span class="n">n_c</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">controls_ss</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">return_dr</span><span class="p">:</span>
+            <span class="n">S_bar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">states_ss</span> <span class="p">)</span>
+            <span class="n">X_bar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">controls_ss</span> <span class="p">)</span>
+            <span class="c"># add transitions of states to the d.r.</span>
+
+
+
+            <span class="n">X_s</span> <span class="o">=</span> <span class="n">pert_sol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_c</span><span class="p">],</span> <span class="n">X_s</span> <span class="p">)</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_c</span><span class="p">:]</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">CDR</span><span class="p">([</span><span class="n">S_bar</span><span class="p">,</span> <span class="n">X_bar</span><span class="p">,</span> <span class="n">X_s</span><span class="p">])</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">B</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+            <span class="k">return</span> <span class="n">dr</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">controls_ss</span><span class="p">]</span> <span class="o">+</span> <span class="n">pert_sol</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="p">[[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">],[</span><span class="n">X_tt</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pert_sol</span>
+        <span class="n">X_bar</span> <span class="o">=</span> <span class="n">controls_ss</span> <span class="o">+</span> <span class="n">X_tt</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span> <span class="n">return_dr</span><span class="p">:</span>
+            <span class="n">S_bar</span> <span class="o">=</span> <span class="n">states_ss</span>
+            <span class="n">S_bar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">S_bar</span><span class="p">)</span>
+            <span class="n">X_bar</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">X_bar</span><span class="p">)</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">CDR</span><span class="p">([</span><span class="n">S_bar</span><span class="p">,</span> <span class="n">X_bar</span><span class="p">,</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">X_ss</span><span class="p">])</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_c</span><span class="p">],</span> <span class="n">X_s</span> <span class="p">)</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_c</span><span class="p">:]</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">A</span> <span class="o">=</span> <span class="n">A</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="n">B</span>
+            <span class="k">return</span> <span class="n">dr</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">X_bar</span><span class="p">,</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">X_ss</span><span class="p">]</span>
+
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="p">[[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">,</span><span class="n">X_sss</span><span class="p">],[</span><span class="n">X_tt</span><span class="p">,</span> <span class="n">X_stt</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pert_sol</span>
+        <span class="n">X_bar</span> <span class="o">=</span> <span class="n">controls_ss</span> <span class="o">+</span> <span class="n">X_tt</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">X_s</span> <span class="o">=</span> <span class="n">X_s</span> <span class="o">+</span> <span class="n">X_stt</span><span class="o">/</span><span class="mi">2</span>
+        <span class="k">if</span> <span class="n">return_dr</span><span class="p">:</span>
+            <span class="n">S_bar</span> <span class="o">=</span> <span class="n">states_ss</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">CDR</span><span class="p">([</span><span class="n">S_bar</span><span class="p">,</span> <span class="n">X_bar</span><span class="p">,</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">X_ss</span><span class="p">,</span> <span class="n">X_sss</span><span class="p">])</span>
+            <span class="n">dr</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+            <span class="k">return</span> <span class="n">dr</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">X_bar</span><span class="p">,</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">X_ss</span><span class="p">,</span> <span class="n">X_sss</span><span class="p">]</span>
+
+<div class="viewcode-block" id="state_perturb"><a class="viewcode-back" href="../../../perturbations.html#dolo.numeric.perturbations_to_states.state_perturb">[docs]</a><span class="k">def</span> <span class="nf">state_perturb</span><span class="p">(</span><span class="n">f_fun</span><span class="p">,</span> <span class="n">g_fun</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">sigma2_correction</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Computes a Taylor approximation of decision rules, given the supplied derivatives.</span>
+
+<span class="sd">    The original system is assumed to be in the the form:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        E_t f(s_t,x_t,s_{t+1},x_{t+1})</span>
+
+<span class="sd">        s_t = g(s_{t-1},x_{t-1}, \\sigma \\epsilon_t)</span>
+
+<span class="sd">    where :math:`\\lambda` is a scalar scaling down the risk.  the solution is a function :math:`\\varphi` such that:</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        x_t = \\varphi ( s_t, \\sigma )</span>
+
+<span class="sd">    The user supplies, a list of derivatives of f and g.</span>
+
+<span class="sd">    :param f_fun: list of derivatives of f [order0, order1, order2, ...]</span>
+<span class="sd">    :param g_fun: list of derivatives of g [order0, order1, order2, ...]</span>
+<span class="sd">    :param sigma: covariance matrix of :math:`\\epsilon_t`</span>
+<span class="sd">    :param sigma2_correction: (optional) first and second derivatives of g w.r.t. sigma if :math:`g` explicitely depends</span>
+<span class="sd">        :math:`sigma`</span>
+
+
+<span class="sd">    Assuming :math:`s_t` ,  :math:`x_t` and :math:`\\epsilon_t` are vectors of size</span>
+<span class="sd">    :math:`n_s`, :math:`n_x`  and :math:`n_x`  respectively.</span>
+<span class="sd">    In general the derivative of order :math:`i` of :math:`f`  is a multimensional array of size :math:`n_x \\times (N, ..., N)`</span>
+<span class="sd">    with :math:`N=2(n_s+n_x)` repeated :math:`i` times (possibly 0).</span>
+<span class="sd">    Similarly the derivative of order :math:`i` of :math:`g`  is a multidimensional array of size :math:`n_s \\times (M, ..., M)`</span>
+<span class="sd">    with :math:`M=n_s+n_x+n_2` repeated :math:`i` times (possibly 0).</span>
+
+<span class="sd">    </span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+    <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">solve</span>
+
+    <span class="n">approx_order</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">f_fun</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="c"># order of approximation</span>
+
+    <span class="p">[</span><span class="n">f0</span><span class="p">,</span><span class="n">f1</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_fun</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="p">[</span><span class="n">g0</span><span class="p">,</span><span class="n">g1</span><span class="p">]</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">n_x</span> <span class="o">=</span> <span class="n">f1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>           <span class="c"># number of controls</span>
+    <span class="n">n_s</span> <span class="o">=</span> <span class="n">f1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">n_x</span>   <span class="c"># number of states</span>
+    <span class="n">n_e</span> <span class="o">=</span> <span class="n">g1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">n_x</span> <span class="o">-</span> <span class="n">n_s</span>
+    <span class="n">n_v</span> <span class="o">=</span> <span class="n">n_s</span> <span class="o">+</span> <span class="n">n_x</span>
+
+    <span class="n">f_s</span> <span class="o">=</span> <span class="n">f1</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">f_x</span> <span class="o">=</span> <span class="n">f1</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">]</span>
+    <span class="n">f_snext</span> <span class="o">=</span> <span class="n">f1</span><span class="p">[:,</span><span class="n">n_v</span><span class="p">:</span><span class="n">n_v</span><span class="o">+</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">f_xnext</span> <span class="o">=</span> <span class="n">f1</span><span class="p">[:,</span><span class="n">n_v</span><span class="o">+</span><span class="n">n_s</span><span class="p">:]</span>
+
+    <span class="n">g_s</span> <span class="o">=</span> <span class="n">g1</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">g_x</span> <span class="o">=</span> <span class="n">g1</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">]</span>
+    <span class="n">g_e</span> <span class="o">=</span> <span class="n">g1</span><span class="p">[:,</span><span class="n">n_v</span><span class="p">:]</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span> <span class="p">[</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_x</span><span class="p">))</span> <span class="p">]</span> <span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span> <span class="p">[</span> <span class="o">-</span><span class="n">f_snext</span>    <span class="p">,</span> <span class="o">-</span><span class="n">f_xnext</span>             <span class="p">]</span> <span class="p">)</span>
+    <span class="p">])</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span> <span class="p">[</span> <span class="n">g_s</span><span class="p">,</span> <span class="n">g_x</span> <span class="p">]</span> <span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">(</span> <span class="p">[</span> <span class="n">f_s</span><span class="p">,</span> <span class="n">f_x</span> <span class="p">]</span> <span class="p">)</span>
+    <span class="p">])</span>
+
+
+
+    <span class="kn">from</span> <span class="nn">dolo.numeric.extern.qz</span> <span class="kn">import</span> <span class="n">qzordered</span>
+    <span class="p">[</span><span class="n">S</span><span class="p">,</span><span class="n">T</span><span class="p">,</span><span class="n">Q</span><span class="p">,</span><span class="n">Z</span><span class="p">,</span><span class="n">eigval</span><span class="p">]</span> <span class="o">=</span> <span class="n">qzordered</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">n_s</span><span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">Q</span><span class="o">.</span><span class="n">real</span> <span class="c"># is it really necessary ?</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">Z</span><span class="o">.</span><span class="n">real</span>
+
+    <span class="n">Z11</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">Z12</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">:]</span>
+    <span class="n">Z21</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">n_s</span><span class="p">:,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">Z22</span> <span class="o">=</span> <span class="n">Z</span><span class="p">[</span><span class="n">n_s</span><span class="p">:,</span><span class="n">n_s</span><span class="p">:]</span>
+    <span class="n">S11</span> <span class="o">=</span> <span class="n">S</span><span class="p">[:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">T11</span> <span class="o">=</span> <span class="n">T</span><span class="p">[:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">]</span>
+
+    <span class="c"># first order solution</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">Z11</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Z21</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">solve</span><span class="p">(</span><span class="n">S11</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Z11</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="p">,</span> <span class="n">solve</span><span class="p">(</span><span class="n">Z11</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">T11</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="p">)</span>
+    <span class="n">Q</span> <span class="o">=</span> <span class="n">g_e</span>
+
+    <span class="k">if</span> <span class="bp">False</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">dot</span>
+        <span class="n">test</span> <span class="o">=</span> <span class="n">f_s</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_x</span><span class="p">,</span><span class="n">C</span><span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_snext</span><span class="p">,</span> <span class="n">g_s</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">C</span><span class="p">)</span> <span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span> <span class="n">dot</span><span class="p">(</span> <span class="n">C</span><span class="p">,</span> <span class="n">g_s</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">C</span><span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">&#39;Error: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">test</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+
+    <span class="k">if</span> <span class="n">approx_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">C</span><span class="p">]</span>
+
+    <span class="c"># second order solution</span>
+    <span class="kn">from</span> <span class="nn">dolo.numeric.tensor</span> <span class="kn">import</span> <span class="n">sdot</span><span class="p">,</span> <span class="n">mdot</span>
+    <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">dot</span>
+    <span class="kn">from</span> <span class="nn">dolo.numeric.matrix_equations</span> <span class="kn">import</span> <span class="n">solve_sylvester</span>
+
+    <span class="n">f2</span> <span class="o">=</span> <span class="n">f_fun</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">g2</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">g_ss</span> <span class="o">=</span> <span class="n">g2</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">g_sx</span> <span class="o">=</span> <span class="n">g2</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">]</span>
+    <span class="n">g_xx</span> <span class="o">=</span> <span class="n">g2</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">]</span>
+
+    <span class="n">X_s</span> <span class="o">=</span> <span class="n">C</span>
+
+
+
+    <span class="n">V1_3</span> <span class="o">=</span> <span class="n">g_s</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span>
+    <span class="n">V1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">),</span>
+        <span class="n">X_s</span><span class="p">,</span>
+        <span class="n">V1_3</span><span class="p">,</span>
+        <span class="n">dot</span><span class="p">(</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">V1_3</span> <span class="p">)</span>
+    <span class="p">])</span>
+
+    <span class="n">K2</span> <span class="o">=</span> <span class="n">g_ss</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_sx</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_xx</span><span class="p">,[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_s</span><span class="p">])</span>
+    <span class="c">#L2 =</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">f_x</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span> <span class="n">g_x</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">f_xnext</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">V1_3</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f2</span><span class="p">,[</span><span class="n">V1</span><span class="p">,</span><span class="n">V1</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span><span class="n">K2</span><span class="p">)</span>
+    
+    <span class="n">X_ss</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+<span class="c">#    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,[V1_3,V1_3]) ) + D</span>
+
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sigma</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">g_ee</span> <span class="o">=</span> <span class="n">g2</span><span class="p">[:,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:]</span>
+
+        <span class="n">v</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+            <span class="n">g_e</span><span class="p">,</span>
+            <span class="n">dot</span><span class="p">(</span><span class="n">X_s</span><span class="p">,</span><span class="n">g_e</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="n">K_tt</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f2</span><span class="p">[:,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:],</span> <span class="p">[</span><span class="n">v</span><span class="p">,</span><span class="n">v</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">K_tt</span> <span class="o">+=</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span> <span class="p">,</span> <span class="n">g_ee</span> <span class="p">)</span>
+        <span class="n">K_tt</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f_xnext</span><span class="p">,</span> <span class="n">X_ss</span><span class="p">),</span> <span class="p">[</span><span class="n">g_e</span><span class="p">,</span> <span class="n">g_e</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">K_tt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">K_tt</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">sigma2_correction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">K_tt</span> <span class="o">+=</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span> <span class="p">,</span> <span class="n">sigma2_correction</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span>
+
+        <span class="n">L_tt</span> <span class="o">=</span> <span class="n">f_x</span>  <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_snext</span><span class="p">,</span> <span class="n">g_x</span><span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span> <span class="n">dot</span><span class="p">(</span><span class="n">X_s</span><span class="p">,</span> <span class="n">g_x</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_x</span><span class="p">)</span> <span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="kn">import</span> <span class="n">det</span>
+        <span class="n">X_tt</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span> <span class="n">L_tt</span><span class="p">,</span> <span class="o">-</span> <span class="n">K_tt</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">approx_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sigma</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">]</span>  <span class="c"># here, we don&#39;t approximate the law of motion of the states</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">],[</span><span class="n">X_tt</span><span class="p">]]</span>  <span class="c"># here, we don&#39;t approximate the law of motion of the states</span>
+
+    <span class="c"># third order solution</span>
+
+    <span class="n">f3</span> <span class="o">=</span> <span class="n">f_fun</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">g3</span> <span class="o">=</span> <span class="n">g_fun</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">g_sss</span> <span class="o">=</span> <span class="n">g3</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">g_ssx</span> <span class="o">=</span> <span class="n">g3</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">]</span>
+    <span class="n">g_sxx</span> <span class="o">=</span> <span class="n">g3</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">]</span>
+    <span class="n">g_xxx</span> <span class="o">=</span> <span class="n">g3</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">]</span>
+
+    <span class="n">V2_3</span> <span class="o">=</span> <span class="n">K2</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">X_ss</span><span class="p">)</span>
+    <span class="n">V2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_s</span><span class="p">)</span> <span class="p">),</span>
+        <span class="n">X_ss</span><span class="p">,</span>
+        <span class="n">V2_3</span><span class="p">,</span>
+        <span class="n">dot</span><span class="p">(</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">V2_3</span> <span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">X_ss</span><span class="p">,[</span><span class="n">V1_3</span><span class="p">,</span><span class="n">V1_3</span><span class="p">])</span>
+    <span class="p">])</span>
+
+    <span class="n">K3</span> <span class="o">=</span> <span class="n">g_sss</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">sdot</span><span class="p">(</span><span class="n">g_ssx</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_sxx</span><span class="p">,[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_s</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">sdot</span><span class="p">(</span><span class="n">g_sx</span><span class="p">,</span><span class="n">X_ss</span><span class="p">)</span>
+    <span class="n">K3</span> <span class="o">+=</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span> <span class="n">g_xx</span><span class="p">,[</span><span class="n">X_ss</span><span class="p">,</span><span class="n">X_s</span><span class="p">]</span> <span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_xxx</span><span class="p">,[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_s</span><span class="p">])</span>
+    <span class="n">L3</span> <span class="o">=</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">X_ss</span><span class="p">,[</span><span class="n">V1_3</span><span class="p">,</span><span class="n">V2_3</span><span class="p">])</span>
+
+    <span class="c"># A = f_x + dot( f_snext + dot(f_xnext,X_s), g_x) # same as before</span>
+    <span class="c"># B = f_xnext # same</span>
+    <span class="c"># C = V1_3 # same</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f3</span><span class="p">,[</span><span class="n">V1</span><span class="p">,</span><span class="n">V1</span><span class="p">,</span><span class="n">V1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f2</span><span class="p">,[</span> <span class="n">V2</span><span class="p">,</span><span class="n">V1</span> <span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span><span class="n">K3</span><span class="p">)</span>
+    <span class="n">D</span> <span class="o">+=</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f_xnext</span><span class="p">,</span> <span class="n">L3</span> <span class="p">)</span>
+
+    <span class="n">X_sss</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+    <span class="c"># now doing sigma correction with sigma replaced by l in the subscripts</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sigma</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">g_se</span><span class="o">=</span> <span class="n">g2</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_v</span><span class="p">:]</span>
+        <span class="n">g_xe</span><span class="o">=</span> <span class="n">g2</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">:]</span>
+
+        <span class="n">g_see</span><span class="o">=</span> <span class="n">g3</span><span class="p">[:,:</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:]</span>
+        <span class="n">g_xee</span><span class="o">=</span> <span class="n">g3</span><span class="p">[:,</span><span class="n">n_s</span><span class="p">:</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:]</span>
+
+
+        <span class="n">W_l</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+            <span class="n">g_e</span><span class="p">,</span>
+            <span class="n">dot</span><span class="p">(</span><span class="n">X_s</span><span class="p">,</span><span class="n">g_e</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="n">I_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_e</span><span class="p">)</span>
+
+        <span class="n">V_sl</span> <span class="o">=</span> <span class="n">g_se</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_xe</span><span class="p">,</span> <span class="p">[</span><span class="n">X_s</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_e</span><span class="p">)])</span>
+
+        <span class="n">W_sl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+            <span class="n">V_sl</span><span class="p">,</span>
+            <span class="n">mdot</span><span class="p">(</span> <span class="n">X_ss</span><span class="p">,</span> <span class="p">[</span> <span class="n">V1_3</span><span class="p">,</span> <span class="n">g_e</span> <span class="p">]</span> <span class="p">)</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">X_s</span><span class="p">,</span> <span class="n">V_sl</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="n">K_ee</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f3</span><span class="p">[:,:,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:],</span> <span class="p">[</span><span class="n">V1</span><span class="p">,</span> <span class="n">W_l</span><span class="p">,</span> <span class="n">W_l</span> <span class="p">])</span>
+        <span class="n">K_ee</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f2</span><span class="p">[:,</span><span class="n">n_v</span><span class="p">:,</span><span class="n">n_v</span><span class="p">:],</span> <span class="p">[</span><span class="n">W_sl</span><span class="p">,</span> <span class="n">W_l</span><span class="p">])</span>
+
+        <span class="c"># stochastic part of W_ll</span>
+
+        <span class="n">SW_ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span>
+            <span class="n">g_ee</span><span class="p">,</span>
+            <span class="n">mdot</span><span class="p">(</span><span class="n">X_ss</span><span class="p">,</span> <span class="p">[</span><span class="n">g_e</span><span class="p">,</span> <span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">X_s</span><span class="p">,</span> <span class="n">g_ee</span><span class="p">)</span>
+        <span class="p">])</span>
+
+        <span class="n">DW_ll</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+            <span class="n">X_tt</span><span class="p">,</span>
+            <span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span> <span class="n">X_tt</span><span class="p">),</span>
+            <span class="n">dot</span><span class="p">(</span><span class="n">X_s</span><span class="p">,</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">X_tt</span> <span class="p">))</span> <span class="o">+</span> <span class="n">X_tt</span>
+        <span class="p">])</span>
+
+        <span class="n">K_ee</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f2</span><span class="p">[:,:,</span><span class="n">n_v</span><span class="p">:],</span> <span class="p">[</span><span class="n">V1</span><span class="p">,</span> <span class="n">SW_ll</span><span class="p">])</span>
+
+        <span class="n">K_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">K_ee</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+
+        <span class="n">K_</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f2</span><span class="p">[:,:,</span><span class="n">n_s</span><span class="p">:],</span> <span class="p">[</span><span class="n">V1</span><span class="p">,</span> <span class="n">DW_ll</span><span class="p">])</span>
+
+        <span class="k">def</span> <span class="nf">E</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vec</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span><span class="n">sigma</span><span class="p">,</span><span class="n">axes</span><span class="o">=</span><span class="p">((</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)))</span>
+
+        <span class="n">L</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_sx</span><span class="p">,</span><span class="n">X_tt</span><span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_xx</span><span class="p">,[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_tt</span><span class="p">])</span>
+
+        <span class="n">L</span> <span class="o">+=</span> <span class="n">E</span><span class="p">(</span><span class="n">g_see</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_xee</span><span class="p">,[</span><span class="n">X_s</span><span class="p">,</span><span class="n">I_e</span><span class="p">,</span><span class="n">I_e</span><span class="p">])</span> <span class="p">)</span>
+
+        <span class="n">M</span> <span class="o">=</span> <span class="n">E</span><span class="p">(</span> <span class="n">mdot</span><span class="p">(</span><span class="n">X_sss</span><span class="p">,[</span><span class="n">V1_3</span><span class="p">,</span> <span class="n">g_e</span><span class="p">,</span> <span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">X_ss</span><span class="p">,</span> <span class="p">[</span><span class="n">V_sl</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="p">)</span>
+        <span class="n">M</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">X_ss</span><span class="p">,</span> <span class="p">[</span><span class="n">V1_3</span><span class="p">,</span> <span class="n">E</span><span class="p">(</span> <span class="n">g_ee</span> <span class="p">)</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span> <span class="n">X_tt</span><span class="p">)]</span> <span class="p">)</span>
+
+
+        <span class="n">A</span> <span class="o">=</span> <span class="n">f_x</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span> <span class="n">g_x</span><span class="p">)</span> <span class="c"># same as before</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">f_xnext</span> <span class="c"># same</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">V1_3</span> <span class="c"># same</span>
+        <span class="n">D</span> <span class="o">=</span> <span class="n">K_</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span> <span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_xnext</span><span class="p">,</span> <span class="n">M</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">sigma2_correction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">g_sl</span> <span class="o">=</span> <span class="n">sigma2_correction</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,:</span><span class="n">n_s</span><span class="p">]</span>
+            <span class="n">g_xl</span> <span class="o">=</span> <span class="n">sigma2_correction</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n_s</span><span class="p">:(</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">)]</span>
+            <span class="n">D</span> <span class="o">+=</span> <span class="n">dot</span><span class="p">(</span> <span class="n">f_snext</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">f_xnext</span><span class="p">,</span><span class="n">X_s</span><span class="p">),</span> <span class="n">g_sl</span> <span class="o">+</span> <span class="n">dot</span><span class="p">(</span><span class="n">g_xl</span><span class="p">,</span><span class="n">X_s</span><span class="p">)</span> <span class="p">)</span>   <span class="c"># constant</span>
+
+        <span class="n">X_stt</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">approx_order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sigma</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">,</span><span class="n">X_sss</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[[</span><span class="n">X_s</span><span class="p">,</span><span class="n">X_ss</span><span class="p">,</span><span class="n">X_sss</span><span class="p">],[</span><span class="n">X_tt</span><span class="p">,</span> <span class="n">X_stt</span><span class="p">]]</span>
+
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">dolo</span> <span class="kn">import</span> <span class="o">*</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s">&#39;examples/global_models/rbc.yaml&#39;</span><span class="p">)</span>
+    <span class="n">dr</span> <span class="o">=</span> <span class="n">approximate_controls</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">dr</span><span class="o">.</span><span class="n">X_s</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

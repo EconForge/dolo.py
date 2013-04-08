@@ -201,7 +201,7 @@
         <span class="k">return</span> <span class="n">code_to_function</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span><span class="s">&#39;dynamic_function&#39;</span><span class="p">)</span>
 
 </div>
-<div class="viewcode-block" id="compile_multiargument_function"><a class="viewcode-back" href="../../../compilation.html#dolo.compiler.function_compiler.compile_multiargument_function">[docs]</a><span class="k">def</span> <span class="nf">compile_multiargument_function</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span> <span class="n">args_list</span><span class="p">,</span> <span class="n">args_names</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;anonymous_function&#39;</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">vectorize</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_text</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+<div class="viewcode-block" id="compile_multiargument_function"><a class="viewcode-back" href="../../../compilation.html#dolo.compiler.function_compiler.compile_multiargument_function">[docs]</a><span class="k">def</span> <span class="nf">compile_multiargument_function</span><span class="p">(</span><span class="n">equations</span><span class="p">,</span> <span class="n">args_list</span><span class="p">,</span> <span class="n">args_names</span><span class="p">,</span> <span class="n">parms</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;anonymous_function&#39;</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">return_text</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">use_numexpr</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    :param equations: list of sympy expressions</span>
 <span class="sd">    :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])</span>
@@ -214,24 +214,24 @@
 <span class="sd">    :return:</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="n">vectorize</span><span class="p">:</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="s">&#39;{0}[{1},...]&#39;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="s">&#39;{0}[{1}]&#39;</span>
+    <span class="n">template</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span>
 
+    <span class="n">declarations</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
     <span class="n">sub_list</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">args</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args_list</span><span class="p">):</span>
         <span class="n">vec_name</span> <span class="o">=</span> <span class="n">args_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
             <span class="n">sub_list</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vec_name</span><span class="p">,</span><span class="n">j</span><span class="p">)</span>
+            <span class="n">declarations</span> <span class="o">+=</span> <span class="s">&quot;    {0}_{1} = {0}[{1},...]</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vec_name</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parms</span><span class="p">):</span>
-        <span class="n">sub_list</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;{0}[{1}]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;p&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">sub_list</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;{0}_{1}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;p&#39;</span><span class="p">,</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">declarations</span> <span class="o">+=</span> <span class="s">&quot;    {0}_{1} = {0}[{1}]</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&#39;p&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
 
     <span class="kn">import</span> <span class="nn">sympy</span>
+    <span class="c"># TODO: construct a common list of symbol that should be understood everywhere</span>
     <span class="n">sub_list</span><span class="p">[</span><span class="n">sympy</span><span class="o">.</span><span class="n">Symbol</span><span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="s">&#39;inf&#39;</span>
-
 
     <span class="n">text</span> <span class="o">=</span> <span class="s">&#39;&#39;&#39;</span>
 <span class="s">def {fname}({args_names}, {param_names}, derivs=False):</span>
@@ -245,6 +245,11 @@
 <span class="s">    from numpy import sinh, cosh, tanh</span>
 <span class="s">    from numpy import pi</span>
 <span class="s">    from numpy import inf</span>
+
+<span class="s">    {use_numexpr}</span>
+
+<span class="s">{declarations}</span>
+
 
 <span class="s">    n = {var}.shape[-1]</span>
 
@@ -260,7 +265,11 @@
     <span class="k">def</span> <span class="nf">write_eqs</span><span class="p">(</span><span class="n">eq_l</span><span class="p">,</span><span class="n">outname</span><span class="o">=</span><span class="s">&#39;val&#39;</span><span class="p">):</span>
         <span class="n">eq_block</span> <span class="o">=</span> <span class="s">&#39;    {0} = np.zeros( ({1},n) )</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">eq_l</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">eq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eq_l</span><span class="p">):</span>
-            <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&#39;    {0}[{1},:] = {2}</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span>  <span class="n">dp</span><span class="o">.</span><span class="n">doprint_numpy</span><span class="p">(</span><span class="n">eq</span><span class="p">))</span>
+            <span class="n">eq_string</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">doprint_numpy</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">use_numexpr</span><span class="p">:</span>
+                <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&quot;    {0}[{1},:] = numexpr.evaluate(&#39;{2}&#39;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span>  <span class="n">eq_string</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&#39;    {0}[{1},:] = {2}</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">outname</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">eq_string</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">eq_block</span>
 
     <span class="k">def</span> <span class="nf">write_der_eqs</span><span class="p">(</span><span class="n">eq_l</span><span class="p">,</span><span class="n">v_l</span><span class="p">,</span><span class="n">lhs</span><span class="p">):</span>
@@ -268,8 +277,13 @@
         <span class="n">eq_l_d</span> <span class="o">=</span> <span class="n">eqdiff</span><span class="p">(</span><span class="n">eq_l</span><span class="p">,</span><span class="n">v_l</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">eqq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eq_l_d</span><span class="p">):</span>
             <span class="k">for</span> <span class="n">j</span><span class="p">,</span><span class="n">eq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eqq</span><span class="p">):</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">doprint_numpy</span><span class="p">(</span> <span class="n">eq</span> <span class="p">)</span>
-                <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&#39;    {lhs}[{0},{1},:] = {2}</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">lhs</span><span class="o">=</span><span class="n">lhs</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">eq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">use_numexpr</span><span class="p">:</span>
+                        <span class="n">eq_string</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">doprint_numpy</span><span class="p">(</span> <span class="n">eq</span> <span class="p">)</span>
+                        <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&quot;    {lhs}[{0},{1},:] = numexpr.evaluate(&#39;{2}&#39;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">eq_string</span><span class="p">,</span><span class="n">lhs</span><span class="o">=</span><span class="n">lhs</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">eq_string</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">doprint</span><span class="p">(</span> <span class="n">eq</span> <span class="p">)</span>
+                        <span class="n">eq_block</span> <span class="o">+=</span> <span class="s">&quot;    {lhs}[{0},{1},:] = {2}</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">eq_string</span><span class="p">,</span><span class="n">lhs</span><span class="o">=</span><span class="n">lhs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">eq_block</span>
 
     <span class="n">content</span> <span class="o">=</span> <span class="n">write_eqs</span><span class="p">(</span><span class="n">equations</span><span class="p">)</span>
@@ -288,6 +302,8 @@
     <span class="n">return_names</span> <span class="o">=</span> <span class="s">&#39;[val, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;, &#39;</span><span class="p">,</span> <span class="p">[</span> <span class="s">&#39;val_&#39;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args_names</span><span class="p">]</span> <span class="p">)</span> <span class="o">+</span> <span class="s">&#39;]&#39;</span> <span class="k">if</span> <span class="n">diff</span> <span class="k">else</span> <span class="s">&#39;val&#39;</span>
     <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">fname</span> <span class="o">=</span> <span class="n">fname</span><span class="p">,</span>
+            <span class="n">use_numexpr</span> <span class="o">=</span> <span class="s">&quot;import numexpr</span><span class="se">\n</span><span class="s">&quot;</span> <span class="k">if</span> <span class="n">use_numexpr</span> <span class="k">else</span> <span class="s">&quot;&quot;</span><span class="p">,</span>
+            <span class="n">declarations</span> <span class="o">=</span> <span class="n">declarations</span><span class="p">,</span>
             <span class="n">var</span> <span class="o">=</span> <span class="n">args_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
             <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="p">,</span>
             <span class="n">return_names</span> <span class="o">=</span> <span class="n">return_names</span><span class="p">,</span>
@@ -295,12 +311,9 @@
             <span class="n">param_names</span> <span class="o">=</span> <span class="s">&#39;p&#39;</span>
             <span class="p">)</span>
 
-
     <span class="k">if</span> <span class="n">return_text</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">text</span>
 
-    <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-    <span class="n">inf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
 
     <span class="k">return</span> <span class="n">code_to_function</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="n">fname</span><span class="p">)</span>
 

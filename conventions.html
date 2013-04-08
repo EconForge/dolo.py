@@ -28,6 +28,7 @@
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
     <link rel="up" title="Advanced topics" href="api.html" />
+    <link rel="next" title="Perturbation algorithm" href="perturbations.html" />
     <link rel="prev" title="Compilation" href="compilation.html" /> 
   </head>
   <body>
@@ -40,6 +41,9 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="perturbations.html" title="Perturbation algorithm"
+             accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="compilation.html" title="Compilation"
              accesskey="P">previous</a> |</li>
@@ -71,6 +75,9 @@
   <h4>Previous topic</h4>
   <p class="topless"><a href="compilation.html"
                         title="previous chapter">Compilation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="perturbations.html"
+                        title="next chapter">Perturbation algorithm</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/conventions.txt"
@@ -114,12 +121,11 @@ For this kind of models, the solver finds a solution <span class="math">\(g\)</s
 <h3>controlled process variants<a class="headerlink" href="#controlled-process-variants" title="Permalink to this headline">¶</a></h3>
 <p>We define several categories of models.</p>
 <p class="graphviz">
-<img src="_images/graphviz-83ce62abf2a2a279153317ea7222a78fe10bf376.png" alt="digraph foo {
+digraph foo {
     &quot;fgah&quot; -&gt; &quot;fga&quot;;
     &quot;fga&quot; -&gt; &quot;fg&quot;;
     &quot;fgh&quot; -&gt; &quot;fg&quot;;
-}" />
-</p>
+}</p>
 <div class="section" id="fg-model">
 <h4><em>fg</em> model<a class="headerlink" href="#fg-model" title="Permalink to this headline">¶</a></h4>
 <p>With these versions, the state-space is chosen by the user. A law of motion for the state-space must be specified (depending on the controls and on the shocks). And optimality conditions must be given to pin down all the controls.
@@ -196,6 +202,9 @@ denotes the successive points. This is adapted to matlab&#8217;s storage order (
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
+        <li class="right" >
+          <a href="perturbations.html" title="Perturbation algorithm"
+             >next</a> |</li>
         <li class="right" >
           <a href="compilation.html" title="Compilation"
              >previous</a> |</li>
