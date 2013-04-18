@@ -44,6 +44,12 @@ class SModel:
         self.covariances_s = covariances_s                                                      # sympy matrix
         ######################################
 
+
+        # this should actually be non deterministic
+        import random
+        n = random.random()
+        self.__hashno__ = hash(n)
+
         self.update()
 
     def check():
@@ -66,10 +72,6 @@ class SModel:
         self.shocks = self.symbols_s['shocks']
         self.parameters = self.symbols_s['parameters']
 
-        # this should actually be non deterministic
-        import random
-        n = random.random()
-        self.__hashno__ = hash(n)
 
         # update calibration
         from dolo.misc.triangular_solver import solve_triangular_system
@@ -104,6 +106,8 @@ class SModel:
                     kk = Parameter(k)
                 else:
                     kk = Variable(k)
+            else:
+                kk = k
             dd[kk] = d[k]
         self.calibration_s.update(dd)
         self.update()
@@ -256,8 +260,6 @@ if __name__ == '__main__':
 
     from dolo import global_solve
     dr = global_solve(model)
-    # print(model.__class__)
-    # print(model)
 
     from dolo.numeric.perturbations import solve_decision_rule
 

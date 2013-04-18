@@ -24,19 +24,17 @@ Imports the content of a modfile into the current interpreter scope
 
     declarations = raw_dict['declarations']
     # check
-    if 'variables' not in declarations:
-        variables_groups = OrderedDict()
-        for vtype in declarations.keys():
-            if vtype not in ('shocks','parameters'):
-                variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
-        variables_ordering = sum(variables_groups.values(),[])
-    else:
-        vnames = declarations['variables']
-        variables_ordering = [Variable(vn) for vn in vnames]
-        variables_groups = None
+    variables_groups = OrderedDict()
+    for vtype in declarations.keys():
+        if vtype not in ('shocks','parameters'):
+            variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
+    variables_ordering = sum(variables_groups.values(),[])
+#    else:
+#        vnames = declarations['variables']
+#        variables_ordering = [Variable(vn) for vn in vnames]
+#        variables_groups = None
 
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
-
     shocks_ordering = [Shock(vn) for vn in declarations['shocks']]
 
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
@@ -66,7 +64,10 @@ Imports the content of a modfile into the current interpreter scope
     equations = []
     equations_groups = OrderedDict()
     raw_equations = raw_dict['equations']
-    if isinstance(raw_equations,dict): # tests whether there are groups of equations
+    if not isinstance(raw_equations,dict):
+        raw_dict['model_type'] = 'dynare'
+        raw_equations = {'dynare_block': raw_equations}
+    if True: # tests whether there are groups of equations
         for groupname in raw_equations.keys():
             equations_groups[groupname] = []
             for raw_eq in raw_equations[groupname]: # Modfile is supposed to represent a global model. TODO: change it
@@ -156,7 +157,7 @@ def yaml_import(filename,verbose=False, compiler='numpy', **kwargs):
     model.fname = fname
     model.name = fname
 
-    if compiler is not None:
+    if compiler is not None and model.__data__.get('model_type') != 'dynare':
         from dolo.compiler.compiler_python import GModel
         model = GModel(model, compiler=compiler, **kwargs)
 

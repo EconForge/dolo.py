@@ -96,7 +96,9 @@ def solve_decision_rule(model, order=2, method='default',check_residuals=True, m
     d['ys'] = np.array( y )
     d['Sigma'] = Sigma
 
-    return(TaylorExpansion(d))
+#    return(TaylorExpansion(d))
+    
+    return DDR( TaylorExpansion(d), model )
 
 
 

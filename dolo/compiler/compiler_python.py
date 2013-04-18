@@ -155,11 +155,11 @@ if __name__ == '__main__':
     import numpy
 
 
-    model = yaml_import('examples/global_models/rbc.yaml')
+    gm = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
 
-    print(model.__class__)
-    gm = GModel(model, compiler='numexpr')
-    # gm = GModel(model, compiler='theano')
+    # print(model.__class__)
+    # gm = GModel(model, compiler='numexpr')
+    # # gm = GModel(model, compiler='theano')
 #    gm = GModel(model)
 
     ss = gm.calibration['states']
@@ -181,16 +181,19 @@ if __name__ == '__main__':
     f = gm.functions['arbitrage']
     import time
 
-    t1 = time.time()
-
     tmp = g(ss,xx,aa,ee,p)
+    t1 = time.time()
+    for i in range(50):
+        tmp = g(ss,xx,aa,ee,p)
     t2 = time.time()
 
-    for i in range(100):
-        tmp = f(ss,xx,aa,ss,xx,aa,p)
+    tmp = f(ss,xx,aa,ss,xx,aa,p)
     t3 = time.time()
+    for i in range(50):
+        tmp = f(ss,xx,aa,ss,xx,aa,p)
+    t4 = time.time()
 
     print('first {}'.format(t2-t1))
-    print('second {}'.format(t3-t2))
+    print('second {}'.format(t4-t3))
 
     print(gm)

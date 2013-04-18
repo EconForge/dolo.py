@@ -255,9 +255,6 @@ def parse_dynare_text(txt,add_model=True,full_output=False, debug=False):
     calibration.update(init_values)
     symbols = {'variables': variables, 'shocks': shocks, 'parameters': parameters}
 
-    for eq in equations:
-        print eq.tags
-
     from dolo.symbolic.model import SModel
     model = SModel({'dynare_block': equations}, symbols, calibration, covariances)
     return model
