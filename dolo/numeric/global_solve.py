@@ -26,7 +26,7 @@ def global_solve(cmodel,
     if isinstance(cmodel, GModel):
         model = cmodel.model
     if not isinstance(cmodel, CModel):
-        cmodel = CModel(model)
+        cmodel = CModel(cmodel)
 
     model = cmodel.model
     cm = cmodel

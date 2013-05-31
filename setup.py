@@ -28,19 +28,19 @@ setup(
         Extension(
 		    'dolo.numeric.interpolation.splines_filter',
 		    ['dolo/numeric/interpolation/splines_filter.pyx'],
-            extra_compile_args=['-O3']
+            extra_compile_args=['-O3', '-fopenmp']
         ),
 
         Extension(
 		    'dolo.numeric.interpolation.splines_cython',
 		    ['dolo/numeric/interpolation/splines_cython.pyx'],
-            extra_compile_args=['-O3']
+            extra_compile_args=['-O3', '-fopenmp']
         ),
 
         Extension(
             'dolo.numeric.interpolation.serial_operations_cython',
             ['dolo/numeric/serial_operations_cython.pyx'],
-            extra_compile_args=['-O3']
+            extra_compile_args=['-O3','-fopenmp']
         ),
 
         Extension(

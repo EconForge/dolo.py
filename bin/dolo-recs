@@ -26,7 +26,7 @@ else:
     output_filename = output_rad + '.m'
 
 # Parse yaml file
-model = yaml_import(input_file)
+model = yaml_import(input_file, compiler=None)
 
 # Model name based on output file name
 basename      = os.path.basename(output_filename)

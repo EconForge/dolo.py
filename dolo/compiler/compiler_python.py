@@ -1,5 +1,6 @@
 
 class GModel(object):
+
     '''Generic compiled model object
 
     :param  model: (SModel)  a symbolic model
@@ -22,6 +23,14 @@ class GModel(object):
     calibration = None
     functions = None
     symbols = None
+
+    @property
+    def variables(self):
+        vars = []
+        for vg in self.symbols:
+            if vg not in ('parameters','shocks'):
+                vars.extend( self.symbols[vg] )
+        return vars
 
     def __init__(self, model, model_type=None, recipes=None, compiler=None):
 
@@ -98,9 +107,10 @@ class GModel(object):
 
         self.__update_calibration__()
 
-        symbols = {}
-        for vn, vg in model.symbols_s.iteritems(): # I don't need to do that
-            symbols[vn] = [str(v) for v in vg]
+        from collections import OrderedDict
+        l =  [ (vg, [str(s) for s in model.symbols_s[vg]] ) for vg in (recipe['variable_type'] + ['shocks','parameters']) ]
+        symbols = OrderedDict( l )
+        print(symbols)
 
         self.symbols = symbols
         self.functions = functions
@@ -135,8 +145,9 @@ class GModel(object):
         :return: parameter(s) name(s)
         """
 
-        if iterable(name):
-            return [get_calibration(n) for n in name]
+        is_iterable = isinstance( name, (list,tuple) )
+        if is_iterable:
+            return [self.get_calibration(n) for n in name]
 
         name = str(name)
         # get symbol group containing name
@@ -151,6 +162,7 @@ class GModel(object):
 
 
 if __name__ == '__main__':
+
     from dolo import *
     import numpy
 
