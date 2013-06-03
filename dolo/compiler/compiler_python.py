@@ -110,7 +110,6 @@ class GModel(object):
         from collections import OrderedDict
         l =  [ (vg, [str(s) for s in model.symbols_s[vg]] ) for vg in (recipe['variable_type'] + ['shocks','parameters']) ]
         symbols = OrderedDict( l )
-        print(symbols)
 
         self.symbols = symbols
         self.functions = functions
