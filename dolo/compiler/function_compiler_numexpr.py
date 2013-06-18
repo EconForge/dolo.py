@@ -7,8 +7,8 @@ from dolo.compiler.function_compiler import compile_multiargument_function as co
 
 DerivativesTree.symbol_type = TSymbol
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False):
-    return compile_multiargument_function_regular(equations, args_list, args_names, parms, fname=fname, diff=diff, return_text=return_text, use_numexpr=True)
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, order='rows'):
+    return compile_multiargument_function_regular(equations, args_list, args_names, parms, fname=fname, diff=diff, return_text=return_text, use_numexpr=True, order=order)
 
 
 if __name__ == '__main__':

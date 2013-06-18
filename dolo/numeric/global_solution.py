@@ -130,7 +130,8 @@ def stochastic_residuals_3(s, x, dr, f, g, parms, epsilons, weights, deriv=False
             dres += weights[i] * dF
         return [res,dres.swapaxes(1,2)]
 
-def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
+
+def step_residual_fg(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
 
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
@@ -138,40 +139,9 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
     ss = np.tile(s, (1,n_draws))
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
+
     if with_derivatives:
-        [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms,derivs=True)[:3]
-
-#        if False:
-#            smin = s.min(axis=1)[:,None]
-#            smax = s.max(axis=1)[:,None]
-#            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
-
-        [xxnext, xxold_ss] = dr.interpolate(ssnext, with_derivative=True)[:2]
-
-#        if x_bounds:
-#            lb = x_bounds[0](ssnext, parms)
-#            ub = x_bounds[1](ssnext, parms)
-#            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
-
-        [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms, derivs=True)[:5]
-        dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
-
-        res = np.zeros( (n_x,n_g) )
-        for i in range(n_draws):
-            res += weights[i] * val[:,n_g*i:n_g*(i+1)]
-
-        dres = np.zeros( (n_x,n_x,n_g) )
-        for i in range(n_draws):
-            dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
-
-        if not serial_grid:
-            dval = np.zeros( (n_x,n_g,n_x,n_g))
-            for i in range(n_g):
-                dval[:,i,:,i] = dres[:,:,i]
-        else:
-            dval = dres
-
-        return [res, dval]
+        raise Exception('not implementeds')
     else:
         ssnext = g(ss,xx,ee,parms)
 
@@ -187,7 +157,78 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
 #            ub = x_bounds[1](ssnext, parms)
 #            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
 
-        val = f(ss,xx,ssnext,xxnext,ee,parms)
+        val = f(ss,xx,ssnext,xxnext,parms)
+
+        res = np.zeros( (n_x,n_g) )
+        for i in range(n_draws):
+            res += weights[i] * val[:,n_g*i:n_g*(i+1)]
+
+        return res
+
+def step_residual(s, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
+
+    n_draws = epsilons.shape[1]
+    [n_x,n_g] = x.shape
+    from dolo.numeric.serial_operations import serial_multiplication as stm
+    ss = np.tile(s, (1,n_draws))
+    xx = np.tile(x, (1,n_draws))
+    ee = np.repeat(epsilons, n_g , axis=1)
+
+    if with_derivatives:
+        raise Exception('not implementeds')
+#         [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms,derivs=True)[:3]
+#
+# #        if False:
+# #            smin = s.min(axis=1)[:,None]
+# #            smax = s.max(axis=1)[:,None]
+# #            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
+#
+#         [xxnext, xxold_ss] = dr.interpolate(ssnext, with_derivative=True)[:2]
+#
+# #        if x_bounds:
+# #            lb = x_bounds[0](ssnext, parms)
+# #            ub = x_bounds[1](ssnext, parms)
+# #            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
+#
+#         [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms, derivs=True)[:5]
+#         dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
+#
+#         res = np.zeros( (n_x,n_g) )
+#         for i in range(n_draws):
+#             res += weights[i] * val[:,n_g*i:n_g*(i+1)]
+#
+#         dres = np.zeros( (n_x,n_x,n_g) )
+#         for i in range(n_draws):
+#             dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
+#
+#         if not serial_grid:
+#             dval = np.zeros( (n_x,n_g,n_x,n_g))
+#             for i in range(n_g):
+#                 dval[:,i,:,i] = dres[:,:,i]
+#         else:
+#             dval = dres
+#
+#         return [res, dval]
+    else:
+
+        aa = aux(ss,xx,parms)
+        ssnext = g(ss,xx,aa,ee,parms)
+
+        if False:
+            smin = s.min(axis=1)[:,None]
+            smax = s.max(axis=1)[:,None]
+            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
+
+        xxnext = dr.interpolate(ssnext)
+
+#        if x_bounds:
+#            lb = x_bounds[0](ssnext, parms)
+#            ub = x_bounds[1](ssnext, parms)
+#            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
+
+        aanext = aux(ssnext, xxnext, parms)
+
+        val = f(ss,xx,aa,ssnext,xxnext,aanext,parms)
 
         res = np.zeros( (n_x,n_g) )
         for i in range(n_draws):
@@ -221,16 +262,16 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
+def time_iteration(grid, dr, xinit, f, g, aux, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
     from dolo.numeric.solver import solver
     import time
 
 
     if numdiff == True:
-        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
+        fun = lambda x: step_residual(grid, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
     else:
-        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds)
+        fun = lambda x: step_residual(grid, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=x_bounds)
 
     ##
     t1 = time.time()
@@ -262,7 +303,7 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
         it +=1
         dr.set_values(x0)
 
-        [x,nit] = solver(fun, x0, lb=lb, ub=ub, method='ncpsolve', infos=True, verbose=verbit, serial_problem=True)
+        [x,nit] = solver(fun, x0, lb=lb, ub=ub, method=method, infos=True, verbose=verbit, serial_problem=True)
 
 
         err = abs(x-x0).max()

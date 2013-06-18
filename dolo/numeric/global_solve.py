@@ -54,9 +54,10 @@ def global_solve(cmodel,
         ssmin = [model.eval_string(str(e)) for e in ssmin]
         ssmax = [model.eval_string(str(e)) for e in ssmax]
 
-#       [y, x, p] = model.read_calibration()
-#       d = {v: y[i] for i, v in enumerate(model.variables)}
-#        d.update({v: p[i] for i, v in enumerate(model.parameters)})
+        # [y, x, p] = model.read_calibration()
+        # d = {v: y[i] for i, v in enumerate(model.variables)}
+        # d.update({v: p[i] for i, v in enumerate(model.parameters)})
+
         d = model.calibration_dict
 
         smin = [expr.subs(d) for expr in ssmin]

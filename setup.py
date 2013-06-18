@@ -38,9 +38,9 @@ setup(
         ),
 
         Extension(
-            'dolo.numeric.interpolation.serial_operations_cython',
+            'dolo.numeric.serial_operations_cython',
             ['dolo/numeric/serial_operations_cython.pyx'],
-            extra_compile_args=['-O3','-fopenmp']
+            extra_compile_args=['-O3']
         ),
 
         Extension(

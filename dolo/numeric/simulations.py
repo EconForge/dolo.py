@@ -4,7 +4,7 @@ from dolo.numeric.global_solution import step_residual
 
 
 def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True,
-             solve_expectations=False, nodes=None, weights=None):
+             solve_expectations=False, nodes=None, weights=None, use_pandas=True):
 
     '''
     :param cmodel: compiled model
@@ -21,12 +21,18 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     n_exp = 0.
     '''
 
-    from dolo.compiler.compiler_global import CModel
+    # from dolo.compiler.compiler_global import CModel_
+    from dolo.compiler.compiler_python import GModel
     from dolo.symbolic.model import SModel
 
-    if isinstance(cmodel, SModel):
+    if isinstance(cmodel, GModel):
+        # cmodel = CModel(cmodel.model)
+        cmodel = cmodel
+    elif isinstance(cmodel, SModel):
         model = cmodel
         cmodel = CModel(model)
+
+
 
     if n_exp ==0:
         irf = True
@@ -36,16 +42,16 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
 
 
-    calib = cmodel.model.calibration
+    calib = cmodel.calibration
 
     if parms is None:
         parms = numpy.array( calib['parameters'] ) # TODO : remove reference to symbolic model
 
     if sigma is None:
-        sigma = numpy.array( calib['sigma'] )
+        sigma = numpy.array( calib['covariances'] )
 
     if s0 is None:
-        s0 = numpy.array( calib['steady_state']['states'] )
+        s0 = numpy.array( calib['states'] )
 
     s0 = numpy.atleast_2d(s0.flatten()).T
 
@@ -56,6 +62,11 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
     s_simul[:,:,0] = s0
     x_simul[:,:,0] = x0
+
+    fun = cmodel.functions
+    f = fun['arbitrage']
+    g = fun['transition']
+    aux = fun['auxiliary']
 
     numpy.random.seed(seed)
 
@@ -73,29 +84,32 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
             from dolo.numeric.solver import solver
             from dolo.numeric.newton import newton_solver
 
-            fobj = lambda t: step_residual(s, t, dr, cmodel.f, cmodel.g, parms, nodes, weights, with_derivatives=False) #
+            fobj = lambda t: step_residual(s, t, dr, f, g, aux, parms, nodes, weights, with_derivatives=False) #
 #            x = solver(fobj, x,  serial_problem=True)
             x = newton_solver(fobj, x, numdiff=True)
 
         x_simul[:,:,i] = x
 
-        ss = cmodel.g(s,x,epsilons,parms)
+        a = aux(s,x,parms)
+
+        ss = g(s,x,a,epsilons,parms)
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
 
     from numpy import any,isnan,all
 
-    if not hasattr(cmodel,'__a__'): # TODO: find a better test than this
+    if not 'auxiliary' in fun: # TODO: find a better test than this
         l = [s_simul, x_simul]
+        varnames = cmodel.symbols['states'] = cmodel.symbols['controls']
     else:
         n_s = s_simul.shape[0]
         n_x = x_simul.shape[0]
-        a_simul = cmodel.a( s_simul.reshape((n_s,n_exp*horizon)), x_simul.reshape( (n_x,n_exp*horizon) ), parms)
+        a_simul = aux( s_simul.reshape((n_s,n_exp*horizon)), x_simul.reshape( (n_x,n_exp*horizon) ), parms)
         n_a = a_simul.shape[0]
         a_simul = a_simul.reshape(n_a,n_exp,horizon)
         l = [s_simul, x_simul, a_simul]
-
+        varnames = cmodel.symbols['states'] + cmodel.symbols['controls'] + cmodel.symbols['auxiliary']
     if not stack_series:
         return l
 
@@ -112,6 +126,11 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
     if irf:
         simul = simul[:,0,:]
+
+        if use_pandas:
+            import pandas
+            ts = pandas.DataFrame(simul.T, colnames=varnames)
+            return ts
 
     return simul
 

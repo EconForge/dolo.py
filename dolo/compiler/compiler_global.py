@@ -20,8 +20,11 @@ class CModel:
     def __init__(self,model, keep_auxiliary=True, solve_systems=True, compiler='numpy'):
         "something to document"
 
+        from dolo.compiler.compiler_python import GModel
         if isinstance(model, CModel):
             return model
+        elif isinstance(model, GModel):
+            model = model.model
 
         self.model = model
 

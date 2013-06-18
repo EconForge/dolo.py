@@ -128,26 +128,26 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
     # monkey patch:
 
 
-    cmodel = cmodel.as_type('fg')
-
     if sigma is None:
         sigma = cmodel.sigma
 
-    from dolo.symbolic.model import SModel
+    # from dolo.symbolic.model import SModel
+    #
+    # if isinstance(cmodel,SModel):
+    #     from dolo.compiler.compiler_global import CModel_fg
+    #     model = cmodel
+    #     cmodel = CModel_fg(model)
+    #     [y,x,parms] = model.read_calibration()
+    #
 
-    if isinstance(cmodel,Model):
-        from dolo.compiler.compiler_global import CModel_fg
-        model = cmodel
-        cmodel = CModel_fg(model)
-        [y,x,parms] = model.read_calibration()
+    # parms = cmodel.model.read_calibration()[2]
 
-
-    parms = cmodel.model.read_calibration()[2]
+    parms = cmodel.calibration['parameters']
 
     mean = sigma[0,:]*0
 
-    n_x = len(cmodel.controls)
-    n_s = len(cmodel.states)
+    n_x = len(cmodel.symbols['controls'])
+    n_s = len(cmodel.symbols['states'])
 
     orders = [5]*len(mean)
     [nodes, weights] = gauss_hermite_nodes(orders, sigma)

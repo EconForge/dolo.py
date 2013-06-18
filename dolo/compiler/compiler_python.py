@@ -32,7 +32,7 @@ class GModel(object):
                 vars.extend( self.symbols[vg] )
         return vars
 
-    def __init__(self, model, model_type=None, recipes=None, compiler=None):
+    def __init__(self, model, model_type=None, recipes=None, compiler=None, order='rows'):
 
         # this part is actually common to all compilers
 
@@ -54,9 +54,9 @@ class GModel(object):
 
         self.model_type = self.recipe['model_type']
 
-        self.__create_functions__(compiler)
+        self.__create_functions__(compiler, order=order)
 
-    def __create_functions__(self, compiler):
+    def __create_functions__(self, compiler, order='rows'):
         recipe = self.recipe
 
         model = self.model
@@ -99,10 +99,12 @@ class GModel(object):
                 from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
             elif compiler == 'theano':
                 from dolo.compiler.function_compiler_theano import compile_multiargument_function
+            elif compiler == 'numba':
+                from dolo.compiler.function_compiler_numba import compile_multiargument_function
             else:
                 from dolo.compiler.function_compiler import compile_multiargument_function
 
-            functions[eqg] = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg)
+            functions[eqg] = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg, order=order)
 
 
         self.__update_calibration__()
@@ -187,6 +189,7 @@ if __name__ == '__main__':
     aa = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(aa).T, (1,N)) )
     ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee).T, (1,N)) )
 
+    print(ss.shape)
 
     g = gm.functions['transition']
     f = gm.functions['arbitrage']
@@ -198,6 +201,7 @@ if __name__ == '__main__':
         tmp = g(ss,xx,aa,ee,p)
     t2 = time.time()
 
+    print(tmp.shape)
     tmp = f(ss,xx,aa,ss,xx,aa,p)
     t3 = time.time()
     for i in range(50):

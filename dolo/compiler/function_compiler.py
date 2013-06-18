@@ -132,7 +132,7 @@ def compile_function(equations, args, parms, max_order, return_text=False):
         return code_to_function(txt,'dynamic_function')
 
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False):
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='rows'):
     """
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
@@ -154,8 +154,10 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
         vec_name = args_names[i]
         for j,v in enumerate(args):
             sub_list[v] = template.format(vec_name,j)
-            declarations += "    {0}_{1} = {0}[{1},...]\n".format(vec_name, j)
-
+            if order == 'rows':
+                declarations += "    {0}_{1} = {0}[{1},...]\n".format(vec_name, j)
+            else:
+                declarations += "    {0}_{1} = {0}[:,{1}]\n".format(vec_name, j)
     for i,p in enumerate(parms):
         sub_list[p] = '{0}_{1}'.format('p',i)
         declarations += "    {0}_{1} = {0}[{1}]\n".format('p', i)
@@ -182,7 +184,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
 {declarations}
 
 
-    n = {var}.shape[-1]
+    n = {var}.shape[{size}]
 
 {content}
 
@@ -194,27 +196,45 @@ def {fname}({args_names}, {param_names}, derivs=False):
     dp = DicPrinter(sub_list)
 
     def write_eqs(eq_l,outname='val'):
-        eq_block = '    {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
+        if order == 'rows':
+            eq_block = '    {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
+        else:
+            eq_block = '    {0} = np.zeros( (n,{1}) )\n'.format(outname, len(eq_l))
         for i,eq in enumerate(eq_l):
             eq_string = dp.doprint_numpy(eq)
             if use_numexpr:
-                eq_block += "    {0}[{1},:] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
+                if order=='rows':
+                    eq_block += "    {0}[{1},:] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
+                else:
+                    eq_block += "    {0}[:,{1}] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
             else:
-                eq_block += '    {0}[{1},:] = {2}\n'.format(outname, i, eq_string)
+                if order=='rows':
+                    eq_block += '    {0}[{1},:] = {2}\n'.format(outname, i, eq_string)
+                else:
+                    eq_block += '    {0}[:,{1}] = {2}\n'.format(outname, i, eq_string)
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
-        eq_block = '    {lhs} = np.zeros( ({0},{1},n) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        if order == 'rows':
+            eq_block = '    {lhs} = np.zeros( ({0},{1},n) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        else:
+            eq_block = '    {lhs} = np.zeros( (n,{0},{1}) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
                 if not eq == 0:
                     if use_numexpr:
                         eq_string = dp.doprint_numpy( eq )
-                        eq_block += "    {lhs}[{0},{1},:] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
+                        if order == 'rows':
+                            eq_block += "    {lhs}[{0},{1},:] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
+                        else:
+                            eq_block += "    {lhs}[:,{0},{1}] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
                     else:
                         eq_string = dp.doprint( eq )
-                        eq_block += "    {lhs}[{0},{1},:] = {2}\n".format(i,j,eq_string,lhs=lhs)
+                        if order == 'rows':
+                            eq_block += "    {lhs}[{0},{1},:] = {2}\n".format(i,j,eq_string,lhs=lhs)
+                        else:
+                            eq_block += "    {lhs}[:,{0},{1}] = {2}\n".format(i,j,eq_string,lhs=lhs)
         return eq_block
 
     content = write_eqs(equations)
@@ -232,6 +252,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
     return_names = '[val, ' + str.join(', ', [ 'val_'+ str(a) for a in args_names] ) + ']' if diff else 'val'
     text = text.format(
+            size = -1 if order=='rows' else 0,
             fname = fname,
             use_numexpr = "import numexpr\n" if use_numexpr else "",
             declarations = declarations,
@@ -244,8 +265,8 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
     if return_text:
         return text
-
-
+    if use_numexpr:
+        print(text)
     return code_to_function(text,fname)
 
 
