@@ -56,6 +56,9 @@ def hermgauss(n):
 
 def gauss_hermite_nodes(orders, sigma, mu=None):
 
+    if isinstance(orders, int):
+        orders = [orders]
+
     import numpy
 
     if mu is None:
@@ -67,6 +70,8 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
     points = [ h[0]*numpy.sqrt(2) for h in herms]
     weights = [ h[1]/numpy.sqrt( numpy.pi) for h in herms]
 
+    if len(orders) == 1:
+        return [numpy.array(points)*sigma, weights[0]]
 
     x = cartesian( points).T
 

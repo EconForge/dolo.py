@@ -7,31 +7,21 @@ from dolo.numeric.perturbations_to_states import approximate_controls
 
 def global_solve(cmodel,
                  bounds=None, verbose=False,
-                 initial_dr=None, pert_order=2,
+                 initial_dr=None, pert_order=1,
                  interp_type='smolyak', smolyak_order=3, interp_orders=None,
                  maxit=500, numdiff=True, polish=True, tol=1e-8,
                  integration='gauss-hermite', integration_orders=[],
-                 compiler='numpy', memory_hungry=True,
+                 compiler='numpy', memory_hungry=True, method='newton',
                  T=200, n_s=2, N_e=40 ):
 
     def vprint(t):
         if verbose:
             print(t)
 
-    # this is horrible ! (when the user passes a compiled model, I compile it again !)
-    from dolo.compiler.compiler_python import GModel
-    from dolo.compiler.compiler_global import CModel # old class
-    from dolo.symbolic.model import SModel # old class
-
-    if isinstance(cmodel, GModel):
-        model = cmodel.model
-    if not isinstance(cmodel, CModel):
-        cmodel = CModel(cmodel)
 
     model = cmodel.model
     cm = cmodel
 
-    # [y, x, parms] = model.read_calibration()
     parms = model.calibration['parameters']
     sigma = model.calibration['covariances']
 
@@ -53,10 +43,6 @@ def global_solve(cmodel,
         ssmax = [model.eval_string(str(e)) for e in ssmax]
         ssmin = [model.eval_string(str(e)) for e in ssmin]
         ssmax = [model.eval_string(str(e)) for e in ssmax]
-
-        # [y, x, p] = model.read_calibration()
-        # d = {v: y[i] for i, v in enumerate(model.variables)}
-        # d.update({v: p[i] for i, v in enumerate(model.parameters)})
 
         d = model.calibration_dict
 
@@ -110,13 +96,6 @@ def global_solve(cmodel,
         domain = TriangulatedDomain(rec.grid)
         dr = LinearTriangulation(domain)
 
-
-
-    # from dolo.compiler.compiler_global import CModel
-    #
-    # cm = CModel(model, solve_systems=True, compiler=compiler)
-    # cm = cm.as_type('fg')
-
     if integration == 'optimal_quantization':
         from dolo.numeric.quantization import quantization_nodes
         # number of shocks
@@ -136,9 +115,19 @@ def global_solve(cmodel,
 
     xinit = initial_dr(dr.grid)
     xinit = xinit.real  # just in case...
-    
-    dr = time_iteration(dr.grid, dr, xinit, cm.f, cm.g, parms, epsilons, weights, x_bounds=cm.x_bounds, maxit=maxit,
-                        tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose)
+
+
+    f = cm.functions['arbitrage']
+    g = cm.functions['transition']
+    a = cm.functions['auxiliary']
+
+    cm.x_bounds = None
+
+    dr = time_iteration(dr.grid, dr, xinit, f, g, a, parms, epsilons, weights, maxit=maxit,
+                        tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
+
+
+    polish = False
 
     if polish and interp_type == 'smolyak': # this works with smolyak only
 

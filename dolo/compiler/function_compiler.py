@@ -265,8 +265,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
     if return_text:
         return text
-    if use_numexpr:
-        print(text)
+
     return code_to_function(text,fname)
 
 
