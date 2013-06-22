@@ -20,14 +20,13 @@ class  DivisionTestCase(unittest.TestCase):
 
         from dolo.misc.yamlfile import parse_yaml_text
         from dolo.symbolic.model import compute_residuals
-        from dolo.symbolic.symbolic import Parameter
+        from dolo.symbolic.symbolic import Parameter as P
 
-        model = parse_yaml_text(new_txt)
+        model = parse_yaml_text(new_txt, compiler=None)
 
-        [y,x,p] = model.read_calibration()
+        alpha = model.calibration_s[P('alpha')]
 
-        i_alpha = model.parameters.index(Parameter('alpha'))
-        assert( abs(p[i_alpha] - 1.0/3.0) < 0.00000001)
+        assert( abs(alpha - 1.0/3.0) < 0.00000001)
 
         res = compute_residuals(model)
         assert( abs(res['transition'][0]) < 0.00000001)

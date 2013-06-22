@@ -1,7 +1,7 @@
 from __future__ import division
 
 from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
-from dolo.symbolic.model import Model
+from dolo.symbolic.model import SModel
 from collections import OrderedDict
 import yaml
 import sympy
@@ -24,19 +24,17 @@ Imports the content of a modfile into the current interpreter scope
 
     declarations = raw_dict['declarations']
     # check
-    if 'variables' not in declarations:
-        variables_groups = OrderedDict()
-        for vtype in declarations.keys():
-            if vtype not in ('shocks','parameters'):
-                variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
-        variables_ordering = sum(variables_groups.values(),[])
-    else:
-        vnames = declarations['variables']
-        variables_ordering = [Variable(vn) for vn in vnames]
-        variables_groups = None
+    variables_groups = OrderedDict()
+    for vtype in declarations.keys():
+        if vtype not in ('shocks','parameters'):
+            variables_groups[vtype] = [Variable(vn) for vn in declarations[vtype]]
+    variables_ordering = sum(variables_groups.values(),[])
+#    else:
+#        vnames = declarations['variables']
+#        variables_ordering = [Variable(vn) for vn in vnames]
+#        variables_groups = None
 
     parameters_ordering = [Parameter(vn) for vn in declarations['parameters']]
-
     shocks_ordering = [Shock(vn) for vn in declarations['shocks']]
 
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
@@ -66,7 +64,10 @@ Imports the content of a modfile into the current interpreter scope
     equations = []
     equations_groups = OrderedDict()
     raw_equations = raw_dict['equations']
-    if isinstance(raw_equations,dict): # tests whether there are groups of equations
+    if not isinstance(raw_equations,dict):
+        raw_dict['model_type'] = 'dynare'
+        raw_equations = {'dynare_block': raw_equations}
+    if True: # tests whether there are groups of equations
         for groupname in raw_equations.keys():
             equations_groups[groupname] = []
             for raw_eq in raw_equations[groupname]: # Modfile is supposed to represent a global model. TODO: change it
@@ -91,7 +92,7 @@ Imports the content of a modfile into the current interpreter scope
                     comp = teqg[1]
                     eq.tag(complementarity=comp)
                 equations.append(eq)
-                #equations_groups[groupname].append( eq )
+                equations_groups[groupname].append( eq )
     else:
         for teq in raw_equations:
             if '=' in teq:
@@ -127,32 +128,25 @@ Imports the content of a modfile into the current interpreter scope
         else:
             covariances = None # to avoid importing numpy
 
-    model_dict = {
-        'variables_ordering': variables_ordering,
-        'parameters_ordering': parameters_ordering,
-        'shocks_ordering': shocks_ordering,
-        'variables_groups': variables_groups,
-        'equations_groups': equations_groups,
-        'equations': equations,
-        'parameters_values': parameters_values,
-        'init_values': init_values,
-        'covariances': covariances
-    }
+    symbols = variables_groups
 
-    if 'model_type' in raw_dict:
-        model_dict['model_type'] = raw_dict['model_type']
-    model_dict['original_data'] = raw_dict
+    symbols['shocks'] = shocks_ordering
+    symbols['parameters'] = parameters_ordering
 
-    model = Model(**model_dict)
-    model.check_consistency(auto_remove_variables=False)
+    calibration_s = {}
+    calibration_s.update(parameters_values)
+    calibration_s.update(init_values)
 
-    if compiler is not None:
-        from dolo.compiler.compiler_python import GModel
-        return GModel(model, compiler=compiler)
+    from dolo.symbolic.model import SModel
+
+    model = SModel( equations_groups, symbols, calibration_s, covariances )
+    model.__data__ = raw_dict
+
+
 
     return model
 
-def yaml_import(filename,verbose=False, compiler=None):
+def yaml_import(filename,verbose=False, compiler='numpy', **kwargs):
     '''Imports model defined in specified file'''
     import os
     basename = os.path.basename(filename)
@@ -160,6 +154,11 @@ def yaml_import(filename,verbose=False, compiler=None):
     f = open(filename)
     txt = f.read()
     model = parse_yaml_text(txt,verbose=verbose, compiler=compiler)
-    if compiler is None:
-        model['name'] = fname
+    model.fname = fname
+    model.name = fname
+
+    if compiler is not None and model.__data__.get('model_type') != 'dynare':
+        from dolo.compiler.compiler_python import GModel
+        model = GModel(model, compiler=compiler, **kwargs)
+
     return model

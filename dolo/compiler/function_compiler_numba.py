@@ -132,7 +132,21 @@ def compile_function(equations, args, parms, max_order, return_text=False):
         return code_to_function(txt,'dynamic_function')
 
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='rows'):
+from numpy import zeros
+from numpy import exp, log
+from numpy import sin, cos, tan
+from numpy import arcsin as asin
+from numpy import arccos as acos
+from numpy import arctan as atan
+from numpy import sinh, cosh, tanh
+from numpy import pi
+from numpy import inf
+
+from numbapro import float64
+from numbapro.vectorize import guvectorize
+
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='columns'):
+
     """
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
@@ -145,7 +159,10 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     :return:
     """
 
-    template = '{0}_{1}'
+    if order == 'rows':
+        raise(Exception('not implemented'))
+
+    template = '{0}[{1}]'
 
     declarations = ""
     sub_list = {}
@@ -154,41 +171,33 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
         vec_name = args_names[i]
         for j,v in enumerate(args):
             sub_list[v] = template.format(vec_name,j)
-            if order == 'rows':
-                declarations += "    {0}_{1} = {0}[{1},...]\n".format(vec_name, j)
-            else:
-                declarations += "    {0}_{1} = {0}[:,{1}]\n".format(vec_name, j)
+            # declarations += "    {0}_{1} = {0}[{1}]\n".format(vec_name, j)
+
     for i,p in enumerate(parms):
-        sub_list[p] = '{0}_{1}'.format('p',i)
-        declarations += "    {0}_{1} = {0}[{1}]\n".format('p', i)
+        sub_list[p] = '{0}[{1}]'.format('p',i)
+        # declarations += "    {0}_{1} = {0}[{1}]\n".format('p', i)
 
     import sympy
     # TODO: construct a common list of symbol that should be understood everywhere
     sub_list[sympy.Symbol('inf')] = 'inf'
 
     text = '''
-def {fname}({args_names}, {param_names}, derivs=False):
+from numpy import zeros
+from numpy import exp, log
+from numpy import sin, cos, tan
+from numpy import arcsin as asin
+from numpy import arccos as acos
+from numpy import arctan as atan
+from numpy import sinh, cosh, tanh
+from numpy import pi
+from numpy import inf
 
-    import numpy as np
-    from numpy import exp, log
-    from numpy import sin, cos, tan
-    from numpy import arcsin as asin
-    from numpy import arccos as acos
-    from numpy import arctan as atan
-    from numpy import sinh, cosh, tanh
-    from numpy import pi
-    from numpy import inf
-
-    {use_numexpr}
-
-{declarations}
-
-
-    n = {var}.shape[{size}]
+def {fname}({args_names}, {param_names}, val):
 
 {content}
 
-    return {return_names}
+    return val
+
     '''
 
     from dolo.compiler.common import DicPrinter
@@ -196,65 +205,20 @@ def {fname}({args_names}, {param_names}, derivs=False):
     dp = DicPrinter(sub_list)
 
     def write_eqs(eq_l,outname='val'):
-        if order == 'rows':
-            eq_block = '    {0} = np.zeros( ({1},n) )\n'.format(outname, len(eq_l))
-        else:
-            eq_block = '    {0} = np.zeros( (n,{1}) )\n'.format(outname, len(eq_l))
+        eq_block = ''
         for i,eq in enumerate(eq_l):
             eq_string = dp.doprint_numpy(eq)
-            if use_numexpr:
-                if order=='rows':
-                    eq_block += "    {0}[{1},:] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
-                else:
-                    eq_block += "    {0}[:,{1}] = numexpr.evaluate('{2}')\n".format(outname, i,  eq_string)
-            else:
-                if order=='rows':
-                    eq_block += '    {0}[{1},:] = {2}\n'.format(outname, i, eq_string)
-                else:
-                    eq_block += '    {0}[:,{1}] = {2}\n'.format(outname, i, eq_string)
-        return eq_block
-
-    def write_der_eqs(eq_l,v_l,lhs):
-        if order == 'rows':
-            eq_block = '    {lhs} = np.zeros( ({0},{1},n) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
-        else:
-            eq_block = '    {lhs} = np.zeros( (n,{0},{1}) )\n'.format(len(eq_l),len(v_l),lhs=lhs)
-        eq_l_d = eqdiff(eq_l,v_l)
-        for i,eqq in enumerate(eq_l_d):
-            for j,eq in enumerate(eqq):
-                if not eq == 0:
-                    if use_numexpr:
-                        eq_string = dp.doprint_numpy( eq )
-                        if order == 'rows':
-                            eq_block += "    {lhs}[{0},{1},:] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
-                        else:
-                            eq_block += "    {lhs}[:,{0},{1}] = numexpr.evaluate('{2}')\n".format(i,j,eq_string,lhs=lhs)
-                    else:
-                        eq_string = dp.doprint( eq )
-                        if order == 'rows':
-                            eq_block += "    {lhs}[{0},{1},:] = {2}\n".format(i,j,eq_string,lhs=lhs)
-                        else:
-                            eq_block += "    {lhs}[:,{0},{1}] = {2}\n".format(i,j,eq_string,lhs=lhs)
+            eq_block += '    val[{0}] = {1}\n'.format(i, eq_string)
         return eq_block
 
     content = write_eqs(equations)
-    content += '''
-    if not derivs:
-        return val
-    '''
 
 
-    if diff:
-        for i,a_g in enumerate(args_list):
-            lhs = 'val_' + args_names[i]
-            content += "\n    # Derivatives w.r.t: {0}\n\n".format(args_names[i])
-            content += write_der_eqs(equations, a_g, lhs)
 
-    return_names = '[val, ' + str.join(', ', [ 'val_'+ str(a) for a in args_names] ) + ']' if diff else 'val'
+    return_names = 'val'
     text = text.format(
-            size = -1 if order=='rows' else 0,
             fname = fname,
-            use_numexpr = "import numexpr\n" if use_numexpr else "",
+            n_equations = len(equations),
             declarations = declarations,
             var = args_names[0],
             content = content,
@@ -266,14 +230,36 @@ def {fname}({args_names}, {param_names}, derivs=False):
     if return_text:
         return text
 
-    return code_to_function(text,fname)
+    args_size = [len(e) for e in args_list] + [len(parms)]
+    return_size = len(equations)
 
 
-def code_to_function(text, name):
-    d = {}
+    return code_to_function(text,fname,args_size,return_size)
+
+
+def code_to_function(text, name, args_size, return_size):
+    from numpy import zeros
+    from numpy import exp, log
+    from numpy import sin, cos, tan
+    from numpy import arcsin as asin
+    from numpy import arccos as acos
+    from numpy import arctan as atan
+    from numpy import sinh, cosh, tanh
+    from numpy import pi
+    from numpy import inf
+    d = locals()
     e = {}
     exec(text, d, e)
-    return e[name]
+    fun = e[name]
+    from numbapro.vectorize import GUVectorize
+    from numbapro import float64
+    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
+    signature += '->(n)'.format(return_size)
+    args_types = [float64[:]]*(len(args_size)+1)
+    gufunc = GUVectorize(fun, signature)
+    gufunc.add(argtypes=args_types)
+    fun = gufunc.build_ufunc()
+    return fun
 
 
 def eqdiff(leq,lvars):
@@ -282,3 +268,80 @@ def eqdiff(leq,lvars):
         el = [ eq.diff(v) for v in lvars]
         resp += [el]
     return resp
+
+
+
+if __name__ == '__main__':
+
+    from dolo import *
+    import numpy
+
+
+    gm = yaml_import('examples/global_models/rbc.yaml', compiler='numba')
+    gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
+    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numexpr')
+
+    # print(model.__class__)
+    # gm = GModel(model, compiler='numexpr')
+    # # gm = GModel(model, compiler='theano')
+#    gm = GModel(model)
+
+    ss = gmp.calibration['states']
+    xx = gmp.calibration['controls']
+    aa = gmp.calibration['auxiliary']
+    p = gmp.calibration['parameters']
+
+
+    ee = numpy.array([0],dtype=numpy.double)
+
+    N = 100000
+
+    ss = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ss), (N,1) ) )
+    xx = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(xx), (N,1) ) )
+    aa = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(aa), (N,1) ) )
+    ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee), (N,1) ) )
+
+
+
+    g = gm.functions['transition']
+    f = gm.functions['arbitrage']
+
+    gp = gmp.functions['transition']
+    fp = gmp.functions['arbitrage']
+
+    import time
+
+    print('numpy')
+    tmp = gp(ss,xx,aa,ee,p)
+    t1 = time.time()
+    for i in range(50):
+        tmp = gp(ss,xx,aa,ee,p)
+    t2 = time.time()
+
+    tmp = fp(ss,xx,aa,ss,xx,aa,p)
+    t3 = time.time()
+    for i in range(50):
+        tmp = fp(ss,xx,aa,ss,xx,aa,p)
+    t4 = time.time()
+
+    print('first {}'.format(t2-t1))
+    print('second {}'.format(t4-t3))
+
+    print('numba')
+
+    tmp = g(ss,xx,aa,ee,p)
+    t1 = time.time()
+    for i in range(50):
+        tmp = g(ss,xx,aa,ee,p)
+    t2 = time.time()
+
+    tmp = f(ss,xx,aa,ss,xx,aa,p)
+    t3 = time.time()
+    for i in range(50):
+        tmp = f(ss,xx,aa,ss,xx,aa,p)
+    t4 = time.time()
+
+    print('first {}'.format(t2-t1))
+    print('second {}'.format(t4-t3))
+
+

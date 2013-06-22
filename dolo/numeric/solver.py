@@ -63,7 +63,8 @@ def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, se
         fun = lambda x: [ffobj(x), Dffobj(x) ]
         [sol,nit] = ncpsolve(fun,lb,ub,x0, verbose=verbose, infos=True, serial=serial_problem)
 
-
+    else:
+        raise Exception('Unknown method : '+str(method))
     sol = sol.reshape(in_shape)
 
     if infos:

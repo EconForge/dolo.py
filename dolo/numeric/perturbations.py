@@ -1,6 +1,7 @@
 from dolo.numeric.matrix_equations import second_order_solver, solve_sylvester
 from dolo.numeric.tensor import sdot,mdot
 from dolo.numeric.decision_rules import DynareDecisionRule as DDR
+from dolo.numeric.decision_rules import TaylorExpansion
 
 
 import numpy as np
@@ -8,13 +9,14 @@ import numpy as np
 TOL = 1E-10
 TOL_RES = 1E-8
 
-def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = None, solve_ss = False):
+def solve_decision_rule(model, order=2, method='default',check_residuals=True, mlab=None, steady_state=None, solve_ss=False):
 
 #    Sigma = model.read_covariances()
 #    Sigma = np.array(model.covariances).astype(np.float64)
-    Sigma = model.read_covariances()
-    [y,x,parms] = model.read_calibration()
-
+    Sigma = model.calibration['covariances']
+    y = np.array([model.calibration_dict[v] for v in model.variables])
+    x = model.calibration['shocks']
+    parms = model.calibration['parameters']
 
     if steady_state != None:
         y0 = steady_state
@@ -25,9 +27,11 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
         y = model.solve_for_steady_state(y0)
 
 
-    #pc = PythonCompiler(model)
+    from dolo.compiler.compiler_statefree import PythonCompiler
+    pc = PythonCompiler(model)
 
-    pc = model.compiler
+    # pc = model.compiler
+
     if method == 'default':
         p_dynamic = pc.compute_dynamic_pfile_cached(order,False,False)
     elif method in ('sigma2','full'):
@@ -45,11 +49,12 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
     derivatives = p_dynamic(yy,xx,parms)
 
     res = derivatives[0]
-    if abs(res).max() > TOL_RES:
-        print('Residuals\n')
-        for i,eq in enumerate(model.equations):
-            print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
-        raise Exception("Initial values don't satisfy static equations")
+    if check_residuals:
+        if abs(res).max() > TOL_RES:
+            print('Residuals\n')
+            for i,eq in enumerate(model.equations):
+                print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
+            raise Exception("Initial values don't satisfy static equations")
 
     derivatives_ss = None
     
@@ -90,9 +95,11 @@ def solve_decision_rule(model,order=2,method='default',mlab=None,steady_state = 
 
     d['ys'] = np.array( y )
     d['Sigma'] = Sigma
-    ddr = DDR( d , model )
 
-    return ddr
+#    return(TaylorExpansion(d))
+    
+    return DDR( TaylorExpansion(d), model )
+
 
 
 def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=None):

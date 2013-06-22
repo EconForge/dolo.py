@@ -1,15 +1,21 @@
 from __future__ import division
 
 import numpy as np
-from cython import double
+from cython import double, float
+
+ctypedef fused floating:
+    float 
+    double
+
+
 
 from splines_filter import filter_data
 
 class USpline:
 
-    def __init__(self, smin, smax, orders, data):
-        smin = np.array(smin,dtype=np.double)
-        smax = np.array(smax,dtype=np.double)
+    def __init__(self, smin, smax, orders, data, dtype=np.double):
+        smin = np.array(smin,dtype=dtype)
+        smax = np.array(smax,dtype=dtype)
         orders = np.array(orders,dtype=np.int)
         self.smin = smin
         self.smax = smax
@@ -17,12 +23,15 @@ class USpline:
         self.d = len(smin)
         self.delta = (smax-smin)/(orders-1)
         self.delta_inv = 1.0/self.delta
-        self.coefs = filter_data(self.delta_inv, data)
+        data = np.ascontiguousarray(data, dtype=np.double)   # filter should accept floats
+        coefs = filter_data( np.array(self.delta_inv, dtype=np.double), data)
+        self.coefs = np.ascontiguousarray( coefs, dtype=dtype )
 
 
 class MUSpline:
 
     def __init__(self, smin, smax, orders, data):
+
         smin = np.array(smin,dtype=np.double)
         smax = np.array(smax,dtype=np.double)
         orders = np.array(orders,dtype=np.int)
@@ -66,6 +75,26 @@ from cython.parallel import parallel, prange
 from cython import nogil
 
 
+def eval_MUBspline( smin, smax, orders, coefs, svec, diff=False):
+
+    resp = np.empty( (coefs.shape[0], svec.shape[1] ),  )
+    if diff:
+        dresp = np.empty( (coefs.shape[0], svec.shape[0], svec.shape[1]) )
+
+    for i in range( coefs.shape[0] ):
+        if not diff:
+            resp[i,:] = eval_UBspline( smin, smax, orders, coefs[i,...], svec, diff=False)
+        else:
+            [v,dv] = eval_UBspline( smin, smax, orders, coefs[i,...], svec, diff=True)
+            resp[i,:] = v
+            dresp[i,:,:] = dv
+
+    if diff:
+        return resp
+    else:
+        return [resp, dresp]
+
+
 
 def eval_UBspline( smin, smax, orders, coefs, svec, diff=False):
 
@@ -77,58 +106,83 @@ def eval_UBspline( smin, smax, orders, coefs, svec, diff=False):
 
     elif order == 1:
         if not diff:
-            return eval_UBspline_1( smin, smax, orders, coefs, svec )
+            if smin.dtype == np.float64:
+                return eval_UBspline_1[double]( smin, smax, orders, coefs, svec )
+            elif smin.dtype == np.float32:
+                return eval_UBspline_1[float]( smin, smax, orders, coefs, svec )
+            else:
+                raise Exception('Unsupported type')
         else:
             return eval_UBspline_1_g( smin, smax, orders, coefs, svec )
     elif order == 2:
         if not diff:
-            return eval_UBspline_2( smin, smax, orders, coefs, svec )
+            if smin.dtype == np.float64:
+                return eval_UBspline_2[double]( smin, smax, orders, coefs, svec )
+            elif smin.dtype == np.float32:
+                return eval_UBspline_2[float]( smin, smax, orders, coefs, svec )
+            else:
+                raise Exception('Unsupported type')
         else:
             return eval_UBspline_2_g( smin, smax, orders, coefs, svec )
     elif order == 3:
         if not diff:
-            return eval_UBspline_3( smin, smax, orders, coefs, svec )
+            if smin.dtype == np.float64:
+                return eval_UBspline_3[double]( smin, smax, orders, coefs, svec )
+            elif smin.dtype == np.float32:
+                return eval_UBspline_3[float]( smin, smax, orders, coefs, svec )
+            else:
+                raise Exception('Unsupported type')
         else:
             return eval_UBspline_3_g( smin, smax, orders, coefs, svec )
     elif order == 4:
         if not diff:
-            return eval_UBspline_4( smin, smax, orders, coefs, svec )
+            if smin.dtype == np.float64:
+                return eval_UBspline_4[double]( smin, smax, orders, coefs, svec )
+            elif smin.dtype == np.float32:
+                return eval_UBspline_4[float]( smin, smax, orders, coefs, svec )
+            else:
+                raise Exception('Unsupported type')
         else:
             return eval_UBspline_4_g( smin, smax, orders, coefs, svec )
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef eval_UBspline_1( smin, smax, orders, coefs, double[:,::1] svec):
+cdef eval_UBspline_1( floating[:] smin, floating[:] smax, long[:] orders,  floating[::1] coefs, floating[:,::1] svec):
         
         
     cdef int M0 = orders[0]
-    cdef double start0 = smin[0]
-    cdef double dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
+    cdef floating start0 = smin[0]
+    cdef floating dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
                     
-
-    cdef double val
+    if floating is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+        
+    cdef floating val
 
     cdef int N = svec.shape[1]
 
     cdef int n
 
-    cdef double[:,::1] Ad = A44d
-    cdef double[:,::1] dAd = dA44d
+    cdef floating[:,::1] Ad = np.array(A44d, dtype=dtype)
+    cdef floating[:,::1] dAd = np.array(dA44d, dtype=dtype)
 
     cdef int i0
-    cdef double x0
-    cdef double u0
-    cdef double t0
-    cdef double extrap0
+    cdef floating x0
+    cdef floating u0
+    cdef floating t0
+    cdef floating extrap0
     
-    cdef double Phi0_0, Phi0_1, Phi0_2, Phi0_3
-    cdef double tp0_0, tp0_1, tp0_2, tp0_3
+    cdef floating Phi0_0, Phi0_1, Phi0_2, Phi0_3
+    cdef floating tp0_0, tp0_1, tp0_2, tp0_3
 
-    cdef double[::1] C = coefs
-    cdef double[:] vals = np.zeros(N)
+    cdef floating [::1] C = coefs
+    cdef floating [:] vals = np.zeros(N, dtype=dtype)
 
-    cdef double tpx_0, tpx_1, tpx_2, tpx_3
-    cdef double tpy_0, tpy_1, tpy_2, tpy_3
+    cdef floating tpx_0, tpx_1, tpx_2, tpx_3
+    cdef floating tpy_0, tpy_1, tpy_2, tpy_3
 
     with nogil, parallel():
 
@@ -139,6 +193,11 @@ cdef eval_UBspline_1( smin, smax, orders, coefs, double[:,::1] svec):
             i0 = <int> u0
             i0 = max( min(i0,M0-2), 0 )
             t0 = u0-i0
+
+
+            # 
+            # extrap0 = 0 if (t0 < 0 or t0 >= 1) else 1
+            # 
 
             tp0_0 = t0*t0*t0;  tp0_1 = t0*t0;  tp0_2 = t0;  tp0_3 = 1.0;
 
@@ -162,42 +221,47 @@ cdef eval_UBspline_1( smin, smax, orders, coefs, double[:,::1] svec):
 
     return vals
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef eval_UBspline_2( smin, smax, orders, coefs, double[:,::1] svec):
+cdef eval_UBspline_2( floating[:] smin, floating[:] smax, long[:] orders,  floating[:,::1] coefs, floating[:,::1] svec):
         
         
     cdef int M0 = orders[0]
-    cdef double start0 = smin[0]
-    cdef double dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
+    cdef floating start0 = smin[0]
+    cdef floating dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
     cdef int M1 = orders[1]
-    cdef double start1 = smin[1]
-    cdef double dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
+    cdef floating start1 = smin[1]
+    cdef floating dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
                     
-
-    cdef double val
+    if floating is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+        
+    cdef floating val
 
     cdef int N = svec.shape[1]
 
     cdef int n
 
-    cdef double[:,::1] Ad = A44d
-    cdef double[:,::1] dAd = dA44d
+    cdef floating[:,::1] Ad = np.array(A44d, dtype=dtype)
+    cdef floating[:,::1] dAd = np.array(dA44d, dtype=dtype)
 
     cdef int i0, i1
-    cdef double x0, x1
-    cdef double u0, u1
-    cdef double t0, t1
-    cdef double extrap0, extrap1
+    cdef floating x0, x1
+    cdef floating u0, u1
+    cdef floating t0, t1
+    cdef floating extrap0, extrap1
     
-    cdef double Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3
-    cdef double tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3
+    cdef floating Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3
+    cdef floating tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3
 
-    cdef double[:,::1] C = coefs
-    cdef double[:] vals = np.zeros(N)
+    cdef floating [:,::1] C = coefs
+    cdef floating [:] vals = np.zeros(N, dtype=dtype)
 
-    cdef double tpx_0, tpx_1, tpx_2, tpx_3
-    cdef double tpy_0, tpy_1, tpy_2, tpy_3
+    cdef floating tpx_0, tpx_1, tpx_2, tpx_3
+    cdef floating tpy_0, tpy_1, tpy_2, tpy_3
 
     with nogil, parallel():
 
@@ -240,16 +304,16 @@ cdef eval_UBspline_2( smin, smax, orders, coefs, double[:,::1] svec):
                 Phi0_2 = (Ad[2,0]*tp0_0 + Ad[2,1]*tp0_1 + Ad[2,2]*tp0_2 + Ad[2,3]*tp0_3)
                 Phi0_3 = (Ad[3,0]*tp0_0 + Ad[3,1]*tp0_1 + Ad[3,2]*tp0_2 + Ad[3,3]*tp0_3)
 
-            if t0 < 0:
-                Phi1_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi1_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi1_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi1_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t1 < 0:
+                Phi1_0 = dAd[0,3]*t1 + Ad[0,3]
+                Phi1_1 = dAd[1,3]*t1 + Ad[1,3]
+                Phi1_2 = dAd[2,3]*t1 + Ad[2,3]
+                Phi1_3 = dAd[3,3]*t1 + Ad[3,3]
+            elif t1 > 1:
+                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t1-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t1-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t1-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t1-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi1_0 = (Ad[0,0]*tp1_0 + Ad[0,1]*tp1_1 + Ad[0,2]*tp1_2 + Ad[0,3]*tp1_3)
                 Phi1_1 = (Ad[1,0]*tp1_0 + Ad[1,1]*tp1_1 + Ad[1,2]*tp1_2 + Ad[1,3]*tp1_3)
@@ -260,45 +324,50 @@ cdef eval_UBspline_2( smin, smax, orders, coefs, double[:,::1] svec):
 
     return vals
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef eval_UBspline_3( smin, smax, orders, coefs, double[:,::1] svec):
+cdef eval_UBspline_3( floating[:] smin, floating[:] smax, long[:] orders,  floating[:,:,::1] coefs, floating[:,::1] svec):
         
         
     cdef int M0 = orders[0]
-    cdef double start0 = smin[0]
-    cdef double dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
+    cdef floating start0 = smin[0]
+    cdef floating dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
     cdef int M1 = orders[1]
-    cdef double start1 = smin[1]
-    cdef double dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
+    cdef floating start1 = smin[1]
+    cdef floating dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
     cdef int M2 = orders[2]
-    cdef double start2 = smin[2]
-    cdef double dinv2 = (orders[2]-1.0)/(smax[2]-smin[2])
+    cdef floating start2 = smin[2]
+    cdef floating dinv2 = (orders[2]-1.0)/(smax[2]-smin[2])
                     
-
-    cdef double val
+    if floating is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+        
+    cdef floating val
 
     cdef int N = svec.shape[1]
 
     cdef int n
 
-    cdef double[:,::1] Ad = A44d
-    cdef double[:,::1] dAd = dA44d
+    cdef floating[:,::1] Ad = np.array(A44d, dtype=dtype)
+    cdef floating[:,::1] dAd = np.array(dA44d, dtype=dtype)
 
     cdef int i0, i1, i2
-    cdef double x0, x1, x2
-    cdef double u0, u1, u2
-    cdef double t0, t1, t2
-    cdef double extrap0, extrap1, extrap2
+    cdef floating x0, x1, x2
+    cdef floating u0, u1, u2
+    cdef floating t0, t1, t2
+    cdef floating extrap0, extrap1, extrap2
     
-    cdef double Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3, Phi2_0, Phi2_1, Phi2_2, Phi2_3
-    cdef double tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3, tp2_0, tp2_1, tp2_2, tp2_3
+    cdef floating Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3, Phi2_0, Phi2_1, Phi2_2, Phi2_3
+    cdef floating tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3, tp2_0, tp2_1, tp2_2, tp2_3
 
-    cdef double[:,:,::1] C = coefs
-    cdef double[:] vals = np.zeros(N)
+    cdef floating [:,:,::1] C = coefs
+    cdef floating [:] vals = np.zeros(N, dtype=dtype)
 
-    cdef double tpx_0, tpx_1, tpx_2, tpx_3
-    cdef double tpy_0, tpy_1, tpy_2, tpy_3
+    cdef floating tpx_0, tpx_1, tpx_2, tpx_3
+    cdef floating tpy_0, tpy_1, tpy_2, tpy_3
 
     with nogil, parallel():
 
@@ -349,32 +418,32 @@ cdef eval_UBspline_3( smin, smax, orders, coefs, double[:,::1] svec):
                 Phi0_2 = (Ad[2,0]*tp0_0 + Ad[2,1]*tp0_1 + Ad[2,2]*tp0_2 + Ad[2,3]*tp0_3)
                 Phi0_3 = (Ad[3,0]*tp0_0 + Ad[3,1]*tp0_1 + Ad[3,2]*tp0_2 + Ad[3,3]*tp0_3)
 
-            if t0 < 0:
-                Phi1_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi1_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi1_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi1_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t1 < 0:
+                Phi1_0 = dAd[0,3]*t1 + Ad[0,3]
+                Phi1_1 = dAd[1,3]*t1 + Ad[1,3]
+                Phi1_2 = dAd[2,3]*t1 + Ad[2,3]
+                Phi1_3 = dAd[3,3]*t1 + Ad[3,3]
+            elif t1 > 1:
+                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t1-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t1-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t1-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t1-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi1_0 = (Ad[0,0]*tp1_0 + Ad[0,1]*tp1_1 + Ad[0,2]*tp1_2 + Ad[0,3]*tp1_3)
                 Phi1_1 = (Ad[1,0]*tp1_0 + Ad[1,1]*tp1_1 + Ad[1,2]*tp1_2 + Ad[1,3]*tp1_3)
                 Phi1_2 = (Ad[2,0]*tp1_0 + Ad[2,1]*tp1_1 + Ad[2,2]*tp1_2 + Ad[2,3]*tp1_3)
                 Phi1_3 = (Ad[3,0]*tp1_0 + Ad[3,1]*tp1_1 + Ad[3,2]*tp1_2 + Ad[3,3]*tp1_3)
 
-            if t0 < 0:
-                Phi2_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi2_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi2_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi2_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi2_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi2_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi2_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi2_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t2 < 0:
+                Phi2_0 = dAd[0,3]*t2 + Ad[0,3]
+                Phi2_1 = dAd[1,3]*t2 + Ad[1,3]
+                Phi2_2 = dAd[2,3]*t2 + Ad[2,3]
+                Phi2_3 = dAd[3,3]*t2 + Ad[3,3]
+            elif t2 > 1:
+                Phi2_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t2-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi2_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t2-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi2_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t2-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi2_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t2-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi2_0 = (Ad[0,0]*tp2_0 + Ad[0,1]*tp2_1 + Ad[0,2]*tp2_2 + Ad[0,3]*tp2_3)
                 Phi2_1 = (Ad[1,0]*tp2_0 + Ad[1,1]*tp2_1 + Ad[1,2]*tp2_2 + Ad[1,3]*tp2_3)
@@ -385,48 +454,53 @@ cdef eval_UBspline_3( smin, smax, orders, coefs, double[:,::1] svec):
 
     return vals
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef eval_UBspline_4( smin, smax, orders, coefs, double[:,::1] svec):
+cdef eval_UBspline_4( floating[:] smin, floating[:] smax, long[:] orders,  floating[:,:,:,::1] coefs, floating[:,::1] svec):
         
         
     cdef int M0 = orders[0]
-    cdef double start0 = smin[0]
-    cdef double dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
+    cdef floating start0 = smin[0]
+    cdef floating dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
     cdef int M1 = orders[1]
-    cdef double start1 = smin[1]
-    cdef double dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
+    cdef floating start1 = smin[1]
+    cdef floating dinv1 = (orders[1]-1.0)/(smax[1]-smin[1])
     cdef int M2 = orders[2]
-    cdef double start2 = smin[2]
-    cdef double dinv2 = (orders[2]-1.0)/(smax[2]-smin[2])
+    cdef floating start2 = smin[2]
+    cdef floating dinv2 = (orders[2]-1.0)/(smax[2]-smin[2])
     cdef int M3 = orders[3]
-    cdef double start3 = smin[3]
-    cdef double dinv3 = (orders[3]-1.0)/(smax[3]-smin[3])
+    cdef floating start3 = smin[3]
+    cdef floating dinv3 = (orders[3]-1.0)/(smax[3]-smin[3])
                     
-
-    cdef double val
+    if floating is double:
+        dtype = np.float64
+    else:
+        dtype = np.float32
+        
+    cdef floating val
 
     cdef int N = svec.shape[1]
 
     cdef int n
 
-    cdef double[:,::1] Ad = A44d
-    cdef double[:,::1] dAd = dA44d
+    cdef floating[:,::1] Ad = np.array(A44d, dtype=dtype)
+    cdef floating[:,::1] dAd = np.array(dA44d, dtype=dtype)
 
     cdef int i0, i1, i2, i3
-    cdef double x0, x1, x2, x3
-    cdef double u0, u1, u2, u3
-    cdef double t0, t1, t2, t3
-    cdef double extrap0, extrap1, extrap2, extrap3
+    cdef floating x0, x1, x2, x3
+    cdef floating u0, u1, u2, u3
+    cdef floating t0, t1, t2, t3
+    cdef floating extrap0, extrap1, extrap2, extrap3
     
-    cdef double Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3, Phi2_0, Phi2_1, Phi2_2, Phi2_3, Phi3_0, Phi3_1, Phi3_2, Phi3_3
-    cdef double tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3, tp2_0, tp2_1, tp2_2, tp2_3, tp3_0, tp3_1, tp3_2, tp3_3
+    cdef floating Phi0_0, Phi0_1, Phi0_2, Phi0_3, Phi1_0, Phi1_1, Phi1_2, Phi1_3, Phi2_0, Phi2_1, Phi2_2, Phi2_3, Phi3_0, Phi3_1, Phi3_2, Phi3_3
+    cdef floating tp0_0, tp0_1, tp0_2, tp0_3, tp1_0, tp1_1, tp1_2, tp1_3, tp2_0, tp2_1, tp2_2, tp2_3, tp3_0, tp3_1, tp3_2, tp3_3
 
-    cdef double[:,:,:,::1] C = coefs
-    cdef double[:] vals = np.zeros(N)
+    cdef floating [:,:,:,::1] C = coefs
+    cdef floating [:] vals = np.zeros(N, dtype=dtype)
 
-    cdef double tpx_0, tpx_1, tpx_2, tpx_3
-    cdef double tpy_0, tpy_1, tpy_2, tpy_3
+    cdef floating tpx_0, tpx_1, tpx_2, tpx_3
+    cdef floating tpy_0, tpy_1, tpy_2, tpy_3
 
     with nogil, parallel():
 
@@ -485,48 +559,48 @@ cdef eval_UBspline_4( smin, smax, orders, coefs, double[:,::1] svec):
                 Phi0_2 = (Ad[2,0]*tp0_0 + Ad[2,1]*tp0_1 + Ad[2,2]*tp0_2 + Ad[2,3]*tp0_3)
                 Phi0_3 = (Ad[3,0]*tp0_0 + Ad[3,1]*tp0_1 + Ad[3,2]*tp0_2 + Ad[3,3]*tp0_3)
 
-            if t0 < 0:
-                Phi1_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi1_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi1_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi1_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t1 < 0:
+                Phi1_0 = dAd[0,3]*t1 + Ad[0,3]
+                Phi1_1 = dAd[1,3]*t1 + Ad[1,3]
+                Phi1_2 = dAd[2,3]*t1 + Ad[2,3]
+                Phi1_3 = dAd[3,3]*t1 + Ad[3,3]
+            elif t1 > 1:
+                Phi1_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t1-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi1_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t1-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi1_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t1-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi1_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t1-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi1_0 = (Ad[0,0]*tp1_0 + Ad[0,1]*tp1_1 + Ad[0,2]*tp1_2 + Ad[0,3]*tp1_3)
                 Phi1_1 = (Ad[1,0]*tp1_0 + Ad[1,1]*tp1_1 + Ad[1,2]*tp1_2 + Ad[1,3]*tp1_3)
                 Phi1_2 = (Ad[2,0]*tp1_0 + Ad[2,1]*tp1_1 + Ad[2,2]*tp1_2 + Ad[2,3]*tp1_3)
                 Phi1_3 = (Ad[3,0]*tp1_0 + Ad[3,1]*tp1_1 + Ad[3,2]*tp1_2 + Ad[3,3]*tp1_3)
 
-            if t0 < 0:
-                Phi2_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi2_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi2_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi2_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi2_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi2_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi2_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi2_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t2 < 0:
+                Phi2_0 = dAd[0,3]*t2 + Ad[0,3]
+                Phi2_1 = dAd[1,3]*t2 + Ad[1,3]
+                Phi2_2 = dAd[2,3]*t2 + Ad[2,3]
+                Phi2_3 = dAd[3,3]*t2 + Ad[3,3]
+            elif t2 > 1:
+                Phi2_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t2-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi2_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t2-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi2_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t2-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi2_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t2-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi2_0 = (Ad[0,0]*tp2_0 + Ad[0,1]*tp2_1 + Ad[0,2]*tp2_2 + Ad[0,3]*tp2_3)
                 Phi2_1 = (Ad[1,0]*tp2_0 + Ad[1,1]*tp2_1 + Ad[1,2]*tp2_2 + Ad[1,3]*tp2_3)
                 Phi2_2 = (Ad[2,0]*tp2_0 + Ad[2,1]*tp2_1 + Ad[2,2]*tp2_2 + Ad[2,3]*tp2_3)
                 Phi2_3 = (Ad[3,0]*tp2_0 + Ad[3,1]*tp2_1 + Ad[3,2]*tp2_2 + Ad[3,3]*tp2_3)
 
-            if t0 < 0:
-                Phi3_0 = dAd[0,3]*t0 + Ad[0,3]
-                Phi3_1 = dAd[1,3]*t0 + Ad[1,3]
-                Phi3_2 = dAd[2,3]*t0 + Ad[2,3]
-                Phi3_3 = dAd[3,3]*t0 + Ad[3,3]
-            elif t0 > 1:
-                Phi3_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                Phi3_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                Phi3_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                Phi3_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
+            if t3 < 0:
+                Phi3_0 = dAd[0,3]*t3 + Ad[0,3]
+                Phi3_1 = dAd[1,3]*t3 + Ad[1,3]
+                Phi3_2 = dAd[2,3]*t3 + Ad[2,3]
+                Phi3_3 = dAd[3,3]*t3 + Ad[3,3]
+            elif t3 > 1:
+                Phi3_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t3-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
+                Phi3_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t3-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
+                Phi3_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t3-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
+                Phi3_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t3-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
             else:
                 Phi3_0 = (Ad[0,0]*tp3_0 + Ad[0,1]*tp3_1 + Ad[0,2]*tp3_2 + Ad[0,3]*tp3_3)
                 Phi3_1 = (Ad[1,0]*tp3_0 + Ad[1,1]*tp3_1 + Ad[1,2]*tp3_2 + Ad[1,3]*tp3_3)
@@ -886,81 +960,3 @@ cdef eval_UBspline_4_g( smin, smax, orders, coefs, double[:,::1] svec):
             dvals[3,n] = Phi0_0*(Phi1_0*(Phi2_0*(dPhi3_0*(C[i0+0,i1+0,i2+0,i3+0]) + dPhi3_1*(C[i0+0,i1+0,i2+0,i3+1]) + dPhi3_2*(C[i0+0,i1+0,i2+0,i3+2]) + dPhi3_3*(C[i0+0,i1+0,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+0,i1+0,i2+1,i3+0]) + dPhi3_1*(C[i0+0,i1+0,i2+1,i3+1]) + dPhi3_2*(C[i0+0,i1+0,i2+1,i3+2]) + dPhi3_3*(C[i0+0,i1+0,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+0,i1+0,i2+2,i3+0]) + dPhi3_1*(C[i0+0,i1+0,i2+2,i3+1]) + dPhi3_2*(C[i0+0,i1+0,i2+2,i3+2]) + dPhi3_3*(C[i0+0,i1+0,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+0,i1+0,i2+3,i3+0]) + dPhi3_1*(C[i0+0,i1+0,i2+3,i3+1]) + dPhi3_2*(C[i0+0,i1+0,i2+3,i3+2]) + dPhi3_3*(C[i0+0,i1+0,i2+3,i3+3]))) + Phi1_1*(Phi2_0*(dPhi3_0*(C[i0+0,i1+1,i2+0,i3+0]) + dPhi3_1*(C[i0+0,i1+1,i2+0,i3+1]) + dPhi3_2*(C[i0+0,i1+1,i2+0,i3+2]) + dPhi3_3*(C[i0+0,i1+1,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+0,i1+1,i2+1,i3+0]) + dPhi3_1*(C[i0+0,i1+1,i2+1,i3+1]) + dPhi3_2*(C[i0+0,i1+1,i2+1,i3+2]) + dPhi3_3*(C[i0+0,i1+1,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+0,i1+1,i2+2,i3+0]) + dPhi3_1*(C[i0+0,i1+1,i2+2,i3+1]) + dPhi3_2*(C[i0+0,i1+1,i2+2,i3+2]) + dPhi3_3*(C[i0+0,i1+1,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+0,i1+1,i2+3,i3+0]) + dPhi3_1*(C[i0+0,i1+1,i2+3,i3+1]) + dPhi3_2*(C[i0+0,i1+1,i2+3,i3+2]) + dPhi3_3*(C[i0+0,i1+1,i2+3,i3+3]))) + Phi1_2*(Phi2_0*(dPhi3_0*(C[i0+0,i1+2,i2+0,i3+0]) + dPhi3_1*(C[i0+0,i1+2,i2+0,i3+1]) + dPhi3_2*(C[i0+0,i1+2,i2+0,i3+2]) + dPhi3_3*(C[i0+0,i1+2,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+0,i1+2,i2+1,i3+0]) + dPhi3_1*(C[i0+0,i1+2,i2+1,i3+1]) + dPhi3_2*(C[i0+0,i1+2,i2+1,i3+2]) + dPhi3_3*(C[i0+0,i1+2,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+0,i1+2,i2+2,i3+0]) + dPhi3_1*(C[i0+0,i1+2,i2+2,i3+1]) + dPhi3_2*(C[i0+0,i1+2,i2+2,i3+2]) + dPhi3_3*(C[i0+0,i1+2,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+0,i1+2,i2+3,i3+0]) + dPhi3_1*(C[i0+0,i1+2,i2+3,i3+1]) + dPhi3_2*(C[i0+0,i1+2,i2+3,i3+2]) + dPhi3_3*(C[i0+0,i1+2,i2+3,i3+3]))) + Phi1_3*(Phi2_0*(dPhi3_0*(C[i0+0,i1+3,i2+0,i3+0]) + dPhi3_1*(C[i0+0,i1+3,i2+0,i3+1]) + dPhi3_2*(C[i0+0,i1+3,i2+0,i3+2]) + dPhi3_3*(C[i0+0,i1+3,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+0,i1+3,i2+1,i3+0]) + dPhi3_1*(C[i0+0,i1+3,i2+1,i3+1]) + dPhi3_2*(C[i0+0,i1+3,i2+1,i3+2]) + dPhi3_3*(C[i0+0,i1+3,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+0,i1+3,i2+2,i3+0]) + dPhi3_1*(C[i0+0,i1+3,i2+2,i3+1]) + dPhi3_2*(C[i0+0,i1+3,i2+2,i3+2]) + dPhi3_3*(C[i0+0,i1+3,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+0,i1+3,i2+3,i3+0]) + dPhi3_1*(C[i0+0,i1+3,i2+3,i3+1]) + dPhi3_2*(C[i0+0,i1+3,i2+3,i3+2]) + dPhi3_3*(C[i0+0,i1+3,i2+3,i3+3])))) + Phi0_1*(Phi1_0*(Phi2_0*(dPhi3_0*(C[i0+1,i1+0,i2+0,i3+0]) + dPhi3_1*(C[i0+1,i1+0,i2+0,i3+1]) + dPhi3_2*(C[i0+1,i1+0,i2+0,i3+2]) + dPhi3_3*(C[i0+1,i1+0,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+1,i1+0,i2+1,i3+0]) + dPhi3_1*(C[i0+1,i1+0,i2+1,i3+1]) + dPhi3_2*(C[i0+1,i1+0,i2+1,i3+2]) + dPhi3_3*(C[i0+1,i1+0,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+1,i1+0,i2+2,i3+0]) + dPhi3_1*(C[i0+1,i1+0,i2+2,i3+1]) + dPhi3_2*(C[i0+1,i1+0,i2+2,i3+2]) + dPhi3_3*(C[i0+1,i1+0,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+1,i1+0,i2+3,i3+0]) + dPhi3_1*(C[i0+1,i1+0,i2+3,i3+1]) + dPhi3_2*(C[i0+1,i1+0,i2+3,i3+2]) + dPhi3_3*(C[i0+1,i1+0,i2+3,i3+3]))) + Phi1_1*(Phi2_0*(dPhi3_0*(C[i0+1,i1+1,i2+0,i3+0]) + dPhi3_1*(C[i0+1,i1+1,i2+0,i3+1]) + dPhi3_2*(C[i0+1,i1+1,i2+0,i3+2]) + dPhi3_3*(C[i0+1,i1+1,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+1,i1+1,i2+1,i3+0]) + dPhi3_1*(C[i0+1,i1+1,i2+1,i3+1]) + dPhi3_2*(C[i0+1,i1+1,i2+1,i3+2]) + dPhi3_3*(C[i0+1,i1+1,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+1,i1+1,i2+2,i3+0]) + dPhi3_1*(C[i0+1,i1+1,i2+2,i3+1]) + dPhi3_2*(C[i0+1,i1+1,i2+2,i3+2]) + dPhi3_3*(C[i0+1,i1+1,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+1,i1+1,i2+3,i3+0]) + dPhi3_1*(C[i0+1,i1+1,i2+3,i3+1]) + dPhi3_2*(C[i0+1,i1+1,i2+3,i3+2]) + dPhi3_3*(C[i0+1,i1+1,i2+3,i3+3]))) + Phi1_2*(Phi2_0*(dPhi3_0*(C[i0+1,i1+2,i2+0,i3+0]) + dPhi3_1*(C[i0+1,i1+2,i2+0,i3+1]) + dPhi3_2*(C[i0+1,i1+2,i2+0,i3+2]) + dPhi3_3*(C[i0+1,i1+2,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+1,i1+2,i2+1,i3+0]) + dPhi3_1*(C[i0+1,i1+2,i2+1,i3+1]) + dPhi3_2*(C[i0+1,i1+2,i2+1,i3+2]) + dPhi3_3*(C[i0+1,i1+2,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+1,i1+2,i2+2,i3+0]) + dPhi3_1*(C[i0+1,i1+2,i2+2,i3+1]) + dPhi3_2*(C[i0+1,i1+2,i2+2,i3+2]) + dPhi3_3*(C[i0+1,i1+2,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+1,i1+2,i2+3,i3+0]) + dPhi3_1*(C[i0+1,i1+2,i2+3,i3+1]) + dPhi3_2*(C[i0+1,i1+2,i2+3,i3+2]) + dPhi3_3*(C[i0+1,i1+2,i2+3,i3+3]))) + Phi1_3*(Phi2_0*(dPhi3_0*(C[i0+1,i1+3,i2+0,i3+0]) + dPhi3_1*(C[i0+1,i1+3,i2+0,i3+1]) + dPhi3_2*(C[i0+1,i1+3,i2+0,i3+2]) + dPhi3_3*(C[i0+1,i1+3,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+1,i1+3,i2+1,i3+0]) + dPhi3_1*(C[i0+1,i1+3,i2+1,i3+1]) + dPhi3_2*(C[i0+1,i1+3,i2+1,i3+2]) + dPhi3_3*(C[i0+1,i1+3,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+1,i1+3,i2+2,i3+0]) + dPhi3_1*(C[i0+1,i1+3,i2+2,i3+1]) + dPhi3_2*(C[i0+1,i1+3,i2+2,i3+2]) + dPhi3_3*(C[i0+1,i1+3,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+1,i1+3,i2+3,i3+0]) + dPhi3_1*(C[i0+1,i1+3,i2+3,i3+1]) + dPhi3_2*(C[i0+1,i1+3,i2+3,i3+2]) + dPhi3_3*(C[i0+1,i1+3,i2+3,i3+3])))) + Phi0_2*(Phi1_0*(Phi2_0*(dPhi3_0*(C[i0+2,i1+0,i2+0,i3+0]) + dPhi3_1*(C[i0+2,i1+0,i2+0,i3+1]) + dPhi3_2*(C[i0+2,i1+0,i2+0,i3+2]) + dPhi3_3*(C[i0+2,i1+0,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+2,i1+0,i2+1,i3+0]) + dPhi3_1*(C[i0+2,i1+0,i2+1,i3+1]) + dPhi3_2*(C[i0+2,i1+0,i2+1,i3+2]) + dPhi3_3*(C[i0+2,i1+0,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+2,i1+0,i2+2,i3+0]) + dPhi3_1*(C[i0+2,i1+0,i2+2,i3+1]) + dPhi3_2*(C[i0+2,i1+0,i2+2,i3+2]) + dPhi3_3*(C[i0+2,i1+0,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+2,i1+0,i2+3,i3+0]) + dPhi3_1*(C[i0+2,i1+0,i2+3,i3+1]) + dPhi3_2*(C[i0+2,i1+0,i2+3,i3+2]) + dPhi3_3*(C[i0+2,i1+0,i2+3,i3+3]))) + Phi1_1*(Phi2_0*(dPhi3_0*(C[i0+2,i1+1,i2+0,i3+0]) + dPhi3_1*(C[i0+2,i1+1,i2+0,i3+1]) + dPhi3_2*(C[i0+2,i1+1,i2+0,i3+2]) + dPhi3_3*(C[i0+2,i1+1,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+2,i1+1,i2+1,i3+0]) + dPhi3_1*(C[i0+2,i1+1,i2+1,i3+1]) + dPhi3_2*(C[i0+2,i1+1,i2+1,i3+2]) + dPhi3_3*(C[i0+2,i1+1,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+2,i1+1,i2+2,i3+0]) + dPhi3_1*(C[i0+2,i1+1,i2+2,i3+1]) + dPhi3_2*(C[i0+2,i1+1,i2+2,i3+2]) + dPhi3_3*(C[i0+2,i1+1,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+2,i1+1,i2+3,i3+0]) + dPhi3_1*(C[i0+2,i1+1,i2+3,i3+1]) + dPhi3_2*(C[i0+2,i1+1,i2+3,i3+2]) + dPhi3_3*(C[i0+2,i1+1,i2+3,i3+3]))) + Phi1_2*(Phi2_0*(dPhi3_0*(C[i0+2,i1+2,i2+0,i3+0]) + dPhi3_1*(C[i0+2,i1+2,i2+0,i3+1]) + dPhi3_2*(C[i0+2,i1+2,i2+0,i3+2]) + dPhi3_3*(C[i0+2,i1+2,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+2,i1+2,i2+1,i3+0]) + dPhi3_1*(C[i0+2,i1+2,i2+1,i3+1]) + dPhi3_2*(C[i0+2,i1+2,i2+1,i3+2]) + dPhi3_3*(C[i0+2,i1+2,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+2,i1+2,i2+2,i3+0]) + dPhi3_1*(C[i0+2,i1+2,i2+2,i3+1]) + dPhi3_2*(C[i0+2,i1+2,i2+2,i3+2]) + dPhi3_3*(C[i0+2,i1+2,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+2,i1+2,i2+3,i3+0]) + dPhi3_1*(C[i0+2,i1+2,i2+3,i3+1]) + dPhi3_2*(C[i0+2,i1+2,i2+3,i3+2]) + dPhi3_3*(C[i0+2,i1+2,i2+3,i3+3]))) + Phi1_3*(Phi2_0*(dPhi3_0*(C[i0+2,i1+3,i2+0,i3+0]) + dPhi3_1*(C[i0+2,i1+3,i2+0,i3+1]) + dPhi3_2*(C[i0+2,i1+3,i2+0,i3+2]) + dPhi3_3*(C[i0+2,i1+3,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+2,i1+3,i2+1,i3+0]) + dPhi3_1*(C[i0+2,i1+3,i2+1,i3+1]) + dPhi3_2*(C[i0+2,i1+3,i2+1,i3+2]) + dPhi3_3*(C[i0+2,i1+3,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+2,i1+3,i2+2,i3+0]) + dPhi3_1*(C[i0+2,i1+3,i2+2,i3+1]) + dPhi3_2*(C[i0+2,i1+3,i2+2,i3+2]) + dPhi3_3*(C[i0+2,i1+3,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+2,i1+3,i2+3,i3+0]) + dPhi3_1*(C[i0+2,i1+3,i2+3,i3+1]) + dPhi3_2*(C[i0+2,i1+3,i2+3,i3+2]) + dPhi3_3*(C[i0+2,i1+3,i2+3,i3+3])))) + Phi0_3*(Phi1_0*(Phi2_0*(dPhi3_0*(C[i0+3,i1+0,i2+0,i3+0]) + dPhi3_1*(C[i0+3,i1+0,i2+0,i3+1]) + dPhi3_2*(C[i0+3,i1+0,i2+0,i3+2]) + dPhi3_3*(C[i0+3,i1+0,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+3,i1+0,i2+1,i3+0]) + dPhi3_1*(C[i0+3,i1+0,i2+1,i3+1]) + dPhi3_2*(C[i0+3,i1+0,i2+1,i3+2]) + dPhi3_3*(C[i0+3,i1+0,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+3,i1+0,i2+2,i3+0]) + dPhi3_1*(C[i0+3,i1+0,i2+2,i3+1]) + dPhi3_2*(C[i0+3,i1+0,i2+2,i3+2]) + dPhi3_3*(C[i0+3,i1+0,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+3,i1+0,i2+3,i3+0]) + dPhi3_1*(C[i0+3,i1+0,i2+3,i3+1]) + dPhi3_2*(C[i0+3,i1+0,i2+3,i3+2]) + dPhi3_3*(C[i0+3,i1+0,i2+3,i3+3]))) + Phi1_1*(Phi2_0*(dPhi3_0*(C[i0+3,i1+1,i2+0,i3+0]) + dPhi3_1*(C[i0+3,i1+1,i2+0,i3+1]) + dPhi3_2*(C[i0+3,i1+1,i2+0,i3+2]) + dPhi3_3*(C[i0+3,i1+1,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+3,i1+1,i2+1,i3+0]) + dPhi3_1*(C[i0+3,i1+1,i2+1,i3+1]) + dPhi3_2*(C[i0+3,i1+1,i2+1,i3+2]) + dPhi3_3*(C[i0+3,i1+1,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+3,i1+1,i2+2,i3+0]) + dPhi3_1*(C[i0+3,i1+1,i2+2,i3+1]) + dPhi3_2*(C[i0+3,i1+1,i2+2,i3+2]) + dPhi3_3*(C[i0+3,i1+1,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+3,i1+1,i2+3,i3+0]) + dPhi3_1*(C[i0+3,i1+1,i2+3,i3+1]) + dPhi3_2*(C[i0+3,i1+1,i2+3,i3+2]) + dPhi3_3*(C[i0+3,i1+1,i2+3,i3+3]))) + Phi1_2*(Phi2_0*(dPhi3_0*(C[i0+3,i1+2,i2+0,i3+0]) + dPhi3_1*(C[i0+3,i1+2,i2+0,i3+1]) + dPhi3_2*(C[i0+3,i1+2,i2+0,i3+2]) + dPhi3_3*(C[i0+3,i1+2,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+3,i1+2,i2+1,i3+0]) + dPhi3_1*(C[i0+3,i1+2,i2+1,i3+1]) + dPhi3_2*(C[i0+3,i1+2,i2+1,i3+2]) + dPhi3_3*(C[i0+3,i1+2,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+3,i1+2,i2+2,i3+0]) + dPhi3_1*(C[i0+3,i1+2,i2+2,i3+1]) + dPhi3_2*(C[i0+3,i1+2,i2+2,i3+2]) + dPhi3_3*(C[i0+3,i1+2,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+3,i1+2,i2+3,i3+0]) + dPhi3_1*(C[i0+3,i1+2,i2+3,i3+1]) + dPhi3_2*(C[i0+3,i1+2,i2+3,i3+2]) + dPhi3_3*(C[i0+3,i1+2,i2+3,i3+3]))) + Phi1_3*(Phi2_0*(dPhi3_0*(C[i0+3,i1+3,i2+0,i3+0]) + dPhi3_1*(C[i0+3,i1+3,i2+0,i3+1]) + dPhi3_2*(C[i0+3,i1+3,i2+0,i3+2]) + dPhi3_3*(C[i0+3,i1+3,i2+0,i3+3])) + Phi2_1*(dPhi3_0*(C[i0+3,i1+3,i2+1,i3+0]) + dPhi3_1*(C[i0+3,i1+3,i2+1,i3+1]) + dPhi3_2*(C[i0+3,i1+3,i2+1,i3+2]) + dPhi3_3*(C[i0+3,i1+3,i2+1,i3+3])) + Phi2_2*(dPhi3_0*(C[i0+3,i1+3,i2+2,i3+0]) + dPhi3_1*(C[i0+3,i1+3,i2+2,i3+1]) + dPhi3_2*(C[i0+3,i1+3,i2+2,i3+2]) + dPhi3_3*(C[i0+3,i1+3,i2+2,i3+3])) + Phi2_3*(dPhi3_0*(C[i0+3,i1+3,i2+3,i3+0]) + dPhi3_1*(C[i0+3,i1+3,i2+3,i3+1]) + dPhi3_2*(C[i0+3,i1+3,i2+3,i3+2]) + dPhi3_3*(C[i0+3,i1+3,i2+3,i3+3])))) 
 
     return [vals,dvals]
-
-
-def eval_MUBspline( smin, smax, orders, coefs, svec, diff=False):
-
-    if len(coefs.shape)!=2:
-        raise(Exception('not implemented'))
-
-    return eval_MUBspline_1( smin, smax, orders, coefs, svec)
-
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef eval_MUBspline_1( smin, smax, orders, coefs, double[:,::1] svec):
-
-
-    cdef int M0 = orders[0]
-    cdef double start0 = smin[0]
-    cdef double dinv0 = (orders[0]-1.0)/(smax[0]-smin[0])
-
-    cdef int n_m = coefs.shape[0]
-    cdef int i_m = coefs.shape[0]
-
-    cdef double val
-
-    cdef int N = svec.shape[1]
-
-    cdef int n
-
-    cdef double[:,::1] Ad = A44d
-    cdef double[:,::1] dAd = dA44d
-
-    cdef int i0
-    cdef double x0
-    cdef double u0
-    cdef double t0
-    cdef double extrap0
-
-    cdef double Phi0_0, Phi0_1, Phi0_2, Phi0_3
-    cdef double tp0_0, tp0_1, tp0_2, tp0_3
-
-    cdef double[:,::1] C = coefs
-    cdef double[:,::1] vals = np.zeros( (n_m, N) )
-
-    cdef double tpx_0, tpx_1, tpx_2, tpx_3
-    cdef double tpy_0, tpy_1, tpy_2, tpy_3
-
-    with nogil, parallel():
-        for i_m in prange(n_m):
-            for n in prange(N):
-
-                x0 = svec[0,n]
-                u0 = (x0 - start0)*dinv0
-                i0 = <int> u0
-                i0 = max( min(i0,M0-2), 0 )
-                t0 = u0-i0
-
-                tp0_0 = t0*t0*t0;  tp0_1 = t0*t0;  tp0_2 = t0;  tp0_3 = 1.0;
-
-                if t0 < 0:
-                    Phi0_0 = dAd[0,3]*t0 + Ad[0,3]
-                    Phi0_1 = dAd[1,3]*t0 + Ad[1,3]
-                    Phi0_2 = dAd[2,3]*t0 + Ad[2,3]
-                    Phi0_3 = dAd[3,3]*t0 + Ad[3,3]
-                elif t0 > 1:
-                    Phi0_0 = (3*Ad[0,0] + 2*Ad[0,1] + Ad[0,2])*(t0-1) + (Ad[0,0]+Ad[0,1]+Ad[0,2]+Ad[0,3])
-                    Phi0_1 = (3*Ad[1,0] + 2*Ad[1,1] + Ad[1,2])*(t0-1) + (Ad[1,0]+Ad[1,1]+Ad[1,2]+Ad[1,3])
-                    Phi0_2 = (3*Ad[2,0] + 2*Ad[2,1] + Ad[2,2])*(t0-1) + (Ad[2,0]+Ad[2,1]+Ad[2,2]+Ad[2,3])
-                    Phi0_3 = (3*Ad[3,0] + 2*Ad[3,1] + Ad[3,2])*(t0-1) + (Ad[3,0]+Ad[3,1]+Ad[3,2]+Ad[3,3])
-                else:
-                    Phi0_0 = (Ad[0,0]*tp0_0 + Ad[0,1]*tp0_1 + Ad[0,2]*tp0_2 + Ad[0,3]*tp0_3)
-                    Phi0_1 = (Ad[1,0]*tp0_0 + Ad[1,1]*tp0_1 + Ad[1,2]*tp0_2 + Ad[1,3]*tp0_3)
-                    Phi0_2 = (Ad[2,0]*tp0_0 + Ad[2,1]*tp0_1 + Ad[2,2]*tp0_2 + Ad[2,3]*tp0_3)
-                    Phi0_3 = (Ad[3,0]*tp0_0 + Ad[3,1]*tp0_1 + Ad[3,2]*tp0_2 + Ad[3,3]*tp0_3)
-
-                vals[i_m,n] = Phi0_0*(C[i_m,i0+0]) + Phi0_1*(C[i_m,i0+1]) + Phi0_2*(C[i_m,i0+2]) + Phi0_3*(C[i_m,i0+3])
-
-    return vals
