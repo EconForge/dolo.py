@@ -18,6 +18,7 @@ from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
 
+<<<<<<< HEAD
 def compile_function(equations, args, parms, max_order, return_text=False):
 
     """
@@ -143,7 +144,6 @@ from numpy import pi
 from numpy import inf
 
 from numba import float64
-#from numbapro.vectorize import guvectorize
 
 def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='columns'):
 
@@ -280,21 +280,28 @@ if __name__ == '__main__':
     from dolo import *
     import numpy
 
+    #
+    # gm = yaml_import('examples/global_models/rbc.yaml', compiler='numba')
+    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
 
-    gm = yaml_import('examples/global_models/rbc.yaml', compiler='numba')
-    gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
-    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numexpr')
+    import yaml
+    # with file('/home/pablo/Programmation/washington/code/recipes.yaml') as f:
+    with file('../washington/code/recipes.yaml') as f:
+        recipes = yaml.load(f)
 
-    # print(model.__class__)
-    # gm = GModel(model, compiler='numexpr')
-    # # gm = GModel(model, compiler='theano')
-#    gm = GModel(model)
+    # fname = '/home/pablo/Programmation/washington/code/rbc_fg.yaml'
+    fname = '../washington/code/rbc_fg.yaml'
+
+    first = 'numexpr'
+    second = 'numba'
+
+    gm = yaml_import(fname, compiler=first, order='columns', recipes=recipes)
+    gmp = yaml_import(fname, compiler=second, order='columns', recipes=recipes)
+
 
     ss = gmp.calibration['states']
     xx = gmp.calibration['controls']
-    aa = gmp.calibration['auxiliary']
     p = gmp.calibration['parameters']
-
 
     ee = numpy.array([0],dtype=numpy.double)
 
@@ -302,7 +309,6 @@ if __name__ == '__main__':
 
     ss = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ss), (N,1) ) )
     xx = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(xx), (N,1) ) )
-    aa = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(aa), (N,1) ) )
     ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee), (N,1) ) )
 
 
@@ -316,16 +322,16 @@ if __name__ == '__main__':
     import time
 
     print('numpy')
-    tmp = gp(ss,xx,aa,ee,p)
+    tmp = gp(ss,xx,ee,p)
     t1 = time.time()
     for i in range(50):
-        tmp = gp(ss,xx,aa,ee,p)
+        tmp = gp(ss,xx,ee,p)
     t2 = time.time()
 
-    tmp = fp(ss,xx,aa,ss,xx,aa,p)
+    tmp = fp(ss,xx,ss,xx,p)
     t3 = time.time()
     for i in range(50):
-        tmp = fp(ss,xx,aa,ss,xx,aa,p)
+        tmp = fp(ss,xx,ss,xx,p)
     t4 = time.time()
 
     print('first {}'.format(t2-t1))
@@ -333,19 +339,20 @@ if __name__ == '__main__':
 
     print('numba')
 
-    tmp = g(ss,xx,aa,ee,p)
+    tmp2 = g(ss,xx,ee,p)
     t1 = time.time()
     for i in range(50):
-        tmp = g(ss,xx,aa,ee,p)
+        tmp2 = g(ss,xx,ee,p)
     t2 = time.time()
 
-    tmp = f(ss,xx,aa,ss,xx,aa,p)
+    tmp2 = f(ss,xx,ss,xx,p)
     t3 = time.time()
     for i in range(50):
-        tmp = f(ss,xx,aa,ss,xx,aa,p)
+        tmp2 = f(ss,xx,ss,xx,p)
     t4 = time.time()
 
     print('first {}'.format(t2-t1))
     print('second {}'.format(t4-t3))
 
 
+    print("Error : {}".format( abs(tmp2 - tmp).max() ))
