@@ -18,130 +18,6 @@ from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
 
-def compile_function(equations, args, parms, max_order, return_text=False):
-
-    """
-    :param equations:
-    :param args:
-    :param parms:
-    :param max_order:
-    :param return_function:
-    :return:
-    """
-
-    var_order = args
-
-    sols = []
-    for eq in equations:
-        ndt = DerivativesTree(eq, ref_var_list=var_order)
-        ndt.compute_nth_order_children(max_order)
-        sols.append(ndt)
-
-    dyn_subs_dict = dict()
-    for i,v in enumerate(args):
-        dyn_subs_dict[v] = 'x_' + str(i)
-
-    for i,p in enumerate(parms):
-        dyn_subs_dict[p] = 'p_' + str(i)
-
-    preamble_l = ['    x_{i} = x[{i}]   # {v}'.format(i=i,v=v) for i,v in enumerate(args)]
-    preamble_l += ['    p_{i} = p[{i}]    # {p}'.format(i=i,p=p) for i,p in enumerate(parms)]
-    preamble = str.join('\n',preamble_l)
-
-    dyn_printer = DicPrinter(dyn_subs_dict)
-
-    txt = """def dynamic_function(x, p):
-#
-#
-#
-    import numpy as np
-    from numpy import exp, log
-    from numpy import sin, cos, tan
-    from numpy import arcsin as asin
-    from numpy import arccos as acos
-    from numpy import arctan as atan
-    from numpy import sinh, cosh, tanh
-    from numpy import pi
-
-{preamble}
-
-    f = []
-
-    residual = np.zeros({neq},dtype=np.float64);
-"""
-    gs = str.join(', ',[('f'+str(i)) for i in range(1,(max_order+1))])
-    txt = txt.format(gs=gs,fname='noname',neq=len(equations), preamble=preamble)
-
-    for i in range(len(sols)):
-        ndt = sols[i]
-        eq = ndt.expr
-        rhs = dyn_printer.doprint_numpy(eq)
-        txt += '    residual[{0}] = {1}\n'.format(i,rhs )
-
-    txt += '    f.append(residual)\n'
-
-    for current_order in range(1,(max_order+1)):
-        if current_order == 1:
-            matrix_name = "Jacobian"
-        elif current_order == 2:
-            matrix_name = "Hessian"
-        else:
-            matrix_name = "{0}_th order".format(current_order)
-
-        txt += """
-#
-# {matrix_name} matrix
-#
-
-""".format(orderr=current_order+1,matrix_name=matrix_name)
-        if current_order == 2:
-            txt.format(matrix_name="Hessian")
-        elif current_order == 1:
-            txt.format(matrix_name="Jacobian")
-
-        #nnzd = self.NNZDerivatives(current_order)
-
-        n_cols = (len(var_order),)*current_order
-        n_cols = ','.join( [str(s) for s in n_cols] )
-        txt += "    f{order} = np.zeros( ({n_eq}, {n_cols}), dtype=np.float64 )\n".format(order=current_order,n_eq=len(equations), n_cols=n_cols )
-        for n in range(len(sols)):
-            ndt = sols[n]
-            l = ndt.list_nth_order_children(current_order)
-            for nd in l:
-                 # here we compute indices where we write the derivatives
-                indices = nd.compute_index_set(var_order)
-                rhs = dyn_printer.doprint_numpy(nd.expr)
-                i0 = indices[0]
-                i_col_s = ','.join([str(nn) for nn in i0])
-                indices.remove(i0)
-
-                i_col_s_ref = i_col_s
-                txt += '    f{order}[{i_eq},{i_col}] = {value}\n'.format(order=current_order,i_eq=n,i_col=i_col_s,value=rhs)
-                for ind in indices:
-                    i += 1
-                    i_col_s = ','.join([str(nn) for nn in ind])
-                    txt += '    f{order}[{i_eq},{i_col}] = f{order}[{i_eq},{i_col_ref}] \n'.format(order=current_order,i_eq = n,i_col=i_col_s,i_col_ref = i_col_s_ref)
-
-        txt += "    f.append(f{order})\n".format(order=current_order)
-    txt += "    return f\n"
-    txt = txt.replace('^','**')
-
-    if return_text:
-        return txt
-    else:
-        return code_to_function(txt,'dynamic_function')
-
-
-from numpy import zeros
-from numpy import exp, log
-from numpy import sin, cos, tan
-from numpy import arcsin as asin
-from numpy import arccos as acos
-from numpy import arctan as atan
-from numpy import sinh, cosh, tanh
-from numpy import pi
-from numpy import inf
-
 from numbapro import float64
 from numbapro.vectorize import guvectorize
 
@@ -276,21 +152,28 @@ if __name__ == '__main__':
     from dolo import *
     import numpy
 
+    #
+    # gm = yaml_import('examples/global_models/rbc.yaml', compiler='numba')
+    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
 
-    gm = yaml_import('examples/global_models/rbc.yaml', compiler='numba')
-    gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numpy')
-    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numexpr')
+    import yaml
+    # with file('/home/pablo/Programmation/washington/code/recipes.yaml') as f:
+    with file('../washington/code/recipes.yaml') as f:
+        recipes = yaml.load(f)
 
-    # print(model.__class__)
-    # gm = GModel(model, compiler='numexpr')
-    # # gm = GModel(model, compiler='theano')
-#    gm = GModel(model)
+    # fname = '/home/pablo/Programmation/washington/code/rbc_fg.yaml'
+    fname = '../washington/code/rbc_fg.yaml'
+
+    first = 'numexpr'
+    second = 'numba'
+
+    gm = yaml_import(fname, compiler=first, order='columns', recipes=recipes)
+    gmp = yaml_import(fname, compiler=second, order='columns', recipes=recipes)
+
 
     ss = gmp.calibration['states']
     xx = gmp.calibration['controls']
-    aa = gmp.calibration['auxiliary']
     p = gmp.calibration['parameters']
-
 
     ee = numpy.array([0],dtype=numpy.double)
 
@@ -298,7 +181,6 @@ if __name__ == '__main__':
 
     ss = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ss), (N,1) ) )
     xx = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(xx), (N,1) ) )
-    aa = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(aa), (N,1) ) )
     ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee), (N,1) ) )
 
 
@@ -312,16 +194,16 @@ if __name__ == '__main__':
     import time
 
     print('numpy')
-    tmp = gp(ss,xx,aa,ee,p)
+    tmp = gp(ss,xx,ee,p)
     t1 = time.time()
     for i in range(50):
-        tmp = gp(ss,xx,aa,ee,p)
+        tmp = gp(ss,xx,ee,p)
     t2 = time.time()
 
-    tmp = fp(ss,xx,aa,ss,xx,aa,p)
+    tmp = fp(ss,xx,ss,xx,p)
     t3 = time.time()
     for i in range(50):
-        tmp = fp(ss,xx,aa,ss,xx,aa,p)
+        tmp = fp(ss,xx,ss,xx,p)
     t4 = time.time()
 
     print('first {}'.format(t2-t1))
@@ -329,19 +211,20 @@ if __name__ == '__main__':
 
     print('numba')
 
-    tmp = g(ss,xx,aa,ee,p)
+    tmp2 = g(ss,xx,ee,p)
     t1 = time.time()
     for i in range(50):
-        tmp = g(ss,xx,aa,ee,p)
+        tmp2 = g(ss,xx,ee,p)
     t2 = time.time()
 
-    tmp = f(ss,xx,aa,ss,xx,aa,p)
+    tmp2 = f(ss,xx,ss,xx,p)
     t3 = time.time()
     for i in range(50):
-        tmp = f(ss,xx,aa,ss,xx,aa,p)
+        tmp2 = f(ss,xx,ss,xx,p)
     t4 = time.time()
 
     print('first {}'.format(t2-t1))
     print('second {}'.format(t4-t3))
 
 
+    print("Error : {}".format( abs(tmp2 - tmp).max() ))
