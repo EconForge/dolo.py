@@ -142,8 +142,8 @@ from numpy import sinh, cosh, tanh
 from numpy import pi
 from numpy import inf
 
-from numbapro import float64
-from numbapro.vectorize import guvectorize
+from numba import float64
+#from numbapro.vectorize import guvectorize
 
 def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='columns'):
 
@@ -194,6 +194,7 @@ from numpy import inf
 
 def {fname}({args_names}, {param_names}, val):
 
+    val = zeros({n_equations})
 {content}
 
     return val
@@ -249,13 +250,16 @@ def code_to_function(text, name, args_size, return_size):
     from numpy import inf
     d = locals()
     e = {}
+    print(text)
     exec(text, d, e)
     fun = e[name]
-    from numbapro.vectorize import GUVectorize
-    from numbapro import float64
+    from numba.vectorize import GUVectorize
+    from numba import float64
     signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
     signature += '->(n)'.format(return_size)
     args_types = [float64[:]]*(len(args_size)+1)
+    print(signature)
+    print(args_types)
     gufunc = GUVectorize(fun, signature)
     gufunc.add(argtypes=args_types)
     fun = gufunc.build_ufunc()

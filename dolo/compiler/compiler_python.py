@@ -101,6 +101,8 @@ class GModel(object):
                 from dolo.compiler.function_compiler_theano import compile_multiargument_function
             elif compiler == 'numba':
                 from dolo.compiler.function_compiler_numba import compile_multiargument_function
+            elif compiler == 'numba_gpu':
+                from dolo.compiler.function_compiler_numba_gpu import compile_multiargument_function
             else:
                 from dolo.compiler.function_compiler import compile_multiargument_function
 

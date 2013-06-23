@@ -234,6 +234,7 @@ def {fname}({args_names}, {param_names}, val):
             signature = signature,
     )
 
+
     if return_text:
         return text
     print(args_list)
@@ -251,16 +252,12 @@ def code_to_function(text, name, args_size, return_size, size_same_as_output):
     from numpy import sinh, cosh, tanh
     from numpy import pi
     from numpy import inf
-    print('8'*10)
-    print('8'*10)
-    print(text)
-    print('8'*10)
-    print('8'*10)
     d = locals()
     e = {}
+    print(text)
     exec(text, d, e)
     fun = e[name]
-    fun.max_blocksize = 64
+    fun.max_blocksize = 32
 #    from numbapro.vectorize import GUVectorize
 #    from numbapro import float64, void
 #    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
@@ -272,7 +269,6 @@ def code_to_function(text, name, args_size, return_size, size_same_as_output):
 #    print(args_types)
 #    gufunc.add(argtypes=args_types)
 #    fun = gufunc.build_ufunc()
-    print('Success !')
     return fun
 
 
@@ -292,13 +288,13 @@ if __name__ == '__main__':
 
 
     import yaml
-    with file('/home/pablo/Programmation/washington/code/recipe_fga.yaml') as f:
+    with file('/home/pablo/Programmation/washington/code/recipes.yaml') as f:
         recipes = yaml.load(f)
 
     fname = '/home/pablo/Programmation/washington/code/rbc_fg.yaml'
 
     first = 'numexpr'
-    second = 'numba'
+    second = 'numba_gpu'
     gm = yaml_import(fname, compiler=first, order='columns', recipes=recipes)
     gmp = yaml_import(fname, compiler=second, recipes=recipes, order='columns')
 
@@ -316,7 +312,7 @@ if __name__ == '__main__':
 
     ee = numpy.array([0],dtype=numpy.double)
 
-    N = 100000
+    N = 32*1000
 
     ss = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ss), (N,1) ) )
     xx = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(xx), (N,1) ) )
@@ -357,6 +353,10 @@ if __name__ == '__main__':
     g_p = to_device(p)
     g_o = to_device(ss.copy()) 
     print(second)
+    print(g_ss.shape)
+    print(g_xx.shape)
+    print(g_ee.shape)
+    print(g_p.shape)
     gp(g_ss,g_xx,g_ee,g_p)
 #    exit()
     t1 = time.time()

@@ -114,6 +114,10 @@ def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
         from dolo.compiler.function_compiler_theano import compile_multiargument_function
     elif compiler == 'numexpr':
         from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
+    elif compiler == 'numba':
+        from dolo.compiler.function_compiler_numba import compile_multiargument_function
+    elif compiler == 'numba_gpu':
+        from dolo.compiler.function_compiler_numba_gpu import compile_multiargument_function
     else:
         raise Exception('Unknown compiler type : {}'.format(compiler))
 
