@@ -18,7 +18,6 @@ from dolo.symbolic.symbolic import TSymbol
 
 DerivativesTree.symbol_type = TSymbol
 
-<<<<<<< HEAD
 def compile_function(equations, args, parms, max_order, return_text=False):
 
     """
