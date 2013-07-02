@@ -129,7 +129,7 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
         if use_pandas:
             import pandas
-            ts = pandas.DataFrame(simul.T, colnames=varnames)
+            ts = pandas.DataFrame(simul.T, columns=varnames)
             return ts
 
     return simul
