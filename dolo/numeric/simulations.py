@@ -139,8 +139,8 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     import numpy
 
-    states_names = [str(s) for s in model.symbols_s['states']]
-    controls_names = [str(s) for s in model.symbols_s['controls']]
+    states_names = [str(s) for s in model.symbols['states']]
+    controls_names = [str(s) for s in model.symbols['controls']]
     index = states_names.index(str(state))
     if bounds is None:
         bounds = [dr.smin[index], dr.smax[index]]
