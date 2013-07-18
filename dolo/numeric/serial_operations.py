@@ -212,25 +212,25 @@ strange_tensor_multiplication_vector = serial_multiplication_vector
 
 ################################################################################    
 
-from numbapro import guvectorize, void, f8, f4
+#from numbapro import guvectorize, void, f8, f4
 
-@guvectorize([ void(f4[:,:], f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:], f8[:,:])], '(I,J),(J,K)->(I,K)', backend='ast')#, target='gpu')
-def serial_mult_numba(A,B,C):
-    m, n = A.shape
-    n, p = B.shape
-    for i in range(m):
-        for j in range(p):
-            C[i, j] = 0
-            for k in range(n):
-                C[i, j] += A[i, k] * B[k, j]
+#@guvectorize([ void(f4[:,:], f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:], f8[:,:])], '(I,J),(J,K)->(I,K)', backend='ast')#, target='gpu')
+#def serial_mult_numba(A,B,C):
+#    m, n = A.shape
+#    n, p = B.shape
+#    for i in range(m):
+#        for j in range(p):
+#            C[i, j] = 0
+#            for k in range(n):
+#                C[i, j] += A[i, k] * B[k, j]
 
 
-from numpy.linalg import inv
-@guvectorize([ void(f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:])], '(I,I)->(I,I)', backend='ast')#, target='gpu')
-def serial_solve_numba(A,B):
-    m, m = A.shape
-    m, m = B.shape
-    B[...] = inv(A)
+#from numpy.linalg import inv
+#@guvectorize([ void(f4[:,:], f4[:,:]), void(f8[:,:], f8[:,:])], '(I,I)->(I,I)', backend='ast')#, target='gpu')
+#def serial_solve_numba(A,B):
+#    m, m = A.shape
+#    m, m = B.shape
+#    B[...] = inv(A)
 
 
 

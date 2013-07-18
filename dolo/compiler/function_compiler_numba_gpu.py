@@ -7,7 +7,7 @@ from dolo.symbolic.symbolic import TSymbol
 DerivativesTree.symbol_type = TSymbol
 
 from numbapro import float64
-from numbapro.vectorize import guvectorize
+#from numbapro.vectorize import guvectorize
 
 def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, order='columns'):
 
@@ -26,7 +26,7 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     if order == 'rows':
         raise(Exception('not implemented'))
 
-    template = '{0}[{1}]'
+    template = '{0}[i,{1}]'
 
     declarations = ""
     sub_list = {}
@@ -52,27 +52,18 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
 
     signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
     signature += '->(n{})'.format(return_size-1)
-    argtypes = [float64[:]]*(len(args_size)+1)
+    argtypes = [float64[:,:]]*(len(args_size)-1) + [float64[:], float64[:,:]] 
 
 
     text = '''
-#from numpy import zeros
-#from numpy import exp, log
-#from numpy import sin, cos, tan
-#from numpy import arcsin as asin
-#from numpy import arccos as acos
-#from numpy import arctan as atan
-#from numpy import sinh, cosh, tanh
-#from numpy import pi
-#from numpy import inf
-
-from numbapro.vectorize import guvectorize
 from numbapro import float64, void
+from numbapro import jit
+from numbapro import cuda
 
-#@guvectorize( [float64[:](*{argtypes})], "{signature}", target='cpu' )
-@guvectorize( [void(*{argtypes})], "{signature}", target='gpu' )
+@jit( argtypes={argtypes}, target='gpu' )
 def {fname}({args_names}, {param_names}, val):
 
+    i = cuda.grid(1)
 {content}
 
 #    return val
@@ -89,7 +80,7 @@ def {fname}({args_names}, {param_names}, val):
         eq_block = ''
         for i,eq in enumerate(eq_l):
             eq_string = dp.doprint_numpy(eq)
-            eq_block += '    val[{0}] = {1}\n'.format(i, eq_string)
+            eq_block += '    val[i,{0}] = {1}\n'.format(i, eq_string)
         return eq_block
 
     content = write_eqs(equations)
@@ -128,23 +119,14 @@ def code_to_function(text, name, args_size, return_size, size_same_as_output):
     from numpy import sinh, cosh, tanh
     from numpy import pi
     from numpy import inf
+    from numbapro import cuda
     d = locals()
     e = {}
+    print('*'*1000)
     print(text)
     exec(text, d, e)
     fun = e[name]
-    fun.max_blocksize = 32
-#    from numbapro.vectorize import GUVectorize
-#    from numbapro import float64, void
-#    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
-#    signature += '->(n{})'.format(return_size-1)
-#    args_types =[float64[:]]*(len(args_size)+1)
-#    args_types = # void(*args_types)
-#    gufunc = GUVectorize(fun, signature, target='gpu')
-#    print(signature)
-#    print(args_types)
-#    gufunc.add(argtypes=args_types)
-#    fun = gufunc.build_ufunc()
+    fun.max_blocksize = 16
     return fun
 
 
@@ -171,21 +153,14 @@ if __name__ == '__main__':
 
     first = 'numexpr'
     second = 'numba_gpu'
+
     gm = yaml_import(fname, compiler=first, order='columns', recipes=recipes)
-    gmp = yaml_import(fname, compiler=second, recipes=recipes, order='columns')
+    gmp = yaml_import(fname, compiler=second, order='columns', recipes=recipes)
 
-    # gmp = yaml_import('examples/global_models/rbc.yaml', compiler='numexpr')
-
-    # print(model.__class__)
-    # gm = GModel(model, compiler='numexpr')
-    # # gm = GModel(model, compiler='theano')
-#    gm = GModel(model)
 
     ss = gmp.calibration['states']
     xx = gmp.calibration['controls']
     p = gmp.calibration['parameters']
-
-
     ee = numpy.array([0],dtype=numpy.double)
 
     N = 32*1000
@@ -193,6 +168,7 @@ if __name__ == '__main__':
     ss = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ss), (N,1) ) )
     xx = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(xx), (N,1) ) )
     ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee), (N,1) ) )
+    pp = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(p), (N,1) ) )
 
 
 
@@ -204,6 +180,32 @@ if __name__ == '__main__':
 
     import time
 
+    from numbapro.cuda import to_device
+
+    g_ss = to_device(ss)
+    g_xx = to_device(xx)
+    g_p = to_device(p[None,:])
+
+#    exit()
+
+    res_test = f(ss,xx,ss,xx,p)
+    
+    res_gpu = fp(g_ss,g_xx,g_ss,g_xx,g_p)
+   
+    res = res_gpu.copy_to_host()
+
+    print('Error : {}'.format( abs(res - res_test).max() ) )
+
+
+
+
+
+
+
+
+
+
+    exit()
     print(first)
 
     tmp = g(ss,xx,ee,p)
@@ -233,20 +235,23 @@ if __name__ == '__main__':
     print(g_xx.shape)
     print(g_ee.shape)
     print(g_p.shape)
-    gp(g_ss,g_xx,g_ee,g_p)
-#    exit()
+    g_o = gp(g_ss,g_xx,g_ee,g_p)
+    print('Success !')
     t1 = time.time()
     for i in range(50):
+        print(i)
         g_o = gp(g_ss,g_xx,g_ee,g_p)
     t2 = time.time()
 #    exit()
-    tmp = fp(ss,xx,ss,xx,p)
+    tmp2 = fp(ss,xx,ss,xx,p)
     t3 = time.time()
     for i in range(50):
-        tmp = fp(ss,xx,ss,xx,p)
+        tmp2 = fp(ss,xx,ss,xx,p)
     t4 = time.time()
+
+    tmp2 = tmp2.copy_to_host()
 
     print('first {}'.format(t2-t1))
     print('second {}'.format(t4-t3))
 
-
+    print('Error : {}'.format(abs(tmp2-tmp).max()) )
