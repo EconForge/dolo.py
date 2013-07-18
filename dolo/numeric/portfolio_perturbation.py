@@ -5,19 +5,19 @@ def portfolios_to_deterministic(model,pf_names):
 
     import re
     regex = re.compile('.*<=(.*)<=.*')
-    for i,eq in enumerate(model['equations']):
+    for i,eq in enumerate(model.equations_groups['arbitrage']):
         from dolo.symbolic.symbolic import Variable, Equation
-        if 'complementarity' in eq.tags:
-            m = regex.match(eq.tags['complementarity'])
-            vs = m.group(1).strip()
-            if vs in pf_names:
-                v = Variable(vs)
-                neq = Equation(v,0)
-                neq.tag(**eq.tags)
-                model['equations'][i] = neq
+        m = regex.match(eq.tags['complementarity'])
+        vs = m.group(1).strip()
+        if vs in pf_names:
+            v = Variable(vs)
+            neq = Equation(v,0)
+            neq.tag(**eq.tags)
+            model.equations_groups['arbitrage'][i] = neq
+            print(neq)
 
     print('Warning : initial model changed')
-    model.check()
+    model.update()
 
     return model
 
@@ -28,9 +28,9 @@ def solve_portfolio_model(model, pf_names, order=1):
     from dolo import Variable, Parameter, Equation
     import re
 
-    n_states = len(pf_model['variables_groups']['states'])
-    states = pf_model['variables_groups']['states']
-    steady_states = [Parameter(v.name+'_bar') for v in pf_model['variables_groups']['states']]
+    n_states = len(pf_model.symbols_s['states'])
+    states = pf_model.symbols_s['states']
+    steady_states = [Parameter(v.name+'_bar') for v in pf_model.symbols_s['states']]
     n_pfs = len(pf_names)
 
     pf_vars = [Variable(v) for v in pf_names]
@@ -45,21 +45,27 @@ def solve_portfolio_model(model, pf_names, order=1):
     # creation of the new model
 
     import copy
-    print('Warning: initial model has been changed.')
-    new_model = copy.copy(pf_model)
-    new_model['variables_groups']['controls']+=res_vars
 
-    new_model['parameters_ordering'].extend(steady_states)
+    new_model = copy.copy(pf_model)
+
+    new_model.symbols_s['controls'] += res_vars
+    for v in res_vars + pf_vars:
+        new_model.calibration_s[v] = 0
+
+
+    new_model.symbols_s['parameters'].extend(steady_states)
     for p in pf_parms + Matrix(pf_dparms)[:]:
-        new_model['parameters_ordering'].append(p)
-        new_model.parameters_values[p] = 0
+        new_model.symbols_s['parameters'].append(p)
+        new_model.calibration_s[p] = 0
 
     compregex = re.compile('(.*)<=(.*)<=(.*)')
-    to_be_added = []
+
+    to_be_added_1 = []
+    to_be_added_2 = []
 
     expressions = Matrix(pf_parms) + Matrix(pf_dparms)*( Matrix(states) - Matrix(steady_states))
 
-    for eq in new_model['equations_groups']['arbitrage']:
+    for n,eq in enumerate(new_model.equations_groups['arbitrage']):
         if 'complementarity' in eq.tags:
             tg = eq.tags['complementarity']
             [lhs,mhs,rhs] = compregex.match(tg).groups()
@@ -67,28 +73,30 @@ def solve_portfolio_model(model, pf_names, order=1):
         else:
             mhs = None
         if mhs in pf_vars:
-
             i = pf_vars.index(mhs)
-            eq_n = eq.tags['eq_number']
             neq = Equation(mhs, expressions[i])
             neq.tag(**eq.tags)
-            new_model['equations'][eq_n] = neq
             eq_res = Equation(eq.gap, res_vars[i])
             eq_res.tag(eq_type='arbitrage')
-            to_be_added.append(eq_res)
+            to_be_added_2.append(eq_res)
+            new_model.equations_groups['arbitrage'][n] = neq
+            to_be_added_1.append(neq)
 
-    new_model['equations'].extend(to_be_added)
-    new_model.check()
-    new_model.check_consistency(verbose=True)
+    # new_model.equations_groups['arbitrage'].extend(to_be_added_1)
+    new_model.equations_groups['arbitrage'].extend(to_be_added_2)
+    new_model.update()
+
+    for eq in new_model.equations_groups['arbitrage']:
+        print(eq)
+
     print(new_model.parameters)
 
-    print(len(new_model['equations']))
-    print(len(new_model.equations))
-    print(len(new_model['equations_groups']['arbitrage']))
+    print("number of equations {}".format(len(new_model.equations)))
+    print("number of arbitrage equations {}".format( len(new_model.equations_groups['arbitrage'])) )
 
     print('parameters_ordering')
-    print(new_model['parameters_ordering'])
-    print(new_model.parameters)
+    print("number of parameters {}".format(new_model.symbols['parameters']))
+    print("number of parameters {}".format(new_model.parameters))
 
 
     # now, we need to solve for the optimal portfolio coefficients
@@ -99,14 +107,18 @@ def solve_portfolio_model(model, pf_names, order=1):
 
     import numpy
 
-    n_controls = len(model['variables_groups']['controls'])
+    n_controls = len(model.symbols_s['controls'])
 
     def constant_residuals(x):
+        d = {}
         for i in range(n_pfs):
             p = pf_parms[i]
             v = pf_vars[i]
-            new_model.parameters_values[p] = x[i]
-            new_model.init_values[v] = x[i]
+            d[p] = x[i]
+            d[v] = x[i]
+        new_model.set_calibration(d)
+            # new_model.parameters_values[p] = x[i]
+            # new_model.init_values[v] = x[i]
         [X_bar, X_s, X_ss] = approximate_controls(new_model, order=2, return_dr=False)
         return X_bar[n_controls-n_pfs:n_controls]
 
@@ -124,13 +136,15 @@ def solve_portfolio_model(model, pf_names, order=1):
     def dynamic_residuals(X, return_dr=False):
         x = X[:,0]
         dx = X[:,1:]
+        d = {}
         for i in range(n_pfs):
             p = pf_parms[i]
             v = pf_vars[i]
-            model.parameters_values[p] = x[i]
-            model.init_values[v] = x[i]
+            d[p] = x[i]
+            d[v] = x[i]
             for j in range(n_states):
-                model.parameters_values[pf_dparms[i][j]] = dx[i,j]
+                d[pf_dparms[i][j]] = dx[i,j]
+        new_model.set_calibration(d)
         if return_dr:
             dr = approximate_controls(new_model, order=2)
             return dr
@@ -163,9 +177,11 @@ def solve_portfolio_model(model, pf_names, order=1):
 
 if __name__ == '__main__':
     from dolo import *
-    model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml')
+    # model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml', compiler=None)
+    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/portfolios_capital.yaml', compiler=None)
+    print(model.calibration)
+    print(model)
 
-    model.check_consistency(verbose=True)
 
     sol = solve_portfolio_model(model,['x_1','x_2'])
     print(sol.X_s)

@@ -7,7 +7,10 @@ from theano import __version__
 theano_less_than_6 = (LooseVersion(__version__) < LooseVersion('0.6.0') )
 
 
-def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True):
+def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True, order='rows'):
+    if order != 'rows':
+        raise Exception('Only row order implemented')
+
     source = compile_theano_source(values, args_list, args_names, parms, fname=fname)
     exec(source)
     return f
@@ -22,6 +25,7 @@ def compile_theano_source(values, args_list, args_names, parms, fname='anonymous
 
 
     """
+
 
     vars = ['_res_{}'.format(i) for i in range(len(values))]
 

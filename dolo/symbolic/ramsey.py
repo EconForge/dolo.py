@@ -1,9 +1,9 @@
-from dolo.symbolic.model import Model
+from dolo.symbolic.model import SModel
 from dolo.symbolic.symbolic import Variable,Equation
 
 import sympy
 
-class RamseyModel(Model):
+class RamseyModel(SModel):
 
     def __init__(self, base_model, objective=None, discount=None):
         self.base_model = base_model

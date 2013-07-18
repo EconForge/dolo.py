@@ -1,22 +1,24 @@
 
 class CompilerJulia(object):
 
-    def __init__(self, model, model_type=None):
+    def __init__(self, model, model_type=None, recipes=None):
 
         if model_type is None:
-            model_type = model['original_data']['model_type']
-
+            model_type = model.__data__['model_type']
 
         self.model = model
 
         from dolo.symbolic.validator import validate
         if isinstance(model_type, str):
-            validate(model, model_type)
-            from dolo.symbolic.recipes import recipes
-            self.recipe = recipes[model_type]
+            from dolo.symbolic.recipes import recipes as recipes_dict
+            if recipes is not None:
+                recipes_dict.update(recipes)
+            self.recipe = recipes_dict[model_type]
+            validate(model, self.recipe)
         else:
-            # if model_type is not a string, we assume it is a recipe
+            # if model_type is not a string, we assume it is a recipe (why ?)
             self.recipe = model_type
+
 
 
     def process_output(self, recipe=None):
@@ -24,12 +26,12 @@ class CompilerJulia(object):
         recipe = self.recipe
 
         model = self.model
-        parms = model['parameters_ordering']
+        parms = model.symbols_s['parameters']
 
 
         fun_text = ''
 
-        for eqg in self.model['equations_groups']:
+        for eqg in self.model.equations_groups:
 
             args = []
 
@@ -45,9 +47,9 @@ class CompilerJulia(object):
             for syms in arg_specs:
                 [sgn,time] = syms
                 if syms[0] == 'shocks':
-                    args.append( [ s(time) for s in model['shocks_ordering'] ] )
+                    args.append( [ s(time) for s in model.symbols_s['shocks'] ] )
                 else:
-                    args.append( [ s(time) for s in model['variables_groups'][sgn] ] )
+                    args.append( [ s(time) for s in model.symbols_s[sgn] ] )
                 if time == 1:
                     stime = '_f'
                 elif time == -1:
@@ -56,7 +58,7 @@ class CompilerJulia(object):
                     stime = ''
                 arg_names.append( sgn + stime)
 
-            equations = self.model['equations_groups'][eqg]
+            equations = self.model.equations_groups[eqg]
 
             if is_a_definition:
                 from dolo.compiler.common import solve_recursive_block
@@ -75,7 +77,11 @@ class CompilerJulia(object):
 
         calib = model.calibration
 
-        steady_state = calib['steady_state']
+        cc = calib.copy()
+        cc.pop('parameters')
+        cc.pop('shocks')
+        cc.pop('covariances')
+        steady_state = cc
         parameters_values = calib['parameters']
 
 
@@ -90,12 +96,8 @@ class CompilerJulia(object):
         ss_text += '}'
 
         var_text = "symbols = {\n"
-        for vn, vg in model['variables_groups'].iteritems():
+        for vn, vg in model.symbols_s.iteritems():
             var_text += '\t"{0}" => [{1}],\n'.format(vn, str.join(',', ['"{}"'.format(e ) for e in vg]))
-
-        var_text += '\t"parameters" => [{}],\n'.format(str.join(',', ['"{}"'.format(e ) for e in model['parameters_ordering']]))
-        var_text += '\t"shocks" => [{}]\n'.format(str.join(',', ['"{}"'.format(e ) for e in model['shocks_ordering']]))
-
         var_text += '}'
 
         full_text = '''
@@ -110,7 +112,8 @@ class CompilerJulia(object):
 
 calibration = {{
     "steady_state" => steady_state,
-    "parameters" => {params}
+    "parameters" => {params},
+    "covariances" => {covariances}
 }}
 
 model = {{
@@ -123,7 +126,8 @@ model = {{
             funs_text = funs_text,
             ss_text = ss_text,
             var_text = var_text,
-            params = str(parameters_values)
+            covariances = str(calib['covariances']).replace('\n',';'),
+            params = str(parameters_values).replace('\n',' ')
 
         )
 

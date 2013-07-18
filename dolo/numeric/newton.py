@@ -1,5 +1,49 @@
 import numpy
 
+def simple_newton(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50, tol=1e-8, eps=1e-8, numdiff=True):
+    '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
+    :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
+    values in (p x p x N)
+    :param x0: initial value ( p x N )
+    :return: solution x such that f(x) = 0
+    '''
+
+    precision = x0.dtype   # default tolerance should depend on precision
+
+    from numpy.linalg import solve
+
+    err = 1
+
+    it = 0
+    while err > tol and it <= maxit:
+
+        if not numdiff:
+            [res,dres] = f(x0)
+        else:
+            res = f(x0)
+            dres = numpy.zeros( (res.shape[0], x0.shape[0]), dtype=precision )
+            for i in range(x0.shape[0]):
+                xi = x0.copy()
+                xi[i] += eps
+                resi = f(xi)
+                dres[:,i] = (resi - res)/eps
+
+        dx = - solve(dres,res)
+
+        x = x0 + dx
+
+        print('x0 : {}'.format(x0))
+        err = abs(res).max()
+        print('iteration {} {}'.format(it, err))
+
+        x0 = x
+        it += 1
+
+    if not infos:
+        return x
+    else:
+        return [x, it]
+
 def newton_solver(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50, tol=1e-8, eps=1e-5, numdiff=False):
     '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
     :param f: objective function to be solved with values p x N . The second output argument represents the derivative with

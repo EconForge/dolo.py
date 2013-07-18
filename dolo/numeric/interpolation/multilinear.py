@@ -3,12 +3,12 @@ from __future__ import division
 import numpy
 import numpy as np
 
-#from multilinear_cython import multilinear_interpolation
+from multilinear_cython import multilinear_interpolation
 #
 # try:
 #     print("Using compiled linear interpolator")
 # except Exception as e:
-from multilinear_python import multilinear_interpolation
+#from multilinear_python import multilinear_interpolation
 #     from multilinear_python import multilinear_interpolation as multilinear_interpolation_double
 #     print('Failing back on python implementation')
 

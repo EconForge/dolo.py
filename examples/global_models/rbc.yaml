@@ -24,7 +24,7 @@ equations:
       - c = z*k^alpha*n^(1-alpha) - i
       - rk = alpha*z*(n/k)^(1-alpha)
       - w = (1-alpha)*z*(k/n)^(alpha)
-      
+
 calibration:
 
    parameters:
@@ -32,16 +32,16 @@ calibration:
       beta : 0.99
       phi: 1
       chi : w/c^sigma/n^eta
-      delta : 0.025      
-      alpha : 0.33      
+      delta : 0.025
+      alpha : 0.33
       rho : 0.8
       sigma: 1
       eta: 1
       zbar: 1
-         
+
    steady_state:
       z: zbar
-      rk: 1/beta-1+delta    
+      rk: 1/beta-1+delta
       w: (1-alpha)*z*(k/n)^(alpha)
       n: 0.33
       k: n/(rk/alpha)^(1/(1-alpha))

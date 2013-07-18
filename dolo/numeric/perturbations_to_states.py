@@ -1,6 +1,12 @@
 from dolo.numeric.decision_rules_states import CDR
 
-def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
+def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True):
+
+    from dolo.symbolic.model import SModel
+    if not isinstance(cmodel, SModel):
+        model = cmodel.model
+    else:
+        model = cmodel
 
     from dolo.compiler.compiler_functions import model_to_fg
     [g_fun, f_fun] = model_to_fg(model, order=order)
@@ -8,15 +14,16 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True):
     # get steady_state
     import numpy
 
-    [y,x,parms] = model.read_calibration()
-    sigma = model.read_covariances()
 
-    states = model['variables_groups']['states']
-    controls = model['variables_groups']['controls']
 
-    states_ss = numpy.array([y[model.variables.index(v)] for v in states]).astype(float)
-    controls_ss = numpy.array([y[model.variables.index(v)] for v in controls]).astype(float)
-    shocks_ss = x
+    states = model.symbols_s['states']
+    controls = model.symbols_s['controls']
+
+    parms = model.calibration['parameters']
+    sigma = model.calibration['covariances']
+    states_ss = model.calibration['states']
+    controls_ss = model.calibration['controls']
+    shocks_ss = model.calibration['shocks']
 
     f_args_ss = numpy.concatenate( [states_ss, controls_ss, states_ss, controls_ss] )
     g_args_ss = numpy.concatenate( [states_ss, controls_ss, shocks_ss] )

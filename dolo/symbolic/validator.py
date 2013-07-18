@@ -9,10 +9,11 @@ def validate(model, recipe):
 #        validate(model, recipes[recipe])
 #        return
 
-    for vg in model['variables_groups']:
-        assert( vg in recipe['variable_type'])
+    for vg in model.symbols_s:
+        if not vg in ('parameters','shocks'):
+            assert( vg in recipe['variable_type'])
 
-    for eqg in model['equations_groups']:
+    for eqg in model.equations_groups:
         assert( eqg in recipe['equation_type'])
 
         eq_recipe = recipe['equation_type'][eqg]
@@ -21,16 +22,16 @@ def validate(model, recipe):
             eq_recipe = {'definition': False, 'lhs': recipe['equation_type'][eqg], 'rhs': recipe['equation_type'][eqg]}
 
         if eq_recipe['definition']:
-            lhs_symbols = tuple( [eq.lhs for eq in model['equations_groups'][eqg]] )
+            lhs_symbols = tuple( [eq.lhs for eq in model.equations_groups[eqg]] )
             lhs_type =  eq_recipe['lhs'][0][0]
-            correct_symbols = tuple( model['variables_groups'][lhs_type] )
+            correct_symbols = tuple( model.symbols_s[lhs_type] )
             if lhs_symbols != correct_symbols:
                 raise(Exception('''
     Blocks of type "{0}" must list variables of type "{1}" in the declaration order.
     Declaration order : {2}
     Definition order : {3}'''.format(eqg, lhs_type, correct_symbols, lhs_symbols)))
 
-        equations = model['equations_groups'][eqg]
+        equations = model.equations_groups[eqg]
 
         if eq_recipe.get('definition'):
             from dolo.compiler.common import solve_recursive_block
@@ -46,18 +47,18 @@ def validate(model, recipe):
 
                 [sgn,time] = syms
                 if syms[0] == 'shocks':
-                    allowed_symbols += [ s(time) for s in model['shocks_ordering'] ]
+                    allowed_symbols += [ s(time) for s in model.symbols_s['shocks'] ]
                 else:
-                    allowed_symbols += [ s(time) for s in model['variables_groups'][sgn] ]
+                    allowed_symbols += [ s(time) for s in model.symbols_s[sgn] ]
 
             if eq_recipe.get('definition') and side == 'rhs':
                 allowed_symbols += [ eq.lhs for eq in equations ]
 
             # by default recursive blocs are allowed
 
-            allowed_symbols += model['parameters_ordering']
+            allowed_symbols += model.symbols_s['parameters']
 
-            allowed_symbols += model['parameters_ordering']
+            allowed_symbols += model.symbols_s['parameters']
 
 
             for eq in equations:

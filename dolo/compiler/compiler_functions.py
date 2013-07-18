@@ -5,8 +5,8 @@ def simple_global_representation(self, allow_future_shocks=True, solve_systems=F
 
 
     resp = {}
-    eq_g = self['equations_groups']
-    v_g = self['variables_groups']
+    eq_g = self.equations_groups
+    v_g = self.symbols_s
     if 'expectation' in eq_g:
         resp['f_eqs'] = [ eq.gap for eq in  eq_g['arbitrage'] + eq_g['expectation']] # TODO: complementarity conditions
         resp['controls'] = v_g['controls'] + v_g['expectations']
@@ -114,6 +114,10 @@ def model_to_fg(model, solve_systems=False, compiler='numpy', order=None):
         from dolo.compiler.function_compiler_theano import compile_multiargument_function
     elif compiler == 'numexpr':
         from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
+    elif compiler == 'numba':
+        from dolo.compiler.function_compiler_numba import compile_multiargument_function
+    elif compiler == 'numba_gpu':
+        from dolo.compiler.function_compiler_numba_gpu import compile_multiargument_function
     else:
         raise Exception('Unknown compiler type : {}'.format(compiler))
 

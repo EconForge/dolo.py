@@ -34,7 +34,7 @@ else: # we should determine some good output name in case none has been specifie
     output_filename = input_rad + 'model' + '.m'
 
 # Parse yaml file
-model = yaml_import(input_file)
+model = yaml_import(input_file, compiler=None)
 
 # Model name based on output file name
 basename      = os.path.basename(output_filename)

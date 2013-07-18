@@ -20,7 +20,7 @@ class Compiler:
         self.model = model
         self._dynamic_substitution_list = None
         self._static_substitution_list = None
-        self.covariances = self.model.covariances
+        self.covariances = self.model.sigma
 
     def dynamic_substitution_list(self,brackets=False,compact=True):
         # Returns a dictionary mapping each symbol appearing in the model

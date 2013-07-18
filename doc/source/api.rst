@@ -9,6 +9,7 @@ Advanced topics
     recipes
     structure
 
+    model
 
     interpolation
     compilation

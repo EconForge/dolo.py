@@ -47,17 +47,18 @@ def print_array( obj,row_names=None,col_names=None):
     return print_table(resp)
 
 def print_model( model, print_residuals=True):
+
     from sympy import latex
     if print_residuals:
         from dolo.symbolic.model import compute_residuals
         res = compute_residuals(model)
-    if len( model['equations_groups'] ) > 0:
+    if len( model.equations_groups ) > 0:
         if print_residuals:
             eqs = [ ['', 'Equations','Residuals'] ]
         else:
             eqs = [ ['', 'Equations'] ]
-        for groupname in model['equations_groups']:
-            eqg = model['equations_groups']
+        for groupname in model.equations_groups:
+            eqg = model.equations_groups
             eqs.append( [ groupname ,''] )
             if print_residuals:
                 eqs.extend([ ['','${}$'.format(latex(eq)),str(res[groupname][i])] for i,eq in enumerate(eqg[groupname]) ])
@@ -74,6 +75,16 @@ def print_model( model, print_residuals=True):
         txt = print_table([['','Equations']] + table, header=True)
     return txt
 
+def print_cmodel( cmodel, print_residuals=True):
+
+    if cmodel.model is None:
+        return str(cmodel)
+
+    model = cmodel.model
+
+    txt = 'Compiled model : {}\n'.format(model.name)
+    txt += print_model(model, print_residuals=print_residuals)
+    return txt
 
 #from pandas import
 
