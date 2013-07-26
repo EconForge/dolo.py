@@ -69,6 +69,8 @@ class CompilerMatlab(object):
 
             fun_text += txt
 
+            # from dolo.compiler.function_compiler_matlab import compile_incidence_matrices
+            # compile_incidence_matrices(equations, args)
 
         # the following part only makes sense for fga models
 
@@ -118,6 +120,7 @@ model = struct;
 model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
+model.IncidenceMatrics = struct;
 
 end
 
