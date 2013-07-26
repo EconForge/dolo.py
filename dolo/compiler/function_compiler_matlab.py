@@ -70,6 +70,7 @@ end
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
+        '''Format Jacobians'''
         eq_block = '        {lhs} = zeros( n,{0},{1} );\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
@@ -123,9 +124,11 @@ def code_to_function(text, name):
 
 
 def eqdiff(leq,lvars):
+    '''Calculate the Jacobian of the system of equations with respect to a set of variables.'''
+    from sympy import powsimp
     resp = []
     for eq in leq:
-        el = [ eq.diff(v) for v in lvars]
+        el = [ powsimp(eq.diff(v)) for v in lvars]
         resp += [el]
     return resp
 
