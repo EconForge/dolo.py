@@ -91,9 +91,12 @@ class CompilerMatlab(object):
         for fun_name in recipe['equation_type']:
             funs_text += 'functions.{0} = @{0};\n'.format(fun_name)
 
-        ss_text = "steady_state = struct;\n"
+        ss_text = "calibration = struct;\n"
         for k,v in steady_state.iteritems():
-            ss_text += 'steady_state.{0} = {1};\n'.format( k, str(v).replace('\n',' ')  )
+            ss_text += 'calibration.{0} = {1};\n'.format( k, str(v).replace('\n',' ')  )
+        ss_text += 'calibration.parameters = {0};\n'.format(str(parameters_values).replace('\n',' '))
+        ss_text += sigma_calib
+
 
         var_text = "symbols = struct;\n"
         for vn, vg in model.symbols_s.iteritems():
@@ -103,14 +106,11 @@ class CompilerMatlab(object):
 
 function [model] = get_model()
 
-{ss_text}
 
 {var_text}
 
-calibration = struct;
-calibration.steady_state = steady_state;
-calibration.parameters = {params};
-{sigma_calib}
+{calib_text}
+
 
 {funs_text}
 
@@ -130,11 +130,8 @@ end
 '''.format(
             function_definitions = fun_text,
             funs_text = funs_text,
-            ss_text = ss_text,
-            sigma_calib = sigma_calib,
+            calib_text = ss_text,
             var_text = var_text,
-            params = str(parameters_values).replace('\n',' ')
-
         )
 
         return full_text
@@ -143,16 +140,16 @@ if __name__ == '__main__':
 
     from dolo import *
 
-    model = yaml_import('examples/global_models/rbc.yaml')
+    model = yaml_import('examples/global_models/rbc.yaml', compiler=None)
     comp = CompilerMatlab(model)
 
-    print  comp.process_output()
+    print  comp.process_output(diff=True)
 
     print("******10")
     print("******10")
     print("******10")
 
-    model = yaml_import('examples/global_models/optimal_growth.yaml')
+    model = yaml_import('examples/global_models/optimal_growth.yaml', compiler=None)
     comp = CompilerMatlab(model)
 
     print  comp.process_output()

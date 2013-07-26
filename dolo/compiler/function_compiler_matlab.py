@@ -12,12 +12,6 @@ libraries for efficient vectorization: `numpy <http://numpy.scipy.org/>`_, `nume
 
 from __future__ import division
 
-from dolo.symbolic.derivatives import DerivativesTree
-from dolo.compiler.common import DicPrinter
-from dolo.symbolic.symbolic import TSymbol
-
-DerivativesTree.symbol_type = TSymbol
-
 
 def compile_multiargument_function(equations, args_list, args_names, parms, diff=False, fname='anonymous_function'):
     """
@@ -25,14 +19,12 @@ def compile_multiargument_function(equations, args_list, args_names, parms, diff
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
     :param args_names: list of strings (['a','b']
     :param parms: list of symbols to be used as parameters
-    :param fname: name of the python function to be generated
-    :param diff: include symbolic derivates in generated function
+    :param fname: name of the function to be generated
+    :param diff: include symbolic derivatives in generated function
     :param vectorize: arguments are vectorized (not parameters)
-    :param return_function: the source of a Julia function f(a,b,p) where p is a vector of parameters and a, b, arrays
+    :param return_function: the source of a Matlab function f(a,b,p) where p is a vector of parameters and a, b, arrays
     :return:
     """
-
-    vectorize = True
 
     template = '{0}(:,{1})'
 
@@ -51,7 +43,14 @@ def compile_multiargument_function(equations, args_list, args_names, parms, diff
 
 
     text = '''
-function [{return_names}] = {fname}({args_names}, {param_names})
+function [{return_names}] = {fname}({args_names}, {param_names}, output)
+
+    if nargin <= {nargs}
+        output = zeros({nargs},1);
+        for i = 1:nargout
+            output(i) = 1;
+        end
+    end
 
     n = size({var},1);
 
@@ -71,12 +70,13 @@ end
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
-        eq_block = '    {lhs} = zeros( n,{0},{1} );\n'.format(len(eq_l),len(v_l),lhs=lhs)
+        eq_block = '        {lhs} = zeros( n,{0},{1} );\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
             for j,eq in enumerate(eqq):
                 s = dp.doprint_matlab( eq, vectorize=True )
-                eq_block += '    {lhs}(:,{0},{1}) = {2};\n'.format(i+1,j+1,s,lhs=lhs)
+                if s != "0":
+                    eq_block += '        {lhs}(:,{0},{1}) = {2};\n'.format(i+1,j+1,s,lhs=lhs)
         return eq_block
 
     content = write_eqs(equations)
@@ -89,13 +89,18 @@ end
 
     if diff:
         for i,a_g in enumerate(args_list):
-            lhs = 'val_' + args_names[i]
             content += "\n    % Derivatives w.r.t: {0}\n\n".format(args_names[i])
+            lhs = 'val_' + args_names[i]
+            content += '    if output[{}]==1\n'.format(i+2)
             content += write_der_eqs(equations, a_g, lhs)
+            content += '    else\n'
+            content += '        val_{} = [];\n'.format(args_names[i])
+            content += '    end;\n'
 
     return_names = str.join(', ', ['val'] + [ 'val_'+ str(a) for a in args_names] ) if diff else 'val'
     text = text.format(
             fname = fname,
+            nargs = len(args_names)+1,
             var = args_names[0],
             content = content,
             return_names = return_names,
@@ -165,19 +170,6 @@ if __name__ == '__main__':
     pprint(ordered_eqs)
 
 
-    import numpy
-
-    floatX = numpy.float32
-    s0 = numpy.array( [2,5], dtype=floatX)
-    x0 = numpy.array( [2,2], dtype=floatX)
-    p0 = numpy.array( [4,3], dtype=floatX)
-
-    N = 2000
-    s1 = numpy.column_stack( [s0]*N )
-    x1 = numpy.column_stack( [x0]*N )
-    p1 = numpy.array( [4,3, 6, 7], dtype=floatX )
-
-
 
     #    f = create_fun()
     #
@@ -190,6 +182,9 @@ if __name__ == '__main__':
     vals = [sympy.sympify(solution[v]) for v in ordered_vars]
 
 
-    output = compile_multiargument_function( vals, args_list, args_names, parms, diff=True )
+    output = compile_multiargument_function( vals, args_list, args_names, parms, diff=True, fname='test' )
 
     print(output)
+
+    with file('test.m','w') as f:
+        f.write(output)
