@@ -41,10 +41,6 @@ Imports the content of a modfile into the current interpreter scope
     context = dict(context)
 
     from dolo.symbolic.symbolic import timeshift as TS
-    context['TS'] = TS
-    if 'horrible_hack' in raw_dict:
-        tt = raw_dict['horrible_hack']
-        exec(raw_dict['horrible_hack'],context)
 
 
     # add some common functions
@@ -55,6 +51,12 @@ Imports the content of a modfile into the current interpreter scope
               sympy.pi, sympy.sign]:
         context[str(f)] = f
     context['sqrt'] = sympy.sqrt
+
+    context['TS'] = TS
+    if 'horrible_hack' in raw_dict:
+        tt = raw_dict['horrible_hack']
+        exec(tt, context)
+
 
     import re
     # we recognize two kinds of equations:
