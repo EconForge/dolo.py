@@ -1,3 +1,5 @@
+from dolo.misc.caching import memoized
+
 
 class GModel(object):
 
@@ -62,6 +64,18 @@ class GModel(object):
         model = self.model
         parms = model.symbols_s['parameters']
 
+        if compiler == 'numexpr':
+            from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
+        elif compiler == 'theano':
+            from dolo.compiler.function_compiler_theano import compile_multiargument_function
+        elif compiler == 'numba':
+            from dolo.compiler.function_compiler_numba import compile_multiargument_function
+        elif compiler == 'numba_gpu':
+            from dolo.compiler.function_compiler_numba_gpu import compile_multiargument_function
+        else:
+            from dolo.compiler.function_compiler import compile_multiargument_function
+
+
         functions = {}
 
         for eqg in self.model.equations_groups:
@@ -95,16 +109,6 @@ class GModel(object):
             else:
                 equations = [eq.gap for eq in equations]
 
-            if compiler == 'numexpr':
-                from dolo.compiler.function_compiler_numexpr import compile_multiargument_function
-            elif compiler == 'theano':
-                from dolo.compiler.function_compiler_theano import compile_multiargument_function
-            elif compiler == 'numba':
-                from dolo.compiler.function_compiler_numba import compile_multiargument_function
-            elif compiler == 'numba_gpu':
-                from dolo.compiler.function_compiler_numba_gpu import compile_multiargument_function
-            else:
-                from dolo.compiler.function_compiler import compile_multiargument_function
 
             functions[eqg] = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg, order=order)
 
@@ -162,6 +166,22 @@ class GModel(object):
 
         ind = self.symbols[group].index(name)
         return self.calibration[group][ind]
+
+    @property
+    @memoized
+    def x_bounds(self):
+
+        model = self.model
+
+        states = model.symbols_s['states']
+        parameters = model.parameters
+        from dolo.compiler.function_compiler import compile_multiargument_function
+
+        [lower_bounds_symbolic, upper_bounds_symbolic] = self.model.get_complementarities()['arbitrage']
+        lb = compile_multiargument_function( lower_bounds_symbolic, [states], ['s'], parameters, fname='lb')
+        ub = compile_multiargument_function( upper_bounds_symbolic, [states], ['s'], parameters, fname='ub' )
+
+        return [lb,ub]
 
 
 if __name__ == '__main__':

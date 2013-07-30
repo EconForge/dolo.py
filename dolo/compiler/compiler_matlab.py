@@ -69,6 +69,20 @@ class CompilerMatlab(object):
 
             fun_text += txt
 
+            try:
+                [lb_sym, ub_sym] = model.get_complementarities()['arbitrage']
+                print(lb_sym)
+
+                states = model.symbols_s['states']
+                parameters = model.symbols_s['parameters']
+
+                txt_lb = compile_multiargument_function(lb_sym, [states], ['s'], parameters, fname = 'arbitrage_lb', diff=diff)
+                txt_ub = compile_multiargument_function(ub_sym, [states], ['s'], parameters, fname = 'arbitrage_ub', diff=diff)
+
+                there_are_complementarities = True
+            except Exception as e:
+                there_are_complementarities = False
+                print(e)
 
         # the following part only makes sense for fga models
 
@@ -102,6 +116,17 @@ class CompilerMatlab(object):
         for vn, vg in model.symbols_s.iteritems():
             var_text += 'symbols.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
 
+        if there_are_complementarities:
+            complementarities_text = """
+complementarities = struct;
+complementarities.arbitrage = {@arbitrage_lb, @arbitrage_ub};
+model.complementarities = complementarities;
+            """
+
+            fun_text += txt_lb
+            fun_text += txt_ub
+
+
         full_text = '''
 
 function [model] = get_model()
@@ -119,10 +144,10 @@ model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
 
+{complementarities_text}
+
+
 end
-
-
-
 
 
 {function_definitions}
@@ -130,11 +155,13 @@ end
 '''.format(
             function_definitions = fun_text,
             funs_text = funs_text,
+            complementarities_text = complementarities_text,
             calib_text = ss_text,
             var_text = var_text,
         )
 
         return full_text
+
 
 if __name__ == '__main__':
 
@@ -145,14 +172,14 @@ if __name__ == '__main__':
 
     print  comp.process_output(diff=True)
 
-    print("******10")
-    print("******10")
-    print("******10")
-
-    model = yaml_import('examples/global_models/optimal_growth.yaml', compiler=None)
-    comp = CompilerMatlab(model)
-
-    print  comp.process_output()
+    # print("******10")
+    # print("******10")
+    # print("******10")
+    #
+    # model = yaml_import('examples/global_models/optimal_growth.yaml', compiler=None)
+    # comp = CompilerMatlab(model)
+    #
+    # print  comp.process_output()
 
 
 
