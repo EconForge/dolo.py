@@ -73,8 +73,8 @@ def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, se
         return sol
 
 
-def MyJacobian(fun):
-    eps = 1e-10
+def MyJacobian(fun, eps=1e-6):
+
     def rfun(x):
         n = len(x)
         x0 = x.copy()

@@ -1,66 +1,91 @@
 from numpy import column_stack
 import numpy
-from numpy import linalg
+from numpy import linalg, linspace, zeros
 
-big_number = 1e5
+def find_steady_state(model, e):
+    s0 = model.calibration['states']
+    x0 = model.calibration['controls']
+    p = model.calibration['parameters']
+    z = numpy.concatenate([s0, x0])
+    def fobj(z):
+        s = numpy.atleast_2d( z[:len(s0)] ).T
+        x = numpy.atleast_2d( z[len(s0):] ).T
+
+        a = model.functions['auxiliary'](s,x,p)
+        S = model.functions['transition'](s,x,a,e,p)
+        r = model.functions['arbitrage'](s,x,a,s,x,a,p)
+        return numpy.concatenate([S-s, r])
+    from dolo.numeric.solver import solver
+    steady_state = solver(fobj, z)
+    return [steady_state[:len(s0)], steady_state[len(s0):]]
 
 
-def deterministic_solve(model, start_s, T=500):
+def deterministic_solve(model, shocks, start_s=None, initial_dr=None, T=500, use_pandas=False):
 
-    # simulation is assumed to return to steady-state
+    # definitions
+    n_s = len(model.calibration['states'])
+    n_x = len(model.calibration['controls'])
 
-    dr = approximate_controls(model, order=1,   )
 
-    final_s = model.calibration['states'].copy()
-    final_x = model.calibration['controls'].copy()
-    start_x = dr( numpy.atleast_2d( start_s.ravel()).T ).flatten()
+    # until last period, exogenous shock takes its last value
+    epsilons = numpy.zeros( (shocks.shape[0], T))
+    epsilons[:,:shocks.shape[1]] = shocks
+    epsilons[:,shocks.shape[1:]] = shocks[:,-1:]
 
-    final = numpy.concatenate( [final_s, final_x])
-    start = numpy.concatenate( [start_s, start_x])
+    # final initial and final steady-states consistent with exogenous shocks
+    start = find_steady_state( model, numpy.atleast_2d(epsilons[:,0:1]))
+    final = find_steady_state( model, numpy.atleast_2d(epsilons[:,-1:]))
 
-    print(final)
-    print(start)
+    start_s = start[0]
+    final_x = final[1]
 
-    n_s = len(final_s)
-    n_x = len(final_x)
+    final = numpy.concatenate( final )
+    start = numpy.concatenate( start )
+
+    p = model.calibration['parameters']
+
 
     initial_guess = numpy.concatenate( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
-
     initial_guess = initial_guess.reshape( (-1, n_s + n_x)).T
 
-    # initial_guess = initial_guess[n_s:-n_x]
-
-
-
-    res = det_residual(model, initial_guess, start_s, final_x)
-
-    print(abs(res).max())
-
     sh = initial_guess.shape
 
+    initial_states = initial_guess[:n_s,:]
+    [lb, ub] = [ u( initial_states, p ) for u in model.x_bounds]
 
-    sh = initial_guess.shape
+    lower_bound = initial_guess*0 - numpy.inf
+    lower_bound[n_s:,:] = lb
 
-    fobj = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x).ravel()
+    upper_bound = initial_guess*0 + numpy.inf
+    upper_bound[n_s:,:] = ub
 
-    res = fobj( initial_guess.ravel() )
-    from scipy.optimize import newton_krylov, fsolve
+    nn = sh[0]*sh[1]
+
+    fobj  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[0].ravel()
+    dfobj = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[1].reshape((nn,nn))
 
     import time
     t = time.time()
-    sol = fsolve(fobj, initial_guess.ravel() )
-    sol = sol.reshape(sh)
 
-    print(fobj(sol))
-    # sol = newton_krylov(fobj, initial_guess)
+    from dolo.numeric.solver import solver
+
+    sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False )
+    # sol = solver(fobj, initial_guess, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=True )
+    # sol = solver(fobj, initial_guess, serial_problem=False, verbose=True )
+
 
     s = time.time()
     print('Elapsed : {}'.format(s-t))
 
+    if use_pandas:
+        import pandas
+        colnames = model.symbols['states'] + model.symbols['controls']
+        ts = pandas.DataFrame(sol.T, columns=colnames)
+        return ts
     return sol
 
 
-def det_residual(model, guess, start, final):
+def det_residual(model, guess, start, final, shocks):
 
     n_s = len( model.symbols['states'] )
     n_x = len( model.symbols['controls'] )
@@ -87,165 +112,56 @@ def det_residual(model, guess, start, final):
     S = vec_f[:n_s,:]
     X = vec_f[n_s:,:]
 
-    y = a(s,x,p)
-    Y = a(S,X,p)
+    y, y_s, y_x = a(s,x,p, derivs=True)
+    Y, Y_S, Y_X = a(S,X,p, derivs=True)
 
-    res_s = S - g(s,x,y,ee,p)
-    res_x = f(s,x,y,S,X,Y,p)
+    SS, SS_s, SS_x, SS_y, SS_e = g(s,x,y,shocks,p, derivs=True)
+    R, R_s, R_x, R_y, R_S, R_X, R_Y = f(s,x,y,S,X,Y,p,derivs=True)
+
+    res_s = SS - S
+    res_x = R
+
 
     res = numpy.zeros( (n_s+n_x, N) )
 
     res[:n_s,1:] = res_s
     res[n_s:,:-1] = res_x
 
-    res[:n_s,0] = guess[:n_s,0] - start_s
-    res[n_s:,-1] = guess[n_s:,-1] - final_x
-
-    return res
+    res[:n_s,0] = - (guess[:n_s,0] - start)
+    res[n_s:,-1] = - (guess[n_s:,-1] - final)
 
 
-def deterministic_solve_comp(model, start_s, T=10):
+    from dolo.numeric.serial_operations import serial_multiplication as smult
 
-    # simulation is assumed to return to steady-state
+    from numpy import concatenate
 
-    dr = approximate_controls(model, order=1,   )
+    res_s_s = SS_s + smult(SS_y, y_s)
+    res_s_x = SS_x + smult(SS_y, y_x)
+    # res_s_S = numpy.zeros( (n_s,n_s,N-1) ) - numpy.eye(n_s)[:,:,None]
+    # res_s_X = numpy.zeros( (n_s,n_x,N-1) )
 
-    final_s = model.calibration['states'].copy()
-    final_x = model.calibration['controls'].copy()
-    start_x = dr( numpy.atleast_2d( start_s.ravel()).T ).flatten()
+    F_s = R_s + smult(R_y, y_s)
+    F_x = R_x + smult(R_y, y_x)
+    F_S = R_S + smult(R_Y, Y_S)
+    F_X = R_X + smult(R_Y, Y_X)
 
-    final = numpy.concatenate( [final_s, final_x])
-    start = numpy.concatenate( [start_s, start_x])
+    jac = numpy.zeros( (n_s+n_x, N, n_s+n_x, N) )
 
-    print(final)
-    print(start)
+    for i in range(N-1):
+        jac[n_s:,i,:n_s,i] = F_s[:,:,i]
+        jac[n_s:,i,n_s:,i] = F_x[:,:,i]
+        jac[n_s:,i,:n_s,i+1] = F_S[:,:,i]
+        jac[n_s:,i,n_s:,i+1] = F_X[:,:,i]
 
-    n_s = len(final_s)
-    n_x = len(final_x)
+        jac[:n_s,i+1,:n_s,i] = res_s_s[:,:,i]
+        jac[:n_s,i+1,n_s:,i] = res_s_x[:,:,i]
+        jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
 
-    initial_guess = numpy.concatenate( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
+    jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
+    jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)
 
-    initial_guess = initial_guess.reshape( (-1, n_s + n_x)).T
-    N = initial_guess.shape[1]
+    return [res,jac]
 
-    initial_guess = numpy.row_stack( [initial_guess, numpy.zeros( (n_x, N) ), numpy.zeros( (n_x, N) )] )
-
-    # initial_guess = initial_guess[n_s:-n_x]
-
-    lower_bound = initial_guess*0
-    lower_bound[:n_s+n_x,:] = -big_number
-    lower_bound[:,-1] = -big_number
-
-    upper_bound = lower_bound*0 + big_number
-
-    print( sum( (upper_bound - initial_guess)<=0 ) )
-    print( sum( (lower_bound - initial_guess)>0 ) )
-
-
-    res = det_residual_comp(model, initial_guess, start_s, final_x)
-
-    print(abs(res).max())
-
-    sh = initial_guess.shape
-
-    fobj = lambda vec: det_residual_comp(model, vec, start_s, final_x)
-    fobj = lambda vec: det_residual_comp(model, vec.reshape(sh), start_s, final_x).ravel()
-
-    from dolo.numeric.solver import MyJacobian
-    #
-    dres = MyJacobian(fobj)(initial_guess.ravel())
-    #
-    # print(dres.shape)
-    # print(numpy.linalg.matrix_rank(dres))
-
-    f = lambda x: [fobj(x), MyJacobian(fobj)(x)]
-
-    import time
-    t = time.time()
-
-    initial_guess = initial_guess.ravel()
-    lower_bound = lower_bound.ravel()
-    upper_bound = upper_bound.ravel()
-
-    from dolo.numeric.ncpsolve import ncpsolve
-    sol = ncpsolve( f, lower_bound, upper_bound, initial_guess, verbose=True)
-    # from dolo.numeric.solver import solver
-    # sol = solver(fobj, initial_guess, lb=lower_bound, ub=upper_bound, serial_problem=False, method='ncpsolve', verbose=True)
-
-    print(sol.shape)
-
-    s = time.time()
-    print('Elapsed : {}'.format(s-t))
-
-    return sol[:n_s+n_x,:]
-
-
-def det_residual_comp(model, guess, start, final):
-
-    n_s = len( model.symbols['states'] )
-    n_x = len( model.symbols['controls'] )
-
-    n_e = len( model.symbols['shocks'] )
-    N = guess.shape[1]
-
-    ee = zeros((n_e,1))
-
-    p = model.calibration['parameters']
-
-    f = model.functions['arbitrage']
-    g = model.functions['transition']
-    a = model.functions['auxiliary']
-
-    [lb,ub] = model.x_bounds
-
-
-    # guess = numpy.concatenate( [start, guess, final] )
-    # guess = guess.reshape( (-1, n_s+n_x) ).T
-
-    n_v = n_s + n_x
-
-    v = guess[n_v:n_v+n_x,:-1]
-    w = guess[n_v+n_x:,:-1]
-
-    vec = guess[:n_v,:-1]
-    vec_f = guess[:n_v,1:]
-
-    s = vec[:n_s,:]
-    x = vec[n_s:,:]
-    S = vec_f[:n_s,:]
-    X = vec_f[n_s:,:]
-
-    y = a(s,x,p)
-    Y = a(S,X,p)
-
-    res_s = S - g(s,x,y,ee,p)
-    res_x = ( f(s,x,y,S,X,Y,p) - v + w )
-
-    lbv = lb(s,p)
-    ubv = ub(s,p)
-
-    lbv[numpy.isinf(lbv)] = -big_number
-    ubv[numpy.isinf(ubv)] = big_number
-
-    comp1 = x - lbv
-    comp2 = ubv - x
-
-
-    res = numpy.zeros( (n_s+n_x*3, N) )
-
-    res[:n_s,1:] = res_s
-    res[n_s:n_s+n_x,:-1] = res_x
-    res[n_s+n_x:n_s+2*n_x,:-1] = comp1
-    res[n_s+2*n_x:,:-1] = comp2
-
-
-    res[:n_s,0] = vec[:n_s,0] - start_s                     # initial condition
-    res[n_s:n_s+n_x,-1] = vec_f[n_s:n_s+n_x,-1] - final_x   # terminal condition
-    
-    res[n_s+n_x:n_s+2*n_x,-1] = guess[n_s+n_x:n_s+2*n_x,-1]
-    res[n_s+2*n_x:,-1] = guess[n_s+2*n_x:,-1]
-
-    return res
 
 if __name__ == '__main__':
 
@@ -253,23 +169,16 @@ if __name__ == '__main__':
 
     from pylab import *
 
-    model = yaml_import('examples/global_models/rbc.yaml')
+    model = yaml_import('examples/global_models/rbc_pf.yaml')
 
-    final_x = model.calibration['controls'].copy()
-    start_s = model.calibration['states'].copy()
-    # start_s[0] = 0.5
-    start_s[1] *= 0.5
-    # print(start_s)
+    e_z = atleast_2d( linspace(0.1, 0.0, 10) )
 
-    sol = deterministic_solve(model, start_s,T=20)
+    sol = deterministic_solve(model, shocks=e_z, T=100, use_pandas=True)
 
     from pylab import *
-    subplot(211)
-    plot(sol[1,:], label='k')
-    subplot(212)
-    plot(sol[3,:], label='i')
-    # plot(sol[1,:]*0.1, label='0.1 k', linestyle='--')
-    plot(sol[3,:]*0+0.34, label='i', linestyle='--')
+
+    plot(sol['k'], label='k')
+    plot(sol['z'], label='z')
     legend()
     show()
 
