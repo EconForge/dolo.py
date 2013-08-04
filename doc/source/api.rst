@@ -17,3 +17,5 @@ Advanced topics
     conventions
 
     perturbations
+
+    routines
