@@ -1,3 +1,5 @@
+model_type: fgah
+
 declarations:
 
    states:  [z, k]

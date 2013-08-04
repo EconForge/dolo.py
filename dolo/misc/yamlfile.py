@@ -148,8 +148,15 @@ Imports the content of a modfile into the current interpreter scope
 
     return model
 
-def yaml_import(filename,verbose=False, compiler='numpy', **kwargs):
+def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwargs):
     '''Imports model defined in specified file'''
+
+    import yaml
+    if recipes is not None:
+        with open(recipes) as f:
+            recipes_d = yaml.load(f)
+
+
     import os
     basename = os.path.basename(filename)
     fname = re.compile('(.*)\.yaml').match(basename).group(1)
@@ -161,6 +168,6 @@ def yaml_import(filename,verbose=False, compiler='numpy', **kwargs):
 
     if compiler is not None and model.__data__.get('model_type') != 'dynare':
         from dolo.compiler.compiler_python import GModel
-        model = GModel(model, compiler=compiler, **kwargs)
+        model = GModel(model, recipes=recipes_d, compiler=compiler, **kwargs)
 
     return model
