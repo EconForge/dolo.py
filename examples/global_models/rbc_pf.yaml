@@ -1,3 +1,5 @@
+name: rbc_perfect_foresight
+
 model_type: fga
 
 declarations:
@@ -13,7 +15,7 @@ declarations:
 equations:
 
    arbitrage:
-      - beta*(c/c(1))^(sigma)*(1-delta+rk(1)) - 1   | -inf <= i <= inf #k*(0.025+0.01)
+      - beta*(c/c(1))^(sigma)*(1-delta+rk(1)) - 1   | -inf <= i <= 0.2
       - w - chi*n^eta*c^sigma                       |  -inf <= n <= inf
 
    transition:
