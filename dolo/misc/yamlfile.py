@@ -155,7 +155,8 @@ def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwarg
     if recipes is not None:
         with open(recipes) as f:
             recipes_d = yaml.load(f)
-
+    else:
+        recipes_d=None
 
     import os
     basename = os.path.basename(filename)

@@ -98,7 +98,7 @@ def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraint
         colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliary']
         # compute auxiliaries
         y = model.functions['auxiliary'](sol[:n_s,:], sol[n_s:,:], p)
-        sol = row_stack([sol,y])
+        sol = numpy.row_stack([sol,y])
         ts = pandas.DataFrame(sol.T, columns=colnames)
         return ts
     else:
@@ -162,7 +162,7 @@ def det_residual(model, guess, start, final, shocks, diff=True):
     res[n_s:,:-1] = res_x
 
     res[:n_s,0] = - (guess[:n_s,0] - start)
-    res[n_s:,-1] = - (guess[n_s:,-1] - final)
+    res[n_s:, -1] = - (guess[n_s:, -1] - guess[n_s:, -2] )
 
     if not diff:
         return res
@@ -191,6 +191,7 @@ def det_residual(model, guess, start, final, shocks, diff=True):
             jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
         jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
         jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)
+        jac[n_s:,-1,n_s:,-2] = + numpy.eye(n_x)
 
         return [res,jac]
 
@@ -218,13 +219,14 @@ if __name__ == '__main__':
     plot(sol1['k'], label='k')
     plot(sol1['z'], label='z')
     plot(sol1['i'], label='i')
+    plot(sol1['b'], label='b')
 
     subplot(212)
     plot(sol2['k'], label='k')
     plot(sol2['z'], label='z')
     plot(sol2['i'], label='i')
     plot(sol2['i']*0 + sol2['i'].max(), linestyle='--', color='black')
-
+    plot(sol2['b'], label='b')
 
     legend()
     show()
