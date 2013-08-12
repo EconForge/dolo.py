@@ -1,7 +1,7 @@
 import numpy
 from numpy import linspace, zeros
 
-def find_steady_state(model, e):
+def find_steady_state(model, e, force_values=None):
     '''
     Finds the steady state corresponding to exogenous shocks e
     :param model: an "fga" model
@@ -16,11 +16,18 @@ def find_steady_state(model, e):
 
     e = numpy.atleast_2d(e.ravel()).T
 
+    if force_values is not None:
+        inds =  numpy.where( numpy.isfinite( force_values ) )[0]
+        print(inds)
+        vals = force_values[inds]
+
     def fobj(z):
         s = numpy.atleast_2d( z[:len(s0)] ).T
         x = numpy.atleast_2d( z[len(s0):] ).T
         a = model.functions['auxiliary'](s,x,p)
         S = model.functions['transition'](s,x,a,e,p)
+        if force_values is not None:
+            S[inds] = vals
         r = model.functions['arbitrage'](s,x,a,s,x,a,p)
         return numpy.concatenate([S-s, r])
 
@@ -29,7 +36,7 @@ def find_steady_state(model, e):
 
     return [steady_state[:len(s0)], steady_state[len(s0):]]
 
-def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraints=False):
+def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_constraints=False, start_s=None, verbose=False):
     '''
     Computes a perfect foresight simulation.
     :param model: an "fga" model
@@ -49,6 +56,8 @@ def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraint
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
 
+    if shocks == None:
+        shocks = numpy.zeros( (len(model.calibration['shocks']),1))
 
     # until last period, exogenous shock takes its last value
     epsilons = numpy.zeros( (shocks.shape[0], T))
@@ -56,11 +65,13 @@ def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraint
     epsilons[:,shocks.shape[1:]] = shocks[:,-1:]
 
     # final initial and final steady-states consistent with exogenous shocks
-    start = find_steady_state( model, numpy.atleast_2d(epsilons[:,0:1]))
+    start = find_steady_state( model, numpy.atleast_2d(epsilons[:,0:1]), force_values=start_s)
     final = find_steady_state( model, numpy.atleast_2d(epsilons[:,-1:]))
 
     start_s = start[0]
     final_x = final[1]
+
+    print(start_s)
 
     final = numpy.concatenate( final )
     start = numpy.concatenate( start )
@@ -72,14 +83,18 @@ def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraint
 
     sh = initial_guess.shape
 
-    initial_states = initial_guess[:n_s,:]
-    [lb, ub] = [ u( initial_states, p ) for u in model.x_bounds]
+    if model.x_bounds and not ignore_constraints:
+        initial_states = initial_guess[:n_s,:]
+        [lb, ub] = [ u( initial_states, p ) for u in model.x_bounds]
+        lower_bound = initial_guess*0 - numpy.inf
+        lower_bound[n_s:,:] = lb
+        upper_bound = initial_guess*0 + numpy.inf
+        upper_bound[n_s:,:] = ub
+    else:
+        ignore_constraints=True
+        lower_bound = None
+        upper_bound = None
 
-    lower_bound = initial_guess*0 - numpy.inf
-    lower_bound[n_s:,:] = lb
-
-    upper_bound = initial_guess*0 + numpy.inf
-    upper_bound[n_s:,:] = ub
 
     nn = sh[0]*sh[1]
 
@@ -89,7 +104,7 @@ def deterministic_solve(model, shocks, T=100, use_pandas=True, ignore_constraint
     from dolo.numeric.solver import solver
 
     if not ignore_constraints:
-        sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False )
+        sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
     else:
         sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False )
 
@@ -210,7 +225,12 @@ if __name__ == '__main__':
 
     e_z = atleast_2d( linspace(0.1, 0.0, 10) )
 
-    sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=True)
+    start_s = numpy.zeros(2) * numpy.nan
+    start_s[0] = 1.5
+
+    sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
+
+    sol1 = deterministic_solve(model, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
     sol2 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=False)
     from pylab import *
@@ -219,14 +239,13 @@ if __name__ == '__main__':
     plot(sol1['k'], label='k')
     plot(sol1['z'], label='z')
     plot(sol1['i'], label='i')
-    plot(sol1['b'], label='b')
+
 
     subplot(212)
     plot(sol2['k'], label='k')
     plot(sol2['z'], label='z')
     plot(sol2['i'], label='i')
     plot(sol2['i']*0 + sol2['i'].max(), linestyle='--', color='black')
-    plot(sol2['b'], label='b')
 
     legend()
     show()
