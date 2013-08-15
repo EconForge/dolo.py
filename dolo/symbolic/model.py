@@ -185,6 +185,33 @@ class SModel:
     def predetermined_variables(self):
         return [v for v in self.variables if v(-1) in self.dyn_var_order ]
 
+    def get_complementarities(self):
+
+        # TODO: currently this works for "arbitrage" equations associated to "controls"
+
+        import re
+        regex = re.compile('(.*)<=(.*)<=(.*)')
+
+
+        model = self
+
+        complementarities_tags = [eq.tags.get('complementarity') for eq in model.equations_groups['arbitrage']]
+
+        parsed  = [ [model.eval_string(e) for e in regex.match(s).groups()] for s in complementarities_tags]
+        lower_bounds_symbolic = [p[0] for p in parsed]
+        controls = [p[1] for p in parsed]
+        upper_bounds_symbolic = [p[2] for p in parsed]
+        try:
+            controls == model.symbols_s['controls']
+        except:
+            raise Exception("Order of complementarities does not match order of declaration of controls.")
+
+        complementarities = dict()
+        complementarities['arbitrage'] = [lower_bounds_symbolic, upper_bounds_symbolic]
+
+        return complementarities
+
+
 
 def iteritems(d):
     return zip(d.keys(), d.values())
