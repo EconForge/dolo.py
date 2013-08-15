@@ -55,9 +55,8 @@ function [{return_names}] = {fname}({args_names}, {param_names}, output)
     n = size({var},1);
 
 {content}
-
 end
-    '''
+'''
 
     from dolo.compiler.common import DicPrinter
 
@@ -92,7 +91,7 @@ end
         for i,a_g in enumerate(args_list):
             content += "\n    % Derivatives w.r.t: {0}\n\n".format(args_names[i])
             lhs = 'val_' + args_names[i]
-            content += '    if output[{}]==1\n'.format(i+2)
+            content += '    if output({})\n'.format(i+2)
             content += write_der_eqs(equations, a_g, lhs)
             content += '    else\n'
             content += '        val_{} = [];\n'.format(args_names[i])

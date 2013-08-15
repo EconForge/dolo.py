@@ -24,10 +24,10 @@ class CompilerMatlab(object):
     def process_output(self, recipe=None, diff=False):
 
         recipe = self.recipe
-
+        
         model = self.model
         parms = model.symbols_s['parameters']
-
+        print(model.name)
 
         fun_text = ''
         incidenceMatrices_text = ''
@@ -131,27 +131,20 @@ model.complementarities = complementarities;
             fun_text += txt_ub
 
 
-        full_text = '''function model = get_model()
+        full_text = '''function model = {model_name}()
 
 {var_text}
-
 {calib_text}
-
 {funs_text}
-
 model = struct;
 model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
 {incidenceMatrices_text}
 {complementarities_text}
-
 end
-
-
-{function_definitions}
-
-'''.format(
+{function_definitions}'''.format(
+            model_name = model.name,
             function_definitions = fun_text,
             funs_text = funs_text,
             incidenceMatrices_text = incidenceMatrices_text,
