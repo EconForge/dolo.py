@@ -121,6 +121,7 @@ def compile_incidence_matrices(equations, args_list):
     for i,a_g in enumerate(args_list):
         text += list_to_mat(JacobianStructure(equations,a_g)) + ' '
     text += '};'
+    return text
 
 def code_to_function(text, name):
     d = {}
