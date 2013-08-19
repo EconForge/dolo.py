@@ -27,7 +27,6 @@ class CompilerMatlab(object):
         
         model = self.model
         parms = model.symbols_s['parameters']
-        print(model.name)
 
         fun_text = ''
         incidenceMatrices_text = ''

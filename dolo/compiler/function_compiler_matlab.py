@@ -116,9 +116,10 @@ end
 
 def compile_incidence_matrices(equations, args_list):
     '''Calculate the incidence matrices of a system of equations with respect to several sets of variables and convert it to MATLAB cell array'''
+    from dolo.misc.matlab import value_to_mat
     text = '''{'''
     for i,a_g in enumerate(args_list):
-        text += list_to_mat(JacobianStructure(equations,a_g)) + ' '
+        text += value_to_mat(JacobianStructure(equations,a_g)).replace('[[','[').replace(']]',']') + ' '
     text += '};'
     return text
 
@@ -140,22 +141,14 @@ def eqdiff(leq,lvars):
 
 def JacobianStructure(leq,lvars):
     '''Calculate the incidence matrix of a system of equations with respect to one set of variables'''
-    jac_struc = [[0 for i in range(len(leq))] for j in range(len(lvars))]
+    from numpy import array
+    jac_struc = array([[0 for i in range(len(leq))] for j in range(len(lvars))])
     for i in range(len(leq)):
         for j in range(len(lvars)):
             if leq[i].diff(lvars[j]) != 0:
                 jac_struc[j][i] = 1
+    jac_struc = jac_struc.T
     return jac_struc
-
-def list_to_mat(l):
-    '''Transform a Python list to a MATLAB matrix'''
-    mat = str(l)
-    mat = mat.replace('[[','[')
-    mat = mat.replace(']]',']')
-    mat = mat.replace('],',';')
-    mat = mat.replace(' [',' ')
-    mat = mat.replace(',','')
-    return mat
 
 
 if __name__ == '__main__':
