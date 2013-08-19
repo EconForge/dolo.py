@@ -24,12 +24,12 @@ class CompilerMatlab(object):
     def process_output(self, recipe=None, diff=False):
 
         recipe = self.recipe
-
+        
         model = self.model
         parms = model.symbols_s['parameters']
 
-
         fun_text = ''
+        incidenceMatrices_text = ''
 
         for eqg in self.model.equations_groups:
 
@@ -69,9 +69,12 @@ class CompilerMatlab(object):
 
             fun_text += txt
 
+            from dolo.compiler.function_compiler_matlab import compile_incidence_matrices
+            txt = compile_incidence_matrices(equations, args)
+            incidenceMatrices_text += 'model.infos.incidence_matrix.' + eqg + ' = ' + txt + '\n'
+
             try:
                 [lb_sym, ub_sym] = model.get_complementarities()['arbitrage']
-                print(lb_sym)
 
                 states = model.symbols_s['states']
                 parameters = model.symbols_s['parameters']
@@ -127,34 +130,23 @@ model.complementarities = complementarities;
             fun_text += txt_ub
 
 
-        full_text = '''
-
-function [model] = get_model()
-
+        full_text = '''function model = {model_name}()
 
 {var_text}
-
 {calib_text}
-
-
 {funs_text}
-
 model = struct;
 model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
-
+{incidenceMatrices_text}
 {complementarities_text}
-
-
 end
-
-
-{function_definitions}
-
-'''.format(
+{function_definitions}'''.format(
+            model_name = model.name,
             function_definitions = fun_text,
             funs_text = funs_text,
+            incidenceMatrices_text = incidenceMatrices_text,
             complementarities_text = complementarities_text,
             calib_text = ss_text,
             var_text = var_text,
