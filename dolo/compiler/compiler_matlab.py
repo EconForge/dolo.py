@@ -29,7 +29,7 @@ class CompilerMatlab(object):
         parms = model.symbols_s['parameters']
 
         fun_text = ''
-        incidenceMatrices_text = ''
+        incidence_matrices_text = ''
 
         for eqg in self.model.equations_groups:
 
@@ -71,7 +71,7 @@ class CompilerMatlab(object):
 
             from dolo.compiler.function_compiler_matlab import compile_incidence_matrices
             txt = compile_incidence_matrices(equations, args)
-            incidenceMatrices_text += 'model.infos.incidence_matrix.' + eqg + ' = ' + txt + '\n'
+            incidence_matrices_text += 'model.infos.incidence_matrices.' + eqg + ' = ' + txt + '\n'
 
             try:
                 [lb_sym, ub_sym] = model.get_complementarities()['arbitrage']
@@ -120,10 +120,9 @@ class CompilerMatlab(object):
             var_text += 'symbols.{0} = {{{1}}};\n'.format(vn, str.join(',', ["'{}'".format(e ) for e in vg]))
 
         if there_are_complementarities:
-            complementarities_text = """
-complementarities = struct;
-complementarities.arbitrage = {@arbitrage_lb, @arbitrage_ub};
-model.complementarities = complementarities;
+            funs_text += """
+functions.arbitrage_lb = @arbitrage_lb;
+functions.arbitrage_ub = @arbitrage_ub;
             """
 
             fun_text += txt_lb
@@ -139,15 +138,14 @@ model = struct;
 model.symbols = symbols;
 model.functions = functions;
 model.calibration = calibration;
-{incidenceMatrices_text}
-{complementarities_text}
+{incidence_matrices_text}
 end
 {function_definitions}'''.format(
             model_name = model.name,
             function_definitions = fun_text,
             funs_text = funs_text,
-            incidenceMatrices_text = incidenceMatrices_text,
-            complementarities_text = complementarities_text,
+            incidence_matrices_text = incidence_matrices_text,
+
             calib_text = ss_text,
             var_text = var_text,
         )
