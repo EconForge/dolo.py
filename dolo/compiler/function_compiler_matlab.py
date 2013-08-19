@@ -55,9 +55,8 @@ function [{return_names}] = {fname}({args_names}, {param_names}, output)
     n = size({var},1);
 
 {content}
-
 end
-    '''
+'''
 
     from dolo.compiler.common import DicPrinter
 
@@ -70,6 +69,7 @@ end
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
+        '''Format Jacobians'''
         eq_block = '        {lhs} = zeros( n,{0},{1} );\n'.format(len(eq_l),len(v_l),lhs=lhs)
         eq_l_d = eqdiff(eq_l,v_l)
         for i,eqq in enumerate(eq_l_d):
@@ -91,7 +91,7 @@ end
         for i,a_g in enumerate(args_list):
             content += "\n    % Derivatives w.r.t: {0}\n\n".format(args_names[i])
             lhs = 'val_' + args_names[i]
-            content += '    if output[{}]==1\n'.format(i+2)
+            content += '    if output({})\n'.format(i+2)
             content += write_der_eqs(equations, a_g, lhs)
             content += '    else\n'
             content += '        val_{} = [];\n'.format(args_names[i])
@@ -114,6 +114,14 @@ end
 
     return text
 
+def compile_incidence_matrices(equations, args_list):
+    '''Calculate the incidence matrices of a system of equations with respect to several sets of variables and convert it to MATLAB cell array'''
+    from dolo.misc.matlab import value_to_mat
+    text = '''{'''
+    for i,a_g in enumerate(args_list):
+        text += value_to_mat(JacobianStructure(equations,a_g)).replace('[[','[').replace(']]',']') + ' '
+    text += '};'
+    return text
 
 def code_to_function(text, name):
     d = {}
@@ -123,13 +131,24 @@ def code_to_function(text, name):
 
 
 def eqdiff(leq,lvars):
+    '''Calculate the Jacobian of the system of equations with respect to a set of variables.'''
+    from sympy import powsimp
     resp = []
     for eq in leq:
-        el = [ eq.diff(v) for v in lvars]
+        el = [ powsimp(eq.diff(v)) for v in lvars]
         resp += [el]
     return resp
 
-
+def JacobianStructure(leq,lvars):
+    '''Calculate the incidence matrix of a system of equations with respect to one set of variables'''
+    from numpy import array
+    jac_struc = array([[0 for i in range(len(leq))] for j in range(len(lvars))])
+    for i in range(len(leq)):
+        for j in range(len(lvars)):
+            if leq[i].diff(lvars[j]) != 0:
+                jac_struc[j][i] = 1
+    jac_struc = jac_struc.T
+    return jac_struc
 
 
 if __name__ == '__main__':
