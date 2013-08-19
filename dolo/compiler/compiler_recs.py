@@ -266,9 +266,24 @@ end'''
                         jac_struc[i][j] = 1
             return [eq_block,jac_struc]
 
-        eq_bounds_block = write_eqs(inf_bounds, ntabs=2, default='-inf')
-        eq_bounds_block += '\n'
-        eq_bounds_block += write_eqs(sup_bounds, 'out2', ntabs=2, default='inf')
+        eq_bounds_block = '''
+    % b
+{0}
+
+    % db/ds
+    if nargout==4
+{1}
+{2}
+    end'''
+        eq_bounds_values = write_eqs(inf_bounds, ntabs=2, default='-inf')
+        eq_bounds_values += '\n'
+        eq_bounds_values += write_eqs(sup_bounds, 'out2', ntabs=2, default='inf')
+
+        eq_bounds_jac_inf = write_der_eqs(inf_bounds, states_vars, 'out3', 3)
+        eq_bounds_jac_sup = write_der_eqs(sup_bounds, states_vars, 'out4', 3)
+        eq_bounds_block = eq_bounds_block.format(eq_bounds_values,
+                                                 eq_bounds_jac_inf[0],
+                                                 eq_bounds_jac_sup[0])
 
         eq_f_block = '''
     % f
@@ -435,9 +450,10 @@ def list_to_mat(l):
     return mat
 
 if __name__ == "__main__":
-    from dolo import dynare_import
-    model = dynare_import('../../../examples/global_models/optimal_growth.mod')
-    model.check()
-    recscp = RecsCompiler(model)
-    print recscp.process_output_recs()
+
+    from dolo import *
+
+    model = yaml_import('examples/global_models/sto1.yaml')
+    comp  = RecsCompiler(model)
+    print comp.process_output_recs()
 
