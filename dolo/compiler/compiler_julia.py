@@ -82,7 +82,7 @@ class CompilerJulia(object):
         cc.pop('shocks')
         cc.pop('covariances')
         steady_state = cc
-        parameters_values = calib['parameters']
+        parameters_values = '[{}]'.format( str.join(', ', [str(v) for v in calib['parameters']]) )
 
 
         funs_text = "functions = {\n"
@@ -92,7 +92,7 @@ class CompilerJulia(object):
 
         ss_text = "steady_state = {\n"
         for k,v in steady_state.iteritems():
-            ss_text += '\t"{0}" => {1},\n'.format( k, str(v) )
+            ss_text += '\t"{0}" => [{1}],\n'.format( k, str.join(', ', ['{}'.format(e) for e in v] ) )
         ss_text += '}'
 
         var_text = "symbols = {\n"
@@ -108,7 +108,6 @@ class CompilerJulia(object):
 {ss_text}
 
 {var_text}
-
 
 calibration = {{
     "steady_state" => steady_state,
@@ -137,7 +136,7 @@ if __name__ == '__main__':
 
     from dolo import *
 
-    model = yaml_import('examples/global_models/rbc.yaml')
+    model = yaml_import('examples/global_models/rbc.yaml', compiler=None)
     comp = CompilerJulia(model)
 
     print  comp.process_output()
@@ -146,7 +145,7 @@ if __name__ == '__main__':
     print("******10")
     print("******10")
 
-    model = yaml_import('examples/global_models/optimal_growth.yaml')
+    model = yaml_import('examples/global_models/optimal_growth.yaml', compiler=None)
     comp = CompilerJulia(model)
 
     print  comp.process_output()

@@ -39,7 +39,7 @@ else: # we should determine some good output name in case none has been specifie
 
 from dolo.misc.yamlfile import yaml_import
 
-model = yaml_import( filename )
+model = yaml_import( filename, compiler=None )
 
 import re
 
