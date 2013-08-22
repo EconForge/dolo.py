@@ -18,7 +18,6 @@ def find_steady_state(model, e, force_values=None):
 
     if force_values is not None:
         inds =  numpy.where( numpy.isfinite( force_values ) )[0]
-        print(inds)
         vals = force_values[inds]
 
     def fobj(z):
@@ -27,7 +26,7 @@ def find_steady_state(model, e, force_values=None):
         a = model.functions['auxiliary'](s,x,p)
         S = model.functions['transition'](s,x,a,e,p)
         if force_values is not None:
-            S[inds] = vals
+            S[inds,0] = vals
         r = model.functions['arbitrage'](s,x,a,s,x,a,p)
         return numpy.concatenate([S-s, r])
 

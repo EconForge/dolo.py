@@ -121,7 +121,7 @@ def global_solve(cmodel,
     g = cm.functions['transition']
     a = cm.functions['auxiliary']
 
-    cm.x_bounds = None
+#    cm.x_bounds = None
 
     dr = time_iteration(dr.grid, dr, xinit, f, g, a, parms, epsilons, weights, maxit=maxit,
                         tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
