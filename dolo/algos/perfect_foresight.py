@@ -3,10 +3,12 @@ from numpy import linspace, zeros
 
 def find_steady_state(model, e, force_values=None):
     '''
-    Finds the steady state corresponding to exogenous shocks e
-    :param model: an "fga" model
-    :param e: a vector with the value for the exogenous shocks
-    :return: a list containing a vector for the steady-states and the corresponding steady controls
+    Finds the steady state corresponding to exogenous shocks :math:`e`.
+
+    :param model: an "fga" model.
+    :param e: a vector with the value for the exogenous shocks.
+    :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.
+    :return: a list containing a vector for the steady-states and the corresponding steady controls.
     '''
 
     s0 = model.calibration['states']
@@ -38,12 +40,12 @@ def find_steady_state(model, e, force_values=None):
 def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_constraints=False, start_s=None, verbose=False):
     '''
     Computes a perfect foresight simulation.
+
     :param model: an "fga" model
-    :param shocks: a `n_e \times N` matrix containing `N` realizations of the shocks. `N` must be smaller than `T`.
-    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
+    :param shocks: a :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
     :param T: the horizon for the perfect foresight simulation
     :param use_pandas: if True, returns a pandas dataframe, else the simulation matrix
-    :param ignore_constraints: if True, complementarity constraintes are ignored constraints
+    :param ignore_constraints: if True, complementarity constraintes are ignored
     :return: a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries).
     The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
     to a steady-state corresponding to the last value of the exogenous shocks.
@@ -69,8 +71,6 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
 
     start_s = start[0]
     final_x = final[1]
-
-    print(start_s)
 
     final = numpy.concatenate( final )
     start = numpy.concatenate( start )
@@ -105,7 +105,7 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
     if not ignore_constraints:
         sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
     else:
-        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False )
+        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False, verbose=verbose )
 
     if use_pandas:
         import pandas
