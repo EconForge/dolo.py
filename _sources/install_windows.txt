@@ -1,4 +1,0 @@
-Install on windows
-==================
-
-jij
