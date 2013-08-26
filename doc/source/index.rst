@@ -1,6 +1,20 @@
 Welcome to dolo's documentation!
 ================================
 
+.. toctree::
+    :hidden:
+    :maxdepth: 2
+
+    installation
+
+    tutorial
+
+    examples
+
+    algorithms
+
+    api
+    
 What is dolo ?
 --------------
 
@@ -22,29 +36,3 @@ Dolo is written in python and so are his solution routines. If you prefer or nee
 (such as a legacy scientific Fortran wrapper edited by Mathworks...), you can always use dolo as a preprocessor. In
 that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and
 Julia are supported.
-
-Contents
---------
-
-.. toctree::
-    :maxdepth: 2
-
-    installation
-
-    tutorial
-
-    examples
-
-    algorithms
-
-    api
-
-
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
