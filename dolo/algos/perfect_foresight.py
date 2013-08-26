@@ -39,15 +39,14 @@ def find_steady_state(model, e, force_values=None):
 
 def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_constraints=False, start_s=None, verbose=False):
     '''
-    Computes a perfect foresight simulation.
+    Computes a perfect foresight simulation using a stacked-time algorithm.
 
     :param model: an "fga" model
     :param shocks: a :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
     :param T: the horizon for the perfect foresight simulation
     :param use_pandas: if True, returns a pandas dataframe, else the simulation matrix
-    :param ignore_constraints: if True, complementarity constraintes are ignored
-    :return: a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries).
-    The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
+    :param ignore_constraints: if True, complementarity constraintes are ignored.
+    :return: a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
     to a steady-state corresponding to the last value of the exogenous shocks.
     '''
 
@@ -89,6 +88,10 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
         lower_bound[n_s:,:] = lb
         upper_bound = initial_guess*0 + numpy.inf
         upper_bound[n_s:,:] = ub
+	test1 = max( lb.max(axis=1) - lb.min(axis=1) )
+	test2 = max( ub.max(axis=1) - ub.min(axis=1) )
+	if test1 >0.00000001 or test2>0.00000001:
+		raise Exception("Not implemented: perfect foresight solution requires that controls have constant bounds.")
     else:
         ignore_constraints=True
         lower_bound = None
