@@ -38,30 +38,16 @@ type="text/css" />
 
 
 
-<!-- Piwik -->
-<script type="text/javascript">
-if ("matplotlib.sourceforge.net" == document.location.hostname ||
-    "matplotlib.sf.net" == document.location.hostname) {
-  var pkBaseURL = (("https:" == document.location.protocol) ? "https://apps.sourceforge.net/piwik/matplotlib/" : "http://apps.sourceforge.net/piwik/matplotlib/");
-  document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
-}
-</script>
-<script type="text/javascript">
-if ("matplotlib.sourceforge.net" == document.location.hostname ||
-    "matplotlib.sf.net" == document.location.hostname) {
-  piwik_action_name = '';
-  piwik_idsite = 1;
-  piwik_url = pkBaseURL + "piwik.php";
-  piwik_log(piwik_action_name, piwik_idsite, piwik_url);
-  document.write(unescape('%3Cobject%3E%3Cnoscript%3E%3Cp%3E%3Cimg src="http://apps.sourceforge.net/piwik/matplotlib/piwik.php?idsite=1" alt="piwik"/%3E%3C/p%3E%3C/noscript%3E%3C/object%3E'));
-}
-</script>
-<!-- End Piwik Tag -->
-<link rel="shortcut icon" href="_static/favicon.ico">
+<!-- Piwik --<link rel="shortcut icon" href="_static/favicon.ico">
 
+<!--
 <div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
-<a href="index.html"><img src="_static/logo2.png" border="0" alt="matplotlib"/></a>
+<a href="index.html">
+Dolo
+<img src="_static/logo2.png" border="0" alt="matplotlib"/>
+</a>
 </div>
+-->
 
 
 
@@ -78,7 +64,7 @@ if ("matplotlib.sourceforge.net" == document.location.hostname ||
 
         <li><a href="index.html">home</a>|&nbsp;</li>
         <li><a href="examples.html">examples</a>|&nbsp;</li>
-        <li><a href="installation.html">install</a>&raquo;</li>
+        <li><a href="installation.html">install</a>|&raquo;</li>
           <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
@@ -126,15 +112,16 @@ if ("matplotlib.sourceforge.net" == document.location.hostname ||
             
   <div class="section" id="structure-of-dolo">
 <h1>Structure of dolo<a class="headerlink" href="#structure-of-dolo" title="Permalink to this headline">¶</a></h1>
-<p>Here is how the code in dolo is organized :
-the
-1. import serialized model: YAML file / modfile</p>
-<blockquote>
-<div><ul class="simple">
+<p>Here is how the code in dolo is organized :</p>
+<ol class="arabic">
+<li><dl class="first docutils">
+<dt>import serialized model: YAML file / modfile</dt>
+<dd><ul class="first last simple">
 <li>currently in <tt class="docutils literal"><span class="pre">dolo.misc.yamlfile</span></tt> and <tt class="docutils literal"><span class="pre">dolo.misc.modfile</span></tt></li>
 </ul>
-</div></blockquote>
-<ol class="arabic" start="2">
+</dd>
+</dl>
+</li>
 <li><dl class="first docutils">
 <dt>symbolic model: <tt class="docutils literal"><span class="pre">dolo.symbolic.*</span></tt></dt>
 <dd><ul class="first last simple">

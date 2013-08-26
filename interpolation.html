@@ -38,30 +38,16 @@ type="text/css" />
 
 
 
-<!-- Piwik -->
-<script type="text/javascript">
-if ("matplotlib.sourceforge.net" == document.location.hostname ||
-    "matplotlib.sf.net" == document.location.hostname) {
-  var pkBaseURL = (("https:" == document.location.protocol) ? "https://apps.sourceforge.net/piwik/matplotlib/" : "http://apps.sourceforge.net/piwik/matplotlib/");
-  document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
-}
-</script>
-<script type="text/javascript">
-if ("matplotlib.sourceforge.net" == document.location.hostname ||
-    "matplotlib.sf.net" == document.location.hostname) {
-  piwik_action_name = '';
-  piwik_idsite = 1;
-  piwik_url = pkBaseURL + "piwik.php";
-  piwik_log(piwik_action_name, piwik_idsite, piwik_url);
-  document.write(unescape('%3Cobject%3E%3Cnoscript%3E%3Cp%3E%3Cimg src="http://apps.sourceforge.net/piwik/matplotlib/piwik.php?idsite=1" alt="piwik"/%3E%3C/p%3E%3C/noscript%3E%3C/object%3E'));
-}
-</script>
-<!-- End Piwik Tag -->
-<link rel="shortcut icon" href="_static/favicon.ico">
+<!-- Piwik --<link rel="shortcut icon" href="_static/favicon.ico">
 
+<!--
 <div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
-<a href="index.html"><img src="_static/logo2.png" border="0" alt="matplotlib"/></a>
+<a href="index.html">
+Dolo
+<img src="_static/logo2.png" border="0" alt="matplotlib"/>
+</a>
 </div>
+-->
 
 
 
@@ -78,7 +64,7 @@ if ("matplotlib.sourceforge.net" == document.location.hostname ||
 
         <li><a href="index.html">home</a>|&nbsp;</li>
         <li><a href="examples.html">examples</a>|&nbsp;</li>
-        <li><a href="installation.html">install</a>&raquo;</li>
+        <li><a href="installation.html">install</a>|&raquo;</li>
           <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
@@ -128,8 +114,71 @@ if ("matplotlib.sourceforge.net" == document.location.hostname ||
 <h1>Interpolation<a class="headerlink" href="#interpolation" title="Permalink to this headline">¶</a></h1>
 <p>There are many available methods to interpolate points when solving global models. <em>dolo</em> provides several of them.
 They can been used with exactly the same interface. By default, <em>dolo</em> uses smolyak interpolation.</p>
-<div class="section" id="smolyak">
-<h2>smolyak<a class="headerlink" href="#smolyak" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-dolo.numeric.interpolation.smolyak">
+<span id="smolyak"></span><h2>smolyak<a class="headerlink" href="#module-dolo.numeric.interpolation.smolyak" title="Permalink to this headline">¶</a></h2>
+<p>We demonstrate the use of the <tt class="docutils literal"><span class="pre">`SmolyakGrid`</span></tt> object using the function
+<span class="math">\(x,y \rightarrow \exp \left( -x^2 - y^2 \right)\)</span>. We define it on a subset of <span class="math">\([-1,1]^2\)</span> and use a
+smolyak product of chebychev polynomials to approximate it at other points.</p>
+<p>Let define the state space <span class="math">\([-1,1]^2\)</span> and the interpolation object.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dolo.numeric.smolyak</span> <span class="kn">import</span> <span class="n">SmolyakGrid</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+
+<span class="n">bounds</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="p">[</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">],</span>    <span class="c"># lower bounds</span>
+    <span class="p">[</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span> <span class="p">]</span>     <span class="c"># upper bounds</span>
+<span class="p">])</span>
+
+<span class="n">sg</span> <span class="o">=</span> <span class="n">SmolyakGrid</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>  <span class="c"># 3 is the smolyak parameter l</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The points selected by the smolyak algorithm are accessible in <tt class="docutils literal"><span class="pre">`sg.grid`</span></tt>  which is a <tt class="docutils literal"><span class="pre">`2x13`</span></tt> matrix. They can by plotted with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">sg</span><span class="o">.</span><span class="n">plot_grid</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Let define a two-variables function and evaluate it on the grid and we initialize the interpolator with these values.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">fun</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">:</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span><span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
+<span class="n">values_on_the_grid</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span> <span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">sg</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="p">)</span>
+
+<span class="n">sg</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">values_on_the_grid</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now we construct a random matrix <tt class="docutils literal"><span class="pre">`s`</span></tt> of size```2xN``` where each column is a point of the state space. On these
+states, we compute interpolated values and compare it with the true ones.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span>  <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">multivariate_normal</span> <span class="k">as</span>  <span class="n">mvtnorm</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">cov</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">mvtnorm</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+<span class="n">interpolated_values</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span> <span class="n">s</span> <span class="p">)</span>
+
+<span class="n">true_values</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span>
+
+<span class="n">max_error</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span> <span class="n">true_values</span> <span class="o">-</span> <span class="n">interpolated_values</span> <span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span> <span class="s">&#39;Maximum error : {}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_error</span><span class="p">)</span> <span class="p">)</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakBasic">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.interpolation.smolyak.</tt><tt class="descname">SmolyakBasic</tt><big>(</big><em>d</em>, <em>l</em>, <em>dtype=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakBasic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakBasic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smolyak interpolation on [-1,1]^d</p>
+<dl class="method">
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakBasic.set_values">
+<tt class="descname">set_values</tt><big>(</big><em>x</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakBasic.set_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakBasic.set_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates self.theta parameter. No returns values</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="dolo.numeric.interpolation.smolyak.SmolyakGrid">
+<em class="property">class </em><tt class="descclassname">dolo.numeric.interpolation.smolyak.</tt><tt class="descname">SmolyakGrid</tt><big>(</big><em>smin</em>, <em>smax</em>, <em>l</em>, <em>axes=None</em>, <em>dtype=None</em><big>)</big><a class="reference internal" href="_modules/dolo/numeric/interpolation/smolyak.html#SmolyakGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.numeric.interpolation.smolyak.SmolyakGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smolyak interpolation</p>
+</dd></dl>
+
 </div>
 <div class="section" id="linear-delaunay-tessellation">
 <h2>linear (delaunay tessellation)<a class="headerlink" href="#linear-delaunay-tessellation" title="Permalink to this headline">¶</a></h2>

@@ -2,7 +2,7 @@ Structure of dolo
 =================
 
 Here is how the code in dolo is organized :
-the
+
 1. import serialized model: YAML file / modfile
     - currently in ``dolo.misc.yamlfile`` and ``dolo.misc.modfile``
 
@@ -23,5 +23,5 @@ the
 5. commands (to be done)
     - define user-friendly commands
 
-.. image:: structure.png
+.. image:: _static/structure.png
     :width: 100 %

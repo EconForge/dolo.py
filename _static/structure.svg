@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="39cm" height="21cm" viewBox="160 119 761 402" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="720" y="360" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="720" y="360" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="640" y="360" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="640" y="360" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="560" y="360" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="560" y="360" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="480" y="360" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="480" y="360" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="340" y="120" width="180" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="120" width="180" height="60"/>
+  </g>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="430" y="150">
+    <tspan x="430" y="150"></tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="340" y="240" width="160" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="240" width="160" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="340" y="360" width="100" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="360" width="100" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="820" y="360" width="100" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="820" y="360" width="100" height="60"/>
+  </g>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="430" y="150">
+    <tspan x="430" y="150">YAML file</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="280">
+    <tspan x="160" y="280">Symbolic model</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="390" y="390">
+    <tspan x="390" y="390"></tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="420" y="270">
+    <tspan x="420" y="270"></tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="160">
+    <tspan x="160" y="160">Serialized model</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="400">
+    <tspan x="160" y="400">Compiled model</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="500">
+    <tspan x="160" y="500">Algorithms</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="390" y="390">
+    <tspan x="390" y="390">Python</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="510" y="390">
+    <tspan x="510" y="390">Matlab</tspan>
+    <tspan x="510" y="406">(Dynare)</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="870" y="390">
+    <tspan x="870" y="390">Julia</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="420" y="270">
+    <tspan x="420" y="270">dolo.symbolic.*</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="590" y="390">
+    <tspan x="590" y="390">Matlab</tspan>
+    <tspan x="590" y="406">(Uhlig)</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="670" y="390">
+    <tspan x="670" y="390">Matlab</tspan>
+    <tspan x="670" y="406">(RECS)</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="760" y="320">
+    <tspan x="760" y="320"></tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="820" y="320">
+    <tspan x="820" y="320"></tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="340" y="460" width="100" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340" y="460" width="100" height="60"/>
+  </g>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="390" y="490">
+    <tspan x="390" y="490"></tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="390" y="490">
+    <tspan x="390" y="490">dolo.numeric.*</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="750" y="390">
+    <tspan x="750" y="390">Matlab</tspan>
+    <tspan x="750" y="406">(object)</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="720" y="460" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="720" y="460" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="640" y="460" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="640" y="460" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="560" y="460" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="560" y="460" width="60" height="60"/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="480" y="460" width="60" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="480" y="460" width="60" height="60"/>
+  </g>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="510" y="490">
+    <tspan x="510" y="490">Dynare</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="590" y="490">
+    <tspan x="590" y="490">Uhlig</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="670" y="490">
+    <tspan x="670" y="490">RECS</tspan>
+  </text>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="750" y="490">
+    <tspan x="750" y="490">Molo</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffffff" x="820" y="460" width="100" height="60"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="820" y="460" width="100" height="60"/>
+  </g>
+  <text font-size="12.7998" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="870" y="490">
+    <tspan x="870" y="490">Jolo</tspan>
+  </text>
+</svg>
