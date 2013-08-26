@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,8 +9,10 @@
     
     <title>Welcome to dolo’s documentation! &mdash; dolo 0.4.4 documentation</title>
     
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinxdoc.css"
+type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css"
+type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -28,45 +29,66 @@
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="dolo 0.4.4 documentation" href="#" />
     <link rel="next" title="Installation" href="installation.html" /> 
+<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
   </head>
   <body>
+
+
+
+<!-- Piwik -->
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  var pkBaseURL = (("https:" == document.location.protocol) ? "https://apps.sourceforge.net/piwik/matplotlib/" : "http://apps.sourceforge.net/piwik/matplotlib/");
+  document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+}
+</script>
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  piwik_action_name = '';
+  piwik_idsite = 1;
+  piwik_url = pkBaseURL + "piwik.php";
+  piwik_log(piwik_action_name, piwik_idsite, piwik_url);
+  document.write(unescape('%3Cobject%3E%3Cnoscript%3E%3Cp%3E%3Cimg src="http://apps.sourceforge.net/piwik/matplotlib/piwik.php?idsite=1" alt="piwik"/%3E%3C/p%3E%3C/noscript%3E%3C/object%3E'));
+}
+</script>
+<!-- End Piwik Tag -->
+<link rel="shortcut icon" href="_static/favicon.ico">
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="#"><img src="_static/logo2.png" border="0" alt="matplotlib"/></a>
+</div>
+
+
+
+
     <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="installation.html" title="Installation"
-             accesskey="N">next</a> |</li>
-        <li><a href="#">dolo 0.4.4 documentation</a> &raquo;</li> 
+             accesskey="N">next</a></li>
+
+        <li><a href="#">home</a>|&nbsp;</li>
+        <li><a href="examples.html">examples</a>|&nbsp;</li>
+        <li><a href="installation.html">install</a>&raquo;</li> 
       </ul>
     </div>
+
+  
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Welcome to dolo&#8217;s documentation!</a><ul>
-<li><a class="reference internal" href="#what-is-dolo">What is dolo ?</a></li>
-<li><a class="reference internal" href="#contents">Contents</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-</li>
+<h3><a href="#">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Quick tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithms.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Advanced topics</a></li>
 </ul>
 
-  <h4>Next topic</h4>
-  <p class="topless"><a href="installation.html"
-                        title="next chapter">Installation</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/index.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -90,6 +112,8 @@
             
   <div class="section" id="welcome-to-dolo-s-documentation">
 <h1>Welcome to dolo&#8217;s documentation!<a class="headerlink" href="#welcome-to-dolo-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
 <div class="section" id="what-is-dolo">
 <h2>What is dolo ?<a class="headerlink" href="#what-is-dolo" title="Permalink to this headline">¶</a></h2>
 <p>Dolo is a tool to assist researchers in solving several types of DSGE models, using either local of global approximation methods.</p>
@@ -107,66 +131,20 @@ should be extremely easy in most of the cases.</p>
 that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and
 Julia are supported.</p>
 </div>
-<div class="section" id="contents">
-<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#compiled-extensions">Compiled extensions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Quick tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#write-a-model">Write a model</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorial.html#solving-the-rbc-model">Solving the RBC model</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Advanced topics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="recipes.html">Custom model types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="structure.html">Structure of dolo</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interpolation.html">Interpolation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="compilation.html">Compilation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="conventions.html">Model conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="perturbations.html">Perturbation algorithm</a></li>
-</ul>
-</li>
-</ul>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
-<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
-<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
-</ul>
-</div>
 </div>
 
 
           </div>
         </div>
       </div>
+
       <div class="clearer"></div>
-    </div>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="installation.html" title="Installation"
-             >next</a> |</li>
-        <li><a href="#">dolo 0.4.4 documentation</a> &raquo;</li> 
-      </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Pablo Winant.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a
+href="http://sphinx-doc.org/">Sphinx</a> 1.1.3.
     </div>
-  </body>
+
+</body>
 </html>

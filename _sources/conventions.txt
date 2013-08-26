@@ -43,6 +43,8 @@ The model is specified by giving :math:`g` and :math:`f` such that:
 
 :math:`E_t \left[ f \left( s_t, x_t, s_{t+1}, x_{t+1} \right) \right]=0`
 
+The solution is a function :math:`\varphi` such that :math:`x_t=\varphi(s_t)`.
+
 *fga* model
 ///////////
 

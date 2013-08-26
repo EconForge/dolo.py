@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,8 +9,10 @@
     
     <title>Model conventions &mdash; dolo 0.4.4 documentation</title>
     
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinxdoc.css"
+type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css"
+type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -30,59 +31,80 @@
     <link rel="up" title="Advanced topics" href="api.html" />
     <link rel="next" title="Perturbation algorithm" href="perturbations.html" />
     <link rel="prev" title="Compilation" href="compilation.html" /> 
+<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
   </head>
   <body>
+
+
+
+<!-- Piwik -->
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  var pkBaseURL = (("https:" == document.location.protocol) ? "https://apps.sourceforge.net/piwik/matplotlib/" : "http://apps.sourceforge.net/piwik/matplotlib/");
+  document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+}
+</script>
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  piwik_action_name = '';
+  piwik_idsite = 1;
+  piwik_url = pkBaseURL + "piwik.php";
+  piwik_log(piwik_action_name, piwik_idsite, piwik_url);
+  document.write(unescape('%3Cobject%3E%3Cnoscript%3E%3Cp%3E%3Cimg src="http://apps.sourceforge.net/piwik/matplotlib/piwik.php?idsite=1" alt="piwik"/%3E%3C/p%3E%3C/noscript%3E%3C/object%3E'));
+}
+</script>
+<!-- End Piwik Tag -->
+<link rel="shortcut icon" href="_static/favicon.ico">
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html"><img src="_static/logo2.png" border="0" alt="matplotlib"/></a>
+</div>
+
+
+
+
     <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="perturbations.html" title="Perturbation algorithm"
-             accesskey="N">next</a> |</li>
+             accesskey="N">next</a></li>
         <li class="right" >
           <a href="compilation.html" title="Compilation"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="examples.html">examples</a>|&nbsp;</li>
+        <li><a href="installation.html">install</a>&raquo;</li>
           <li><a href="api.html" accesskey="U">Advanced topics</a> &raquo;</li> 
       </ul>
     </div>
+
+  
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
-  <h3><a href="index.html">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Model conventions</a><ul>
-<li><a class="reference internal" href="#model-types">Model types</a><ul>
-<li><a class="reference internal" href="#state-free-approach">state-free approach</a></li>
-<li><a class="reference internal" href="#controlled-process-variants">controlled process variants</a><ul>
-<li><a class="reference internal" href="#fg-model"><em>fg</em> model</a></li>
-<li><a class="reference internal" href="#fga-model"><em>fga</em> model</a></li>
-<li><a class="reference internal" href="#not-implemented-fgh-model">not implemented ; fgh model</a></li>
-<li><a class="reference internal" href="#not-implemented-fgah-model">not implemented ; fgah model</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#numerical-conventions">Numerical Conventions</a></li>
+<h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Quick tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithms.html">Solution algorithms</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="api.html">Advanced topics</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="recipes.html">Custom model types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="structure.html">Structure of dolo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html">Model object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="interpolation.html">Interpolation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compilation.html">Compilation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">Model conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="perturbations.html">Perturbation algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="routines.html">Solution routines</a></li>
 </ul>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="compilation.html"
-                        title="previous chapter">Compilation</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="perturbations.html"
-                        title="next chapter">Perturbation algorithm</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/conventions.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -121,17 +143,19 @@ For this kind of models, the solver finds a solution <span class="math">\(g\)</s
 <h3>controlled process variants<a class="headerlink" href="#controlled-process-variants" title="Permalink to this headline">¶</a></h3>
 <p>We define several categories of models.</p>
 <p class="graphviz">
-digraph foo {
+<img src="_images/graphviz-83ce62abf2a2a279153317ea7222a78fe10bf376.png" alt="digraph foo {
     &quot;fgah&quot; -&gt; &quot;fga&quot;;
     &quot;fga&quot; -&gt; &quot;fg&quot;;
     &quot;fgh&quot; -&gt; &quot;fg&quot;;
-}</p>
+}" />
+</p>
 <div class="section" id="fg-model">
 <h4><em>fg</em> model<a class="headerlink" href="#fg-model" title="Permalink to this headline">¶</a></h4>
 <p>With these versions, the state-space is chosen by the user. A law of motion for the state-space must be specified (depending on the controls and on the shocks). And optimality conditions must be given to pin down all the controls.
 The model is specified by giving <span class="math">\(g\)</span> and <span class="math">\(f\)</span> such that:</p>
 <p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, \epsilon_t \right)\)</span></p>
 <p><span class="math">\(E_t \left[ f \left( s_t, x_t, s_{t+1}, x_{t+1} \right) \right]=0\)</span></p>
+<p>The solution is a function <span class="math">\(\varphi\)</span> such that <span class="math">\(x_t=\varphi(s_t)\)</span>.</p>
 </div>
 <div class="section" id="fga-model">
 <h4><em>fga</em> model<a class="headerlink" href="#fga-model" title="Permalink to this headline">¶</a></h4>
@@ -191,30 +215,14 @@ denotes the successive points. This is adapted to matlab&#8217;s storage order (
           </div>
         </div>
       </div>
+
       <div class="clearer"></div>
-    </div>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
-          <a href="perturbations.html" title="Perturbation algorithm"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="compilation.html" title="Compilation"
-             >previous</a> |</li>
-        <li><a href="index.html">dolo 0.4.4 documentation</a> &raquo;</li>
-          <li><a href="api.html" >Advanced topics</a> &raquo;</li> 
-      </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Pablo Winant.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a
+href="http://sphinx-doc.org/">Sphinx</a> 1.1.3.
     </div>
-  </body>
+
+</body>
 </html>

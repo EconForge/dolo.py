@@ -26,13 +26,3 @@ The option -e tells the installer to make symlinks so that the installed version
 version is pulled.
 
 
-Compiled extensions
--------------------
-
- In case, you have used the last option you can also build the ``cython`` extension with:
-
-.. code-block:: bash
-
-    python setup_cython.py --build-ext --inplace
-
-Eventually, this will be enabled by default.

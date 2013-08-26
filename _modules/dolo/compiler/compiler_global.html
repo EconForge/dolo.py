@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -10,8 +9,10 @@
     
     <title>dolo.compiler.compiler_global &mdash; dolo 0.4.4 documentation</title>
     
-    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
-    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css"
+type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css"
+type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -28,23 +29,64 @@
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="dolo 0.4.4 documentation" href="../../../index.html" />
     <link rel="up" title="Module code" href="../../index.html" /> 
+<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
   </head>
   <body>
+
+
+
+<!-- Piwik -->
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  var pkBaseURL = (("https:" == document.location.protocol) ? "https://apps.sourceforge.net/piwik/matplotlib/" : "http://apps.sourceforge.net/piwik/matplotlib/");
+  document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
+}
+</script>
+<script type="text/javascript">
+if ("matplotlib.sourceforge.net" == document.location.hostname ||
+    "matplotlib.sf.net" == document.location.hostname) {
+  piwik_action_name = '';
+  piwik_idsite = 1;
+  piwik_url = pkBaseURL + "piwik.php";
+  piwik_log(piwik_action_name, piwik_idsite, piwik_url);
+  document.write(unescape('%3Cobject%3E%3Cnoscript%3E%3Cp%3E%3Cimg src="http://apps.sourceforge.net/piwik/matplotlib/piwik.php?idsite=1" alt="piwik"/%3E%3C/p%3E%3C/noscript%3E%3C/object%3E'));
+}
+</script>
+<!-- End Piwik Tag -->
+<link rel="shortcut icon" href="_static/favicon.ico">
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="../../../index.html"><img src="../../../_static/logo2.png" border="0" alt="matplotlib"/></a>
+</div>
+
+
+
+
     <div class="related">
       <h3>Navigation</h3>
       <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
+
+        <li><a href="../../../index.html">home</a>|&nbsp;</li>
+        <li><a href="../../../examples.html">examples</a>|&nbsp;</li>
+        <li><a href="../../../installation.html">install</a>&raquo;</li>
           <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>
+
+  
       <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
+<h3><a href="../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorial.html">Quick tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../algorithms.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api.html">Advanced topics</a></li>
+</ul>
+
 <div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../../../search.html" method="get">
@@ -89,15 +131,18 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">model</span><span class="p">,</span> <span class="n">keep_auxiliary</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">solve_systems</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">compiler</span><span class="o">=</span><span class="s">&#39;numpy&#39;</span><span class="p">):</span>
         <span class="s">&quot;something to document&quot;</span>
 
+        <span class="kn">from</span> <span class="nn">dolo.compiler.compiler_python</span> <span class="kn">import</span> <span class="n">GModel</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">CModel</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">model</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">GModel</span><span class="p">):</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;states&#39;</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">controls</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;controls&#39;</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shocks</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;parameters_ordering&#39;</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;parameters_ordering&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">states</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;states&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">controls</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;controls&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shocks</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;shocks&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;parameters&#39;</span><span class="p">]]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__compiler__</span> <span class="o">=</span> <span class="n">compiler</span>
 
@@ -110,7 +155,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">__f__</span> <span class="o">=</span> <span class="n">f</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__g__</span> <span class="o">=</span> <span class="n">g</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__a__</span> <span class="o">=</span> <span class="n">a</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">auxiliaries</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;auxiliary&#39;</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">auxiliaries</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;auxiliary&#39;</span><span class="p">]]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__f_h__</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__g_h__</span> <span class="o">=</span> <span class="p">[]</span>
@@ -164,7 +209,7 @@
 
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-        <span class="n">complementarities_tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">eq</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;complementarity&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;equations_groups&#39;</span><span class="p">][</span><span class="s">&#39;arbitrage&#39;</span><span class="p">]]</span>
+        <span class="n">complementarities_tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">eq</span><span class="o">.</span><span class="n">tags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;complementarity&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">equations_groups</span><span class="p">[</span><span class="s">&#39;arbitrage&#39;</span><span class="p">]]</span>
         <span class="kn">import</span> <span class="nn">re</span>
         <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&#39;(.*)&lt;=(.*)&lt;=(.*)&#39;</span><span class="p">)</span>
         <span class="n">parsed</span>  <span class="o">=</span> <span class="p">[</span> <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">eval_string</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="p">()]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">complementarities_tags</span><span class="p">]</span>
@@ -172,10 +217,10 @@
         <span class="n">controls</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span>
         <span class="n">upper_bounds_symbolic</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">]</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">controls</span> <span class="o">==</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;controls&#39;</span><span class="p">]</span>
+            <span class="n">controls</span> <span class="o">==</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;controls&#39;</span><span class="p">]</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;Order of complementarities does not match order of declaration of controls.&quot;</span><span class="p">)</span>
-        <span class="n">states</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="s">&#39;variables_groups&#39;</span><span class="p">][</span><span class="s">&#39;states&#39;</span><span class="p">]</span>
+        <span class="n">states</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols_s</span><span class="p">[</span><span class="s">&#39;states&#39;</span><span class="p">]</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span>
         <span class="kn">from</span> <span class="nn">dolo.compiler.function_compiler</span> <span class="kn">import</span> <span class="n">compile_multiargument_function</span>
         <span class="n">lb</span> <span class="o">=</span> <span class="n">compile_multiargument_function</span><span class="p">(</span> <span class="n">lower_bounds_symbolic</span><span class="p">,</span> <span class="p">[</span><span class="n">states</span><span class="p">],</span> <span class="p">[</span><span class="s">&#39;s&#39;</span><span class="p">],</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s">&#39;lb&#39;</span><span class="p">)</span>
@@ -229,24 +274,14 @@
           </div>
         </div>
       </div>
+
       <div class="clearer"></div>
-    </div>
-    <div class="related">
-      <h3>Navigation</h3>
-      <ul>
-        <li class="right" style="margin-right: 10px">
-          <a href="../../../genindex.html" title="General Index"
-             >index</a></li>
-        <li class="right" >
-          <a href="../../../py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li><a href="../../../index.html">dolo 0.4.4 documentation</a> &raquo;</li>
-          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
-      </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Pablo Winant.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+      Created using <a
+href="http://sphinx-doc.org/">Sphinx</a> 1.1.3.
     </div>
-  </body>
+
+</body>
 </html>
