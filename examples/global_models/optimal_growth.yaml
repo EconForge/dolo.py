@@ -1,0 +1,53 @@
+model_type: fgh
+
+declarations:
+
+    states:  [A, w]
+
+    controls: [c, Welf]
+
+    expectations: [eh, eW]
+
+    shocks: [e_A]
+
+    parameters: [beta, gamma, rho_A, rho_r, ybar, rbar, theta, dumb]
+
+
+equations:
+
+
+    transition:
+        - A = 1 + rho_A*(A(-1)-1) + e_A
+        - w = (w(-1)-c(-1))^(theta)*(  1 + rho_A*(A(-1)-1) + e_A   )  + 1
+
+    arbitrage:
+        - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  = 1     |   0 <= c <= w
+        - c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf <=  Welf <= inf
+        
+    expectation:
+        - eh = c(1)^(-gamma)*A(1)
+        - eW = Welf(1)
+
+calibration:
+
+  parameters:
+      beta: 0.96
+      gamma: 4.0
+      rho_A: 0.9
+      rho_r: 0.5
+      rbar: 1.0
+      ybar: 1.0
+      theta: 0.3
+      dumb: 1
+
+  steady_state:
+    A: 1
+    w: ((1/beta/theta)^(1/(theta-1)))^theta + 1
+    c: w - (1/beta/theta)^(1/(theta-1))
+    eh: c^(-gamma)
+    Welf: c^(1-gamma)/(1-gamma)/(1-beta)
+    eW: Welf
+
+  covariances: |
+    [ [ 0.01 ] ]
+    

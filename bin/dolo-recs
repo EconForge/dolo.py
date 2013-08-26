@@ -1,0 +1,50 @@
+#!/usr/bin/python
+
+import argparse
+import os
+import re
+from dolo import __version__
+from dolo.misc.yamlfile import yaml_import
+from dolo.compiler.compiler_recs import RecsCompiler
+
+# Parse input arguments
+parser = argparse.ArgumentParser(description='RECS compiler')
+parser.add_argument('-v', '--version', action='version', version=__version__)
+parser.add_argument('input', help='model file')
+parser.add_argument('output', nargs='?', type=str, default=None, help='model file')
+
+args = parser.parse_args()
+
+input_file = args.input
+
+[input_rad, extension] = os.path.splitext(input_file)
+
+if extension == '':
+    extension = '.yaml'
+elif extension != '.yaml':
+    print('Unknown filetype : {}'.format(extension))
+    exit(1)
+
+filename = input_rad + extension
+
+# Output name
+if args.output:
+    output_filename = args.output
+else: # we should determine some good output name in case none has been specified
+    output_filename = input_rad + 'model' + '.m'
+
+# Parse yaml file
+model = yaml_import(input_file, compiler=None)
+
+# Model name based on output file name
+basename      = os.path.basename(output_filename)
+fname         = re.compile('(.*)\.m').match(basename).group(1)
+model['name'] = fname
+
+# Compilation for Matlab
+comp = RecsCompiler(model)
+txt  = comp.process_output_recs()
+
+# Write output
+with file(output_filename,'w') as f:
+    f.write(txt)

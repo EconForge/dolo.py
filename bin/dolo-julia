@@ -1,0 +1,65 @@
+#!/usr/bin/python
+
+import argparse
+import os
+
+from dolo import __version__
+
+parser = argparse.ArgumentParser(description='Julia compiler')
+parser.add_argument('-v','--version', action='version', version=__version__)
+parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
+#parser.add_argument('-s','--solve', action='store_const', const=True, default=False, help='solve for the decision rule')
+#parser.add_argument('-o','--order', nargs=1, type=int, default=[1], help='solution order (1,2,3)')
+parser.add_argument('input', help='model file')
+parser.add_argument('output',nargs='?',type=str,default=None,help='model file')
+
+args = parser.parse_args()
+
+######
+
+input_file = args.input
+
+# note input_rad is the full path with truncated filename
+[input_rad, extension] = os.path.splitext(input_file)
+
+if extension == '':
+    extension = '.yaml'
+elif extension != '.yaml':
+    print('Unknown filetype : {}'.format(extension))
+    exit(1)
+
+filename = input_rad + extension
+
+if args.output:
+    output_filename = args.output
+else: # we should determine some good output name in case none has been specified
+    output_filename = input_rad + '_model.jl'
+
+######
+
+from dolo.misc.yamlfile import yaml_import
+
+model = yaml_import( filename, compiler=None )
+
+import re
+
+basename = os.path.basename(output_filename)
+fname = re.compile('(.*)\.jl').match(basename).group(1)
+model.name = fname
+
+
+# check steady-state
+if args.print_residuals:
+    from dolo.symbolic.model import print_residuals
+    print_residuals(model)
+
+
+from dolo.compiler.compiler_julia import CompilerJulia
+comp = CompilerJulia(model)
+
+txt = comp.process_output()
+
+######
+
+with file(output_filename,'w') as f:
+    f.write(txt)
