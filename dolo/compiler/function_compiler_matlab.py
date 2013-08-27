@@ -13,7 +13,7 @@ libraries for efficient vectorization: `numpy <http://numpy.scipy.org/>`_, `nume
 from __future__ import division
 
 
-def compile_multiargument_function(equations, args_list, args_names, parms, diff=False, fname='anonymous_function'):
+def compile_multiargument_function(equations, args_list, args_names, parms, diff=False, fname='anonymous_function', default=None):
     """
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
@@ -62,10 +62,17 @@ end
 
     dp = DicPrinter(sub_list)
 
-    def write_eqs(eq_l,outname='val'):
-        eq_block = '    {0} = zeros( n, {1} );\n'.format(outname, len(eq_l))
+    def write_eqs(eq_l, outname='val', default=None):
+        '''Format equations'''
+        if default:
+                eq_block = '    {0} = ' + default + '( n , {1} );\n'
+                eq_block = eq_block.format(outname, len(eq_l))
+        else:
+                eq_block = '    {0} = zeros( n, {1} );\n'.format(outname, len(eq_l))
         for i,eq in enumerate(eq_l):
-            eq_block += '    {0}(:,{1}) = {2};\n'.format(outname, i+1,  dp.doprint_matlab(eq, vectorize=True))
+            eq_txt = dp.doprint_matlab(eq, vectorize=True)
+            if eq_txt != default:
+                    eq_block += '    {0}(:,{1}) = {2};\n'.format(outname, i+1, eq_txt)
         return eq_block
 
     def write_der_eqs(eq_l,v_l,lhs):
@@ -79,7 +86,7 @@ end
                     eq_block += '        {lhs}(:,{0},{1}) = {2};\n'.format(i+1,j+1,s,lhs=lhs)
         return eq_block
 
-    content = write_eqs(equations)
+    content = write_eqs(eq_l=equations, default=default)
 
     content += '''
     if nargout <= 1

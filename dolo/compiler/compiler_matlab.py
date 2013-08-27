@@ -38,8 +38,8 @@ class CompilerMatlab(object):
 
             states = model.symbols_s['states']
             parameters = model.symbols_s['parameters']
-            txt_lb = compile_multiargument_function(lb_sym, [states], ['s'], parameters, fname = 'arbitrage_lb', diff=diff)
-            txt_ub = compile_multiargument_function(ub_sym, [states], ['s'], parameters, fname = 'arbitrage_ub', diff=diff)
+            txt_lb = compile_multiargument_function(lb_sym, [states], ['s'], parameters, fname = 'arbitrage_lb', diff=diff, default='-inf')
+            txt_ub = compile_multiargument_function(ub_sym, [states], ['s'], parameters, fname = 'arbitrage_ub', diff=diff, default='inf')
             incidence_matrices_text += 'model.infos.incidence_matrices.arbitrage_lb = ' + compile_incidence_matrices(lb_sym, [states]) + '\n'
             incidence_matrices_text += 'model.infos.incidence_matrices.arbitrage_ub = ' + compile_incidence_matrices(ub_sym, [states]) + '\n'
 
