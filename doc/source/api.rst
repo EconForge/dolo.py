@@ -1,5 +1,3 @@
-
-
 Advanced topics
 ---------------
 
@@ -16,6 +14,3 @@ Advanced topics
 
     conventions
 
-    perturbations
-
-    routines

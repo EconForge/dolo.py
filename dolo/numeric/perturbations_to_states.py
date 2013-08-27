@@ -104,7 +104,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
 
         E_t f(s_t,x_t,s_{t+1},x_{t+1})
 
-        s_t = g(s_{t-1},x_{t-1}, \\sigma \\epsilon_t)
+        s_t = g(s_{t-1},x_{t-1}, \\lambda \\epsilon_t)
 
     where :math:`\\lambda` is a scalar scaling down the risk.  the solution is a function :math:`\\varphi` such that:
 
