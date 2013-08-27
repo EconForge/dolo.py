@@ -1,0 +1,576 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dolo.numeric.interpolation.smolyak &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css"
+type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css"
+type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="../../../../index.html" />
+    <link rel="up" title="Module code" href="../../../index.html" /> 
+<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
+  </head>
+  <body>
+
+
+
+<!-- Piwik --<link rel="shortcut icon" href="_static/favicon.ico">
+
+<!--
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="../../../../index.html">
+Dolo
+<img src="../../../../_static/logo2.png" border="0" alt="matplotlib"/>
+</a>
+</div>
+-->
+
+
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+
+        <li><a href="../../../../index.html">home</a>|&nbsp;</li>
+        <li><a href="../../../../examples.html">examples</a>|&nbsp;</li>
+        <li><a href="../../../../installation.html">install</a>|&raquo;</li>
+          <li><a href="../../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="../../../../index.html">Table Of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tutorial.html">Quick tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api.html">Advanced topics</a></li>
+</ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for dolo.numeric.interpolation.smolyak</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">We demonstrate the use of the ```SmolyakGrid``` object using the function</span>
+<span class="sd">:math:`x,y \\rightarrow \\exp \\left( -x^2 - y^2 \\right)`. We define it on a subset of :math:`[-1,1]^2` and use a</span>
+<span class="sd">smolyak product of chebychev polynomials to approximate it at other points.</span>
+
+<span class="sd">Let define the state space :math:`[-1,1]^2` and the interpolation object.</span>
+
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from dolo.numeric.smolyak import SmolyakGrid</span>
+<span class="sd">    import numpy</span>
+
+
+<span class="sd">    bounds = numpy.array([</span>
+<span class="sd">        [ -1, -1 ],    # lower bounds</span>
+<span class="sd">        [ 1, 1 ]     # upper bounds</span>
+<span class="sd">    ])</span>
+
+<span class="sd">    sg = SmolyakGrid(bounds, 3)  # 3 is the smolyak parameter l</span>
+
+<span class="sd">    print(sg.grid.shape)</span>
+
+<span class="sd">The points selected by the smolyak algorithm are accessible in ```sg.grid```  which is a ```2x13``` matrix. They can by plotted with:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    sg.plot_grid()</span>
+
+<span class="sd">Let define a two-variables function and evaluate it on the grid and we initialize the interpolator with these values.</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    fun = lambda x,y: numpy.exp( -numpy.power(x,2) - numpy.power(y,2) )</span>
+<span class="sd">    values_on_the_grid = fun( sg.grid[0,:], sg.grid[1,:] )</span>
+
+<span class="sd">    sg.set_values(values_on_the_grid)</span>
+
+<span class="sd">Now we construct a random matrix ```s``` of size```2xN``` where each column is a point of the state space. On these</span>
+<span class="sd">states, we compute interpolated values and compare it with the true ones.</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from  numpy.random import multivariate_normal as  mvtnorm</span>
+<span class="sd">    mean = numpy.zeros(2)</span>
+<span class="sd">    cov = numpy.eye(2)</span>
+<span class="sd">    s = mvtnorm(mean,cov,50).T</span>
+
+<span class="sd">    interpolated_values = sg.interpolate( s )</span>
+
+<span class="sd">    true_values = fun(s[0,:], s[1,:])</span>
+
+<span class="sd">    max_error = abs( true_values - interpolated_values ).max()</span>
+
+<span class="sd">    print( &#39;Maximum error : {}&#39;.format(max_error) )</span>
+
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">numpy.linalg</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">array</span>
+
+<span class="kn">from</span> <span class="nn">operator</span> <span class="kn">import</span> <span class="n">mul</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+
+<span class="k">def</span> <span class="nf">cheb_extrema</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+    <span class="n">jj</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="n">zeta</span> <span class="o">=</span>  <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">jj</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">zeta</span>
+
+<span class="k">def</span> <span class="nf">chebychev</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="c"># computes the chebychev polynomials of the first kind</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">-</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">results</span>
+
+<span class="k">def</span> <span class="nf">chebychev2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="c"># computes the chebychev polynomials of the second kind</span>
+    <span class="n">dim</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">,)</span> <span class="o">+</span> <span class="n">dim</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">x</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">x</span> <span class="o">*</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">...</span><span class="p">]</span> <span class="o">-</span> <span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">...</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">results</span>
+
+<span class="k">def</span> <span class="nf">enum</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">l</span><span class="p">):</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">l</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="c">#stupid :</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">maximum</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="n">d</span> <span class="p">)</span> <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">==</span><span class="n">maximum</span> <span class="p">]</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+<span class="k">def</span> <span class="nf">build_indices_levels</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,)]</span> <span class="o">+</span> <span class="p">[(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">build_basic_grids</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span> <span class="p">)</span> <span class="p">]</span>
+    <span class="n">ll</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">,</span><span class="mi">2</span><span class="o">**</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">l</span><span class="p">)</span> <span class="p">]</span>  <span class="p">)</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[</span> <span class="o">-</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span> <span class="n">e</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">pi</span> <span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">ll</span><span class="p">]</span>
+    <span class="n">incr</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.0</span><span class="p">],[</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span><span class="mf">1.0</span><span class="p">]]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ll</span><span class="p">)):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">ll</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">tt</span> <span class="o">=</span>  <span class="p">[</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="p">)</span> <span class="p">]</span>
+        <span class="n">incr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">tt</span> <span class="p">)</span>
+    <span class="n">incr</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">incr</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">ll</span><span class="p">,</span><span class="n">incr</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">smolyak_grids</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">l</span><span class="p">):</span>
+
+    <span class="n">ret</span><span class="p">,</span><span class="n">incr</span> <span class="o">=</span> <span class="n">build_basic_grids</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+    <span class="n">tab</span> <span class="o">=</span>  <span class="n">build_indices_levels</span><span class="p">(</span><span class="n">l</span><span class="p">)</span>
+
+    <span class="n">eee</span> <span class="o">=</span>  <span class="p">[</span> <span class="p">[</span> <span class="n">tab</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">enum</span><span class="p">(</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span> <span class="p">]</span>
+    <span class="n">smolyak_indices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ee</span> <span class="ow">in</span> <span class="n">eee</span><span class="p">:</span>
+        <span class="n">smolyak_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span> <span class="o">*</span><span class="n">ee</span> <span class="p">)</span> <span class="p">]</span> <span class="p">)</span>
+
+    <span class="n">fff</span> <span class="o">=</span>  <span class="p">[</span> <span class="p">[</span> <span class="n">incr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">e</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">enum</span><span class="p">(</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span> <span class="p">]</span>
+    <span class="n">smolyak_points</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">ff</span> <span class="ow">in</span> <span class="n">fff</span><span class="p">:</span>
+        <span class="n">smolyak_points</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span> <span class="o">*</span><span class="n">ff</span> <span class="p">)</span> <span class="p">]</span> <span class="p">)</span>
+
+    <span class="n">smolyak_points</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">c_</span><span class="p">[</span><span class="n">smolyak_points</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">smolyak_points</span><span class="p">,</span> <span class="n">smolyak_indices</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SmolyakBasic"><a class="viewcode-back" href="../../../../interpolation.html#dolo.numeric.interpolation.smolyak.SmolyakBasic">[docs]</a><span class="k">class</span> <span class="nc">SmolyakBasic</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Smolyak interpolation on [-1,1]^d&#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">d</span><span class="p">,</span><span class="n">l</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l</span> <span class="o">=</span> <span class="n">l</span>
+
+        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">smolyak_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">smolyak_grids</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">l</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">u_grid</span> <span class="o">=</span> <span class="n">array</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_points</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s">&#39;C&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">isup</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smolyak_indices</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smolyak_points</span><span class="p">)</span>
+        <span class="c">#self.grid = self.real_gri</span>
+
+        <span class="n">Ts</span> <span class="o">=</span> <span class="n">chebychev</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_points</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">comb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_indices</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span> <span class="n">mul</span><span class="p">,</span> <span class="p">[</span><span class="n">Ts</span><span class="p">[</span><span class="n">comb</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">i</span><span class="p">,:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)]</span> <span class="p">)</span>
+            <span class="n">C</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">row_stack</span><span class="p">(</span> <span class="n">C</span> <span class="p">)</span>
+
+        <span class="c"># C is such that :  X = theta * C</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__C__</span> <span class="o">=</span> <span class="n">C</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__C_inv__</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">C</span><span class="p">)</span>  <span class="c"># would be better to store preconditioned matrix</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span><span class="o">*</span><span class="n">d</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">with_derivative</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">with_theta_deriv</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">with_X_deriv</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+
+        <span class="c"># points in x must be stacked horizontally</span>
+
+        <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span>
+
+        <span class="p">[</span><span class="n">n_v</span><span class="p">,</span> <span class="n">n_t</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span>  <span class="c"># (n_v, n_t) -&gt; (number of variables?, ?)</span>
+        <span class="k">assert</span><span class="p">(</span> <span class="n">n_t</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="p">)</span>
+
+        <span class="p">[</span><span class="n">n_d</span><span class="p">,</span> <span class="n">n_p</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span>  <span class="c"># (n_d, n_p) -&gt; (number of dimensions, number of points)</span>
+        <span class="n">n_obs</span> <span class="o">=</span> <span class="n">n_p</span> <span class="c"># by def</span>
+        <span class="k">assert</span><span class="p">(</span> <span class="n">n_d</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="p">)</span>
+
+        <span class="n">Ts</span> <span class="o">=</span> <span class="n">chebychev</span><span class="p">(</span> <span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">comb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_indices</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span> <span class="n">mul</span><span class="p">,</span> <span class="p">[</span><span class="n">Ts</span><span class="p">[</span><span class="n">comb</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">i</span><span class="p">,:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)]</span> <span class="p">)</span>
+            <span class="n">coeffs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">row_stack</span><span class="p">(</span> <span class="n">coeffs</span> <span class="p">)</span>
+
+        <span class="n">val</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span><span class="n">coeffs</span><span class="p">)</span>
+<span class="c">#</span>
+        <span class="k">if</span> <span class="n">with_derivative</span><span class="p">:</span>
+
+            <span class="c"># derivative w.r.t. arguments</span>
+            <span class="n">Us</span> <span class="o">=</span> <span class="n">chebychev2</span><span class="p">(</span> <span class="n">s</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_points</span> <span class="o">-</span> <span class="mi">2</span> <span class="p">)</span>
+            <span class="n">Us</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">n_d</span><span class="p">,</span><span class="n">n_obs</span><span class="p">)</span> <span class="p">),</span> <span class="n">Us</span><span class="p">],</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Us</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">Us</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">Us</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]</span> <span class="o">*</span> <span class="n">i</span>
+
+            <span class="n">der_s</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span> <span class="n">n_t</span><span class="p">,</span> <span class="n">n_d</span><span class="p">,</span> <span class="n">n_obs</span> <span class="p">)</span> <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_d</span><span class="p">):</span>
+                <span class="c">#BB = Ts.copy()</span>
+                <span class="c">#BB[:,i,:] = Us[:,i,:]</span>
+                <span class="n">el</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">comb</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_indices</span><span class="p">:</span>
+                    <span class="c">#p = reduce( mul, [BB[comb[j],j,:] for j in range(self.d)] )</span>
+                    <span class="n">p</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span> <span class="n">mul</span><span class="p">,</span> <span class="p">[</span> <span class="p">(</span><span class="n">Ts</span><span class="p">[</span><span class="n">comb</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">j</span><span class="p">,:]</span> <span class="k">if</span> <span class="n">i</span><span class="o">!=</span><span class="n">j</span> <span class="k">else</span> <span class="n">Us</span><span class="p">[</span><span class="n">comb</span><span class="p">[</span><span class="n">j</span><span class="p">],</span><span class="n">j</span><span class="p">,:])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">d</span><span class="p">)]</span> <span class="p">)</span>
+                    <span class="n">el</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                <span class="n">el</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">row_stack</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+                <span class="n">der_s</span><span class="p">[:,</span><span class="n">i</span><span class="p">,:]</span> <span class="o">=</span>  <span class="n">el</span>
+            <span class="n">dder</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">theta</span><span class="p">,</span> <span class="n">der_s</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">with_theta_deriv</span><span class="p">:</span>
+                <span class="c"># derivative w.r.t. to theta</span>
+                <span class="n">l</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_v</span><span class="p">):</span>
+                    <span class="n">block</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_t</span><span class="p">,</span><span class="n">n_obs</span><span class="p">)</span> <span class="p">)</span>
+                    <span class="n">block</span><span class="p">[</span><span class="n">i</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">coeffs</span>
+                    <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                <span class="n">dval</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="n">l</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">with_X_deriv</span><span class="p">:</span>
+
+                    <span class="n">dd</span> <span class="o">=</span> <span class="n">dval</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span> <span class="p">(</span><span class="n">dval</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">+</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="n">dval</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],)</span> <span class="p">)</span>
+
+                    <span class="n">C_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__C_inv__</span>
+
+                    <span class="n">d_x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">dd</span><span class="p">,</span> <span class="n">C_inv</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+                    <span class="n">d_x</span> <span class="o">=</span> <span class="n">d_x</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+                    <span class="n">pp</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">size</span>
+                    <span class="n">d_x</span> <span class="o">=</span> <span class="n">d_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span> <span class="p">(</span><span class="n">dval</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">+</span> <span class="p">(</span><span class="n">pp</span><span class="p">,</span> <span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">dval</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],)</span> <span class="p">)</span>
+                    <span class="k">return</span> <span class="p">[</span><span class="n">val</span><span class="p">,</span><span class="n">dder</span><span class="p">,</span><span class="n">dval</span><span class="p">,</span><span class="n">d_x</span><span class="p">]</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="p">[</span><span class="n">val</span><span class="p">,</span><span class="n">dder</span><span class="p">,</span><span class="n">dval</span><span class="p">]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">val</span><span class="p">,</span><span class="n">dder</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span>
+
+
+<div class="viewcode-block" id="SmolyakBasic.set_values"><a class="viewcode-back" href="../../../../interpolation.html#dolo.numeric.interpolation.smolyak.SmolyakBasic.set_values">[docs]</a>    <span class="k">def</span> <span class="nf">set_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Updates self.theta parameter. No returns values&quot;&quot;&quot;</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">real</span> <span class="c"># ahem</span>
+
+        <span class="n">C_inv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__C_inv__</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">C_inv</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+
+        <span class="k">return</span> <span class="n">theta</span>
+</div>
+    <span class="k">def</span> <span class="nf">plot_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smolyak_points</span>
+        <span class="k">if</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">ys</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;0.75&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">ys</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">zs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">zs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;0.75&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Can only plot 2 or 3 dimensional problems&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="SmolyakGrid"><a class="viewcode-back" href="../../../../interpolation.html#dolo.numeric.interpolation.smolyak.SmolyakGrid">[docs]</a><span class="k">class</span> <span class="nc">SmolyakGrid</span><span class="p">(</span><span class="n">SmolyakBasic</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;Smolyak interpolation&#39;&#39;&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">smin</span><span class="p">,</span> <span class="n">smax</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        @param bounds: matrix of bounds</span>
+<span class="sd">        @param l:</span>
+<span class="sd">        @param axes:</span>
+<span class="sd">        @return: a smolyak interpolator</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span><span class="n">smin</span><span class="p">,</span><span class="n">smax</span><span class="p">])</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="n">bounds</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">SmolyakGrid</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smin</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">smin</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smax</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">smax</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="o">.</span><span class="n">T</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radius</span> <span class="o">=</span>  <span class="p">[(</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bounds</span><span class="o">.</span><span class="n">T</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">axes</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="n">axes</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">P</span><span class="p">)</span>
+
+        <span class="n">base</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="n">image_of_base</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span> <span class="p">,</span> <span class="n">base</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">A</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_grid</span> <span class="p">)</span>
+
+    <span class="c"># A goes from [0,1] to bounds</span>
+    <span class="k">def</span> <span class="nf">A</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">x</span><span class="p">):</span>
+<span class="c">#        &#39;&#39;&#39;A is the inverse of B&#39;&#39;&#39;</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">P</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">P</span>
+        <span class="k">return</span> <span class="n">c</span> <span class="o">+</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">P</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+    <span class="c"># B returns from bounds to [0,1]</span>
+    <span class="k">def</span> <span class="nf">B</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">y</span><span class="p">):</span>
+<span class="c">#        &#39;&#39;&#39;B is the inverse of A&#39;&#39;&#39;</span>
+        <span class="n">N</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">Pinv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span>
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">Pinv</span><span class="p">,</span><span class="n">y</span><span class="o">-</span><span class="n">c</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">with_derivative</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">with_theta_deriv</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">with_X_deriv</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>  <span class="c"># Transform back to [0,1]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SmolyakGrid</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span> <span class="n">x</span><span class="p">,</span> <span class="n">with_derivative</span><span class="o">=</span><span class="n">with_derivative</span><span class="p">,</span> <span class="n">with_theta_deriv</span><span class="o">=</span><span class="n">with_theta_deriv</span><span class="p">,</span> <span class="n">with_X_deriv</span><span class="o">=</span><span class="n">with_X_deriv</span><span class="p">)</span>  <span class="c"># Call super class&#39; (SmolyakGrid) interpolate func</span>
+        <span class="k">if</span> <span class="n">with_derivative</span> <span class="ow">or</span> <span class="n">with_theta_deriv</span> <span class="ow">or</span> <span class="n">with_X_deriv</span><span class="p">:</span>
+            <span class="n">dder</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">dder</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">dder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Pinv</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">dder</span>
+        <span class="k">return</span> <span class="n">res</span>
+<span class="c">#    return res</span>
+<span class="c">#        if with_derivative:</span>
+<span class="c">#            if with_theta_deriv:</span>
+<span class="c">#                [val,dder,dval] = res</span>
+<span class="c">#                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)</span>
+<span class="c">#                return [val,dder,dval]</span>
+<span class="c">#            else:</span>
+<span class="c">#                [val,dder] = res</span>
+<span class="c">#                dder = numpy.tensordot(dder, self.Pinv, axes=(1,0)).swapaxes(1,2)</span>
+<span class="c">#                return [val,dder]</span>
+<span class="c">#        else:</span>
+<span class="c">#            return res</span>
+
+
+    <span class="k">def</span> <span class="nf">plot_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span>
+        <span class="k">if</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">ys</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;0.75&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="kn">import</span> <span class="n">Axes3D</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">ys</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">zs</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s">&#39;3d&#39;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">zs</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="bp">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">&#39;--&#39;</span><span class="p">,</span><span class="n">color</span><span class="o">=</span><span class="s">&#39;0.75&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Can only plot 2 or 3 dimensional problems&#39;</span><span class="p">)</span>
+</div>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">row_stack</span><span class="p">,</span> <span class="n">array</span>
+
+    <span class="n">smin</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">smax</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">sg</span> <span class="o">=</span> <span class="n">SmolyakGrid</span><span class="p">(</span><span class="n">smin</span><span class="p">,</span><span class="n">smax</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">sg2</span> <span class="o">=</span> <span class="n">SmolyakGrid</span><span class="p">(</span><span class="n">smin</span><span class="p">,</span><span class="n">smax</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c">#    print(sg.u_grid)</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">u_grid</span>
+
+    <span class="n">grid2</span> <span class="o">=</span> <span class="n">sg2</span><span class="o">.</span><span class="n">u_grid</span>
+
+    <span class="n">values</span> <span class="o">=</span> <span class="n">row_stack</span><span class="p">(</span> <span class="p">[</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,:])</span><span class="o">/</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">grid</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="p">)</span>
+<span class="c">#    print(values)</span>
+
+    <span class="n">sg</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;sizes of the grids&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">u_grid</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">sg2</span><span class="o">.</span><span class="n">u_grid</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">sh</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;values&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;theta&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">sg</span><span class="o">.</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">fun</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+
+        <span class="n">sg</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">))</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">grid2</span><span class="p">,</span> <span class="n">with_derivative</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+<span class="c">#</span>
+<span class="c">#    def fun(theta):</span>
+<span class="c">#</span>
+<span class="c">#        sg.theta = theta.reshape(sh).copy()</span>
+<span class="c">#        res = sg.interpolate(grid2, with_derivative=False)</span>
+<span class="c">#        return res</span>
+<span class="c">#</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.numeric.serial_operations</span> <span class="kn">import</span> <span class="n">numdiff1</span><span class="p">,</span> <span class="n">numdiff2</span>
+
+<span class="c">#    x0 = sg.theta.flatten()</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">x0</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">test</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;image&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span> <span class="n">test</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="c">#    dtest = numdiff1(grid[1] fun, values)</span>
+    <span class="n">dtest</span> <span class="o">=</span> <span class="n">numdiff2</span><span class="p">(</span> <span class="n">fun</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">dv</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+
+<span class="c">#    print(values.shape)</span>
+<span class="c">#    print(test.shape)</span>
+<span class="c">#    print(dtest)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;numerical derivative&#39;</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">dtest</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="c">#    dtest = dtest.swapaxes(1,2)</span>
+
+<span class="c">#    print(test.shape)</span>
+<span class="c">#    print(test)</span>
+<span class="c">#    [res1, res2, res3] = sg.interpolate(grid2, with_theta_deriv=True)</span>
+<span class="c">#</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">&#39;symbolic derivative&#39;</span><span class="p">)</span>
+    <span class="p">[</span><span class="n">res1</span><span class="p">,</span> <span class="n">res2</span><span class="p">,</span> <span class="n">res3</span><span class="p">,</span> <span class="n">res4</span><span class="p">]</span> <span class="o">=</span> <span class="n">sg</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">grid2</span><span class="p">,</span> <span class="n">with_derivative</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">with_theta_deriv</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">with_X_deriv</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">res4</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+<span class="c">#</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">dtest</span> <span class="o">-</span> <span class="n">res4</span>
+
+<span class="c">#</span>
+    <span class="k">print</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="p">)</span>
+<span class="c">#</span>
+<span class="c">#    print(res3.shape)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a
+href="http://sphinx-doc.org/">Sphinx</a> 1.1.3.
+    </div>
+
+</body>
+</html>

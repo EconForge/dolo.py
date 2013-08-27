@@ -1,0 +1,180 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Perfect foresight algorithm &mdash; dolo 0.4.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css"
+type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css"
+type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="dolo 0.4.4 documentation" href="index.html" />
+    <link rel="up" title="Solution algorithms" href="algos.html" />
+    <link rel="next" title="Advanced topics" href="api.html" />
+    <link rel="prev" title="Perturbation algorithm" href="perturbations.html" /> 
+<link href="http://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
+  </head>
+  <body>
+
+
+
+<!-- Piwik --<link rel="shortcut icon" href="_static/favicon.ico">
+
+<!--
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="index.html">
+Dolo
+<img src="_static/logo2.png" border="0" alt="matplotlib"/>
+</a>
+</div>
+-->
+
+
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="api.html" title="Advanced topics"
+             accesskey="N">next</a></li>
+        <li class="right" >
+          <a href="perturbations.html" title="Perturbation algorithm"
+             accesskey="P">previous</a> |</li>
+
+        <li><a href="index.html">home</a>|&nbsp;</li>
+        <li><a href="examples.html">examples</a>|&nbsp;</li>
+        <li><a href="installation.html">install</a>|&raquo;</li>
+          <li><a href="algos.html" accesskey="U">Solution algorithms</a> &raquo;</li> 
+      </ul>
+    </div>
+
+  
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<h3><a href="index.html">Table Of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Quick tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="algos.html">Solution algorithms</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="perturbations.html">Perturbation algorithm</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="">Perfect foresight algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Advanced topics</a></li>
+</ul>
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="perfect-foresight-algorithm">
+<h1>Perfect foresight algorithm<a class="headerlink" href="#perfect-foresight-algorithm" title="Permalink to this headline">¶</a></h1>
+<p>The perfect foresight algorithm is implemented for models of type &#8220;fg&#8221;. Recall that ths type of model is specified by <span class="math">\(g\)</span> and <span class="math">\(f\)</span> such that:</p>
+<p><span class="math">\(s_t = g \left( s_{t-1}, x_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(E_t \left[ f \left( s_t, x_t, s_{t+1}, x_{t+1} \right) \right]=0\)</span></p>
+<p>In this exercise, the exogenous shocks are supposed to take a predetermined series of values <span class="math">\((\epsilon_0,\epsilon_1,...,\epsilon_K)\)</span>. We assume <span class="math">\(\forall t&lt;0, \epsilon_t=\epsilon_0\)</span> and <span class="math">\(\forall t&gt;K, \epsilon_t=\epsilon_K\)</span>.</p>
+<p>We compute the transition of the economy specified by <span class="math">\(fg\)</span>, from an equilibrium with <span class="math">\(\epsilon=\epsilon_0\)</span> to an equilibrim with <span class="math">\(\epsilon=\epsilon_K\)</span>.</p>
+<p>This transition happens under under perfect foresight, in the following sense. For <span class="math">\(t&lt;0\)</span> agents, expect the economy to remain at its initial steady-state, but suddenly, at <span class="math">\(t=0\)</span>, they know the exact values, that innovations will take until the end of times.</p>
+<dl class="function">
+<dt id="dolo.algos.perfect_foresight.deterministic_solve">
+<tt class="descclassname">dolo.algos.perfect_foresight.</tt><tt class="descname">deterministic_solve</tt><big>(</big><em>model</em>, <em>shocks=None</em>, <em>T=100</em>, <em>use_pandas=True</em>, <em>ignore_constraints=False</em>, <em>start_s=None</em>, <em>verbose=False</em><big>)</big><a class="reference internal" href="_modules/dolo/algos/perfect_foresight.html#deterministic_solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.algos.perfect_foresight.deterministic_solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a perfect foresight simulation using a stacked-time algorithm.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> &#8211; an &#8220;fga&#8221; model</li>
+<li><strong>shocks</strong> &#8211; a <span class="math">\(n_e\times N\)</span> matrix containing <span class="math">\(N\)</span> realizations of the shocks. <span class="math">\(N\)</span> must be smaller than <span class="math">\(T\)</span>.    The exogenous process is assumed to remain constant and equal to its last value after <cite>N</cite> periods.</li>
+<li><strong>T</strong> &#8211; the horizon for the perfect foresight simulation</li>
+<li><strong>use_pandas</strong> &#8211; if True, returns a pandas dataframe, else the simulation matrix</li>
+<li><strong>ignore_constraints</strong> &#8211; if True, complementarity constraintes are ignored.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>to a steady-state corresponding to the last value of the exogenous shocks.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dolo.algos.perfect_foresight.find_steady_state">
+<tt class="descclassname">dolo.algos.perfect_foresight.</tt><tt class="descname">find_steady_state</tt><big>(</big><em>model</em>, <em>e</em>, <em>force_values=None</em><big>)</big><a class="reference internal" href="_modules/dolo/algos/perfect_foresight.html#find_steady_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.algos.perfect_foresight.find_steady_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds the steady state corresponding to exogenous shocks <span class="math">\(e\)</span>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>model</strong> &#8211; an &#8220;fga&#8221; model.</li>
+<li><strong>e</strong> &#8211; a vector with the value for the exogenous shocks.</li>
+<li><strong>force_values</strong> &#8211; (optional) a vector where finite values override the equilibrium conditions. For instance a vector <span class="math">\([0,nan,nan]\)</span> would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a list containing a vector for the steady-states and the corresponding steady controls.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Pablo Winant.
+      Created using <a
+href="http://sphinx-doc.org/">Sphinx</a> 1.1.3.
+    </div>
+
+</body>
+</html>
