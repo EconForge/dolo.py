@@ -134,15 +134,20 @@ class GModel(object):
                 calibration[k] = numpy.array(calibration[k], dtype=numpy.double)
         self.calibration = calibration
 
-    def set_calibration(self,*args):
+    def set_calibration(self,*args,**kwargs):
         """Updates the model calibration while respecting dependences between parameters.
         :param args: either two parameters ``key``, ``value`` or a dictionary mapping several keys to several values
-             each key must be a string among the symbols of the model
+             each key must be a string among the symbols of the model. Can also be a list of keyword arguments.
         """
         if len(args) == 2:
             d = {args[0]:args[1]}
-        else:
+	elif len(args) == 1 and isinstance(args[0], dict):
             d = args[0]
+	elif len(args)==0:
+	    d = kwargs
+	else:
+	    raise Exception("Incorrect call")
+    	
         self.model.set_calibration(d)
         self.__update_calibration__()
 
