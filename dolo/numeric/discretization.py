@@ -141,8 +141,8 @@ def tensor_markov( m1, m2 ):
     p = t1.shape[1]
     q = t2.shape[1]
     n = np.row_stack([
-        np.repeat(t1, q, axis=1),
-        np.tile( t2, (1,p))
+        np.repeat(n1, q, axis=1),
+        np.tile( n2, (1,p))
     ])
     return [n,t]
 
@@ -168,7 +168,8 @@ if __name__ == '__main__':
     transition0 = transition.copy()*0
     transition0[1,1] = 1.0
 
-    print(nodes)
+    print(nodes.shape)
 
     [nodes, transition] = tensor_markov( (nodes, transition0), (nodes, transition) )
-    print(nodes)
+
+    print(nodes.shape)
