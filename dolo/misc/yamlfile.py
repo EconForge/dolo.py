@@ -18,6 +18,7 @@ Imports the content of a modfile into the current interpreter scope
     txt = txt.replace('--','-')
     txt = txt.replace('^','**')
     txt = txt.replace('equilibrium:','arbitrage:')
+    txt = txt.replace('_|_','|')
     raw_dict = yaml.load(txt)
 
     if verbose == True:
