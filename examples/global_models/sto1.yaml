@@ -1,6 +1,4 @@
-# STO1.yaml Model definition file for the competitive storage model
-# Copyright (C) 2011-2012 Christophe Gouel
-# Licensed under the Expat license, see LICENSE.txt
+model_type: fgh
 
 declarations:
 
@@ -30,7 +28,7 @@ equations:
   expectation:
 
     - EP  = P(1)
-    - EPe = P(1)*e
+    - EPe = P(1)*e(1)
 
     
 calibration:

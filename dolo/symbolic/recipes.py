@@ -60,9 +60,9 @@ recipe_fga = dict(
 #recipe_fgae = copy.deepcopy(recipe_fga)
 #recipe_fgae['equation_type']['arbitrage'].append( ('shocks',1) )
 
-recipe_fgh = dict(
+recipe_fgh1 = dict(
 
-    model_type = 'fgh',
+    model_type = 'fgh1',
 
     variable_type = ['states', 'controls', 'expectations'],
 
@@ -103,9 +103,57 @@ recipe_fgh = dict(
     )
 )
 
+recipe_fgh2 = dict(
+
+    model_type = 'fgh2',
+
+    variable_type = ['states', 'controls', 'expectations'],
+
+    equation_type = dict(
+
+        arbitrage = [
+            ('states',0),
+            ('controls',0),
+            ('expectations',0),
+        ],
+
+        transition = {
+            'definition': True,
+            'lhs': [
+                ('states',0),
+                ],
+            'rhs': [
+                ('states',-1),
+                ('controls',-1),
+                ('shocks',0)
+            ]
+        },
+
+        expectation = {
+
+            'definition': True,
+
+            'lhs': [
+                ('expectations',0),
+                ],
+
+            'rhs': [
+                ('states',0),
+                ('controls',0),
+                ('shocks',1),
+                ('states',1),
+                ('controls',1)
+            ]
+        }
+
+    )
+)
+
 
 recipes = {
-    'fga': recipe_fga,
+    'fga':  recipe_fga,
 #    'fgae': recipe_fgae,
-    'fgh': recipe_fgh,
+    'fgh1': recipe_fgh1,
+    'fgh2': recipe_fgh2,
+    'fgh':  recipe_fgh2,
 }
