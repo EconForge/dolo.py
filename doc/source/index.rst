@@ -11,7 +11,7 @@ Welcome to dolo's documentation!
 
     examples
 
-    algorithms
+    algos
 
     api
     

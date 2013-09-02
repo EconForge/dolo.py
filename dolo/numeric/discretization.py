@@ -7,7 +7,7 @@ import math
 
 def tauchen(N, mu, rho, sigma, m=2):
     """
-    SJB: This is a port of Martin Floden's 1996 Matlab code to implement Tauchen 1986 Economic Letters method The following comments are Floden's. Finds a Markov chain whose sample paths approximate those of the AR(1) process z(t+1) = (1-rho)*mu + rho * z(t) + eps(t+1) where eps are normal with stddev sigma.
+    Approximate an AR1 process by a finite markov chain using Tauchen's method.
 
     :param N: scalar, number of nodes for Z
     :param mu: scalar, unconditional mean of process
@@ -16,7 +16,7 @@ def tauchen(N, mu, rho, sigma, m=2):
     :param m: max +- std. devs.
     :returns: Z, N*1 vector, nodes for Z. Zprob, N*N matrix, transition probabilities
 
-    Original implementation by Martin Floden Fall 1996. This procedure is an implementation of George Tauchen's algorithm described in Ec. Letters 20 (1986) 177-181.
+    SJB: This is a port of Martin Floden's 1996 Matlab code to implement Tauchen 1986 Economic Letters method The following comments are Floden's. Finds a Markov chain whose sample paths approximate those of the AR(1) process z(t+1) = (1-rho)*mu + rho * z(t) + eps(t+1) where eps are normal with stddev sigma.
     """
     Z     = np.zeros((N,1))
     Zprob = np.zeros((N,N))
@@ -46,7 +46,9 @@ def tauchen(N, mu, rho, sigma, m=2):
 
 
 def rouwenhorst(rho, sigma, N):
-    """Compute rouwenhorst discretization of a univariate AR1 process by finite markov chain
+    """
+    Approximate an AR1 process by a finite markov chain using Rouwenhorst's method.
+
     :param rho: autocorrelation of the AR1 process
     :param sigma: conditional standard deviation of the AR1 process
     :param N: number of states
@@ -85,6 +87,16 @@ def rouwenhorst(rho, sigma, N):
 
 
 def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
+    """
+    Discretize an VAR(1) into a markov chain. The autoregression matrix is supposed to be a scalar.
+
+    :param rho:
+    :param sigma:
+    :param N:
+    :param method:
+    :param m:
+    :return:
+    """
 
     # rho is assumed to be a scalar
     # sigma is a positive symmetric matrix
@@ -115,6 +127,24 @@ def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
 
     return [markov_nodes, transition_matrix]
 
+def tensor_markov( m1, m2 ):
+    """Computes the product of two independent markov chains.
+
+    :param m1: a tuple containing the nodes and the transition matrix of the first chain
+    :param m2: a tuple containing the nodes and the transition matrix of the second chain
+    :return: a tuple containing the nodes and the transition matrix of the product chain
+    """
+
+    n1, t1 = m1
+    n2, t2 = m2
+    t = np.kron(t1, t2)
+    p = t1.shape[1]
+    q = t2.shape[1]
+    n = np.row_stack([
+        np.repeat(n1, q, axis=1),
+        np.tile( n2, (1,p))
+    ])
+    return [n,t]
 
 
 if __name__ == '__main__':
@@ -128,9 +158,18 @@ if __name__ == '__main__':
     sigma[1,0]  = numpy.sqrt( 0.5*sigma[0,0]*sigma[1,1] )
     rho = 0.9
 
-    [nodes, transition] = multidimensional_discretization(rho, sigma, 3, method='rouwenhorst')
+    [nodes, transition] = multidimensional_discretization(rho, sigma, 2, method='rouwenhorst')
 
 
-    from matplotlib.pylab import *
-    plot(nodes[0,:], nodes[1,:],'o')
-    show()
+    # from matplotlib.pylab import *
+    # plot(nodes[0,:], nodes[1,:],'o')
+    # show()
+
+    transition0 = transition.copy()*0
+    transition0[1,1] = 1.0
+
+    print(nodes.shape)
+
+    [nodes, transition] = tensor_markov( (nodes, transition0), (nodes, transition) )
+
+    print(nodes.shape)
