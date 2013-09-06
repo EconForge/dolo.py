@@ -26,7 +26,7 @@ def global_solve(cmodel,
     sigma = model.calibration['covariances']
 
     if initial_dr == None:
-        initial_dr = approximate_controls(model, order=pert_order)
+        initial_dr = approximate_controls(cm, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
 
@@ -117,13 +117,19 @@ def global_solve(cmodel,
     xinit = xinit.real  # just in case...
 
 
-    f = cm.functions['arbitrage']
-    g = cm.functions['transition']
-    a = cm.functions['auxiliary']
+    if cm.model_type == 'fga':
+        ff = cm.functions['arbitrage']
+        gg = cm.functions['transition']
+        aa = cm.functions['auxiliary']
+        g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
+        f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
+    else:
+        f = cm.functions['arbitrage']
+        g = cm.functions['transition']
 
 #    cm.x_bounds = None
 
-    dr = time_iteration(dr.grid, dr, xinit, f, g, a, parms, epsilons, weights, maxit=maxit,
+    dr = time_iteration(dr.grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
                         tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
 
 

@@ -25,7 +25,7 @@ def deterministic_residuals(s, x, interp, f, g, sigma, parms):
     dummy_epsilons = np.zeros((n_e,n_g))
     snext = g(s,x,dummy_epsilons,parms)
     xnext = interp.interpolate(snext)
-    val = f(s,x,snext,xnext,dummy_epsilons,parms)
+    val = f(s,x,dummy_epsilons,snext,xnext,parms)
     return val
 
 
@@ -38,7 +38,7 @@ def stochastic_residuals(s, x, dr, f, g, parms, epsilons, weights):
     ee = np.repeat(epsilons, n_g , axis=1)
     ssnext = g(ss,xx,ee,parms)
     xxnext = dr.interpolate(ssnext)
-    val = f(ss,xx,ssnext,xxnext,ee,parms)
+    val = f(ss,xx,ee,ssnext,xxnext,parms)
 
     res = np.zeros( (n_x,n_g) )
     for i in range(n_draws):
@@ -63,7 +63,7 @@ def stochastic_residuals_2(s, x, dr, f, g, parms, epsilons, weights, shape, deri
     ee = np.repeat(epsilons, n_g , axis=1)
     [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms, derivs=True)
     [XX, XX_SS, junk, XX_t] = dr.interpolate(SS, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
-    [F, F_ss, F_xx, F_SS, F_XX, F_ee] = f(ss, xx, SS, XX, ee, parms, derivs=True)
+    [F, F_ss, F_xx, F_ee, F_SS, F_XX] = f(ss, xx, ee, SS, XX, parms, derivs=True)
 
 
     res = np.zeros( (n_x,n_g) )
@@ -109,7 +109,7 @@ def stochastic_residuals_3(s, x, dr, f, g, parms, epsilons, weights, deriv=False
             e = numpy.column_stack(tt)
             S = g(s, x, e, parms)
             X = dr(S)
-            F = f(s, x, S, X, e, parms)
+            F = f(s, x, e, S, X, parms)
             res += weights[i] * F
         return res
     else:
@@ -122,7 +122,7 @@ def stochastic_residuals_3(s, x, dr, f, g, parms, epsilons, weights, deriv=False
             e = numpy.column_stack(tt)
             [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
             [X, X_S, junk, X_t] = dr.interpolate(S, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
-            [F, F_s, F_x, F_S, F_X, F_e] = f(s, x, S, X, e, parms, derivs=True)
+            [F, F_s, F_x, F_e, F_S, F_X] = f(s, x, e, S, X, parms, derivs=True)
             res += weights[i] * F
             S_theta = stm(S_x, x_theta)
             X_theta = stm(X_S, S_theta) + X_t
@@ -165,7 +165,7 @@ def step_residual_fg(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, se
 
         return res
 
-def step_residual(s, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
+def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
 
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
@@ -175,60 +175,14 @@ def step_residual(s, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=None, 
     ee = np.repeat(epsilons, n_g , axis=1)
 
     if with_derivatives:
-        raise Exception('not implementeds')
-#         [ssnext, g_ss, g_xx] = g(ss,xx,ee,parms,derivs=True)[:3]
-#
-# #        if False:
-# #            smin = s.min(axis=1)[:,None]
-# #            smax = s.max(axis=1)[:,None]
-# #            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
-#
-#         [xxnext, xxold_ss] = dr.interpolate(ssnext, with_derivative=True)[:2]
-#
-# #        if x_bounds:
-# #            lb = x_bounds[0](ssnext, parms)
-# #            ub = x_bounds[1](ssnext, parms)
-# #            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
-#
-#         [val, f_ss, f_xx, f_ssnext, f_xxnext] = f(ss,xx,ssnext,xxnext,ee,parms, derivs=True)[:5]
-#         dval = f_xx + stm(f_ssnext, g_xx) + stm(f_xxnext, stm(xxold_ss, g_xx))
-#
-#         res = np.zeros( (n_x,n_g) )
-#         for i in range(n_draws):
-#             res += weights[i] * val[:,n_g*i:n_g*(i+1)]
-#
-#         dres = np.zeros( (n_x,n_x,n_g) )
-#         for i in range(n_draws):
-#             dres += weights[i] * dval[:,:,n_g*i:n_g*(i+1)]
-#
-#         if not serial_grid:
-#             dval = np.zeros( (n_x,n_g,n_x,n_g))
-#             for i in range(n_g):
-#                 dval[:,i,:,i] = dres[:,:,i]
-#         else:
-#             dval = dres
-#
-#         return [res, dval]
+        raise Exception('not implemented')
+
     else:
 
-        aa = aux(ss,xx,parms)
-        ssnext = g(ss,xx,aa,ee,parms)
-
-        if False:
-            smin = s.min(axis=1)[:,None]
-            smax = s.max(axis=1)[:,None]
-            ssnext = np.maximum(np.minimum(smax,ssnext),smin)
-
+        ssnext = g(ss,xx,ee,parms)
         xxnext = dr.interpolate(ssnext)
 
-#        if x_bounds:
-#            lb = x_bounds[0](ssnext, parms)
-#            ub = x_bounds[1](ssnext, parms)
-#            xxnext = np.maximum(np.minimum(ub,xxnext),lb)
-
-        aanext = aux(ssnext, xxnext, parms)
-
-        val = f(ss,xx,aa,ssnext,xxnext,aanext,parms)
+        val = f(ss,xx,ee,ssnext,xxnext,parms)
 
         res = np.zeros( (n_x,n_g) )
         for i in range(n_draws):
@@ -250,7 +204,7 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
 
     ssnext = g(ss,xx,ee,parms)
     xxnext = dr(ssnext)
-    val = f(ss,xx,ssnext,xxnext,ee,parms)
+    val = f(ss,xx,ee,ssnext,xxnext,parms)
 
     errors = np.zeros( (n_x,n_g) )
     for i in range(n_draws):
@@ -262,16 +216,16 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     return std_errors
 
 
-def time_iteration(grid, dr, xinit, f, g, aux, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
+def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
     from dolo.numeric.solver import solver
     import time
 
 
     if numdiff == True:
-        fun = lambda x: step_residual(grid, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
     else:
-        fun = lambda x: step_residual(grid, x, dr, f, g, aux, parms, epsilons, weights, x_bounds=x_bounds)
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds)
 
     ##
     t1 = time.time()
