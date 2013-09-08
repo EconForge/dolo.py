@@ -22,7 +22,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
         dr = solve_decision_rule(model)
         statefree_perturb = dr['ys'] + dr['g_ss']/2.0
-        ctls = model.variables_groups['controls']
+        ctls = model.symbols_s['controls']
         ctls_ind = [model.variables.index(v) for v in ctls]
 
         # the two methods should yield exactly the same result
