@@ -23,13 +23,30 @@ class CompilerMatlab(object):
 
     def process_output(self, recipe=None, diff=False):
 
+        from dolo.compiler.function_compiler_matlab import compile_multiargument_function
+        from dolo.compiler.function_compiler_matlab import compile_incidence_matrices
         recipe = self.recipe
-        
+
         model = self.model
         parms = model.symbols_s['parameters']
 
         fun_text = ''
         incidence_matrices_text = ''
+
+        try:
+            [lb_sym, ub_sym] = model.get_complementarities()['arbitrage']
+
+            states = model.symbols_s['states']
+            parameters = model.symbols_s['parameters']
+            txt_lb = compile_multiargument_function(lb_sym, [states], ['s'], parameters, fname = 'arbitrage_lb', diff=diff, default='-inf')
+            txt_ub = compile_multiargument_function(ub_sym, [states], ['s'], parameters, fname = 'arbitrage_ub', diff=diff, default='inf')
+            incidence_matrices_text += 'model.infos.incidence_matrices.arbitrage_lb = ' + compile_incidence_matrices(lb_sym, [states]) + '\n'
+            incidence_matrices_text += 'model.infos.incidence_matrices.arbitrage_ub = ' + compile_incidence_matrices(ub_sym, [states]) + '\n'
+
+            there_are_complementarities = True
+        except Exception as e:
+            there_are_complementarities = False
+            print(e)
 
         for eqg in self.model.equations_groups:
 
@@ -64,28 +81,13 @@ class CompilerMatlab(object):
             else:
                 equations = [eq.gap for eq in equations]
 
-            from dolo.compiler.function_compiler_matlab import compile_multiargument_function
             txt = compile_multiargument_function(equations, args, arg_names, parms, fname = eqg, diff=diff)
 
             fun_text += txt
 
-            from dolo.compiler.function_compiler_matlab import compile_incidence_matrices
             txt = compile_incidence_matrices(equations, args)
             incidence_matrices_text += 'model.infos.incidence_matrices.' + eqg + ' = ' + txt + '\n'
 
-            try:
-                [lb_sym, ub_sym] = model.get_complementarities()['arbitrage']
-
-                states = model.symbols_s['states']
-                parameters = model.symbols_s['parameters']
-
-                txt_lb = compile_multiargument_function(lb_sym, [states], ['s'], parameters, fname = 'arbitrage_lb', diff=diff)
-                txt_ub = compile_multiargument_function(ub_sym, [states], ['s'], parameters, fname = 'arbitrage_ub', diff=diff)
-
-                there_are_complementarities = True
-            except Exception as e:
-                there_are_complementarities = False
-                print(e)
 
         # the following part only makes sense for fga models
 
