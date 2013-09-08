@@ -26,6 +26,7 @@ def global_solve(cmodel,
     sigma = model.calibration['covariances']
 
     if initial_dr == None:
+#        from dolo.algos.perturbations import approximate_controls
         initial_dr = approximate_controls(cm, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
@@ -123,6 +124,10 @@ def global_solve(cmodel,
         aa = cm.functions['auxiliary']
         g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
         f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
+    elif cm.model_type == 'fg':
+        g = cm.functions['transition']
+        ff = cm.functions['arbitrage']
+        f = lambda s,x,e,S,X,p : ff(s,x,S,X,p)
     else:
         f = cm.functions['arbitrage']
         g = cm.functions['transition']
