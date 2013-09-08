@@ -25,6 +25,7 @@ class GModel(object):
     calibration = None
     functions = None
     symbols = None
+    infos = dict()
 
     @property
     def variables(self):
@@ -55,6 +56,11 @@ class GModel(object):
             self.recipe = model_type
 
         self.model_type = self.recipe['model_type']
+
+        self.infos['model_type'] = self.model_type
+        self.infos['data_layout'] = order
+
+        # TODO: find a good name to replace "data_layout"
 
         self.__create_functions__(compiler, order=order)
 
