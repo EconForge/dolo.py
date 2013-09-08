@@ -149,8 +149,6 @@ def tensor_markov( m1, m2 ):
 
 if __name__ == '__main__':
     [Z,Zprob] = tauchen( 5,0,0.8,0.1,1.5 )
-    print(Z)
-    print(Zprob)
 
     import numpy
     sigma = numpy.diag([0.1, 0.1])**2
@@ -170,6 +168,9 @@ if __name__ == '__main__':
 
     print(nodes.shape)
 
+    print(transition.shape)
+
     [nodes, transition] = tensor_markov( (nodes, transition0), (nodes, transition) )
 
     print(nodes.shape)
+    print(transition.shape)
