@@ -56,7 +56,7 @@ fga:
 
   model_type: fga
 
-  symbol_type: ['states', 'controls', 'auxiliary']
+  variable_type: ['states', 'controls', 'auxiliary']
 
   equation_type:
 
@@ -91,11 +91,10 @@ fga:
           rhs:
               - ['states',0]
               - ['controls',0]
-              - ['shocks',0]
 
-fgh:
+fgh1:
 
-  model_type: fgh
+  model_type: fgh1
 
   variable_type: ['states', 'controls', 'expectations']
 
@@ -130,6 +129,47 @@ fgh:
               - ['states',1]
               - ['controls',1]
 
+fgh2:
+
+  model_type: fgh2
+
+  variable_type: ['states', 'controls', 'expectations']
+
+  equation_type:
+
+      arbitrage:
+          - ['states',0]
+          - ['controls',0]
+          - ['expectations',0]
+
+
+      transition:
+
+          definition: True
+
+          lhs:
+              - ['states',0]
+
+          rhs:
+              - ['states',-1]
+              - ['controls',-1]
+              - ['shocks',0]
+
+      expectation:
+
+          definition: True
+
+          lhs:
+              - ['expectations',0]
+
+          rhs:
+              - ['states',0]
+              - ['controls',0]
+              - ['shocks',1]  
+              - ['states',1]
+              - ['controls',1]
+
+
 
 vfi:
 
@@ -161,3 +201,5 @@ vfi:
               - ['states',-1]
               - ['controls',-1]
               - ['shocks',0]
+
+
