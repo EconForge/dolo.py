@@ -88,10 +88,10 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
         lower_bound[n_s:,:] = lb
         upper_bound = initial_guess*0 + numpy.inf
         upper_bound[n_s:,:] = ub
-	test1 = max( lb.max(axis=1) - lb.min(axis=1) )
-	test2 = max( ub.max(axis=1) - ub.min(axis=1) )
-	if test1 >0.00000001 or test2>0.00000001:
-		raise Exception("Not implemented: perfect foresight solution requires that controls have constant bounds.")
+        test1 = max( lb.max(axis=1) - lb.min(axis=1) )
+        test2 = max( ub.max(axis=1) - ub.min(axis=1) )
+        if test1 >0.00000001 or test2>0.00000001:
+            raise Exception("Not implemented: perfect foresight solution requires that controls have constant bounds.")
     else:
         ignore_constraints=True
         lower_bound = None
