@@ -13,6 +13,8 @@ setup(
     version = __version__,
     packages = find_packages(),
 
+    package_data={'dolo.symbolic':["recipes.yaml"]},
+
     test_suite='dolo.tests',
 
     cmdclass = {'build_ext': build_ext},
