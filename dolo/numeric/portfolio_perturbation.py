@@ -21,7 +21,7 @@ def portfolios_to_deterministic(model,pf_names):
 
     return model
 
-def solve_portfolio_model(model, pf_names, order=1):
+def solve_portfolio_model(model, pf_names, order=2, guess=None):
 
     pf_model = model
 
@@ -109,7 +109,7 @@ def solve_portfolio_model(model, pf_names, order=1):
 
     n_controls = len(model.symbols_s['controls'])
 
-    def constant_residuals(x):
+    def constant_residuals(x, return_dr=False):
         d = {}
         for i in range(n_pfs):
             p = pf_parms[i]
@@ -119,19 +119,29 @@ def solve_portfolio_model(model, pf_names, order=1):
         new_model.set_calibration(d)
             # new_model.parameters_values[p] = x[i]
             # new_model.init_values[v] = x[i]
-        [X_bar, X_s, X_ss] = approximate_controls(new_model, order=2, return_dr=False)
+        if return_dr:
+            dr = approximate_controls(new_model, order=1, return_dr=True)
+            return dr
+        X_bar, X_s, X_ss = approximate_controls(new_model, order=2, return_dr=False)
+
         return X_bar[n_controls-n_pfs:n_controls]
 
-    x0 = numpy.zeros(n_pfs)
+
+    if guess is not None:
+        x0 = numpy.array(guess)
+    else:
+        x0 = numpy.zeros(n_pfs)
+
 
     from dolo.numeric.solver import solver
     portfolios_0 = solver(constant_residuals, x0)
 
-    print('Zero order portfolios : ')
-    print(portfolios_0)
+    print('Zero order portfolios: {}'.format(portfolios_0))
+    print('Zero order portfolios: Final error: {}'.format( constant_residuals(portfolios_0) ))
 
-    print('Zero order: Final error:')
-    print(constant_residuals(portfolios_0))
+    if order == 1:
+        dr = constant_residuals(portfolios_0, return_dr=True)
+        return dr
 
     def dynamic_residuals(X, return_dr=False):
         x = X[:,0]
@@ -173,15 +183,18 @@ def solve_portfolio_model(model, pf_names, order=1):
 
     return dr
 
-
-
 if __name__ == '__main__':
+
     from dolo import *
-    # model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml', compiler=None)
-    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_4/code/models/portfolios_capital.yaml', compiler=None)
-    print(model.calibration)
+    model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml', compiler=None)
+
     print(model)
 
 
-    sol = solve_portfolio_model(model,['x_1','x_2'])
+    sol = solve_portfolio_model(model,['x_1','x_2'], guess=[-0.3,-0.5])
+    print( sol.order )
+    exit()
+
+    print("Function has returned.")
+    print(sol)
     print(sol.X_s)

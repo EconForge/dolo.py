@@ -4,9 +4,9 @@
 
 from __future__ import division
 
-from dolo.numeric.decision_rules_states import CDR
-
 import numpy
+
+from dolo.numeric.decision_rules_states import CDR
 numpy.set_printoptions(precision=3, suppress=3)
 
 import numpy as np
@@ -19,7 +19,7 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
     if initial_sol == None:
         if 'model_type' in model and model['model_type'] == 'portfolios':
             print('This is a portfolio model ! Converting to deterministic one.')
-            from portfolio_perturbation import portfolios_to_deterministic
+            from dolo.algos.portfolio_perturbation import portfolios_to_deterministic
             model = portfolios_to_deterministic(model,['x_1','x_2'])
             model.check()
         from dolo.numeric.perturbations_to_states import approximate_controls
