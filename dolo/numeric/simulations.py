@@ -21,16 +21,13 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     n_exp = 0.
     '''
 
-    # from dolo.compiler.compiler_global import CModel_
-    from dolo.compiler.compiler_python import GModel
-    from dolo.symbolic.model import SModel
 
-    if isinstance(cmodel, GModel):
-        # cmodel = CModel(cmodel.model)
-        cmodel = cmodel
-    elif isinstance(cmodel, SModel):
+    from dolo.compiler.compiler_python import GModel
+
+
+    if not isinstance(cmodel, GModel):
         model = cmodel
-        cmodel = CModel(model)
+        cmodel = GModel(model)
 
 
 
@@ -64,9 +61,17 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     x_simul[:,:,0] = x0
 
     fun = cmodel.functions
-    f = fun['arbitrage']
-    g = fun['transition']
-    aux = fun['auxiliary']
+
+    if cmodel.model_type == 'fga':
+        ff = fun['arbitrage']
+        gg = fun['transition']
+        aa = fun['auxiliary']
+        g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
+        f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
+    else:
+        f = cmodel.functions['arbitrage']
+        g = cmodel.functions['transition']
+
 
     numpy.random.seed(seed)
 
@@ -84,15 +89,13 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
             from dolo.numeric.solver import solver
             from dolo.numeric.newton import newton_solver
 
-            fobj = lambda t: step_residual(s, t, dr, f, g, aux, parms, nodes, weights, with_derivatives=False) #
+            fobj = lambda t: step_residual(s, t, dr, f, g, parms, nodes, weights, with_derivatives=False) #
 #            x = solver(fobj, x,  serial_problem=True)
             x = newton_solver(fobj, x, numdiff=True)
 
         x_simul[:,:,i] = x
 
-        a = aux(s,x,parms)
-
-        ss = g(s,x,a,epsilons,parms)
+        ss = g(s,x,epsilons,parms)
 
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
@@ -103,6 +106,7 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
         l = [s_simul, x_simul]
         varnames = cmodel.symbols['states'] = cmodel.symbols['controls']
     else:
+        aux = fun['auxiliary']
         n_s = s_simul.shape[0]
         n_x = x_simul.shape[0]
         a_simul = aux( s_simul.reshape((n_s,n_exp*horizon)), x_simul.reshape( (n_x,n_exp*horizon) ), parms)

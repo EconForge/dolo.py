@@ -65,17 +65,17 @@ class CModel:
 
     def f(self,s,x,S,X,E,p,derivs=False):
         if self.__compiler__ == 'numpy':
-            return self.__f__(s,x,S,X,E,p,derivs=derivs)
+            return self.__f__(s,x,E,S,X,p,derivs=derivs)
         elif derivs is False:
-            return self.__f__(s,x,S,X,E,p)
+            return self.__f__(s,x,E,S,X,p)
         else:
             f_0 = self.__f__(s,x,S,X,E,p)
-            f_s = numdiff(lambda l: self.__f__(l,x,S,X,E,p), s, f_0)
-            f_x = numdiff(lambda l: self.__f__(s,l,S,X,E,p), x, f_0)
-            f_S = numdiff(lambda l: self.__f__(s,x,l,X,E,p), S, f_0)
-            f_X = numdiff(lambda l: self.__f__(s,x,S,l,E,p), X, f_0)
-            f_E = numdiff(lambda l: self.__f__(s,x,S,X,l,p), X, f_0)
-            return [f_0, f_s, f_x, f_S, f_X, f_E]
+            f_s = numdiff(lambda l: self.__f__(l,x,E,S,X,p), s, f_0)
+            f_x = numdiff(lambda l: self.__f__(s,l,E,S,X,p), x, f_0)
+            f_E = numdiff(lambda l: self.__f__(s,x,l,S,X,p), X, f_0)
+            f_S = numdiff(lambda l: self.__f__(s,x,E,l,X,p), S, f_0)
+            f_X = numdiff(lambda l: self.__f__(s,x,E,S,l,p), X, f_0)
+            return [f_0, f_s, f_x, f_E, f_S, f_X, ]
 
 
     def a(self,s,x,p,derivs=False):
