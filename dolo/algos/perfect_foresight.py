@@ -25,15 +25,15 @@ def find_steady_state(model, e, force_values=None):
     def fobj(z):
         s = numpy.atleast_2d( z[:len(s0)] ).T
         x = numpy.atleast_2d( z[len(s0):] ).T
-        a = model.functions['auxiliary'](s,x,p)
-        S = model.functions['transition'](s,x,a,e,p)
+        S = model.functions['transition'](s,x,e,p)
         if force_values is not None:
             S[inds,0] = vals
-        r = model.functions['arbitrage'](s,x,a,s,x,a,p)
-        return numpy.concatenate([S-s, r])
+        r = model.functions['arbitrage'](s,x,s,x,p)
+        res = numpy.concatenate([S-s, r])
+        return res
 
     from dolo.numeric.solver import solver
-    steady_state = solver(fobj, z)
+    steady_state = solver(fobj, z, method='fsolve')
 
     return [steady_state[:len(s0)], steady_state[len(s0):]]
 
@@ -51,6 +51,10 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
     '''
 
     # TODO:
+
+    if model.model_type == 'fga':
+        from dolo.compiler.converter import GModel_fg_from_fga
+        model = GModel_fg_from_fga(model)
 
     # definitions
     n_s = len(model.calibration['states'])
@@ -149,7 +153,6 @@ def det_residual(model, guess, start, final, shocks, diff=True):
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
-    a = model.functions['auxiliary']
 
     vec = guess[:,:-1]
     vec_f = guess[:,1:]
@@ -160,15 +163,11 @@ def det_residual(model, guess, start, final, shocks, diff=True):
     X = vec_f[n_s:,:]
 
     if diff:
-        y, y_s, y_x = a(s,x,p, derivs=True)
-        Y, Y_S, Y_X = a(S,X,p, derivs=True)
-        SS, SS_s, SS_x, SS_y, SS_e = g(s,x,y,shocks,p, derivs=True)
-        R, R_s, R_x, R_y, R_S, R_X, R_Y = f(s,x,y,S,X,Y,p,derivs=True)
+        SS, SS_s, SS_x, SS_e = g(s,x,shocks,p, derivs=True)
+        R, R_s, R_x, R_S, R_X = f(s,x,S,X,p,derivs=True)
     else:
-        y = a(s,x,p)
-        Y = a(S,X,p)
-        SS = g(s,x,y,shocks,p)
-        R = f(s,x,y,S,X,Y,p)
+        SS = g(s,x,shocks,p)
+        R = f(s,x,S,X,p)
 
     res_s = SS - S
     res_x = R
@@ -188,23 +187,18 @@ def det_residual(model, guess, start, final, shocks, diff=True):
         # we compute the derivative matrix
 
         from dolo.numeric.serial_operations import serial_multiplication as smult
-        res_s_s = SS_s + smult(SS_y, y_s)
-        res_s_x = SS_x + smult(SS_y, y_x)
-
-        F_s = R_s + smult(R_y, y_s)
-        F_x = R_x + smult(R_y, y_x)
-        F_S = R_S + smult(R_Y, Y_S)
-        F_X = R_X + smult(R_Y, Y_X)
+        res_s_s = SS_s
+        res_s_x = SS_x
 
         # next block is probably very inefficient
         jac = numpy.zeros( (n_s+n_x, N, n_s+n_x, N) )
         for i in range(N-1):
-            jac[n_s:,i,:n_s,i] = F_s[:,:,i]
-            jac[n_s:,i,n_s:,i] = F_x[:,:,i]
-            jac[n_s:,i,:n_s,i+1] = F_S[:,:,i]
-            jac[n_s:,i,n_s:,i+1] = F_X[:,:,i]
-            jac[:n_s,i+1,:n_s,i] = res_s_s[:,:,i]
-            jac[:n_s,i+1,n_s:,i] = res_s_x[:,:,i]
+            jac[n_s:,i,:n_s,i] = R_s[:,:,i]
+            jac[n_s:,i,n_s:,i] = R_x[:,:,i]
+            jac[n_s:,i,:n_s,i+1] = R_S[:,:,i]
+            jac[n_s:,i,n_s:,i+1] = R_X[:,:,i]
+            jac[:n_s,i+1,:n_s,i] = SS_s[:,:,i]
+            jac[:n_s,i+1,n_s:,i] = SS_x[:,:,i]
             jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
         jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
         jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)

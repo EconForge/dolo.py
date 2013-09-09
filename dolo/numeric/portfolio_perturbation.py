@@ -14,7 +14,6 @@ def portfolios_to_deterministic(model,pf_names):
             neq = Equation(v,0)
             neq.tag(**eq.tags)
             model.equations_groups['arbitrage'][i] = neq
-            print(neq)
 
     print('Warning : initial model changed')
     model.update()
@@ -22,6 +21,10 @@ def portfolios_to_deterministic(model,pf_names):
     return model
 
 def solve_portfolio_model(model, pf_names, order=2, guess=None):
+
+    from dolo.compiler.compiler_python import GModel
+    if isinstance(model, GModel):
+        model = model.model
 
     pf_model = model
 
@@ -85,11 +88,6 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
     # new_model.equations_groups['arbitrage'].extend(to_be_added_1)
     new_model.equations_groups['arbitrage'].extend(to_be_added_2)
     new_model.update()
-
-    for eq in new_model.equations_groups['arbitrage']:
-        print(eq)
-
-    print(new_model.parameters)
 
     print("number of equations {}".format(len(new_model.equations)))
     print("number of arbitrage equations {}".format( len(new_model.equations_groups['arbitrage'])) )
