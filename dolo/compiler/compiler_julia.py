@@ -89,14 +89,14 @@ class CompilerJulia(object):
         for fun_name in recipe['equation_type']:
             funs_text += 'functions["{0}"] = {0}\n'.format(fun_name)
 
-        ss_text = "calibration = Dict{String, Array{Float64,1}}()\n"
+        ss_text = "calibration = Dict{String, Any}()\n"
         for k,v in steady_state.iteritems():
-            ss_text += 'calibration["{0}"] = [{1}],\n'.format( k, str.join(', ', ['{}'.format(e) for e in v] ) )
+            ss_text += 'calibration["{0}"] = [{1}]\n'.format( k, str.join(', ', ['{}'.format(e) for e in v] ) )
         ss_text += 'calibration["parameters"] = {}\n'.format(str(parameters_values).replace('\n',' '))
         ss_text += 'calibration["covariances"] = {}'.format(str(calib['covariances']).replace('\n',';'))
 
 
-        var_text = "symbols = Dict{String, Array{String,1}}()\n"
+        var_text = "symbols = Dict{String, Vector{String}}()\n"
         for vn, vg in model.symbols_s.iteritems():
             var_text += 'symbols["{0}"] = [{1}]\n'.format(vn, str.join(',', ['"{}"'.format(e ) for e in vg]))
 
