@@ -35,8 +35,6 @@ def approximate_controls(model, return_dr=True):
 
     n_v = n_s + n_x
 
-    print(f_S.shape)
-    print(f_X.shape)
     A = row_stack([
         column_stack( [ eye(n_s), zeros((n_s,n_x)) ] ),
         column_stack( [ -f_S    , -f_X             ] )
