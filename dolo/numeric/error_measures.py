@@ -7,7 +7,7 @@ import numpy as np
 
 #testgrid = RectangularGrid(domain,[20,20])
 
-def test_residuals(s,dr, f,g,parms, epsilons, weights):
+def test_residuals(s,dr, f,g,parms, epsilons, weights, with_future_shocks=False):
     n_draws = epsilons.shape[1]
 
     n_g = s.shape[1]
@@ -20,7 +20,10 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
 
     ssnext = g(ss,xx,ee,parms)
     xxnext = dr(ssnext)
-    val = f(ss,xx,ssnext,xxnext,ee,parms)
+    if with_future_shocks:
+        val = f(ss,xx,ee,ssnext,xxnext,parms)
+    else:
+        val = f(ss,xx,ssnext,xxnext,parms)
 
     errors = np.zeros( (n_x,n_g) )
     for i in range(n_draws):
@@ -38,8 +41,9 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
     N_epsilons = 1000
 
 
-    [y,x,parms] = model.read_calibration()
-    sigma = model.read_covariances()
+    #[y,x,parms] = model.read_calibration()
+    sigma = model.calibration['covariances']
+    parms = model.calibration['parameters']
     mean = numpy.zeros(sigma.shape[0])
     N_epsilons=100
     numpy.random.seed(1)
@@ -48,11 +52,13 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
 
     domain = RectangularDomain(bounds[0,:], bounds[1,:], orders)
 
-    gc = CModel(model)
-    f = gc.f
-    g = gc.g
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
-    errors = test_residuals( domain.grid, dr, f, g, parms, epsilons, weights )
+    n_s = len(model.symbols['states'])
+
+    with_future_shocks = model.model_type == 'fg2'
+    errors = test_residuals( domain.grid, dr, f, g, parms, epsilons, weights, with_future_shocks=with_future_shocks )
     errors = abs(errors)
 
     errors = errors.reshape( [errors.shape[0]] + orders )
@@ -68,46 +74,49 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
         horizon = time_weight[0]
         beta = time_weight[1]
         s0 = time_weight[2]
+    else:
+        raise Exception()
 
-        from dolo.numeric.simulations import simulate
-        simul = simulate( gc ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
+    from dolo.numeric.simulations import simulate
+    simul = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
 
-        s_simul = simul[:len(gc.controls),:,:]
+    print(simul.shape)
+    print(n_s)
+    s_simul = simul[:n_s,:,:]
 
-        densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]
+    densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]
 
-        ergo_dens = densities[-1]
+    ergo_dens = densities[-1]
 
-        ergo_error = numpy.tensordot( errors, ergo_dens, axes=((1,2),(0,1)))
-        mean_error = numpy.tensordot( errors, (ergo_dens*0+1)/len(ergo_dens.flatten()), axes=((1,2),(0,1)))
-        max_error = numpy.max(errors,axis=1)
-        max_error = numpy.max(max_error,axis=1)
+    ergo_error = numpy.tensordot( errors, ergo_dens, axes=((1,2),(0,1)))
+    mean_error = numpy.tensordot( errors, (ergo_dens*0+1)/len(ergo_dens.flatten()), axes=((1,2),(0,1)))
+    max_error = numpy.max(errors,axis=1)
+    max_error = numpy.max(max_error,axis=1)
 
-        time_weighted_errors  = max_error*0
-        for i in range(horizon):
-            err =  numpy.tensordot( errors, densities[i], axes=((1,2),(0,1)))
-            time_weighted_errors += beta**i * err
-        time_weighted_errors /= (1-beta**(horizon-1))/(1-beta)
+    time_weighted_errors  = max_error*0
+    for i in range(horizon):
+        err =  numpy.tensordot( errors, densities[i], axes=((1,2),(0,1)))
+        time_weighted_errors += beta**i * err
+    time_weighted_errors /= (1-beta**(horizon-1))/(1-beta)
 
 #        print(numpy.mean(errors[0,:,:].flatten()))
 #        print(numpy.mean(errors[1,:,:].flatten()))
-        if return_everything:
-            d = dict(
-                errors = errors,
-                densities = densities,
-                bounds = bounds,
-                mean = mean_error,
-                max = max_error,
-                ergo = ergo_error,
-                time_weighted = time_weighted_errors,
-                simulations = s_simul,
-                domain = domain
-            )
-            return d
-        else:
-            return [mean_error, max_error, ergo_error, time_weighted_errors]
-
-
+    if return_everything:
+        d = dict(
+            errors = errors,
+            densities = densities,
+            bounds = bounds,
+            mean = mean_error,
+            max = max_error,
+            ergo = ergo_error,
+            time_weighted = time_weighted_errors,
+            simulations = s_simul,
+            domain = domain
+        )
+        return d
+    else:
+        return [mean_error, max_error, ergo_error, time_weighted_errors]
+    
     return criterium
 
 # def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):

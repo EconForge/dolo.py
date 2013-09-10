@@ -22,15 +22,6 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     '''
 
 
-    from dolo.compiler.compiler_python import GModel
-
-
-    if not isinstance(cmodel, GModel):
-        model = cmodel
-        cmodel = GModel(model)
-
-
-
     if n_exp ==0:
         irf = True
         n_exp = 1
