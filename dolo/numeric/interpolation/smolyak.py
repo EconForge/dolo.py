@@ -9,7 +9,7 @@ Let define the state space :math:`[-1,1]^2` and the interpolation object.
 
 .. code-block:: python
 
-    from dolo.numeric.smolyak import SmolyakGrid
+    from dolo.numeric.interpolation import SmolyakGrid
     import numpy
 
 
