@@ -49,3 +49,13 @@ def cartesian(arrays, out=None):
         for j in range(1, arrays[0].size):
             out[j*m:(j+1)*m,1:] = out[0:m,1:]
     return out
+
+def mlinspace(smin,smax,orders):
+
+    if len(orders) == 1:
+        res = np.atleast_2d( np.linspace(np.array(smin),np.array(smax),np.array(orders)) )
+        return res.copy() ## workaround for strange bug
+
+    else:
+        meshes = np.meshgrid( *[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))], indexing='ij' )
+        return np.row_stack( [l.flatten() for l in meshes])
