@@ -117,6 +117,8 @@ def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
 
     L = scipy.linalg.cholesky(sigma)
 
+    N = int(N)
+
     if method=='tauchen':
         [nodes_1d, probas_1d] = tauchen(N, 0, rho, 1, m=m)
     elif method=='rouwenhorst':
