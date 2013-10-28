@@ -1,0 +1,3 @@
+[submodule "dolo/numeric/interpolation"]
+	path = dolo/numeric/interpolation
+	url = https://github.com/albop/python_interpolation.git
