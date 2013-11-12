@@ -14,10 +14,10 @@ import numpy as np
 
 def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_sol=None):
 
-    #model = yaml_import(filename)
+
 
     if initial_sol == None:
-        if 'model_type' in model and model['model_type'] == 'portfolios':
+        if model.model_type == 'portfolios':
             print('This is a portfolio model ! Converting to deterministic one.')
             from dolo.algos.portfolio_perturbation import portfolios_to_deterministic
             model = portfolios_to_deterministic(model,['x_1','x_2'])
@@ -32,8 +32,8 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
 
     # reduce X_s to the real controls  (remove auxiliary variables
 
-    X_s = X_s[:len(model['variables_groups']['controls']),:]
-    X_bar = X_bar[:len(model['variables_groups']['controls'])]
+    X_s = X_s[:len(model.symbols['controls']),:]
+    X_bar = X_bar[:len(model.symbols['controls'])]
     X_bar = numpy.array(X_bar)
 
     if  abs(X_s.imag).max() < 1e-10:
@@ -53,7 +53,7 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
 
     #from dolo.symbolic.symbolic import Parameter
 
-    [S_bar, X_bar, X_s, P] = solve_risky_ss(model, X_bar, X_s, verbose=verbose)
+    [S_bar, X_bar, X_s, P] = solve_risky_ss(model.model, X_bar, X_s, verbose=verbose)
 
     if return_dr:
         cdr = CDR([S_bar, X_bar, X_s])
@@ -66,13 +66,13 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
 def solve_risky_ss(model, X_bar, X_s, verbose=False):
 
     import numpy
-    from dolo.compiler.compiling import compile_function
+    from dolo.compiler.function_compiler import compile_function
     import time
     from dolo.compiler.compiler_functions import simple_global_representation
 
 
-    [y,x,parms] = model.read_calibration()
-    sigma = model.read_covariances()
+    parms = model.calibration['parameters']
+    sigma = model.calibration['covariances']
 
     sgm = simple_global_representation(model)
 
@@ -189,7 +189,7 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 
     #    S_bar = s_fun_init( numpy.atleast_2d(X_bar).T ,parms).flatten()
     #    S_bar = S_bar.flatten()
-    S_bar = [ y[i] for i,v in enumerate(model.variables) if v in model['variables_groups']['states'] ]
+    S_bar = model.calibration['states']
     S_bar = np.array(S_bar)
 
     X0 = np.row_stack([
@@ -270,6 +270,8 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 #
 #[S_bar, X_bar, X_s, P] = solve_model_around_risky_ss(filename)
 if __name__ == '__main__':
-    #fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy.yaml'
-    fname = 'examples/global_models/open_economy_with_pf.yaml'
-    sol = solve_model_around_risky_ss(fname, verbose=True)
+    from dolo import yaml_import
+    fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy.yaml'
+    #fname = 'examples/global_models/open_economy_with_pf.yaml'
+    model = yaml_import(fname)
+    sol = solve_model_around_risky_ss(model, verbose=True)
