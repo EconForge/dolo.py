@@ -86,6 +86,17 @@ def chebychev(x, n):
         results[i,...] = 2 * x * results[i-1,...] - results[i-2,...]
     return results
 
+
+def m_i(i):
+    if i < 0:
+        raise ValueError('i must be positive')
+    elif i == 0:
+        return 0
+    elif i == 1:
+        return 1
+    else:
+        return 2**(i - 1) + 1
+
 def chebychev2(x, n):
     # computes the chebychev polynomials of the second kind
     dim = x.shape
@@ -156,7 +167,7 @@ class SmolyakBasic(object):
         self.n_points = len(self.smolyak_points)
         #self.grid = self.real_gri
 
-        Ts = chebychev( self.smolyak_points.T, self.n_points - 1 )
+        Ts = chebychev( self.smolyak_points.T, m_i(self.l) )
         C = []
         for comb in self.smolyak_indices:
             p = reduce( mul, [Ts[comb[i],i,:] for i in range(self.d)] )
@@ -185,7 +196,7 @@ class SmolyakBasic(object):
         n_obs = n_p # by def
         assert( n_d == self.d )
 
-        Ts = chebychev( s, self.n_points - 1 )
+        Ts = chebychev( s, m_i(self.l ))
 
         coeffs = []
         for comb in self.smolyak_indices:
@@ -198,7 +209,7 @@ class SmolyakBasic(object):
         if with_derivative:
 
             # derivative w.r.t. arguments
-            Us = chebychev2( s, self.n_points - 2 )
+            Us = chebychev2( s, m_i(self.l ))
             Us = numpy.concatenate([numpy.zeros( (1,n_d,n_obs) ), Us],axis=0)
             for i in range(Us.shape[0]):
                 Us[i,:,:] = Us[i,:,:] * i
