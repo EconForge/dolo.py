@@ -7,6 +7,7 @@ from dolo import __version__, display
 parser = argparse.ArgumentParser(description='Dolo command line')
 parser.add_argument('-v','--version', action='version', version=__version__)
 parser.add_argument('-r','--print_residuals', action='store_const', const=True, default=False, help='print residuals at the steady-state')
+parser.add_argument('--recipes', type=str, default=None, help='specify file containing recipes')
 parser.add_argument('-s','--solve', action='store_const', const=True, default=False, help='solve for the decision rule')
 parser.add_argument('--smolyak_order', type=int, default=3, help='solution order (1,2,3)')
 parser.add_argument('--interp_type', default='smolyak', help='type of interpolation to perform')
@@ -21,10 +22,11 @@ args = parser.parse_args()
 input_file = args.input
 
 ######
+recipes = args.recipes
 
 from dolo.misc.yamlfile import yaml_import
 
-model = yaml_import( input_file )
+model = yaml_import( input_file, recipes=recipes )
 
 import os
 import re

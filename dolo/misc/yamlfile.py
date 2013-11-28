@@ -155,8 +155,11 @@ def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwarg
 
     import yaml
     if recipes is not None:
-        with open(recipes) as f:
-            recipes_d = yaml.load(f)
+        if isinstance(recipes, str):
+            with open(recipes) as f:
+                recipes_d = yaml.load(f)
+        else:
+            recipes_d = recipes
     else:
         recipes_d=None
 

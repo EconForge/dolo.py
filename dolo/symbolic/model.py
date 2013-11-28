@@ -98,7 +98,18 @@ class SModel:
             l.extend(eq)
         self.equations = l
 
-    def set_calibration(self,d):
+    def set_calibration(self,*args,**kwargs):
+
+        if len(args)>0:
+            if len(args)==1:
+                d = args[0]
+            elif len(args)==2:
+                d = {args[0]: args[1]}
+            else:
+                raise(Exception("Incorrect argument type."))
+        else:
+            d = kwargs
+
         dd = {}
         for k in d:
             if isinstance(k,str):
@@ -109,6 +120,7 @@ class SModel:
             else:
                 kk = k
             dd[kk] = d[k]
+
         self.calibration_s.update(dd)
         self.update()
 
