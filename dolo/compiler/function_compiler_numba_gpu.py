@@ -23,10 +23,10 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     :return:
     """
 
-    if order == 'rows':
-        raise(Exception('not implemented'))
-
-    template = '{0}[i,{1}]'
+    if order == 'columns':
+      template = '{0}[i,{1}]'
+    else:
+      template = '{0}[{1},i]'
 
     declarations = ""
     sub_list = {}
@@ -48,10 +48,14 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     args_size = [len(e) for e in args_list] + [len(parms)]
     return_size = len(equations)
 
-    size_same_as_output = args_size.index(return_size)
+#    size_same_as_output = args_size.index(return_size)
+    size_same_as_output = 'not_used_anymore'
+    signature = 'not_used_anymore'
 
-    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
-    signature += '->(n{})'.format(return_size-1)
+#    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size))])
+#    signature += '->(n{})'.format(return_size-1)
+#    signature = str.join(',',['(n{})'.format(i) for i in range(len(args_size)+1)])
+#    signature += '->()'.format(return_size-1)
     argtypes = [float64[:,:]]*(len(args_size)-1) + [float64[:], float64[:,:]] 
 
 
@@ -80,7 +84,10 @@ def {fname}({args_names}, {param_names}, val):
         eq_block = ''
         for i,eq in enumerate(eq_l):
             eq_string = dp.doprint_numpy(eq)
-            eq_block += '    val[i,{0}] = {1}\n'.format(i, eq_string)
+            if order == "columns":
+              eq_block += '    val[i,{0}] = {1}\n'.format(i, eq_string)
+            else:
+              eq_block += '    val[{0},i] = {1}\n'.format(i, eq_string)
         return eq_block
 
     content = write_eqs(equations)
@@ -110,14 +117,13 @@ def {fname}({args_names}, {param_names}, val):
 
 
 def code_to_function(text, name, args_size, return_size, size_same_as_output):
-    from numpy import zeros
-    from numpy import exp, log
-    from numpy import sin, cos, tan
-    from numpy import arcsin as asin
-    from numpy import arccos as acos
-    from numpy import arctan as atan
-    from numpy import sinh, cosh, tanh
-    from numpy import pi
+    from math import exp, log
+    from math import sin, cos, tan
+#    from math import arcsin as asin
+#    from math import arccos as acos
+#    from math import arctan as atan
+#    from math import sinh, cosh, tanh
+    from math import pi
     from numpy import inf
     from numbapro import cuda
     d = locals()

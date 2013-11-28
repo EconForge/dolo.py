@@ -154,14 +154,11 @@ def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwarg
     '''Imports model defined in specified file'''
 
     import yaml
-    if recipes is not None:
-        if isinstance(recipes, str):
-            with open(recipes) as f:
-                recipes_d = yaml.load(f)
-        else:
-            recipes_d = recipes
+    if isinstance(recipes,str):
+        with open(recipes) as f:
+            recipes_d = yaml.load(f)
     else:
-        recipes_d=None
+        recipes_d = recipes
 
     import os
     basename = os.path.basename(filename)

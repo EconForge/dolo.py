@@ -57,6 +57,13 @@ def rouwenhorst(rho, sigma, N):
 
     from numpy import sqrt, linspace, array,zeros
 
+    sigma = float(sigma)
+
+    if N == 1:
+      nodes = array([0.0])
+      transitions = array([[1.0]])
+      return [nodes, transitions]
+
     p = (rho+1)/2
     q = p
     nu = sqrt( (N-1)/(1-rho**2) )*sigma
@@ -109,6 +116,8 @@ def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
     d = sigma.shape[1]
 
     L = scipy.linalg.cholesky(sigma)
+
+    N = int(N)
 
     if method=='tauchen':
         [nodes_1d, probas_1d] = tauchen(N, 0, rho, 1, m=m)
