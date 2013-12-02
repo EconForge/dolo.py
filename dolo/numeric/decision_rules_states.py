@@ -13,6 +13,17 @@ class CDR:
         if self.order >= 3:
             self.X_sss = l[4]
 
+    def __getitem__(self, ind):
+        l = [ self.S_bar.copy() ]
+        l.append(self.X_bar[ind].copy())
+        l.append(self.X_s[ind,...].copy())
+        if self.order >= 2:
+            l.append(self.X_ss[ind,...].copy())
+        if self.order >= 3:
+            l.append(self.X_sss[ind,...].copy())
+        return CDR( l )
+
+
     def __call__(self,points):
         n_s = points.shape[1]
         ds = points - tile( self.S_bar, (n_s,1) ).T

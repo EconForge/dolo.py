@@ -20,7 +20,7 @@ def portfolios_to_deterministic(model,pf_names):
 
     return model
 
-def solve_portfolio_model(model, pf_names, order=2, guess=None):
+def solve_portfolio_model(model, pf_names, order=2, lambda_name='lam', guess=None):
 
     from dolo.compiler.compiler_python import GModel
     if isinstance(model, GModel):
@@ -118,9 +118,9 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
             # new_model.parameters_values[p] = x[i]
             # new_model.init_values[v] = x[i]
         if return_dr:
-            dr = approximate_controls(new_model, order=1, return_dr=True)
+            dr = approximate_controls(new_model, order=1, return_dr=True, lambda_name='lam')
             return dr
-        X_bar, X_s, X_ss = approximate_controls(new_model, order=2, return_dr=False)
+        X_bar, X_s, X_ss = approximate_controls(new_model, order=2, return_dr=False, lambda_name="lam")
 
         return X_bar[n_controls-n_pfs:n_controls]
 
@@ -130,12 +130,14 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
     else:
         x0 = numpy.zeros(n_pfs)
 
+    print('Zero order portfolios')
+    print('Initial guess: {}'.format(x0))
+    print('Initial error: {}'.format( constant_residuals(x0) ))
 
     from dolo.numeric.solver import solver
     portfolios_0 = solver(constant_residuals, x0)
-
-    print('Zero order portfolios: {}'.format(portfolios_0))
-    print('Zero order portfolios: Final error: {}'.format( constant_residuals(portfolios_0) ))
+    print('Solution: {}'.format(portfolios_0))
+    print('Final error: {}'.format( constant_residuals(portfolios_0) ))
 
     if order == 1:
         dr = constant_residuals(portfolios_0, return_dr=True)
@@ -154,10 +156,10 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
                 d[pf_dparms[i][j]] = dx[i,j]
         new_model.set_calibration(d)
         if return_dr:
-            dr = approximate_controls(new_model, order=2)
+            dr = approximate_controls(new_model, order=2, lambda_name='lam')
             return dr
         else:
-            [X_bar, X_s, X_ss, X_sss] = approximate_controls(new_model, order=3, return_dr=False)
+            [X_bar, X_s, X_ss, X_sss] = approximate_controls(new_model, order=3, return_dr=False, lambda_name='lam')
             crit = numpy.column_stack([
                 X_bar[n_controls-n_pfs:n_controls],
                 X_s[n_controls-n_pfs:n_controls,:],
@@ -168,7 +170,9 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
 
     y0 = numpy.column_stack([x0, numpy.zeros((n_pfs, n_states))])
     print('Initial error:')
-    print(dynamic_residuals(y0))
+    err = (dynamic_residuals(y0))
+
+    print( abs(err).max() )
     portfolios_1 = solver(dynamic_residuals, y0)
 
     print('First order portfolios : ')
@@ -179,19 +183,23 @@ def solve_portfolio_model(model, pf_names, order=2, guess=None):
 
     dr = dynamic_residuals(portfolios_1, return_dr=True)
 
+    # TODO: remove coefficients of criteria
+
     return dr
 
 if __name__ == '__main__':
 
     from dolo import *
-    model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml', compiler=None)
+    #model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml')
+#    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_1/code/capital.yaml')
+    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_1/code/capital_pert.yaml')
 
     print(model)
+    print(model.calibration['covariances'])
 
 
-    sol = solve_portfolio_model(model,['x_1','x_2'], guess=[-0.3,-0.5])
+    sol = solve_portfolio_model(model,['x_1','x_2'], guess=[-0.3,-0.5], order=1)
     print( sol.order )
-    exit()
 
     print("Function has returned.")
     print(sol)

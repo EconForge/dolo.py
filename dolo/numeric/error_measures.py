@@ -38,6 +38,9 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights, with_future_shocks=False)
 
 def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=None, return_everything=False):
 
+
+    # TODO: this is 2d-only !
+
     N_epsilons = 1000
 
 

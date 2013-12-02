@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import numpy
 
-from dolo.numeric.perturbations_to_states import approximate_controls
 
 
 def global_solve(cmodel,
@@ -26,8 +25,12 @@ def global_solve(cmodel,
     sigma = model.calibration['covariances']
 
     if initial_dr == None:
-#        from dolo.algos.perturbations import approximate_controls
-        initial_dr = approximate_controls(cm, order=pert_order)
+        if pert_order==1:
+            from dolo.algos.perturbations import approximate_controls
+            initial_dr = approximate_controls(cm)
+        if pert_order>1:
+            from dolo.numeric.perturbations_to_states import approximate_controls
+            initial_dr = approximate_controls(cm, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
 

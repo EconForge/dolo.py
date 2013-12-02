@@ -3,9 +3,7 @@ import numpy as np
 from dolo.numeric.global_solution import step_residual
 
 
-def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True,
-             solve_expectations=False, nodes=None, weights=None, use_pandas=True):
-
+def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True, solve_expectations=False, nodes=None, weights=None, use_pandas=True, forcing_shocks=None):
     '''
     :param cmodel: compiled model
     :param dr: decision rule
@@ -69,7 +67,11 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
     for i in range(horizon):
         mean = numpy.zeros(sigma.shape[0])
         if irf:
-            epsilons = numpy.zeros( (sigma.shape[0],1) )
+
+            if forcing_shocks is not None and i<forcing_shocks.shape[1]:
+                epsilons = forcing_shocks[:,i] 
+            else:
+                epsilons = numpy.zeros( (sigma.shape[0],1) )
         else:
             epsilons = numpy.random.multivariate_normal(mean, sigma, n_exp).T
         s = s_simul[:,:,i]
@@ -95,7 +97,7 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
     if not 'auxiliary' in fun: # TODO: find a better test than this
         l = [s_simul, x_simul]
-        varnames = cmodel.symbols['states'] = cmodel.symbols['controls']
+        varnames = cmodel.symbols['states'] + cmodel.symbols['controls']
     else:
         aux = fun['auxiliary']
         n_s = s_simul.shape[0]
@@ -124,6 +126,7 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
 
         if use_pandas:
             import pandas
+            print(simul.shape)
             ts = pandas.DataFrame(simul.T, columns=varnames)
             return ts
 
