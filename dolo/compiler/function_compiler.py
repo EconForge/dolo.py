@@ -132,6 +132,46 @@ def compile_function(equations, args, parms, max_order, return_text=False):
         return code_to_function(txt,'dynamic_function')
 
 
+from functools import wraps
+
+class vector_or_matrix:
+
+    def __init__(self,data_layout='rows'):
+        self.data_layout = data_layout
+
+    def __call__(self, f):
+        data_layout = self.data_layout
+        import numpy
+        @wraps(f)
+        def inner(*args, **kwargs):
+            is_vector = (args[0].ndim == 1)
+            if is_vector:
+                if data_layout=='rows':
+                    new_args = [numpy.atleast_2d(e).T for e in args[:-1]]
+                else:
+                    new_args = [numpy.atleast_2d(e) for e in args[:-1]]
+                new_args += [args[-1]]
+                if 'derivs' in kwargs and kwargs['derivs']:
+                    [res, dres] = f(*new_args, **kwargs)
+                    if data_layout == 'rows':
+                        return [res[:,-1], dres[:,:,-1]]
+                    elif data_layout == 'columns':
+                        return [res[-1,:], dres[-1,:,:]]
+                else:
+                    res = f(*new_args, **kwargs)
+                    if data_layout == 'rows':
+                        return res[:,-1]
+                    elif data_layout == 'columns':
+                        return res[-1,:]
+            else:
+                return f(*args, **kwargs)
+        return wraps(f)(inner)
+
+
+
+
+
+
 def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='rows'):
     """
     :param equations: list of sympy expressions
@@ -167,6 +207,7 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
     sub_list[sympy.Symbol('inf')] = 'inf'
 
     text = '''
+@vector_or_matrix('{data_layout}')
 def {fname}({args_names}, {param_names}, derivs=False):
 
     import numpy as np
@@ -260,7 +301,8 @@ def {fname}({args_names}, {param_names}, derivs=False):
             content = content,
             return_names = return_names,
             args_names = str.join(', ', args_names),
-            param_names = 'p'
+            param_names = 'p',
+            data_layout = order
             )
 
     if return_text:
@@ -270,7 +312,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
 
 def code_to_function(text, name):
-    d = {}
+    d = {'vector_or_matrix':vector_or_matrix}
     e = {}
     exec(text, d, e)
     return e[name]

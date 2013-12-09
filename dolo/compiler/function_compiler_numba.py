@@ -31,7 +31,8 @@ from numpy import inf
 
 from numba import float64
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='columns'):
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True,
+                                   return_text=False, order='columns'):
 
     """
     :param equations: list of sympy expressions
