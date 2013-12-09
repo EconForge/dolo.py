@@ -1,4 +1,4 @@
-from numpy import tile, dot
+from numpy import tile, dot, atleast_2d
 from dolo.numeric.tensor import mdot
 
 class CDR:
@@ -25,6 +25,12 @@ class CDR:
 
 
     def __call__(self,points):
+
+        if points.ndim == 1:
+            pp = atleast_2d(points).T
+            res = self.__call__(pp)
+            return res.ravel()
+
         n_s = points.shape[1]
         ds = points - tile( self.S_bar, (n_s,1) ).T
         choice =  dot(self.X_s, ds) +  tile( self.X_bar, (n_s,1) ).T
