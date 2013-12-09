@@ -11,7 +11,10 @@ def validate(model, recipe):
 
     for vg in model.symbols_s:
         if not vg in ('parameters','shocks'):
-            assert( vg in recipe['variable_type'])
+            try:
+                assert( vg in recipe['variable_type'])
+            except:
+                raise( Exception("Variable type '{}' is unknown in recipe '{}'".format( vg, recipe["model_type"] ) ) )
 
     for eqg in model.equations_groups:
         assert( eqg in recipe['equation_type'])
