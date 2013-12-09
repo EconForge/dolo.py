@@ -75,4 +75,15 @@ def approximate_controls(model, return_dr=True):
    
     return dr
 
+if __name__ == '__main__':
+
+    from dolo import *
+
+    model = yaml_import("/home/pablo/Documents/Research/Thesis/chapter_1/code/portfolios.yaml")
+    model.set_calibration(dumb=1)
+
+    from dolo.algos.perturbations import approximate_controls
+    dr = approximate_controls(model)
+    print(dr)
+
 

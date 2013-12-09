@@ -1,11 +1,11 @@
 import numpy
-from numpy import linspace, zeros
+from numpy import linspace, zeros, atleast_2d
 
-def find_steady_state(model, e, force_values=None):
+def find_steady_state(model, e, force_values=None, get_jac=False):
     '''
     Finds the steady state corresponding to exogenous shocks :math:`e`.
 
-    :param model: an "fga" model.
+    :param model: an "fg" model.
     :param e: a vector with the value for the exogenous shocks.
     :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.
     :return: a list containing a vector for the steady-states and the corresponding steady controls.
@@ -26,18 +26,28 @@ def find_steady_state(model, e, force_values=None):
         s = numpy.atleast_2d( z[:len(s0)] ).T
         x = numpy.atleast_2d( z[len(s0):] ).T
         S = model.functions['transition'](s,x,e,p)
-        if force_values is not None:
-            S[inds,0] = vals
+        #    S[inds,0] = vals
         r = model.functions['arbitrage'](s,x,s,x,p)
-        res = numpy.concatenate([S-s, r])
-        return res
+        res = numpy.concatenate([S-s, r,  ])
+        if force_values is not None:
+            add = atleast_2d(S[inds,0]-vals).T
+            res = numpy.concatenate([res, add])
+        return res.ravel()
+ 
+    if get_jac:
+        from dolo.numeric.solver import MyJacobian
+        jac = MyJacobian(fobj)( steady_state)
+        return jac
+        return res.flatten()
 
-    from dolo.numeric.solver import solver
-    steady_state = solver(fobj, z, method='fsolve')
+    from scipy.optimize import root
+    sol = root(fobj, z, method='lm')
+    steady_state = sol.x
+    
 
     return [steady_state[:len(s0)], steady_state[len(s0):]]
 
-def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_constraints=False, start_s=None, verbose=False):
+def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_guess=None, ignore_constraints=False, start_s=None, verbose=False):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -66,7 +76,7 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
     # until last period, exogenous shock takes its last value
     epsilons = numpy.zeros( (shocks.shape[0], T))
     epsilons[:,:shocks.shape[1]] = shocks
-    epsilons[:,shocks.shape[1:]] = shocks[:,-1:]
+    epsilons[:,shocks.shape[1]:] = shocks[:,-1:]
 
     # final initial and final steady-states consistent with exogenous shocks
     start = find_steady_state( model, numpy.atleast_2d(epsilons[:,0:1]), force_values=start_s)
@@ -78,10 +88,24 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
     final = numpy.concatenate( final )
     start = numpy.concatenate( start )
 
+    if verbose==True:
+        print("Initial state : {}".format(start))
+        print("Final control : {}".format(final))
+
     p = model.calibration['parameters']
 
-    initial_guess = numpy.concatenate( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
-    initial_guess = initial_guess.reshape( (-1, n_s + n_x)).T
+    if initial_guess is None:
+
+        initial_guess = numpy.concatenate( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
+        initial_guess = initial_guess.reshape( (-1, n_s + n_x)).T
+
+    else:
+        from pandas import DataFrame
+        if isinstance( initial_guess, DataFrame ):
+            initial_guess = array( initial_guess ).T.copy()
+        initial_guess = initial_guess[:n_s+n_x,:]
+        initial_guess[:n_s,0] = start_s
+        initial_guess[n_s:,-1] = final_x
 
     sh = initial_guess.shape
 
@@ -105,21 +129,36 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, ignore_const
     nn = sh[0]*sh[1]
 
     fobj  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[0].ravel()
-    dfobj = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[1].reshape((nn,nn))
 
     from dolo.numeric.solver import solver
 
     if not ignore_constraints:
-        sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
+        dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
+        from dolo.numeric.ncpsolve import ncpsolve
+        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
+        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose)
+#        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )
+        sol = sol.reshape(sh)
+        #sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
     else:
-        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False, verbose=verbose )
+        from scipy.optimize import fsolve
+        dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1].toarray()
+        x0 = initial_guess.ravel()
+        sol = fsolve(fobj, x0, fprime=dfobj)
+        sol = sol.reshape(sh)
+
+#        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False, verbose=verbose )
 
     if use_pandas:
         import pandas
-        colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliary']
-        # compute auxiliaries
-        y = model.functions['auxiliary'](sol[:n_s,:], sol[n_s:,:], p)
-        sol = numpy.row_stack([sol,y])
+        if 'auxiliary' in model.functions:
+            colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliary']
+            # compute auxiliaries
+            y = model.functions['auxiliary'](sol[:n_s,:], sol[n_s:,:], p)
+            sol = numpy.row_stack([sol,y])
+        else:
+            colnames = model.symbols['states'] + model.symbols['controls']
+
         ts = pandas.DataFrame(sol.T, columns=colnames)
         return ts
     else:
@@ -184,25 +223,38 @@ def det_residual(model, guess, start, final, shocks, diff=True):
         return res
     else:
 
-        # we compute the derivative matrix
+        sparse_jac=False
+        if not sparse_jac:
 
-        from dolo.numeric.serial_operations import serial_multiplication as smult
-        res_s_s = SS_s
-        res_s_x = SS_x
+            # we compute the derivative matrix
 
-        # next block is probably very inefficient
-        jac = numpy.zeros( (n_s+n_x, N, n_s+n_x, N) )
-        for i in range(N-1):
-            jac[n_s:,i,:n_s,i] = R_s[:,:,i]
-            jac[n_s:,i,n_s:,i] = R_x[:,:,i]
-            jac[n_s:,i,:n_s,i+1] = R_S[:,:,i]
-            jac[n_s:,i,n_s:,i+1] = R_X[:,:,i]
-            jac[:n_s,i+1,:n_s,i] = SS_s[:,:,i]
-            jac[:n_s,i+1,n_s:,i] = SS_x[:,:,i]
-            jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
-        jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
-        jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)
-        jac[n_s:,-1,n_s:,-2] = + numpy.eye(n_x)
+            from dolo.numeric.serial_operations import serial_multiplication as smult
+            res_s_s = SS_s
+            res_s_x = SS_x
+
+            # next block is probably very inefficient
+            jac = numpy.zeros( (n_s+n_x, N, n_s+n_x, N) )
+            for i in range(N-1):
+                jac[n_s:,i,:n_s,i] = R_s[:,:,i]
+                jac[n_s:,i,n_s:,i] = R_x[:,:,i]
+                jac[n_s:,i,:n_s,i+1] = R_S[:,:,i]
+                jac[n_s:,i,n_s:,i+1] = R_X[:,:,i]
+                jac[:n_s,i+1,:n_s,i] = SS_s[:,:,i]
+                jac[:n_s,i+1,n_s:,i] = SS_x[:,:,i]
+                jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
+            jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
+            jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)
+            jac[n_s:,-1,n_s:,-2] = + numpy.eye(n_x)
+            nn = jac.shape[0]*jac.shape[1]
+            res = res.ravel()
+            jac = jac.reshape((nn,nn))
+
+
+        from scipy.sparse import csc_matrix, csr_matrix
+
+
+
+        jac = csr_matrix(jac)
 
         return [res,jac]
 
@@ -224,11 +276,18 @@ if __name__ == '__main__':
     start_s = numpy.zeros(2) * numpy.nan
     start_s[0] = 1.5
 
-    sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
+    import time
+    t1 = time.time()
+    #sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
-    sol1 = deterministic_solve(model, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
+    #sol1 = deterministic_solve(model, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
-    sol2 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=False)
+    sol2 = deterministic_solve(model, shocks=e_z, T=1000, use_pandas=True, ignore_constraints=False)
+    t2 = time.time()
+
+    print("Elapsed : {}".format(t2-t1))
+
+    exit()
     from pylab import *
 
     subplot(211)

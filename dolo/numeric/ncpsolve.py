@@ -21,6 +21,7 @@ def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
     :return:
     '''
 
+
     maxit = 100
 
     if tol is None:
@@ -45,6 +46,8 @@ def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
         [fval, fjac] = f(x)
         [ftmp, fjac] = smooth(x, a, b, fval, fjac, serial=serial)
 
+        #from scipy.sparse.linalg import norm
+
         fnorm = norm( ftmp, ord=inf)
 
         if fnorm < tol:
@@ -59,7 +62,10 @@ def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
             from dolo.numeric.serial_operations import serial_solve
             dx = - serial_solve( fjac, ftmp )
         else:
-            dx = - solve( fjac, ftmp)
+            #dx = - solve( fjac, ftmp)
+            from scipy.sparse.linalg import spsolve
+            dx = - spsolve( fjac, ftmp)
+
 
         fnormold = inf
 
@@ -109,6 +115,7 @@ def smooth(x, a, b, fx, J=None, serial=False):
     :return:
     '''
 
+
     dainf = isinf(a)
     dbinf = isinf(b)
 
@@ -131,7 +138,11 @@ def smooth(x, a, b, fx, J=None, serial=False):
     if J is None:
         return fxnew
 
-    # let compute the jacobian
+    # let's compute the jacobian
+    
+    import scipy.sparse
+    jac_is_sparse = scipy.sparse.issparse(J)
+
 
     dpdy = 1 + fx/sq1
     dpdy[dainf] = 1
@@ -148,6 +159,17 @@ def smooth(x, a, b, fx, J=None, serial=False):
     ff = dmdy*dpdy
     xx = dmdy*dpdz + dmdz
 
+    # TODO: rewrite starting here
+
+    if jac_is_sparse:
+        from scipy.sparse import diags
+        fff = diags([ff], [0])
+        xxx = diags([xx], [0])
+        # TODO: preserve csc or csr format
+        Jnew = fff*J - xxx
+        return [fxnew, Jnew]
+        
+
     if serial:
         fff = ff[:,newaxis,:]
     else:
@@ -157,12 +179,21 @@ def smooth(x, a, b, fx, J=None, serial=False):
         xxx = zeros(J.shape)
         for i in range(xx.shape[0]):
             xxx[i,i,:] = xx[i,:]
-
-
     else:
         xxx = diag(xx)
 
-    Jnew = fff*J - xxx
+
+    # here J can be an array, a matrix or a sparse matrix
+    from numpy import ndarray, matrix, multiply
+    if isinstance(J, matrix):
+        Jnew = multiply(J,fff) - xxx
+    elif isinstance(J, ndarray):
+        Jnew = fff*J - xxx
+    else:
+        Jnew = J.multiply(fff) - xxx
+
+#    from scipy.sparse import csr_matrix
+#    Jnew = csr_matrix(Jnew)
 
     return [fxnew, Jnew]
 
