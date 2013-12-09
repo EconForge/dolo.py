@@ -173,4 +173,12 @@ def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwarg
         from dolo.compiler.compiler_python import GModel
         model = GModel(model, recipes=recipes_d, compiler=compiler, **kwargs)
 
+    if model.model_type == 'fga':
+        from dolo.compiler.converter import GModel_fg_from_fga
+        model = GModel_fg_from_fga(model)
+        import warnings
+        warnings.warn("Models of type 'fga' are deprecated. Use type 'fg' instead.")
+        return model
+
+
     return model
