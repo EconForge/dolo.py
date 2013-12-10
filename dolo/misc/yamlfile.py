@@ -117,19 +117,39 @@ Imports the content of a modfile into the current interpreter scope
     parameters_values = {}
     init_values = {}
     covariances = None
+    calibration_str = {}
+
     if 'calibration' in raw_dict:
-        calibration = raw_dict['calibration']
-        if 'parameters' in calibration:
-            parameters_values = [ (Parameter(k), eval(str(v),context)) for k,v in iteritems(calibration['parameters']) ]
-            parameters_values = dict(parameters_values)
-        #steady_state = raw_dict['steady_state']
-        if 'steady_state' in calibration:
-            init_values = [ (Variable(vn), eval(str(value),context)) for vn,value in iteritems(calibration['steady_state']) ]
-            init_values = dict(init_values)
+        calibration = raw_dict['calibration'].copy()
         if 'covariances' in calibration:
+            cov_string = calibration.pop("covariances")
+        else:
+            cov_string = None
+        for special in ('parameters', 'steady_state'):
+          if special in calibration:
+            new = calibration.pop(special)
+            calibration.update(new)
+
+    # now construct the symbolic calibration dictionaries
+    parameters_values = {}
+    init_values = {}
+    for k in calibration:
+      value = calibration[k]
+      try:
+        val = eval(str(value), context)
+      except Exception as e:
+        print("Error evaluating calibrated value for {}. Replacing by 'nan'".format(k))
+        val = sympy.nan
+      if Parameter(k) in parameters_ordering:
+        skey = Parameter(k)
+      else:
+        skey = Variable(k)
+      parameters_values[skey] = val
+
+    if cov_string is not None:
             context['sympy'] = sympy
             covariances = eval('sympy.Matrix({0})'.format( calibration['covariances'] ), context)
-        else:
+    else:
             covariances = None # to avoid importing numpy
 
     symbols = variables_groups
@@ -173,11 +193,11 @@ def yaml_import(filename, verbose=False, recipes=None, compiler='numpy', **kwarg
         from dolo.compiler.compiler_python import GModel
         model = GModel(model, recipes=recipes_d, compiler=compiler, **kwargs)
 
-    if model.model_type == 'fga':
-        from dolo.compiler.converter import GModel_fg_from_fga
-        model = GModel_fg_from_fga(model)
-        import warnings
-        warnings.warn("Models of type 'fga' are deprecated. Use type 'fg' instead.")
+        if model.model_type == 'fga':
+          from dolo.compiler.converter import GModel_fg_from_fga
+          model = GModel_fg_from_fga(model)
+          import warnings
+          warnings.warn("Models of type 'fga' are deprecated. Use type 'fg' instead.")
         return model
 
 
