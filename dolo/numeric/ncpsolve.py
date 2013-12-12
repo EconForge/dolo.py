@@ -94,7 +94,7 @@ def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
     if verbose:
         print(stars)
 
-    warnings.Warning('Failure to converge in ncpsolve')
+    warnings.warn('Failure to converge in ncpsolve')
 
     fval = f(x)
 
