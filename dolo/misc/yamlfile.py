@@ -148,7 +148,7 @@ Imports the content of a modfile into the current interpreter scope
 
     if cov_string is not None:
             context['sympy'] = sympy
-            covariances = eval('sympy.Matrix({0})'.format( calibration['covariances'] ), context)
+            covariances = eval('sympy.Matrix({0})'.format( cov_string ), context)
     else:
             covariances = None # to avoid importing numpy
 

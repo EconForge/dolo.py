@@ -8,8 +8,6 @@ class  ErrorsTestCase(unittest.TestCase):
         from dolo.numeric.global_solve import global_solve
 
         model = yaml_import('examples/global_models/rbc.yaml')
-        from dolo.compiler.converter import GModel_fg_from_fga
-        model = GModel_fg_from_fga( model )
 
         from dolo.numeric.perturbations_to_states import approximate_controls
 
