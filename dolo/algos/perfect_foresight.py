@@ -14,6 +14,7 @@ def find_steady_state(model, e, force_values=None, get_jac=False):
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
     p = model.calibration['parameters']
+
     z = numpy.concatenate([s0, x0])
 
     e = numpy.atleast_2d(e.ravel()).T
@@ -75,12 +76,12 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_gues
 
     # until last period, exogenous shock takes its last value
     epsilons = numpy.zeros( (shocks.shape[0], T))
-    epsilons[:,:shocks.shape[1]] = shocks
-    epsilons[:,shocks.shape[1]:] = shocks[:,-1:]
+    epsilons[:,:(shocks.shape[1]-1)] = shocks[:,1:]
+    epsilons[:,(shocks.shape[1]-1):] = shocks[:,-1:]
 
     # final initial and final steady-states consistent with exogenous shocks
-    start = find_steady_state( model, numpy.atleast_2d(epsilons[:,0:1]), force_values=start_s)
-    final = find_steady_state( model, numpy.atleast_2d(epsilons[:,-1:]))
+    start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), force_values=start_s)
+    final = find_steady_state( model, numpy.atleast_2d(shocks[:,-1:]))
 
     start_s = start[0]
     final_x = final[1]
@@ -89,8 +90,8 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_gues
     start = numpy.concatenate( start )
 
     if verbose==True:
-        print("Initial state : {}".format(start))
-        print("Final control : {}".format(final))
+        print("Initial states : {}".format(start_s))
+        print("Final controls : {}".format(final_x))
 
     p = model.calibration['parameters']
 
@@ -137,6 +138,8 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_gues
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
         sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose)
+        if isinstance(sol, list):
+            raise Exception("No convergence after {} iterations.".format(sol[1]))
 #        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )
         sol = sol.reshape(sh)
         #sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
