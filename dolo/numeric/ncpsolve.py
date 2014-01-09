@@ -9,7 +9,7 @@ from numpy import float64
 
 import warnings
 
-def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
+def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, serial=False):
     '''
     don't ask what ncpsolve can do for you...
     :param f:
@@ -22,7 +22,6 @@ def ncpsolve(f, a, b, x, tol=None, infos=False, verbose=False, serial=False):
     '''
 
 
-    maxit = 100
 
     if tol is None:
         tol = sqrt( finfo( float64 ).eps )

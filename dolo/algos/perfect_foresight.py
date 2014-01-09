@@ -48,7 +48,7 @@ def find_steady_state(model, e, force_values=None, get_jac=False):
 
     return [steady_state[:len(s0)], steady_state[len(s0):]]
 
-def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_guess=None, ignore_constraints=False, start_s=None, verbose=False):
+def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_guess=None, ignore_constraints=False, maxit=100, start_s=None, verbose=False):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -137,7 +137,7 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_gues
         dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
-        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose)
+        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit )
         if isinstance(sol, list):
             raise Exception("No convergence after {} iterations.".format(sol[1]))
 #        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )

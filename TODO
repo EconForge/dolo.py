@@ -2,3 +2,6 @@ TODO
 ----
 
 - compatibility with python 3
+
+- Warnings system:
+    should not ignore subsequent warnings
