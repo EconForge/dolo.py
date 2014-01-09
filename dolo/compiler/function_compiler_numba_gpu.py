@@ -60,17 +60,18 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
 
 
     text = '''
-from numbapro import float64, void
+from numbapro import float64, int64, void
 from numbapro import jit
 from numbapro import cuda
 
-@jit( argtypes={argtypes}, target='gpu' )
+@jit( 'int64({argtypes})', target='gpu', device=True )
 def {fname}({args_names}, {param_names}, val):
 
     i = cuda.grid(1)
 {content}
 
-#    return val
+    errcode = 0
+    return errcode
 
 
 
@@ -104,14 +105,14 @@ def {fname}({args_names}, {param_names}, val):
             return_names = return_names,
             args_names = str.join(', ', args_names),
             param_names = 'p',
-            argtypes = str(argtypes),
+            argtypes = str.join( ',', [str(e) for e in (argtypes)]),
             signature = signature,
     )
 
 
     if return_text:
         return text
-    print(args_list)
+#    print(args_list)
 
     return code_to_function(text,fname,args_size,return_size, size_same_as_output)
 
@@ -130,6 +131,8 @@ def code_to_function(text, name, args_size, return_size, size_same_as_output):
     e = {}
     print('*'*1000)
     print(text)
+
+    text = text.replace("(-", "( 0 -")
     exec(text, d, e)
     fun = e[name]
     fun.max_blocksize = 16
@@ -151,17 +154,17 @@ if __name__ == '__main__':
     import numpy
 
 
-    import yaml
-    with file('../washington/code/recipes.yaml') as f:
-        recipes = yaml.load(f)
+#    import yaml
+#    with file('../washington/code/recipes.yaml') as f:
+#        recipes = yaml.load(f)
 
-    fname = '..//washington/code/rbc_fg.yaml'
+    fname = 'examples/global_models/rbc.yaml'
 
     first = 'numexpr'
     second = 'numba_gpu'
 
-    gm = yaml_import(fname, compiler=first, order='columns', recipes=recipes)
-    gmp = yaml_import(fname, compiler=second, order='columns', recipes=recipes)
+    gm = yaml_import(fname, compiler=first, order='columns')
+    gmp = yaml_import(fname, compiler=second, order='columns')
 
 
     ss = gmp.calibration['states']
@@ -198,6 +201,7 @@ if __name__ == '__main__':
     
     res_gpu = fp(g_ss,g_xx,g_ss,g_xx,g_p)
    
+    print("OK")
     res = res_gpu.copy_to_host()
 
     print('Error : {}'.format( abs(res - res_test).max() ) )
