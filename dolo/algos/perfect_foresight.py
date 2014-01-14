@@ -3,7 +3,7 @@ from numpy import linspace, zeros, atleast_2d
 
 from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-def deterministic_solve(model, shocks=None, start_states=None, start_controls=None, start_constraints=None, T=100, ignore_constraints=False, iuse_pandas=True, initial_guess=None, verbose=False):
+def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -33,21 +33,33 @@ def deterministic_solve(model, shocks=None, start_states=None, start_controls=No
     epsilons = numpy.zeros( (shocks.shape[0], T))
     epsilons[:,:(shocks.shape[1]-1)] = shocks[:,1:]
     epsilons[:,(shocks.shape[1]-1):] = shocks[:,-1:]
+    
+    final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
+    start_dict = {model.symbols['shocks'][i]: shocks[i,0] for i in range(len(model.symbols['shocks']))}
+
+    if start_constraints:
+        start_dict.update(start_constraints)
+    
+    final_equilibrium = find_deterministic_equilibrium( model, constraints=final_dict)
+    final_s = final_equilibrium['states']
+    final_x = final_equilibrium['controls']
 
     # final initial and final steady-states consistent with exogenous shocks
     if start_states is None:
-        start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), constraints=start_constraints)
+        start_equilibrium = find_deterministic_equilibrium( model, constraints=start_dict)
+        start_s = start_equilibrium['states']
+        start_x = start_equilibrium['controls']
     else:
-        # we look only for optimal initial controls
-        start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), constraints=start_constraints, force_states=start_states)
+        start_s = start_states
+        start_x = final_x
 
-    final = find_steady_state( model, numpy.atleast_2d(shocks[:,-1:]))
+    #TODO: for start_x, it should be possible to use first order guess
 
-    start_s = start[0]
-    final_x = final[1]
 
-    final = numpy.concatenate( final )
-    start = numpy.concatenate( start )
+    
+
+    final = numpy.concatenate( [final_s, final_x] )
+    start = numpy.concatenate( [start_s, start_x] )
 
     if verbose==True:
         print("Initial states : {}".format(start_s))
