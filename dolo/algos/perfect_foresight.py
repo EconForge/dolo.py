@@ -1,54 +1,9 @@
 import numpy
 from numpy import linspace, zeros, atleast_2d
 
-def find_steady_state(model, e, force_values=None, get_jac=False):
-    '''
-    Finds the steady state corresponding to exogenous shocks :math:`e`.
+from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-    :param model: an "fg" model.
-    :param e: a vector with the value for the exogenous shocks.
-    :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.
-    :return: a list containing a vector for the steady-states and the corresponding steady controls.
-    '''
-
-    s0 = model.calibration['states']
-    x0 = model.calibration['controls']
-    p = model.calibration['parameters']
-
-    z = numpy.concatenate([s0, x0])
-
-    e = numpy.atleast_2d(e.ravel()).T
-
-    if force_values is not None:
-        inds =  numpy.where( numpy.isfinite( force_values ) )[0]
-        vals = force_values[inds]
-
-    def fobj(z):
-        s = numpy.atleast_2d( z[:len(s0)] ).T
-        x = numpy.atleast_2d( z[len(s0):] ).T
-        S = model.functions['transition'](s,x,e,p)
-        #    S[inds,0] = vals
-        r = model.functions['arbitrage'](s,x,s,x,p)
-        res = numpy.concatenate([S-s, r,  ])
-        if force_values is not None:
-            add = atleast_2d(S[inds,0]-vals).T
-            res = numpy.concatenate([res, add])
-        return res.ravel()
- 
-    if get_jac:
-        from dolo.numeric.solver import MyJacobian
-        jac = MyJacobian(fobj)( steady_state)
-        return jac
-        return res.flatten()
-
-    from scipy.optimize import root
-    sol = root(fobj, z, method='lm')
-    steady_state = sol.x
-    
-
-    return [steady_state[:len(s0)], steady_state[len(s0):]]
-
-def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_guess=None, ignore_constraints=False, maxit=100, start_s=None, verbose=False):
+def deterministic_solve(model, shocks=None, start_states=None, start_controls=None, start_constraints=None, T=100, ignore_constraints=False, iuse_pandas=True, initial_guess=None, verbose=False):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -80,7 +35,12 @@ def deterministic_solve(model, shocks=None, T=100, use_pandas=True, initial_gues
     epsilons[:,(shocks.shape[1]-1):] = shocks[:,-1:]
 
     # final initial and final steady-states consistent with exogenous shocks
-    start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), force_values=start_s)
+    if start_states is None:
+        start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), constraints=start_constraints)
+    else:
+        # we look only for optimal initial controls
+        start = find_steady_state( model, numpy.atleast_2d(shocks[:,0:1]), constraints=start_constraints, force_states=start_states)
+
     final = find_steady_state( model, numpy.atleast_2d(shocks[:,-1:]))
 
     start_s = start[0]

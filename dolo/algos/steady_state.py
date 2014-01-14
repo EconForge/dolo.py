@@ -1,10 +1,80 @@
 import numpy
 from numpy import linspace, zeros, atleast_2d
 
+from collections import OrderedDict
 
+def find_deterministic_equilibrium(model, constraints=None, return_jacobian=False):
 
-def find_steady_state(model, e=None, force_values=None, return_jacobian=False):
-    '''
+    
+    s0 = model.calibration['states']
+    x0 = model.calibration['controls']
+    p = model.calibration['parameters']
+    if 'shocks' in model.calibration:
+        e0 = model.calibration['shocks'].copy()
+    else:
+        e0 = numpy.zeros( len(model.symbols['shocks']) )
+    n_e = len(e0)
+    
+    z = numpy.concatenate([s0, x0, e0])
+
+    symbs = model.symbols['states'] + model.symbols['controls']
+    addcons_ind = []
+    addcons_val = []
+    if constraints is None: constraints = dict()
+    for k in constraints:
+        if k in symbs:
+            i = symbs.index(k)
+            addcons_ind.append(i)
+            addcons_val.append(constraints[k])
+        elif k in model.symbols['shocks']:
+            i = model.symbols['shocks'].index(k)
+            e0[i] = constraints[k]
+        else:
+            raise Exception("Invalid symbol '{}' for steady_state constraint".format(k))
+    def fobj(z):
+        s = z[:len(s0)]
+        x = z[len(s0):-n_e]
+        e = z[-n_e:]
+
+        S = model.functions['transition'](s,x,e,p)
+        r = model.functions['arbitrage'](s,x,s,x,p)
+        d_e = e - e0
+        d_sx = z[addcons_ind] - addcons_val
+        res = numpy.concatenate([S-s, r, d_e, d_sx ])
+        return res
+
+    from dolo.numeric.solver import MyJacobian
+    jac = MyJacobian(fobj)( z )
+    if return_jacobian:
+        return jac
+   
+
+    rank = numpy.linalg.matrix_rank(jac)
+    if rank < len(z):
+        import warnings
+        warnings.warn("There are {} equilibrium variables to find, but the jacobian matrix is only of rank {}. The solution is indeterminate.".format(len(z),rank))
+
+    from scipy.optimize import root
+    sol = root(fobj, z, method='lm')
+    steady_state = sol.x
+
+    
+   
+    s = steady_state[:len(s0)]
+    x = steady_state[len(s0):-n_e]
+    e = steady_state[-n_e:]
+
+    calib = OrderedDict(
+        states = s,
+        controls = x,
+        shocks = e,
+        parameters = p.copy()
+    )
+    
+    return calib
+ 
+def find_steady_state(model, e=None, force_states=None, constraints=None, return_jacobian=False):
+    '''n
     Finds the steady state corresponding to exogenous shocks :math:`e`.
 
     :param model: an "fg" model.
@@ -23,11 +93,11 @@ def find_steady_state(model, e=None, force_values=None, return_jacobian=False):
     else:
         e = e.ravel()
 
-    if force_values is not None:
-        if isinstance(force_values, (list, tuple)):
+    if constraints is not None:
+        if isinstance(constraints, (list, tuple)):
             inds =  numpy.where( numpy.isfinite( force_values ) )[0]
             vals = force_values[inds]
-        elif isinstance(force_values, dict):
+        elif isinstance(constraints, dict):
             inds = [model.symbols['states'].index(k) for k in force_values.keys()]
             vals = force_values.values()
 
