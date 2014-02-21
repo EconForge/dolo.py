@@ -57,5 +57,5 @@ def mlinspace(smin,smax,orders):
         return res.copy() ## workaround for strange bug
 
     else:
-        meshes = np.meshgrid( *[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))], indexing='ij' )
+        meshes = np.meshgrid( *[np.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))], indexing='ij' )
         return np.row_stack( [l.flatten() for l in meshes])
