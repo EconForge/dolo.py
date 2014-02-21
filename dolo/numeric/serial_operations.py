@@ -150,6 +150,8 @@ def serial_solve(M,Y, debug=False):
     :return X: a pxN array X such that M(:,:,i)*X(:,i) = Y(:,:,i)
     '''
 
+
+    debug = True
     ## surprisingly it is slower than inverting M and doing a serial multiplication !
 
     import numpy

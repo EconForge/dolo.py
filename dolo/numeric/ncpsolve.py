@@ -42,6 +42,9 @@ def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, serial
 
         it += 1
 
+        if verbose:
+            print("Iteration {}".format(it))
+
         [fval, fjac] = f(x)
         [ftmp, fjac] = smooth(x, a, b, fval, fjac, serial=serial)
 
