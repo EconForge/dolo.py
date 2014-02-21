@@ -4,6 +4,14 @@ from numpy import linspace, zeros, atleast_2d
 from collections import OrderedDict
 
 def find_deterministic_equilibrium(model, constraints=None, return_jacobian=False):
+    '''
+    Finds the steady state calibration.
+
+    :param model: an "fg" model.
+    :param constraint: a dictionaries with forced values. Use it to set shocks to non-zero values or to add additional constraints to avoid unit roots.
+    :return: a dictionary with the same structure as "model.calibration".
+    '''
+
 
     
     s0 = model.calibration['states']
@@ -70,6 +78,10 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         shocks = e,
         parameters = p.copy()
     )
+    
+    if 'auxiliary' in model.functions:
+        a = model.functions['auxiliary'](s,x,p)
+        calib['auxiliaries'] = a
     
     return calib
  
