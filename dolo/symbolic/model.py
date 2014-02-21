@@ -204,20 +204,25 @@ class SModel:
         import re
         regex = re.compile('(.*)<=(.*)<=(.*)')
 
-
         model = self
 
-        complementarities_tags = [eq.tags.get('complementarity') for eq in model.equations_groups['arbitrage']]
-
-        parsed  = [ [model.eval_string(e) for e in regex.match(s).groups()] for s in complementarities_tags]
-        lower_bounds_symbolic = [p[0] for p in parsed]
-        controls = [p[1] for p in parsed]
-        upper_bounds_symbolic = [p[2] for p in parsed]
-        try:
-            controls == model.symbols_s['controls']
-        except:
-            raise Exception("Order of complementarities does not match order of declaration of controls.")
-
+        lower_bounds_symbolic = []
+        upper_bounds_symbolic = []
+        for i in range(len(model.symbols_s['controls'])):
+            varname = model.symbols['controls'][i]
+            eq = model.equations_groups['arbitrage'][i]
+            comp = eq.tags.get('complementarity')
+            if comp:
+                to_parse = regex.match(s).groups()
+                var = str.strip(to_parse[1])
+                if var != varname:
+                    raise Exception("Complementarity variable for equation {} must match declarationo order. Found '{}', expecting '{}'.".format(i,var,varname))
+            else:
+                to_parse = ['-inf', varname, 'inf'] 
+            parsed = [model.eval_string(e) for e in to_parse]
+            lower_bounds_symbolic.append(parsed[0])
+            upper_bounds_symbolic.append(parsed[2])
+            
         complementarities = dict()
         complementarities['arbitrage'] = [lower_bounds_symbolic, upper_bounds_symbolic]
 
