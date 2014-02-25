@@ -213,7 +213,7 @@ class SModel:
             eq = model.equations_groups['arbitrage'][i]
             comp = eq.tags.get('complementarity')
             if comp:
-                to_parse = regex.match(s).groups()
+                to_parse = regex.match(comp).groups()
                 var = str.strip(to_parse[1])
                 if var != varname:
                     raise Exception("Complementarity variable for equation {} must match declarationo order. Found '{}', expecting '{}'.".format(i,var,varname))
