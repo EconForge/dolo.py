@@ -48,7 +48,7 @@
 #import time
 #t0 = time.time()
 #for i in range(100):
-#    v1 = g(x0, y0, p, derivs=False)
+#    v1 = g(x0, y0, p, diff=False)
 #t1 = time.time()
 #for i in range(100):
 #    v2 = gg(x0, y0, p)

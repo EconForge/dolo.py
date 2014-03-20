@@ -9,119 +9,27 @@ from numpy import float64
 
 import warnings
 
-def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, serial=False):
-    '''
-    don't ask what ncpsolve can do for you...
-    :param f:
-    :param a:
-    :param b:
-    :param x:
-    :param tol:
-    :param serial:
-    :return:
-    '''
+from dolo.numeric.newton import serial_newton
+
+def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False):
+
+    def fcmp(z):
+
+        [val, dval] = f(z)
+        [val, dval] = serial_smooth(z, a, b, val, dval)
+
+        return [val, dval]
+
+    [sol, nit] = serial_newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose)
+
+    return [sol, nit]
 
 
-
-    if tol is None:
-        tol = sqrt( finfo( float64 ).eps )
-
-    maxsteps = 10
-    showiters = True
-
-
-    it = 0
-    if verbose:
-        headline = '|{0:^5} | {1:^12} | {2:^12} |'.format( 'k',' backsteps', '||f(x)||' )
-        stars = '-'*len(headline)
-        print(stars)
-        print(headline)
-        print(stars)
-
-    while it < maxit:
-
-        it += 1
-
-        if verbose:
-            print("Iteration {}".format(it))
-
-        [fval, fjac] = f(x)
-        [ftmp, fjac] = smooth(x, a, b, fval, fjac, serial=serial)
-
-        #from scipy.sparse.linalg import norm
-
-        fnorm = norm( ftmp, ord=inf)
-
-        if fnorm < tol:
-            if verbose:
-                print(stars)
-            if infos:
-                return [x, it]
-            else:
-                return x
-
-        if serial:
-            from dolo.numeric.serial_operations import serial_solve
-            dx = - serial_solve( fjac, ftmp )
-        else:
-            #dx = - solve( fjac, ftmp)
-            from scipy.sparse.linalg import spsolve
-            dx = - spsolve( fjac, ftmp)
-
-
-        fnormold = inf
-
-        for backsteps in range(maxsteps):
-
-            xnew = x + dx
-            fnew = f(xnew)[0] # TODO: don't ask for derivatives
-            fnew = smooth( xnew, a, b, fnew, serial=serial)
-            fnormnew = norm(fnew, ord=inf)
-
-            if fnormnew < fnorm:
-                break
-            if fnormold < fnormnew:
-                dx = 2*dx
-                break
-
-            fnormold = fnormnew
-            dx = dx/2
-
-        x = x + dx
-
-        if verbose:
-            print('|{0:5} | {2:12.3e} | {2:12.3e} |'.format( it, backsteps, fnormnew) )
-
-
-    if verbose:
-        print(stars)
-
-    warnings.warn('Failure to converge in ncpsolve')
-
-    fval = f(x)
-
-    return [x,fval]
-
-
-
-def smooth(x, a, b, fx, J=None, serial=False):
-
-    '''
-    smoooth
-    :param x: vector of evaluation points
-    :param a: lower bounds
-    :param b: upper bounds
-    :param fx: function values at x
-    :param J: jacobian of f at x
-    :param serial:
-    :return:
-    '''
+def serial_smooth(x, a, b, fx, J):
 
 
     dainf = isinf(a)
     dbinf = isinf(b)
-
-    n = len(x)
 
     da = a - x
     db = b - x
@@ -136,15 +44,6 @@ def smooth(x, a, b, fx, J=None, serial=False):
     fxnew = pval - sq2 + db
 
     fxnew[dbinf] = pval[dbinf]
-
-    if J is None:
-        return fxnew
-
-    # let's compute the jacobian
-    
-    import scipy.sparse
-    jac_is_sparse = scipy.sparse.issparse(J)
-
 
     dpdy = 1 + fx/sq1
     dpdy[dainf] = 1
@@ -163,42 +62,12 @@ def smooth(x, a, b, fx, J=None, serial=False):
 
     # TODO: rewrite starting here
 
-    if jac_is_sparse:
-        from scipy.sparse import diags
-        fff = diags([ff], [0])
-        xxx = diags([xx], [0])
-        # TODO: preserve csc or csr format
-        Jnew = fff*J - xxx
-        return [fxnew, Jnew]
-        
+    fff = ff[:,:,newaxis]
 
-    if serial:
-        fff = ff[:,newaxis,:]
-    else:
-        fff = ff[:,newaxis]
+    xxx = zeros(J.shape)
+    for i in range(xx.shape[1]):
+        xxx[:,i,i] = xx[:,i]
 
-    if serial:
-        xxx = zeros(J.shape)
-        for i in range(xx.shape[0]):
-            xxx[i,i,:] = xx[i,:]
-    else:
-        xxx = diag(xx)
-
-
-    # here J can be an array, a matrix or a sparse matrix
-    from numpy import ndarray, matrix, multiply
-    if isinstance(J, matrix):
-        Jnew = multiply(J,fff) - xxx
-    elif isinstance(J, ndarray):
-        Jnew = fff*J - xxx
-    else:
-        Jnew = J.multiply(fff) - xxx
-
-#    from scipy.sparse import csr_matrix
-#    Jnew = csr_matrix(Jnew)
+    Jnew = fff*J - xxx
 
     return [fxnew, Jnew]
-
-
-
-

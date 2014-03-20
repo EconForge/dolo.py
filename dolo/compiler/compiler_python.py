@@ -35,7 +35,7 @@ class GModel(object):
                 vars.extend( self.symbols[vg] )
         return vars
 
-    def __init__(self, model, model_type=None, recipes=None, compiler=None, order='rows'):
+    def __init__(self, model, model_type=None, recipes=None, compiler=None, order='columns'):
 
         # this part is actually common to all compilers
 
@@ -144,16 +144,16 @@ class GModel(object):
         """Updates the model calibration while respecting dependences between parameters.
         :param args: either two parameters ``key``, ``value`` or a dictionary mapping several keys to several values
              each key must be a string among the symbols of the model. Can also be a list of keyword arguments.
-        """
+#        """
         if len(args) == 2:
             d = {args[0]:args[1]}
-	elif len(args) == 1 and isinstance(args[0], dict):
+        elif len(args) == 1 and isinstance(args[0], dict):
             d = args[0]
-	elif len(args)==0:
-	    d = kwargs
-	else:
-	    raise Exception("Incorrect call")
-    	
+        elif len(args)==0:
+            d = kwargs
+        else:
+            raise Exception("Incorrect call")
+
         self.model.set_calibration(d)
         self.__update_calibration__()
 

@@ -10,6 +10,9 @@ class TestGlobal(unittest.TestCase):
         filename = 'examples/global_models/rbc.yaml'
 
         model = yaml_import(filename)
+        print(model.__class__)
+
+        print(model.infos['data_layout'])
 
         print model.calibration['covariances']
 
@@ -26,10 +29,18 @@ class TestGlobal(unittest.TestCase):
 
         dr = global_solve(model, pert_order=1, maxit=5, interp_type='multilinear', verbose=True, polish=False, method='newton')
 
+
+
         t3 = time.time()
+
+        dr = global_solve(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, polish=False, method='newton')
+
+        t4 = time.time()
+
 
         print(t2-t1)
         print(t3-t2)
+        print(t4-t3)
 
 if __name__ == '__main__':
     unittest.main()

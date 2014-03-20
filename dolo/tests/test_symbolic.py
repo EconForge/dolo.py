@@ -25,10 +25,12 @@ class  FormalCalculusTestCase(unittest.TestCase):
         x1 = x(+1)
         x_1 = x(-1)
         z = x_1(+2)
-        assert(x.lag == 0)
-        assert(x1.lag == 1)
-        assert(x_1.lag == -1)
-        assert(z.lag == 1)
+        assert(x.date == 0)
+        assert(x1.date == 1)
+
+        print(x_1.date)
+        assert(x_1.date == -1)
+        assert(z.date == 1)
         assert(x1 == z)
         assert(x1.P == x)
         # maybe we could check that both variables refer to the same object

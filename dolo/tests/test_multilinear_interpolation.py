@@ -15,7 +15,8 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
         from itertools import product
         import numpy
         from numpy import array, column_stack
-        from dolo.numeric.interpolation.multilinear import multilinear_interpolation
+        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
+        from dolo.numeric.interpolation.misc import mlinspace
 
 
         smin = array([0.0]*d)
@@ -24,25 +25,25 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
         orders = orders[:d]
 
 
-        grid = column_stack( [e for e in product(*[numpy.linspace(smin[i],smax[i],orders[i]) for i in range(d)])])
+        grid = mlinspace(smin,smax, orders[:d])
 
-        finer_grid = column_stack( [e for e in product(*[numpy.linspace(0,1,10)]*d) ] )
+        finer_grid = mlinspace( smin, smax, [10]*d )
 
         if d == 1:
-            f = lambda g: numpy.row_stack([
-                2*g[0,:]
+            f = lambda g: numpy.column_stack([
+                2*g[:,0]
             ])
         elif d == 2:
-            f = lambda g: numpy.row_stack([
-                g[0,:] * g[1,:],
+            f = lambda g: numpy.column_stack([
+                g[:,0] * g[:,1],
             ])
         elif d == 3:
-            f = lambda g: numpy.row_stack([
-                (g[0,:] - g[1,:]) * g[2,:],
+            f = lambda g: numpy.column_stack([
+                (g[:,0] - g[:,1]) * g[:,2],
             ])
         elif d== 4:
-            f = lambda g: numpy.row_stack([
-                (g[3,:] - g[1,:]) * (g[2,:] - g[0,:])
+            f = lambda g: numpy.column_stack([
+                (g[:,3] - g[:,1]) * (g[:,2] - g[:,0])
             ])
 #
 
@@ -50,12 +51,13 @@ class  MultilinearInterpolationTestCase(unittest.TestCase):
 
         finer_grid = numpy.ascontiguousarray(finer_grid)
 
-        interpolated_values = multilinear_interpolation(smin, smax, orders, values, finer_grid)
+        interpolated_values = MultilinearInterpolator(smin, smax, orders, values)(finer_grid)
 
 
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
 
         sg = SmolyakGrid( smin, smax ,3)
+
         sg.set_values( f(sg.grid) )
 
         smol_values = sg(finer_grid)

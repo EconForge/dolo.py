@@ -71,18 +71,23 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
     weights = [ h[1]/numpy.sqrt( numpy.pi) for h in herms]
 
     if len(orders) == 1:
-        return [numpy.array(points)*sigma, weights[0]]
+        x = numpy.array(points)*sigma
+        w = weights[0]
+        return [x.T,w]
 
-    x = cartesian( points).T
+    else:
+        x = cartesian( points).T
 
-    from functools import reduce
-    w = reduce( numpy.kron, weights)
+        from functools import reduce
+        w = reduce( numpy.kron, weights)
 
-    C = numpy.linalg.cholesky(sigma)
+        C = numpy.linalg.cholesky(sigma)
 
-    x = numpy.dot(C, x) + mu[:,numpy.newaxis]
+        x = numpy.dot(C, x) + mu[:,numpy.newaxis]
 
-    return [x,w]
+        x = numpy.ascontiguousarray(x.T)
+
+        return [x,w]
 
 #from numpy.polynomial.hermite import hermgauss
 

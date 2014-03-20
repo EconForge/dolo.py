@@ -50,10 +50,10 @@ class CModel:
         self.__g_h__ = []
 
 
-    def g(self,s,x,e,p,derivs=False):
+    def g(self,s,x,e,p,diff=False):
         if self.__compiler__ == 'numpy':
-            return self.__g__(s,x,e,p,derivs=derivs)
-        elif derivs is False:
+            return self.__g__(s,x,e,p,diff=diff)
+        elif diff is False:
             return self.__g__(s,x,e,p)
         else:
             g_0 = self.__g__(s,x,e,p)
@@ -63,10 +63,10 @@ class CModel:
             return [g_0, g_s, g_x, g_e]
 
 
-    def f(self,s,x,S,X,E,p,derivs=False):
+    def f(self,s,x,S,X,E,p,diff=False):
         if self.__compiler__ == 'numpy':
-            return self.__f__(s,x,E,S,X,p,derivs=derivs)
-        elif derivs is False:
+            return self.__f__(s,x,E,S,X,p,diff=diff)
+        elif diff is False:
             return self.__f__(s,x,E,S,X,p)
         else:
             f_0 = self.__f__(s,x,S,X,E,p)
@@ -78,10 +78,10 @@ class CModel:
             return [f_0, f_s, f_x, f_E, f_S, f_X, ]
 
 
-    def a(self,s,x,p,derivs=False):
+    def a(self,s,x,p,diff=False):
         if self.__compiler__ == 'numpy':
-            return self.__a__(s,x,p,derivs=derivs)
-        elif derivs is False:
+            return self.__a__(s,x,p,diff=diff)
+        elif diff is False:
             return self.__a__(s,x,p)
         else:
             a_0 = self.__a__(s,x,p)

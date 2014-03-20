@@ -136,13 +136,13 @@ from functools import wraps
 
 class vector_or_matrix:
 
-    def __init__(self,data_layout='rows'):
+    def __init__(self,data_layout='columns'):
         self.data_layout = data_layout
 
     def __call__(self, f):
         data_layout = self.data_layout
         import numpy
-        @wraps(f)
+        # @wraps(f)
         def inner(*args, **kwargs):
             is_vector = (args[0].ndim == 1)
             if is_vector:
@@ -151,7 +151,7 @@ class vector_or_matrix:
                 else:
                     new_args = [numpy.atleast_2d(e) for e in args[:-1]]
                 new_args += [args[-1]]
-                if 'derivs' in kwargs and kwargs['derivs']:
+                if 'diff' in kwargs and kwargs['diff']:
                     [res, dres] = f(*new_args, **kwargs)
                     if data_layout == 'rows':
                         return [res[:,-1], dres[:,:,-1]]
@@ -172,7 +172,7 @@ class vector_or_matrix:
 
 
 
-def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='rows'):
+def compile_multiargument_function(equations, args_list, args_names, parms, fname='anonymous_function', diff=True, return_text=False, use_numexpr=False, order='columns'):
     """
     :param equations: list of sympy expressions
     :param args_list: list of lists of symbols (e.g. [[a_1,a_2], [b_1,b_2]])
@@ -208,7 +208,7 @@ def compile_multiargument_function(equations, args_list, args_names, parms, fnam
 
     text = '''
 @vector_or_matrix('{data_layout}')
-def {fname}({args_names}, {param_names}, derivs=False):
+def {fname}({args_names}, {param_names}, diff=False):
 
     import numpy as np
     from numpy import exp, log
@@ -280,7 +280,7 @@ def {fname}({args_names}, {param_names}, derivs=False):
 
     content = write_eqs(equations)
     content += '''
-    if not derivs:
+    if not diff:
         return val
     '''
 

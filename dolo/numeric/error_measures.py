@@ -83,8 +83,6 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
     from dolo.numeric.simulations import simulate
     simul = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
 
-    print(simul.shape)
-    print(n_s)
     s_simul = simul[:n_s,:,:]
 
     densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]

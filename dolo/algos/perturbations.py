@@ -10,24 +10,24 @@ def approximate_controls(model, return_dr=True):
 
     p = model.calibration['parameters']
     sigma = model.calibration['covariances']
-    s = model.calibration['states'][:,None]
-    x = model.calibration['controls'][:,None]
-    e = model.calibration['shocks'][:,None]
+    s = model.calibration['states'][None,:]
+    x = model.calibration['controls'][None,:]
+    e = model.calibration['shocks'][None,:]
 
     from numpy.linalg import solve
 
     g = model.functions['transition']
     f = model.functions['arbitrage']
 
-    l = g(s,x,e,p, derivs=True)
-    [junk, g_s, g_x, g_e] = [el[...,0] for el in l]
+    l = g(s,x,e,p, diff=True)
+    [junk, g_s, g_x, g_e] = [el[0,...] for el in l]
 
     if model.model_type == "fg2":
-      l = f(s,x,e,s,x,p, derivs=True)
-      [res, f_s, f_x, f_e, f_S, f_X] = [el[...,0] for el in l]
+      l = f(s,x,e,s,x,p, diff=True)
+      [res, f_s, f_x, f_e, f_S, f_X] = [el[0,...] for el in l]
     else:
-      l = f(s,x,s,x,p, derivs=True)
-      [res, f_s, f_x, f_S, f_X] = [el[...,0] for el in l]
+      l = f(s,x,s,x,p, diff=True)
+      [res, f_s, f_x, f_S, f_X] = [el[0,...] for el in l]
 
     n_s = g_s.shape[0]           # number of controls
     n_x = g_x.shape[1]   # number of states

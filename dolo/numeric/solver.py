@@ -23,7 +23,8 @@ def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, se
         else:
             Dffobj = jac
     elif serial_problem:
-        Dffobj = MySerialJacobian(fobj, in_shape)
+        from dolo.numeric.newton import SerialDifferentiableFunction
+        Dffobj = SerialDifferentiableFunction(fobj, in_shape)
     else:
         Dffobj = MyJacobian(ffobj)
 
@@ -50,9 +51,9 @@ def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, se
             print(msg)
 
     elif method == 'newton':
-        from dolo.numeric.newton import newton_solver
+        from dolo.numeric.newton import serial_newton as newton_solver
         fun = lambda x: [ffobj(x), Dffobj(x) ]
-        [sol,nit] = newton_solver(fun,x0, verbose=verbose, infos=True)
+        [sol,nit] = newton_solver(fun,x0, verbose=verbose)
 
     elif method == 'lmmcp':
         from dolo.numeric.extern.lmmcp import lmmcp
@@ -98,21 +99,21 @@ def MySerialJacobian(fun, shape, eps=1e-6):
         x = x.reshape(shape)
 
         #        x0 = x.copy()
-        p = x.shape[0]
-        N = x.shape[1]
+        p = x.shape[1]
+        N = x.shape[0]
 
         y0 = fun(x)
 
-        assert( y0.shape[0] == p)
-        assert( y0.shape[1] == N)
+        assert( y0.shape[1] == p)
+        assert( y0.shape[0] == N)
 
-        Dc = np.zeros( (p,p,N) )  # compressed jacobian
+        Dc = np.zeros( (N,p,p) )  # compressed jacobian
         for i in range(p):
-            delta = np.zeros((p,N))
-            delta[i,:] = eps
+            delta = np.zeros((N,p))
+            delta[:,i] = eps
             y1 = fun(x+delta)
             y2 = fun(x-delta)
-            Dc[i,:,:] = (y1 - y2)/eps/2
+            Dc[:,:,i] = (y1 - y2)/eps/2
 
         return Dc.swapaxes(0,1)
 

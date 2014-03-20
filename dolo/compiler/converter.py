@@ -9,29 +9,36 @@ class GModel_fg_from_fga:
 
     def __init__(self, model_fga):
 
+        print("model_fga: ")
+        print(model_fga.infos['data_layout'])
+
         self.model = model_fga.model
         self.parent = model_fga
 
         self.model_type = 'fg'
-    
+
         import copy
 
         self.symbols = copy.copy(self.parent.symbols)
 #        self.symbols['controls'] = self.parent.symbols['controls'] + self.parent.symbols['auxiliary']
-    
+
         self.__create_functions__()
         self.set_calibration({})
+
+        self.infos['model_type'] = 'fg'
+        self.infos['data_layout'] = model_fga.infos['data_layout']
+
 
     def __create_functions__(self):
         ff = self.parent.functions['arbitrage']
         gg = self.parent.functions['transition']
         aa = self.parent.functions['auxiliary']
         from dolo.numeric.serial_operations import serial_multiplication as serial_mult
-        def f(s,x,S,X,p,derivs=False):
-            if derivs:
-                [y,y_s,y_x] = aa(s,x,p,derivs=True)
-                [Y,Y_S,Y_X] = aa(S,X,p,derivs=True)
-                [r,r_s,r_x,r_y,r_S,r_X,r_Y] = ff(s,x,y,S,X,Y,p,derivs=True)
+        def f(s,x,S,X,p,diff=False):
+            if diff:
+                [y,y_s,y_x] = aa(s,x,p,diff=True)
+                [Y,Y_S,Y_X] = aa(S,X,p,diff=True)
+                [r,r_s,r_x,r_y,r_S,r_X,r_Y] = ff(s,x,y,S,X,Y,p,diff=True)
                 r_s = r_s + serial_mult(r_y,y_s)
                 r_x = r_x + serial_mult(r_y,y_x)
                 r_S = r_S + serial_mult(r_Y,Y_S)
@@ -41,11 +48,11 @@ class GModel_fg_from_fga:
             Y = aa(S,X,p)
             r = ff(s,x,y,S,X,Y,p)
             return r
-    
-        def g(s,x,e,p,derivs=False):
-            if derivs:
-                [y,y_s,y_x] = aa(s,x,p,derivs=True)
-                [S,S_s,S_x,S_y,S_e] = gg(s,x,y,e,p,derivs=True)
+
+        def g(s,x,e,p,diff=False):
+            if diff:
+                [y,y_s,y_x] = aa(s,x,p,diff=True)
+                [S,S_s,S_x,S_y,S_e] = gg(s,x,y,e,p,diff=True)
                 S_s = S_s + serial_mult(S_y,y_s)
                 S_x = S_x + serial_mult(S_y,y_x)
                 return [S,S_s,S_x,S_e]
@@ -59,6 +66,7 @@ class GModel_fg_from_fga:
                 auxiliary = aa
                 )
         self.functions = functions
+
 
     @property
     def variables(self):

@@ -7,7 +7,7 @@ from theano import __version__
 theano_less_than_6 = (LooseVersion(__version__) < LooseVersion('0.6.0') )
 
 
-def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True, order='rows'):
+def compile_multiargument_function(values, args_list, args_names, parms, fname='anonymous_function', diff=True, vectorize=True, return_function=True, order='columns'):
     if order != 'rows':
         raise Exception('Only row order implemented')
 

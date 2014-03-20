@@ -149,6 +149,7 @@ def tensor_markov( m1, m2 ):
     t = np.kron(t1, t2)
     p = t1.shape[1]
     q = t2.shape[1]
+    np.tile( n2, (1,p))
     n = np.row_stack([
         np.repeat(n1, q, axis=1),
         np.tile( n2, (1,p))

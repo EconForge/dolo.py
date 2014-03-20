@@ -52,7 +52,7 @@ class  TestInterpolation(unittest.TestCase):
         l = 5
         n_x = 1
         N = 1000
-        from numpy import row_stack, minimum, maximum
+        from numpy import column_stack, minimum, maximum
 
         smin = [-1]*d
         smax = [1]*d
@@ -60,7 +60,7 @@ class  TestInterpolation(unittest.TestCase):
         sg = SmolyakGrid(smin,smax,l)
 
         from numpy import exp
-        values = row_stack( [sg.grid[0,:] + exp(sg.grid[1,:])]*n_x )
+        values = column_stack( [sg.grid[0,:] + exp(sg.grid[1,:])]*n_x )
         sg.set_values(values)
 
         from numpy import random

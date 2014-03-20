@@ -177,8 +177,8 @@ def det_residual(model, guess, start, final, shocks, diff=True):
     X = vec_f[n_s:,:]
 
     if diff:
-        SS, SS_s, SS_x, SS_e = g(s,x,shocks,p, derivs=True)
-        R, R_s, R_x, R_S, R_X = f(s,x,S,X,p,derivs=True)
+        SS, SS_s, SS_x, SS_e = g(s,x,shocks,p, diff=True)
+        R, R_s, R_x, R_S, R_X = f(s,x,S,X,p,diff=True)
     else:
         SS = g(s,x,shocks,p)
         R = f(s,x,S,X,p)

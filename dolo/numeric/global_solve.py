@@ -111,14 +111,21 @@ def global_solve(cmodel,
             integration_orders = [3] * sigma.shape[0]
         [epsilons, weights] = gauss_hermite_nodes(integration_orders, sigma)
 
+
     vprint('Starting time iteration')
 
     from dolo.numeric.global_solution import time_iteration
     from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals_3
 
+    # TODO: transpose
 
-    xinit = initial_dr(dr.grid)
+    grid = dr.grid
+
+    print(grid)
+    xinit = initial_dr(grid.T).T
     xinit = xinit.real  # just in case...
+
+
 
 
     if cm.model_type == 'fga':
@@ -137,7 +144,7 @@ def global_solve(cmodel,
 
 #    cm.x_bounds = None
 
-    dr = time_iteration(dr.grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
+    dr = time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
                         tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
 
 

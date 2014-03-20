@@ -113,9 +113,9 @@ def perturb_solver(derivatives, Sigma, max_order=2, derivatives_ss=None, mlab=No
         [f_0,f_1,f_2,f_3] = derivatives
     else:
         raise Exception('Perturbations not implemented at order {0}'.format(max_order))
-    derivs = derivatives
+    diff = derivatives
 
-    f = derivs
+    f = diff
     n = f[0].shape[0] # number of variables
     s = f[1].shape[1] - 3*n
     [n_v,n_s] = [n,s]
@@ -428,9 +428,9 @@ def new_solver_with_p(derivatives, sizes, max_order=2):
         [f_0,f_1,f_2] = derivatives
     elif max_order == 3:
         [f_0,f_1,f_2,f_3] = derivatives
-    derivs = derivatives
+    diff = derivatives
     
-    f = derivs
+    f = diff
     #n = f[0].shape[0] # number of variables
     #s = f[1].shape[1] - 3*n
     [n_v,n_s,n_p] = sizes

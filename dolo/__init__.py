@@ -13,4 +13,4 @@ from dolo.numeric.decision_rules import DynareDecisionRule
 
 from dolo.numeric.perturbations_to_states import approximate_controls
 from dolo.numeric.global_solve import global_solve
-from misc.commands import *
+from dolo.misc.commands import *

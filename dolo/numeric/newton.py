@@ -1,177 +1,168 @@
+from __future__ import print_function
+
+old_print = print
+
+from numpy import zeros_like, zeros
+from numpy.linalg import solve
+
 import numpy
 
-def simple_newton(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50, tol=1e-8, eps=1e-8, numdiff=True):
-    '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
-    :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
-    values in (p x p x N)
-    :param x0: initial value ( p x N )
-    :return: solution x such that f(x) = 0
-    '''
+def serial_solve(M, res):
 
-    precision = x0.dtype   # default tolerance should depend on precision
+    sol = zeros_like(res)
 
-    from numpy.linalg import solve
-
-    err = 1
-
-    it = 0
-    while err > tol and it <= maxit:
-
-        if not numdiff:
-            [res,dres] = f(x0)
-        else:
-            res = f(x0)
-            dres = numpy.zeros( (res.shape[0], x0.shape[0]), dtype=precision )
-            for i in range(x0.shape[0]):
-                xi = x0.copy()
-                xi[i] += eps
-                resi = f(xi)
-                dres[:,i] = (resi - res)/eps
-
-        dx = - solve(dres,res)
-
-        x = x0 + dx
-
-        print('x0 : {}'.format(x0))
-        err = abs(res).max()
-        print('iteration {} {}'.format(it, err))
-
-        x0 = x
-        it += 1
-
-    if not infos:
-        return x
-    else:
-        return [x, it]
-
-def newton_solver(f, x0, lb=None, ub=None, infos=False, verbose=False, maxit=50, tol=1e-8, eps=1e-5, numdiff=False):
-    '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
-    :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
-    values in (p x p x N)
-    :param x0: initial value ( p x N )
-    :return: solution x such that f(x) = 0
-    '''
-
-    precision = x0.dtype   # default tolerance should depend on precision
-
-    from dolo.numeric.serial_operations import serial_multiplication as stv, serial_solve
-    err = 1
-
-    it = 0
-    while err > tol and it <= maxit:
-        if not numdiff:
-            [res,dres] = f(x0)
-        else:
-            res = f(x0)
-            dres = numpy.zeros( (res.shape[0], x0.shape[0], x0.shape[1]), dtype=precision )
-            for i in range(x0.shape[0]):
-                xi = x0.copy()
-                xi[i,:] += eps
-                resi = f(xi)
-                dres[:,i,:] = (resi - res)/eps
-
+    for i in range(sol.shape[0]):
         try:
-            dx = - serial_solve(dres,res)
+            sol[i,:] = solve( M[i,:,:], res[i,:])
         except:
-            dx = - serial_solve(dres,res, debug=True)
-        x = x0 + dx
+            # Should be a special type of excaption
+            a = Exception("Error solving point {}".format(i))
+            a.x = res[i,:]
+            a.J = M[i,:,:]
+            a.i = i
+            raise a
+    
+    return sol
 
-        err = abs(res).max()
+import time
+def serial_newton(f, x, verbose=False, tol=1e-6, maxit=5):
 
-        x0 = x
+    if verbose:
+        print = lambda txt: old_print(txt)
+    else:
+        print = lambda txt: None
+
+    it = 0
+    error = 10
+    converged = False
+    maxbacksteps = 30
+
+    x0 = x
+
+    while it<maxit and not converged:
+
         it += 1
 
-    if not infos:
-        return x
-    else:
-        return [x, it]
+        tt = time.time()
 
-def newton_solver_comp(f, x0, lb, ub, infos=False, backsteps=10, maxit=50, numdiff=False):
-    '''Solves many independent systems f(x)=0 simultaneously using a simple gradient descent.
-    :param f: objective function to be solved with values p x N . The second output argument represents the derivative with
-    values in (p x p x N)
-    :param x0: initial value ( p x N )
-    :param lb: bounds for first variable
-    :param ub: bounds for second variable
-    :return: solution x such that f(x) = 0
-    '''
+        [v,dv] = f(x)
+        ss = time.time()
+#        print("Time to evaluate {}".format(ss-tt)0)
 
-    from numpy import row_stack
+        error_0 = abs(v).max()
 
-    ind = x0.shape[0] - 1
+        if error_0 < tol:
+            
+            converged = True
 
-    def fun_lc(xx):
-        x = row_stack([xx, lb])
-        res = f(x)
-        return res[:ind,:]
+        else:
 
-    def fun_uc(xx):
-        x = row_stack([xx, ub])
-        res = f(x)
-        return res[:ind,:]
-
-    [sol_nc, nit0] = newton_solver(f, x0, numdiff=True, infos=True)
-    lower_constrained = sol_nc[ind,:] < lb
-    upper_constrained = sol_nc[ind,:] > ub
-    not_constrained =  - ( lower_constrained + upper_constrained )
+            
+            print("Correction size :")
+            print(abs(dv).max(axis=(0,)))
 
 
-    sol = sol_nc.copy()
+            t1 = time.time()
+            dx = serial_solve(dv, v)
+            t2 = time.time()
+            print("Time to invert {}".format(t2-t1))
+            print(abs(dx).max(axis=(0,)))
+            norm_dx = abs(dx).max()
+#            if norm_dx > 1.0:
+#                dx /= norm_dx
+            print("   >> {}".format(error_0))
+            for bck in range(maxbacksteps):
+                xx = x - dx*(2**(-bck))
+                vm = f(xx)[0]
+                err = abs(vm).max()
+                print( "   >>> {}".format(err))
+                if err < error_0:
+                    break
+                
 
-#    sol[ind,:] = lb * lower_constrained + ub * upper_constrained + sol_nc[ind,:] * not_constrained
-#    nit = nit0
+            x = xx
 
+            if verbose:
+                print("\t> {} | {} | {}".format(it, err, bck))
 
-    [sol_lc, nit1] = newton_solver(fun_lc, x0[:-1,:], numdiff=True, infos=True)
-    [sol_uc, nit2] = newton_solver(fun_uc, x0[:-1,:], numdiff=True, infos=True)
-#
-    nit = nit0 + nit1 + nit2
-#
-    sol_lc = row_stack([sol_lc, lb])
-    sol_uc = row_stack([sol_uc, ub])
-#
-    lower_constrained = sol_nc[-1,:] < lb
-    upper_constrained = sol_nc[-1,:] > ub
-    not_constrained =  - ( lower_constrained + upper_constrained )
-#
-    sol = sol_lc * lower_constrained + sol_uc * upper_constrained + sol_nc * not_constrained
+#    if converged:
+    return [x, it]
+#    else:
+#        raise Exception("Did not converge")
 
-    return [sol,nit]
+from numpy import sqrt, finfo, inf
 
+from numpy import isinf, newaxis, diag, zeros
 
-
-
-from dolo.numeric.serial_operations import serial_inversion
-
-if __name__ == '__main__':
-
-    p = 5
-    N = 500
-
-
-    import numpy.random
-    V = numpy.random.multivariate_normal([0]*p,numpy.eye(p),size=p)
-    print(V)
-
-    M = numpy.zeros((p,p,N))
-    for i in range(N):
-        M[:,:,i] = V
-
-    from dolo.numeric.serial_operations import serial_multiplication as stm
+def serial_smooth(x, a, b, fx, J):
 
 
-    MM = numpy.zeros( (p,N) )
+    dainf = isinf(a)
+    dbinf = isinf(b)
 
+    da = a - x
+    db = b - x
 
+    # TODO: ignore warnings when there are infinite values.
+    sq1 = sqrt( fx**2 + da**2)
+    pval = fx + sq1 + da
+    pval[dainf] = fx[dainf]
 
-    import time
-    t = time.time()
-    for i in range(100):
-        T = serial_inversion(M)
-    s = time.time()
-    print('Elapsed :' + str(s-t))
+    sq2 = sqrt(pval**2 + db**2)
 
+    fxnew = pval - sq2 + db
 
-    tt = stm(M,T)
-    for i in range(10):
-        print(tt[:,:,i])
+    fxnew[dbinf] = pval[dbinf]
+
+    dpdy = 1 + fx/sq1
+    dpdy[dainf] = 1
+
+    dpdz = 1 + da/sq1
+    dpdz[dainf] = 0
+
+    dmdy = 1 - pval/sq2
+    dmdy[dbinf] = 1
+
+    dmdz = 1 - db/sq2
+    dmdz[dbinf] = 0
+
+    ff = dmdy*dpdy
+    xx = dmdy*dpdz + dmdz
+
+    # TODO: rewrite starting here
+
+    fff = ff[:,:,newaxis]
+
+    xxx = zeros(J.shape)
+    for i in range(xx.shape[1]):
+        xxx[:,i,i] = xx[:,i]
+
+    Jnew = fff*J - xxx
+
+    return [fxnew, Jnew]
+
+def SerialDifferentiableFunction(f, epsilon=1e-8):
+
+    def df(x):
+
+        v0 = f(x)
+
+        N = v0.shape[0]
+        n_v = v0.shape[1]
+        assert(x.shape[0] == N)
+        n_x = x.shape[1]
+
+        dv = zeros( (N, n_v, n_x) )
+
+        for i in range(n_x):
+
+            xi = x.copy()
+            xi[:,i] += epsilon
+
+            vi = f(xi)
+
+            dv[:,:,i] = (vi - v0)/epsilon
+
+        return [v0, dv]
+
+    return df         
