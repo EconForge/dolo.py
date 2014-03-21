@@ -27,8 +27,6 @@ class  FormalCalculusTestCase(unittest.TestCase):
         z = x_1(+2)
         assert(x.date == 0)
         assert(x1.date == 1)
-
-        print(x_1.date)
         assert(x_1.date == -1)
         assert(z.date == 1)
         assert(x1 == z)

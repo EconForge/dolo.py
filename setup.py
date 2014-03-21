@@ -64,7 +64,7 @@ setup(
     
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
 
-    install_requires = ["pyyaml","sympy","numpy","cython"],
+    install_requires = ["pyyaml","sympy<=0.7.3","numpy","cython"],
 
     extras_require = {
             'plots':  ["matplotlib"],
