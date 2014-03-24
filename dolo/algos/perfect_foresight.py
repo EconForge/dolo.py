@@ -3,7 +3,7 @@ from numpy import linspace, zeros, atleast_2d
 
 from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False):
+def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False, tol=None):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -34,24 +34,32 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
     epsilons[:,:(shocks.shape[1]-1)] = shocks[:,1:]
     epsilons[:,(shocks.shape[1]-1):] = shocks[:,-1:]
     
-    final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
-    start_dict = {model.symbols['shocks'][i]: shocks[i,0] for i in range(len(model.symbols['shocks']))}
-
-    if start_constraints:
-        start_dict.update(start_constraints)
-    
-    final_equilibrium = find_deterministic_equilibrium( model, constraints=final_dict)
-    final_s = final_equilibrium['states']
-    final_x = final_equilibrium['controls']
-
     # final initial and final steady-states consistent with exogenous shocks
-    if start_states is None:
-        start_equilibrium = find_deterministic_equilibrium( model, constraints=start_dict)
+    if isinstance(start_states,dict):
+        # at least that part is clear
+        start_equilibrium = start_states
         start_s = start_equilibrium['states']
         start_x = start_equilibrium['controls']
+        final_s = start_equilibrium['states']
+        final_x = start_equilibrium['controls']
     else:
-        start_s = start_states
-        start_x = final_x
+        raise Exception("You must compute initial calibration yourself")
+#        final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
+#        start_dict = {model.symbols['shocks'][i]: shocks[i,0] for i in range(len(model.symbols['shocks']))}
+#        start_equilibrium = find_deterministic_equilibrium( model, constraints=start_dict)
+
+#        if start_constraints:
+#        ### we ignore start_constraints
+#            start_dict.update(start_constraints)
+#            final_equilibrium = start_constraints.copy()
+#        else:
+#        final_equilibrium = find_deterministic_equilibrium( model, constraints=final_dict)
+#        final_s = final_equilibrium['states']
+#        final_x = final_equilibrium['controls']
+
+
+#        start_s = start_states
+#        start_x = final_x
 
     #TODO: for start_x, it should be possible to use first order guess
 
@@ -109,7 +117,7 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
-        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit )
+        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol )
         if isinstance(sol, list):
             raise Exception("No convergence after {} iterations.".format(sol[1]))
 #        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )
