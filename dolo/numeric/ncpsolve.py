@@ -11,21 +11,21 @@ import warnings
 
 from dolo.numeric.newton import serial_newton
 
-def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False):
+def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, jactype='serial'):
 
     def fcmp(z):
 
         [val, dval] = f(z)
-        [val, dval] = serial_smooth(z, a, b, val, dval)
+        [val, dval] = serial_smooth(z, a, b, val, dval, jactype=jactype)
 
         return [val, dval]
 
-    [sol, nit] = serial_newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose)
+    [sol, nit] = serial_newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose, jactype=jactype)
 
     return [sol, nit]
 
 
-def serial_smooth(x, a, b, fx, J):
+def serial_smooth(x, a, b, fx, J, jactype='serial'):
 
 
     dainf = isinf(a)
@@ -61,13 +61,23 @@ def serial_smooth(x, a, b, fx, J):
     xx = dmdy*dpdz + dmdz
 
     # TODO: rewrite starting here
+    import scipy.sparse
+    jac_is_sparse = scipy.sparse.issparse(J)
 
-    fff = ff[:,:,newaxis]
+    if jac_is_sparse:
+        from scipy.sparse import diags
+        fff = diags([ff], [0])
+        xxx = diags([xx], [0])
+        # TODO: preserve csc or csr format
+        Jnew = fff*J - xxx
+        return [fxnew, Jnew]
 
-    xxx = zeros(J.shape)
-    for i in range(xx.shape[1]):
-        xxx[:,i,i] = xx[:,i]
+    else:
 
-    Jnew = fff*J - xxx
+        fff = ff[:,:,newaxis]
 
-    return [fxnew, Jnew]
+        xxx = zeros(J.shape)
+        for i in range(xx.shape[1]):
+            xxx[:,i,i] = xx[:,i]
+        Jnew = fff*J - xxx
+        return [fxnew, Jnew]

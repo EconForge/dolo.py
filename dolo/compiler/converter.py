@@ -9,9 +9,6 @@ class GModel_fg_from_fga:
 
     def __init__(self, model_fga):
 
-        print("model_fga: ")
-        print(model_fga.infos['data_layout'])
-
         self.model = model_fga.model
         self.parent = model_fga
 

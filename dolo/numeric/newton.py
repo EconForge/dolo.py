@@ -15,7 +15,7 @@ def serial_solve(M, res):
         try:
             sol[i,:] = solve( M[i,:,:], res[i,:])
         except:
-            # Should be a special type of excaption
+            # Should be a special type of exception
             a = Exception("Error solving point {}".format(i))
             a.x = res[i,:]
             a.J = M[i,:,:]
@@ -25,7 +25,8 @@ def serial_solve(M, res):
     return sol
 
 import time
-def serial_newton(f, x, verbose=False, tol=1e-6, maxit=5):
+
+def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
 
     if verbose:
         print = lambda txt: old_print(txt)
@@ -39,14 +40,21 @@ def serial_newton(f, x, verbose=False, tol=1e-6, maxit=5):
 
     x0 = x
 
+    if jactype == 'sparse':
+        from scipy.sparse.linalg import spsolve as solve
+    elif jactype == 'full':
+        from scipy.linalg import solve
+    else:
+        solve = serial_solve
+
     while it<maxit and not converged:
 
         it += 1
 
-        tt = time.time()
-
         [v,dv] = f(x)
-        ss = time.time()
+
+        # TODO: rewrite starting here
+
 #        print("Time to evaluate {}".format(ss-tt)0)
 
         error_0 = abs(v).max()
@@ -57,44 +65,34 @@ def serial_newton(f, x, verbose=False, tol=1e-6, maxit=5):
 
         else:
 
-            
-            print("Correction size :")
-            print(abs(dv).max(axis=(0,)))
+            dx = solve(dv, v)
 
-
-            t1 = time.time()
-            dx = serial_solve(dv, v)
-            t2 = time.time()
-            print("Time to invert {}".format(t2-t1))
-            print(abs(dx).max(axis=(0,)))
             norm_dx = abs(dx).max()
-#            if norm_dx > 1.0:
-#                dx /= norm_dx
-            print("   >> {}".format(error_0))
+
             for bck in range(maxbacksteps):
                 xx = x - dx*(2**(-bck))
                 vm = f(xx)[0]
                 err = abs(vm).max()
-                print( "   >>> {}".format(err))
                 if err < error_0:
                     break
-                
 
             x = xx
 
             if verbose:
                 print("\t> {} | {} | {}".format(it, err, bck))
 
-#    if converged:
-    return [x, it]
-#    else:
-#        raise Exception("Did not converge")
+    if converged:
+        return [x, it]
+    else:
+        raise Exception("Did not converge")
+
+serial_newton = newton
 
 from numpy import sqrt, finfo, inf
 
 from numpy import isinf, newaxis, diag, zeros
 
-def serial_smooth(x, a, b, fx, J):
+def smooth(x, a, b, fx, J):
 
 
     dainf = isinf(a)
@@ -140,6 +138,8 @@ def serial_smooth(x, a, b, fx, J):
     Jnew = fff*J - xxx
 
     return [fxnew, Jnew]
+
+serial_smooth = smooth
 
 def SerialDifferentiableFunction(f, epsilon=1e-8):
 

@@ -1,6 +1,6 @@
 from dolo.numeric.decision_rules_states import CDR
 
-def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True):
+def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True, verbose=True):
 
     from dolo.symbolic.model import SModel
     if not isinstance(cmodel, SModel):
@@ -95,7 +95,7 @@ def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True):
             return dr
         return [X_bar, X_s, X_ss, X_sss]
 
-def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
+def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True):
     """Computes a Taylor approximation of decision rules, given the supplied derivatives.
 
     The original system is assumed to be in the the form:
@@ -167,6 +167,16 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None):
 
     from dolo.numeric.extern.qz import qzordered
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
+
+    # Check Blanchard=Kahn conditions
+    n_big_one = sum(eigval>1.0)
+    n_expected = n_x
+    if verbose:
+        print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
+
+    if n_big_one != n_expected:
+        raise Exception("There should be exactly {} eigenvalues greater than one. Not {}.".format(n_x, n_big_one))
+
     Q = Q.real # is it really necessary ?
     Z = Z.real
 

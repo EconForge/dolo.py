@@ -222,7 +222,6 @@ if __name__ == '__main__':
     aa = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(aa).T, (1,N)) )
     ee = numpy.ascontiguousarray( numpy.tile(numpy.atleast_2d(ee).T, (1,N)) )
 
-    print(ss.shape)
 
     g = gm.functions['transition']
     f = gm.functions['arbitrage']

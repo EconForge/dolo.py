@@ -3,7 +3,7 @@ from numpy import linspace, zeros, atleast_2d
 
 from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False, tol=None):
+def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False, tol=1e-6):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -30,9 +30,9 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         shocks = numpy.zeros( (len(model.calibration['shocks']),1))
 
     # until last period, exogenous shock takes its last value
-    epsilons = numpy.zeros( (shocks.shape[0], T))
-    epsilons[:,:(shocks.shape[1]-1)] = shocks[:,1:]
-    epsilons[:,(shocks.shape[1]-1):] = shocks[:,-1:]
+    epsilons = numpy.zeros( (T, shocks.shape[0]))
+    epsilons[:(shocks.shape[1]-1),:] = shocks[1:,:]
+    epsilons[(shocks.shape[1]-1):,:] = shocks[-1:,:]
     
     # final initial and final steady-states consistent with exogenous shocks
     if isinstance(start_states,dict):
@@ -77,28 +77,27 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     if initial_guess is None:
 
-        initial_guess = numpy.concatenate( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
-        initial_guess = initial_guess.reshape( (-1, n_s + n_x)).T
+        initial_guess = numpy.row_stack( [start*(1-l) + final*l for l in linspace(0.0,1.0,T+1)] )
 
     else:
         from pandas import DataFrame
         if isinstance( initial_guess, DataFrame ):
             initial_guess = array( initial_guess ).T.copy()
-        initial_guess = initial_guess[:n_s+n_x,:]
-        initial_guess[:n_s,0] = start_s
-        initial_guess[n_s:,-1] = final_x
+        initial_guess = initial_guess[:,:n_s+n_x]
+        initial_guess[0,:n_s] = start_s
+        initial_guess[-1,n_s:] = final_x
 
     sh = initial_guess.shape
 
     if model.x_bounds and not ignore_constraints:
-        initial_states = initial_guess[:n_s,:]
+        initial_states = initial_guess[:,:n_s]
         [lb, ub] = [ u( initial_states, p ) for u in model.x_bounds]
         lower_bound = initial_guess*0 - numpy.inf
-        lower_bound[n_s:,:] = lb
+        lower_bound[:, n_s:] = lb
         upper_bound = initial_guess*0 + numpy.inf
-        upper_bound[n_s:,:] = ub
-        test1 = max( lb.max(axis=1) - lb.min(axis=1) )
-        test2 = max( ub.max(axis=1) - ub.min(axis=1) )
+        upper_bound[:, n_s:] = ub
+        test1 = max( lb.max(axis=0) - lb.min(axis=0) )
+        test2 = max( ub.max(axis=0) - ub.min(axis=0) )
         if test1 >0.00000001 or test2>0.00000001:
             raise Exception("Not implemented: perfect foresight solution requires that controls have constant bounds.")
     else:
@@ -117,18 +116,20 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
-        sol = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol )
-        if isinstance(sol, list):
-            raise Exception("No convergence after {} iterations.".format(sol[1]))
+
+        sol, nit = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol, jactype='sparse')
+        # if isinstance(sol, list):
+            # raise Exception("No convergence after {} iterations.".format(sol[1]))
 #        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )
         sol = sol.reshape(sh)
         #sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
     else:
-        from scipy.optimize import fsolve
-        dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1].toarray()
+        from scipy.optimize import root
+        from numpy import array
+        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
         x0 = initial_guess.ravel()
-        sol = fsolve(fobj, x0, fprime=dfobj)
-        sol = sol.reshape(sh)
+        sol = root(ff, x0, jac=True)
+        sol = sol.x.reshape(sh)
 
 #        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False, verbose=verbose )
 
@@ -137,18 +138,18 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         if 'auxiliary' in model.functions:
             colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliary']
             # compute auxiliaries
-            y = model.functions['auxiliary'](sol[:n_s,:], sol[n_s:,:], p)
-            sol = numpy.row_stack([sol,y])
+            y = model.functions['auxiliary'](sol[:,:n_s], sol[:,n_s:], p)
+            sol = numpy.column_stack([sol,y])
         else:
             colnames = model.symbols['states'] + model.symbols['controls']
 
-        ts = pandas.DataFrame(sol.T, columns=colnames)
+        ts = pandas.DataFrame(sol, columns=colnames)
         return ts
     else:
         return sol
 
 
-def det_residual(model, guess, start, final, shocks, diff=True):
+def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'):
     '''
     Computes the residuals, the derivatives of the stacked-time system.
     :param model: an fga model
@@ -169,20 +170,20 @@ def det_residual(model, guess, start, final, shocks, diff=True):
     n_x = len( model.symbols['controls'] )
 
     n_e = len( model.symbols['shocks'] )
-    N = guess.shape[1]
+    N = guess.shape[0]
 
     p = model.calibration['parameters']
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
 
-    vec = guess[:,:-1]
-    vec_f = guess[:,1:]
+    vec = guess[:-1,:]
+    vec_f = guess[1:,:]
 
-    s = vec[:n_s,:]
-    x = vec[n_s:,:]
-    S = vec_f[:n_s,:]
-    X = vec_f[n_s:,:]
+    s = vec[:,:n_s]
+    x = vec[:,n_s:]
+    S = vec_f[:,:n_s]
+    X = vec_f[:,n_s:]
 
     if diff:
         SS, SS_s, SS_x, SS_e = g(s,x,shocks,p, diff=True)
@@ -194,13 +195,13 @@ def det_residual(model, guess, start, final, shocks, diff=True):
     res_s = SS - S
     res_x = R
 
-    res = numpy.zeros( (n_s+n_x, N) )
+    res = numpy.zeros( (N, n_s+n_x) )
 
-    res[:n_s,1:] = res_s
-    res[n_s:,:-1] = res_x
+    res[1:,:n_s] = res_s
+    res[:-1,n_s:] = res_x
 
-    res[:n_s,0] = - (guess[:n_s,0] - start)
-    res[n_s:, -1] = - (guess[n_s:, -1] - guess[n_s:, -2] )
+    res[0,:n_s] = - (guess[0,:n_s] - start)
+    res[-1,n_s:] = - (guess[-1,n_s:] - guess[-2,n_s:] )
 
     if not diff:
         return res
@@ -216,28 +217,34 @@ def det_residual(model, guess, start, final, shocks, diff=True):
             res_s_x = SS_x
 
             # next block is probably very inefficient
-            jac = numpy.zeros( (n_s+n_x, N, n_s+n_x, N) )
+            jac = numpy.zeros( (N, n_s+n_x, N, n_s+n_x) )
             for i in range(N-1):
-                jac[n_s:,i,:n_s,i] = R_s[:,:,i]
-                jac[n_s:,i,n_s:,i] = R_x[:,:,i]
-                jac[n_s:,i,:n_s,i+1] = R_S[:,:,i]
-                jac[n_s:,i,n_s:,i+1] = R_X[:,:,i]
-                jac[:n_s,i+1,:n_s,i] = SS_s[:,:,i]
-                jac[:n_s,i+1,n_s:,i] = SS_x[:,:,i]
-                jac[:n_s,i+1,:n_s,i+1] = -numpy.eye(n_s)
-            jac[:n_s,0,:n_s,0] = - numpy.eye(n_s)
-            jac[n_s:,-1,n_s:,-1] = - numpy.eye(n_x)
-            jac[n_s:,-1,n_s:,-2] = + numpy.eye(n_x)
+                jac[i,n_s:,i,:n_s] = R_s[i,:,:]
+                jac[i,n_s:,i,n_s:] = R_x[i,:,:]
+                jac[i,n_s:,i+1,:n_s] = R_S[i,:,:]
+                jac[i,n_s:,i+1,n_s:] = R_X[i,:,:]
+                jac[i+1,:n_s,i,:n_s] = SS_s[i,:,:]
+                jac[i+1,:n_s,i,n_s:] = SS_x[i,:,:]
+                jac[i+1,:n_s,i+1,:n_s] = -numpy.eye(n_s)
+                # jac[i,n_s:,i,:n_s] = R_s[i,:,:]
+                # jac[i,n_s:,i,n_s:] = R_x[i,:,:]
+                # jac[i+1,n_s:,i,:n_s] = R_S[i,:,:]
+                # jac[i+1,n_s:,i,n_s:] = R_X[i,:,:]
+                # jac[i,:n_s,i+1,:n_s] = SS_s[i,:,:]
+                # jac[i,:n_s,i+1,n_s:] = SS_x[i,:,:]
+                # jac[i+1,:n_s,i+1,:n_s] = -numpy.eye(n_s)
+            jac[ 0,:n_s,0,:n_s] = - numpy.eye(n_s)
+            jac[-1,n_s:,-1,n_s:] = - numpy.eye(n_x)
+            jac[-1,n_s:,-2,n_s:] = + numpy.eye(n_x)
             nn = jac.shape[0]*jac.shape[1]
             res = res.ravel()
             jac = jac.reshape((nn,nn))
 
 
-        from scipy.sparse import csc_matrix, csr_matrix
+        if jactype == 'sparse':
+            from scipy.sparse import csc_matrix, csr_matrix
+            jac = csr_matrix(jac)
 
-
-
-        jac = csr_matrix(jac)
 
         return [res,jac]
 
@@ -252,7 +259,7 @@ if __name__ == '__main__':
     from dolo import *
     from pylab import *
 
-    model = yaml_import('examples/global_models/rbc_pf.yaml')
+    model = yaml_import('../../examples/global_models/rbc_taxes.yaml')
 
     e_z = atleast_2d( linspace(0.1, 0.0, 10) )
 
@@ -265,7 +272,13 @@ if __name__ == '__main__':
 
     #sol1 = deterministic_solve(model, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
-    sol2 = deterministic_solve(model, shocks=e_z, T=1000, use_pandas=True, ignore_constraints=False)
+    from dolo.algos.steady_state import find_deterministic_equilibrium
+    calib = find_deterministic_equilibrium(model)
+
+    sol2 = deterministic_solve(model, start_states=calib,  T=100, use_pandas=True, ignore_constraints=True, verbose=True)
+    
+    sol1 = deterministic_solve(model, start_states=calib,  T=100, use_pandas=True, ignore_constraints=False, verbose=True)
+    
     t2 = time.time()
 
     print("Elapsed : {}".format(t2-t1))
