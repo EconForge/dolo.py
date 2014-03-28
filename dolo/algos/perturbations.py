@@ -3,7 +3,7 @@ import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot
 
-def approximate_controls(model, return_dr=True):
+def approximate_controls(model, return_dr=True, verbose=False):
 
     # get steady_state
     import numpy
@@ -49,6 +49,16 @@ def approximate_controls(model, return_dr=True):
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
     Q = Q.real # is it really necessary ?
     Z = Z.real
+
+    # Check Blanchard=Kahn conditions
+    n_big_one = sum(eigval>1.0)
+    n_expected = n_x
+    if verbose:
+        print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
+    if n_big_one != n_expected:
+        raise Exception("There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(n_big_one, n_x))
+
+
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
