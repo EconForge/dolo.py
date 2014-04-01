@@ -195,6 +195,15 @@ class GModel(object):
         return [lb,ub]
 
 
+    def residuals(self, calib=None):
+
+        from dolo.algos.steady_state import residuals
+
+        res = residuals(self, calib)
+
+        return res
+
+
 if __name__ == '__main__':
 
     from dolo import *

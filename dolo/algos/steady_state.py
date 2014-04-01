@@ -84,6 +84,46 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         calib['auxiliaries'] = a
     
     return calib
+
+
+def residuals(model, calib=None):
+   
+    if calib is None:
+        calib = model.calibration
+
+    from collections import OrderedDict
+    res = OrderedDict()
+
+    if model.model_type == "fg":
+
+        s = calib['states']
+        x = calib['controls']
+        e = calib['shocks']
+        p = model.calibration['parameters']
+        f = model.functions['arbitrage']
+        g = model.functions['transition']
+
+        res['transition'] = g(s,x,e,p)-s
+        res['arbitrage'] = f(s,x,s,x,p)
+        
+
+    elif model.model_type  == "fga":
+
+        s = calib['states']
+        x = calib['controls']
+        y = calib['auxiliary']
+        f = model.functions['arbitrage']
+        g = model.functions['transition']
+        a = model.functions['auxiliary']
+        
+        res['transition'] = g(s,x,y,e,p)-s
+        res['arbitrage'] = f(s,x,y,s,x,y,e,p)
+        res['auxiliary'] = a(s,x,p)-y
+
+    else:
+        raise Exception("Not implemented")
+
+    return res
  
 def find_steady_state(model, e=None, force_states=None, constraints=None, return_jacobian=False):
     '''n
