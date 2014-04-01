@@ -115,23 +115,25 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
     if not ignore_constraints:
         dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
         from dolo.numeric.ncpsolve import ncpsolve
-        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)
+        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='sparse')
+        
+        from dolo.numeric.newton import newton
+        x0 = initial_guess.ravel()
+
+        [val, dval] = ff(x0)
 
         sol, nit = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol, jactype='sparse')
-        # if isinstance(sol, list):
-            # raise Exception("No convergence after {} iterations.".format(sol[1]))
-#        sol = solver(fobj, initial_guess.ravel(), lb=lower_bound.ravel(), ub=upper_bound.ravel(), jac=dfobj, method='ncpsolve' )
+        
         sol = sol.reshape(sh)
-        #sol = solver(fobj, initial_guess, jac=dfobj, lb=lower_bound, ub=upper_bound, method='ncpsolve', serial_problem=False, verbose=verbose )
+
     else:
         from scipy.optimize import root
         from numpy import array
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
         x0 = initial_guess.ravel()
         sol = root(ff, x0, jac=True)
-        sol = sol.x.reshape(sh)
 
-#        sol = solver(fobj, initial_guess, jac=dfobj, method='fsolve', serial_problem=False, verbose=verbose )
+        sol = sol.x.reshape(sh)
 
     if use_pandas:
         import pandas
@@ -243,8 +245,8 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
 
         if jactype == 'sparse':
             from scipy.sparse import csc_matrix, csr_matrix
-            jac = csr_matrix(jac)
-
+            jac = csc_matrix(jac)
+            # scipy bug ? I don't get the same with csr
 
         return [res,jac]
 

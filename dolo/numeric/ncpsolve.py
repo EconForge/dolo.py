@@ -9,24 +9,23 @@ from numpy import float64
 
 import warnings
 
-from dolo.numeric.newton import serial_newton
+from dolo.numeric.newton import newton
 
 def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, jactype='serial'):
 
     def fcmp(z):
 
         [val, dval] = f(z)
-        [val, dval] = serial_smooth(z, a, b, val, dval, jactype=jactype)
+        [val, dval] = smooth(z, a, b, val, dval, jactype=jactype)
 
         return [val, dval]
 
-    [sol, nit] = serial_newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose, jactype=jactype)
+    [sol, nit] = newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose, jactype=jactype)
 
     return [sol, nit]
 
 
-def serial_smooth(x, a, b, fx, J, jactype='serial'):
-
+def smooth(x, a, b, fx, J, jactype='serial'):
 
     dainf = isinf(a)
     dbinf = isinf(b)
@@ -61,16 +60,34 @@ def serial_smooth(x, a, b, fx, J, jactype='serial'):
     xx = dmdy*dpdz + dmdz
 
     # TODO: rewrite starting here
-    import scipy.sparse
-    jac_is_sparse = scipy.sparse.issparse(J)
 
-    if jac_is_sparse:
+#    jac_is_sparse = scipy.sparse.issparse(J)
+
+    if jactype == 'sparse':
+        import scipy.sparse
+        from scipy.sparse import csc_matrix, csr_matrix
         from scipy.sparse import diags
         fff = diags([ff], [0])
         xxx = diags([xx], [0])
         # TODO: preserve csc or csr format
         Jnew = fff*J - xxx
+
+        Jnew = csc_matrix(Jnew)
+
         return [fxnew, Jnew]
+
+        # TODf: preserve csc or csr format
+
+    elif jactype == 'full':
+        from numpy import diag
+#        fff = diag(ff)
+        fff = ff[:,None]
+        xxx = diag( xx )
+#        xxx = diag(xx)
+        Jnew = fff*J - xxx
+        return fx, J
+        return [fxnew, Jnew]
+
 
     else:
 
