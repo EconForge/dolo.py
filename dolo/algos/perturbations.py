@@ -3,6 +3,31 @@ import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot
 
+class BlanchardKahnError(Exception):
+
+    def __init__(self, n_found, n_expected):
+        self.n_found = n_found
+        self.n_expected = n_expected
+
+    def __str__(self):
+
+        msg =  "There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(self.n_found, self.n_expected)
+        return msg
+
+
+
+class GeneralizedEigenvaluesError(Exception):
+
+    def __init__(self, diag_S, diag_T):
+        self.diag_S = diag_S
+        self.diag_T = diag_T
+
+    def __str__(self):
+        # TODO: explain better
+        return "Eigenvalues are not uniquely defined. "
+
+           
+
 def approximate_controls(model, return_dr=True, verbose=False, steady_state=None):
 
     # get steady_state
@@ -27,7 +52,7 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     f = model.functions['arbitrage']
 
 
-    aux = model.functions['auxiliary']
+#    aux = model.functions['auxiliary']
 
 
 
@@ -64,15 +89,23 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     Q = Q.real # is it really necessary ?
     Z = Z.real
 
-        # Check Blanchard=Kahn conditions
+    diag_S = numpy.diag(S)
+    diag_T = numpy.diag(T)
+
+    tol_geneigvals = 1e-10
+    try:
+        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
+    except Exception as e:
+        print e
+        raise GeneralizedEigenvaluesError(diag_S, diag_T)
+
+    # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval>1.0)
     n_expected = n_x
     if verbose:
         print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
-    if n_big_one != n_expected:
-        raise Exception("There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(n_big_one, n_x))
-
-
+    if n_expected != n_big_one:
+        raise BlanchardKahnError(n_big_one, n_expected)
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
@@ -107,6 +140,7 @@ if __name__ == '__main__':
     model.set_calibration(dumb=1)
 
     from dolo.algos.perturbations import approximate_controls
+
     dr = approximate_controls(model)
     print(dr)
 
