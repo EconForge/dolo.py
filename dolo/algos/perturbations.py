@@ -3,21 +3,35 @@ import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot
 
-def approximate_controls(model, return_dr=True):
+def approximate_controls(model, return_dr=True, verbose=False, steady_state=None):
 
     # get steady_state
     import numpy
 
-    p = model.calibration['parameters']
+    if steady_state is not None:
+        calib = steady_state
+    else:
+        calib = model.calibration
+
+    p = calib['parameters']
+    s = calib['states'][None,:]
+    x = calib['controls'][None,:]
+    e = calib['shocks'][None,:]
+
+
     sigma = model.calibration['covariances']
-    s = model.calibration['states'][None,:]
-    x = model.calibration['controls'][None,:]
-    e = model.calibration['shocks'][None,:]
 
     from numpy.linalg import solve
 
     g = model.functions['transition']
     f = model.functions['arbitrage']
+
+
+    aux = model.functions['auxiliary']
+
+
+
+
 
     l = g(s,x,e,p, diff=True)
     [junk, g_s, g_x, g_e] = [el[0,...] for el in l]
@@ -49,6 +63,16 @@ def approximate_controls(model, return_dr=True):
     [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
     Q = Q.real # is it really necessary ?
     Z = Z.real
+
+        # Check Blanchard=Kahn conditions
+    n_big_one = sum(eigval>1.0)
+    n_expected = n_x
+    if verbose:
+        print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
+    if n_big_one != n_expected:
+        raise Exception("There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(n_big_one, n_x))
+
+
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
