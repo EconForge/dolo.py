@@ -17,18 +17,20 @@ def global_solve(cmodel,
         if verbose:
             print(t)
 
-
-    model = cmodel.model
-    cm = cmodel
+    model = cmodel
+    # model = cmodel.model
+    # cm = cmodel
 
     parms = model.calibration['parameters']
-    sigma = model.calibration['covariances']
+    sigma = model.covariances # calibration['covariances']
 
     if initial_dr == None:
         if pert_order==1:
             from dolo.algos.perturbations import approximate_controls
-            initial_dr = approximate_controls(cm)
+            initial_dr = approximate_controls(model)
+
         if pert_order>1:
+            raise Exception("Perturbation order > 1 not supported (yet).")
             from dolo.numeric.perturbations_to_states import approximate_controls
             initial_dr = approximate_controls(cm, order=pert_order)
         if interp_type == 'perturbations':

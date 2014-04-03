@@ -6,7 +6,9 @@ from dolo.numeric.simulations import simulate, plot_decision_rule
 from dolo.symbolic.symbolic import Variable, Parameter, Shock, Equation
 
 from dolo.misc.modfile import dynare_import
-from dolo.misc.yamlfile import yaml_import
+
+# from dolo.misc.yamlfile import yaml_import
+from dolo.misc.new_parser import yaml_import
 
 from dolo.numeric.perturbations import solve_decision_rule
 from dolo.numeric.decision_rules import DynareDecisionRule

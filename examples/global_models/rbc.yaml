@@ -1,10 +1,11 @@
-model_type: fga
+model_type: fg
 
-declarations:
+name: RBC
+
+symbols:
 
    states:  [z, k]
-   controls: [i, n]
-   auxiliary: [c, rk, w]
+   controls: [i, n, c, rk, w]
    shocks: [e_z]
 
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar ]
@@ -12,22 +13,21 @@ declarations:
 
 equations:
 
-   arbitrage:
-      - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
-      - w - chi*n^eta*c^sigma                  | 0 <= n <= inf
 
    transition:
       - z = (1-rho)*zbar + rho*z(-1) + e_z
       - k = (1-delta)*k(-1) + i(-1)
 
-   auxiliary:
+   arbitrage:
+      - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
+      - w - chi*n^eta*c^sigma                  | 0 <= n <= inf
       - c = z*k^alpha*n^(1-alpha) - i
       - rk = alpha*z*(n/k)^(1-alpha)
       - w = (1-alpha)*z*(k/n)^(alpha)
 
 calibration:
 
-   parameters:
+   
 
       beta : 0.99
       phi: 1
@@ -39,7 +39,7 @@ calibration:
       eta: 1
       zbar: 1
 
-   steady_state:
+   
       z: zbar
       rk: 1/beta-1+delta
       w: (1-alpha)*z*(k/n)^(alpha)
@@ -49,5 +49,5 @@ calibration:
       c: z*k^alpha*n^(1-alpha) - i
 
 
-   covariances: |
-      [ [ 0.0015 ] ]
+covariances:
+   [ [ 0.0015 ] ]

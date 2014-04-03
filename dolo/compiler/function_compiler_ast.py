@@ -11,7 +11,7 @@ def std_date_symbol(s,date):
 
 
 import ast
-from ast import Subscript, Name, Load, Index, Num, Module, Assign, Store, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
+from ast import Expr, Subscript, Name, Load, Index, Num, Module, Assign, Store, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
 
 # import codegen
 
@@ -67,7 +67,7 @@ class StandardizeDates(NodeTransformer):
             return node
 
 
-def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False):
+def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False):
     '''
     expressions: list of equations as string
     '''
@@ -84,16 +84,13 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
 
         for b in symbols[symbol_group]:
             index = symbols[symbol_group].index(b)
-            table[(b,date)] = (an, date)
+            table[(b,date)] = (an, index)
 
 
 
     variables = [k[0] for k in table]
 
     table_symbols = { k: (std_date_symbol(*k)) for k in table.keys() }
-
-
-
 
     if data_order is None:
         # standard assignment: i.e. k = s[0]
@@ -108,6 +105,7 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             index = lambda x: ExtSlice(dims=[Index(value=Num(n=x)),el])
 
     # declare symbols
+
     preamble = []
     for k in table: # order it
         # k : var, date
@@ -117,11 +115,12 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
         line = Assign(targets=[Name(id=std_name, ctx=Store())], value=val)
         preamble.append(line)
 
-    for i in range(len(expressions)):
+    if use_numexpr:
+        for i in range(len(expressions)):
         # k : var, date
-        val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Load())
-        line = Assign(targets=[Name(id='out_{}'.format(i), ctx=Store())], value=val)
-        preamble.append(line)
+            val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Load())
+            line = Assign(targets=[Name(id='out_{}'.format(i), ctx=Store())], value=val)
+            preamble.append(line)
 
 
     body = []
@@ -141,7 +140,11 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             rhs = Call( func=Name(id='evaluate', ctx=Load()),
                 args=[Str(s=src)], keywords=[keyword(arg='out', value=Name(id='out_{}'.format(i), ctx=Load()))], starargs=None, kwargs=None)
 
-        line = Assign(targets=[Name(id='out_{}'.format(i), ctx=Load())], value=rhs )
+        if not use_numexpr:
+            val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Store())
+            line = Assign(targets=[val], value=rhs )
+        else:
+            line = Expr(value=rhs) #Assign(targets=[Name(id='out_{}'.format(i), ctx=Load())], value=rhs )
 
 
         body.append(line)
@@ -156,7 +159,36 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
-    return mod
+    # print("------")
+    # print("Module")
+    # print("------")
+
+    # import codegen
+    # print( codegen.to_source(mod) )
+
+    if return_ast:
+        return mod
+    else:
+        fun = eval_ast(mod)
+        return fun
+
+def eval_ast(mod):
+    from numexpr import evaluate
+    from numpy import inf
+
+
+    # import codegen
+    # print( codegen.to_source(mod) )
+
+    context = {}
+    context['inf'] = inf
+    context['evaluate'] = evaluate
+
+    name = mod.body[0].name
+    code  = compile(mod, '<string>', 'exec')
+    exec(code, context, context)
+    fun = context[name]
+    return fun
 
 
 if __name__ == '__main__':
@@ -166,6 +198,8 @@ if __name__ == '__main__':
     s2 = 'x0 + x1 / y1(1)'
 
     expressions = [s1,s2]
+
+
 
     from collections import OrderedDict
 
@@ -191,25 +225,26 @@ if __name__ == '__main__':
     import time
 
 
-    s0 = time.time()
-    resp = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=True)
-    s1 = time.time()
+    t0 = time.time()
+    resp = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=True, return_ast=True)
+    
+    t1 = time.time()
 
-    print(s1-s0)
+    print(t1-t0)
 
     import codegen
     print( codegen.to_source(resp) )
 
-    s0 = time.time()
+    t0 = time.time()
     code  = compile(resp, '<string>', 'exec')
-    s1 = time.time()
+    t1 = time.time()
 
 
     exec(code)
-    print(s1-s0)
+    print(t1-t0)
 
     import numpy
-    N = 10000000
+    N = 100
     s = numpy.ones((N,4))
     x = numpy.ones((N,4))
     S = numpy.ones((N,4))
@@ -224,6 +259,17 @@ if __name__ == '__main__':
     for n in range(100):
         (arbitrage(s,x,S,X,p,out))
     t2 = time.time()
+
+    print(out)
+    arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
+    out = numpy.zeros((N,4))
+    (arbitrage(s,x,S,X,p,out))  
+    print(out)
+
+
+    exit()
+
+
 
     from numba import jit
     # ff = jit(arbitrage)

@@ -60,18 +60,3 @@ def mlinspace(smin,smax,orders):
         meshes = np.meshgrid( *[np.linspace(smin[i],smax[i],orders[i]) for i in range(len(orders))], indexing='ij' )
         return np.row_stack( [l.flatten() for l in meshes])
 
-
-def calibration_to_dict(model, calib):
-
-    from collections import OrderedDict
-
-    d = OrderedDict()
-    for group, values in calib.iteritems():
-        if group == 'covariances':
-            continue
-        syms = model.symbols[group]
-        for i,s in enumerate(syms):
-            d[s] = values[i]
-    return d
-
-
