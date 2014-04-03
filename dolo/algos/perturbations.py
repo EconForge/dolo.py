@@ -39,12 +39,13 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
         calib = model.calibration
 
     p = calib['parameters']
-    s = calib['states'][None,:]
-    x = calib['controls'][None,:]
-    e = calib['shocks'][None,:]
+    s = calib['states']
+    x = calib['controls']
+    e = calib['shocks']
 
 
-    sigma = model.calibration['covariances']
+    sigma = model.covariances
+    # sigma = model.calibration['covariances']
 
     from numpy.linalg import solve
 
@@ -59,14 +60,14 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
 
 
     l = g(s,x,e,p, diff=True)
-    [junk, g_s, g_x, g_e] = [el[0,...] for el in l]
+    [junk, g_s, g_x, g_e] = l[:4] # [el[0,...] for el in l[:4]]
 
     if model.model_type == "fg2":
       l = f(s,x,e,s,x,p, diff=True)
-      [res, f_s, f_x, f_e, f_S, f_X] = [el[0,...] for el in l]
+      [res, f_s, f_x, f_e, f_S, f_X] = l[:6] #[el[0,...] for el in l[:6]]
     else:
-      l = f(s,x,s,x,p, diff=True)
-      [res, f_s, f_x, f_S, f_X] = [el[0,...] for el in l]
+        l = f(s,x,s,x,p, diff=True)
+        [res, f_s, f_x, f_S, f_X] = l[:5] #[el[0,...] for el in l[:5]]
 
     n_s = g_s.shape[0]           # number of controls
     n_x = g_x.shape[1]   # number of states
@@ -97,6 +98,7 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
         assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
     except Exception as e:
         print e
+        print(numpy.column_stack([diag_S, diag_T]))
         raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
     # Check Blanchard=Kahn conditions

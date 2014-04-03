@@ -31,8 +31,8 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     # until last period, exogenous shock takes its last value
     epsilons = numpy.zeros( (T, shocks.shape[0]))
-    epsilons[:(shocks.shape[1]-1),:] = shocks[1:,:]
-    epsilons[(shocks.shape[1]-1):,:] = shocks[-1:,:]
+    epsilons[:(shocks.shape[0]-1),:] = shocks[1:,:]
+    epsilons[(shocks.shape[0]-1):,:] = shocks[-1:,:]
     
     # final initial and final steady-states consistent with exogenous shocks
     if isinstance(start_states,dict):
@@ -42,6 +42,11 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         start_x = start_equilibrium['controls']
         final_s = start_equilibrium['states']
         final_x = start_equilibrium['controls']
+    elif isinstance(start_states, numpy.ndarray):
+        start_s = start_states
+        start_x = model.calibration['controls']
+        final_s = model.calibration['states']
+        final_x = model.calibration['controls']
     else:
         raise Exception("You must compute initial calibration yourself")
 #        final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
@@ -110,10 +115,10 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     fobj  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[0].ravel()
 
-    from dolo.numeric.solver import solver
 
     if not ignore_constraints:
-        dfobj = lambda vec: det_residual( model, vec.reshape(sh), start_s, final_x, epsilons)[1]
+
+        print("Solving using ncpsolve")
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='sparse')
         
@@ -127,6 +132,8 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         sol = sol.reshape(sh)
 
     else:
+        print("Solving using fsolve")
+
         from scipy.optimize import root
         from numpy import array
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
@@ -259,33 +266,56 @@ if __name__ == '__main__':
     # TODO: propose a meaningful economic example
 
     from dolo import *
+
     from pylab import *
 
     model = yaml_import('../../examples/global_models/rbc_taxes.yaml')
 
-    e_z = atleast_2d( linspace(0.1, 0.0, 10) )
+    s = model.calibration['states']
+    p = model.calibration['parameters']
 
-    start_s = numpy.zeros(2) * numpy.nan
+    e = model.calibration['shocks']
+    x = model.calibration['controls']
+    
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
+
+
+
+    print(model.calibration_dict)
+
+    e_z = atleast_2d( linspace(0.0, 0.0, 10) ).T
+
+    start_s = model.calibration['states'].copy()
     start_s[0] = 1.5
 
     import time
-    t1 = time.time()
     #sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
     #sol1 = deterministic_solve(model, T=50, use_pandas=True, ignore_constraints=True, start_s=start_s)
 
     from dolo.algos.steady_state import find_deterministic_equilibrium
+
     calib = find_deterministic_equilibrium(model)
 
-    sol2 = deterministic_solve(model, start_states=calib,  T=100, use_pandas=True, ignore_constraints=True, verbose=True)
-    
-    sol1 = deterministic_solve(model, start_states=calib,  T=100, use_pandas=True, ignore_constraints=False, verbose=True)
-    
     t2 = time.time()
 
-    print("Elapsed : {}".format(t2-t1))
+    sol1 = deterministic_solve(model, start_states=start_s,  T=50, use_pandas=True, ignore_constraints=False, verbose=True)
+    
+    t3 = time.time()
 
-    exit()
+    t1 = time.time()
+
+    sol2 = deterministic_solve(model, start_states=start_s,  T=50, use_pandas=True, ignore_constraints=True, verbose=True)
+
+    t2 = time.time()
+    
+
+
+
+    print("Elapsed : {}, {}".format(t2-t1, t3 - t2))
+
+    
     from pylab import *
 
     subplot(211)
