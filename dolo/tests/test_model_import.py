@@ -2,7 +2,7 @@ import unittest
 import numpy
 
 
-from dolo import yaml_import
+from dolo.misc.yamlfile import yaml_import
 
 def test_model(compiler='numpy', data_layout='columns'):
 

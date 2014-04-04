@@ -38,11 +38,18 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
 
     def test_perturbation_1(self):
+        from dolo import yaml_import
+        model = yaml_import('examples/global_models/rbc.yaml')
+        from dolo.algos.perturbations import approximate_controls
+        dr = approximate_controls(model)
+
+
+
+    def test_perturbation_1_old(self):
         from dolo.misc.yamlfile import yaml_import
         model = yaml_import('examples/global_models/rbc.yaml')
         from dolo.numeric.perturbations_to_states import approximate_controls
         dr = approximate_controls(model,order=1)
-
 
     def test_perturbation_2(self):
         from dolo.misc.yamlfile import yaml_import

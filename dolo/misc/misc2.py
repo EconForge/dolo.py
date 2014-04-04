@@ -200,27 +200,6 @@ def check(model, silent=False):
     return checks
        
 
-def compute_residuals(model,calib=None):
-    
-    if calib is None:
-        calib = model.calibration
-
-    s = calib['states']
-    x = calib['controls']
-    p = calib['parameters']
-    m = calib['markov_states']
-
-    g = model.functions['transition']
-
-    S = g(m,s,x,m,p)
-    res = model.functions['arbitrage'](m,s,x,m,s,x,p)
-
-    return dict(
-            transition=(S-s),
-            arbitrage=res
-            )
-
-
 
 class Model:
     

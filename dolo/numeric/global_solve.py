@@ -4,7 +4,7 @@ import numpy
 
 
 
-def global_solve(cmodel,
+def global_solve(modelodel,
                  bounds=None, verbose=False,
                  initial_dr=None, pert_order=1,
                  interp_type='smolyak', smolyak_order=3, interp_orders=None,
@@ -17,9 +17,9 @@ def global_solve(cmodel,
         if verbose:
             print(t)
 
-    model = cmodel
-    # model = cmodel.model
-    # cm = cmodel
+    model = modelodel
+    # model = modelodel.model
+    # model = modelodel
 
     parms = model.calibration['parameters']
     sigma = model.covariances # calibration['covariances']
@@ -32,14 +32,15 @@ def global_solve(cmodel,
         if pert_order>1:
             raise Exception("Perturbation order > 1 not supported (yet).")
             from dolo.numeric.perturbations_to_states import approximate_controls
-            initial_dr = approximate_controls(cm, order=pert_order)
+            initial_dr = approximate_controls(model, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
 
     if bounds is not None:
         pass
 
-    elif model.__data__ and 'approximation' in model.__data__:
+    elif model.options and 'approximation' in model.__data__:
+
         vprint('Using bounds specified by model')
 
         # this should be moved to the compiler
@@ -129,22 +130,21 @@ def global_solve(cmodel,
 
 
 
-
-    if cm.model_type == 'fga':
-        ff = cm.functions['arbitrage']
-        gg = cm.functions['transition']
-        aa = cm.functions['auxiliary']
+    if model.model_type == 'fga':
+        ff = model.functions['arbitrage']
+        gg = model.functions['transition']
+        aa = model.functions['auxiliary']
         g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
         f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
-    elif cm.model_type == 'fg':
-        g = cm.functions['transition']
-        ff = cm.functions['arbitrage']
+    elif model.model_type == 'fg':
+        g = model.functions['transition']
+        ff = model.functions['arbitrage']
         f = lambda s,x,e,S,X,p : ff(s,x,S,X,p)
     else:
-        f = cm.functions['arbitrage']
-        g = cm.functions['transition']
+        f = model.functions['arbitrage']
+        g = model.functions['transition']
 
-#    cm.x_bounds = None
+#    model.x_bounds = None
 
     dr = time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
                         tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
@@ -160,9 +160,9 @@ def global_solve(cmodel,
 
         t1 = time.time()
 
-        if cm.x_bounds is not None:
-            lb = cm.x_bounds[0](dr.grid, parms)
-            ub = cm.x_bounds[1](dr.grid, parms)
+        if model.x_bounds is not None:
+            lb = model.x_bounds[0](dr.grid, parms)
+            ub = model.x_bounds[1](dr.grid, parms)
         else:
             lb = None
             ub = None
@@ -172,11 +172,11 @@ def global_solve(cmodel,
         shape = xinit.shape
 
         if not memory_hungry:
-            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
-            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
+            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=True)[1]
         else:
-            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
-            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
+            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=True)[1]
 
         from dolo.numeric.solver import solver
 
@@ -187,7 +187,7 @@ def global_solve(cmodel,
         t2 = time.time()
 
         # test solution
-        res = stochastic_residuals_2(dr.grid, x, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
+        res = stochastic_residuals_2(dr.grid, x, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
         if numpy.isinf(res.flatten()).sum() > 0:
             raise ( Exception('Non finite values in residuals.'))
 

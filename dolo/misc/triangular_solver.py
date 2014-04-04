@@ -69,18 +69,26 @@ def solve_triangular_system(system, values=None, context=None):
 
     d = copy.copy(values) if values else {}
 
+
+    import math
     d['nan'] = float('nan')
+    d['exp'] = math.exp
+    d['log'] = math.log
+    d['sin'] = math.sin
+    d['cos'] = math.cos
 
     for i in sol_order:
 
         v = var_order[i]
 
         try:
+
             val = system[v]
 
-            d[v] = eval(str(val), d)
+            d[v] = eval(str(val), d, d)
 
         except Exception as e:  # in case d[v] is an int
+
             raise(e)
 
     resp = OrderedDict([(v, d[v]) for v in system.keys()])

@@ -14,7 +14,7 @@ class TestGlobal(unittest.TestCase):
 
         print(model.infos['data_layout'])
 
-        print model.calibration['covariances']
+        print model.covariances
 
         import time
 

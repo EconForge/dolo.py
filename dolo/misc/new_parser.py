@@ -1,3 +1,5 @@
+from __future__ import division
+
 recipes = {
 
     'fg': {
@@ -127,6 +129,9 @@ class NumericModel:
 
             self.covariances = covs
 
+        else:
+
+            self.covariances = None
 
 
     def get_calibration(self, pname, *args):
@@ -165,12 +170,35 @@ class NumericModel:
             self.__update_calibration__()
     
     def __str__(self):
-        
-        s = '''Model object:
+
+        from dolo.misc.termcolor import colored
+
+        s = '''
+Model object:
+------------
+
 - name: "{name}"
 - type: "{type}"
 - file: "{filename}\n'''.format(**self.infos)
-        
+
+        ss = '\n- residuals:\n\n'
+        res = self.residuals()
+        for eqgroup, eqlist in self.symbolic.equations.iteritems():
+            ss += "    {}\n".format(eqgroup)
+            for i, eq in enumerate(eqlist):
+                val = res[eqgroup][i]
+                if abs(val) < 1e-8:
+                    val = 0
+
+                vals = '{:.4f}'.format(val)
+
+                if abs(val) > 1e-8:
+                    print('Big error')
+                    vals = colored(vals, 'red')
+
+                ss += "        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+        s += ss
+
         # import pprint
         # s += '- residuals:\n'
         # s += pprint.pformat(compute_residuals(self),indent=2, depth=1)
@@ -186,6 +214,12 @@ class NumericModel:
             return [fun_lb, fun_ub]
         else:
             return None
+
+    def residuals(self, calib=None):
+
+        from dolo.algos.steady_state import residuals
+        return residuals(self, calib)
+
 
 
 

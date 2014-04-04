@@ -1,4 +1,4 @@
-
+from __future__ import division
 
 
 def std_date_symbol(s,date):
@@ -11,7 +11,7 @@ def std_date_symbol(s,date):
 
 
 import ast
-from ast import Expr, Subscript, Name, Load, Index, Num, Module, Assign, Store, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
+from ast import Expr, Subscript, Name, Load, Index, Num, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
 
 # import codegen
 
@@ -64,7 +64,7 @@ class StandardizeDates(NodeTransformer):
             else:
                 raise Exception("Symbol {} incorrectly subscripted with date {}.".format(name, date))
         else:
-            return node
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
 
 
 def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False):
@@ -162,7 +162,7 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
     # print("------")
     # print("Module")
     # print("------")
-
+    #
     # import codegen
     # print( codegen.to_source(mod) )
 
@@ -182,7 +182,13 @@ def eval_ast(mod):
 
     context = {}
     context['inf'] = inf
-    context['evaluate'] = evaluate
+    import numpy
+    context['exp'] = numpy.exp
+    context['log'] = numpy.log
+    context['sin'] = numpy.sin
+    context['cos'] = numpy.cos
+
+
 
     name = mod.body[0].name
     code  = compile(mod, '<string>', 'exec')
