@@ -30,10 +30,10 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         shocks = numpy.zeros( (len(model.calibration['shocks']),1))
 
     # until last period, exogenous shock takes its last value
-    epsilons = numpy.zeros( (T, shocks.shape[0]))
+    epsilons = numpy.zeros( (T, shocks.shape[1]))
     epsilons[:(shocks.shape[0]-1),:] = shocks[1:,:]
     epsilons[(shocks.shape[0]-1):,:] = shocks[-1:,:]
-    
+
     # final initial and final steady-states consistent with exogenous shocks
     if isinstance(start_states,dict):
         # at least that part is clear
@@ -118,7 +118,6 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     if not ignore_constraints:
 
-        print("Solving using ncpsolve")
         from dolo.numeric.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='sparse')
         
@@ -132,13 +131,16 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         sol = sol.reshape(sh)
 
     else:
-        print("Solving using fsolve")
 
         from scipy.optimize import root
         from numpy import array
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
+        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, diff=False).ravel()
         x0 = initial_guess.ravel()
-        sol = root(ff, x0, jac=True)
+        sol = root(ff, x0, jac=False)
+
+        res = ff(sol.x)
+
 
         sol = sol.x.reshape(sh)
 
@@ -281,8 +283,6 @@ if __name__ == '__main__':
     g = model.functions['transition']
 
 
-
-    print(model.calibration_dict)
 
     e_z = atleast_2d( linspace(0.0, 0.0, 10) ).T
 
