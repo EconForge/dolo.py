@@ -43,8 +43,10 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     x = calib['controls']
     e = calib['shocks']
 
-
-    sigma = model.covariances
+    if model.covariances is not None:
+        sigma = model.covariances
+    else:
+        sigma = numpy.zeros((len(e), len(e)))
     # sigma = model.calibration['covariances']
 
     from numpy.linalg import solve
@@ -93,14 +95,6 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     diag_S = numpy.diag(S)
     diag_T = numpy.diag(T)
 
-    tol_geneigvals = 1e-10
-    try:
-        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
-    except Exception as e:
-        print e
-        print(numpy.column_stack([diag_S, diag_T]))
-        raise GeneralizedEigenvaluesError(diag_S, diag_T)
-
     # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval>1.0)
     n_expected = n_x
@@ -108,6 +102,16 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
         print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
     if n_expected != n_big_one:
         raise BlanchardKahnError(n_big_one, n_expected)
+
+
+    tol_geneigvals = 1e-10
+    try:
+        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
+    except Exception as e:
+        print e
+        print(numpy.column_stack([diag_S, diag_T]))
+        # raise GeneralizedEigenvaluesError(diag_S, diag_T)
+
 
     Z11 = Z[:n_s,:n_s]
     Z12 = Z[:n_s,n_s:]
