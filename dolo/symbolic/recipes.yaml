@@ -7,6 +7,7 @@ fg:
     equation_type:
     
         arbitrage:
+
             - ['states',0]
             - ['controls',0]
             - ['states',1]
@@ -23,6 +24,7 @@ fg:
                 - ['states',-1]
                 - ['controls',-1]
                 - ['shocks',0]
+
 fg2:
 
     model_type: fg2

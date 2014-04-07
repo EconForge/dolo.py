@@ -8,22 +8,41 @@ recipes = {
 
         'specs': {
 
-            'transition': [
-                ('states', -1, 's'),
-                ('controls', -1, 'x'),
-                ('shocks', 0, 'e'),
-                ('parameters', 0, 'p')
-            ],
+            'transition': {
 
+                'target': ('states', 0, 'S'),
 
-            'arbitrage': [
-                ('states', 0, 's'),
-                ('controls', 0, 'x'),
-                ('states', 1, 'S'),
-                ('controls', 1, 'X'),
-                ('parameters', 0, 'p')
-            ]
+                'eqs': [
+                    ('states', -1, 's'),
+                    ('controls', -1, 'x'),
+                    ('shocks', 0, 'e'),
+                    ('parameters', 0, 'p')
+                ],
 
+            },
+
+            'arbitrage': {
+
+                'eqs': [
+                    ('states', 0, 's'),
+                    ('controls', 0, 'x'),
+                    ('states', 1, 'S'),
+                    ('controls', 1, 'X'),
+                    ('parameters', 0, 'p')
+                ],
+
+                'complementarities': {
+
+                    'left-right': [
+                        ('states', 0, 's'),
+                        ('parameters', 0, 'p'),
+                    ],
+
+                    'middle': ('controls', 0, 'x')
+
+                }
+
+            }
         }
     }
 
@@ -226,65 +245,87 @@ Model object:
     def __compile_functions__(self):
 
         from dolo.compiler.function_compiler_ast import compile_function_ast, eval_ast
-        from misc2 import allocating_function
         from dolo.compiler.function_compiler import vector_or_matrix, standard_function
 
         # works for fg models only
         recipe = recipes['fg']
+        symbols = self.symbols # should match self.symbols
 
         comps = []
 
         functions = {}
-        for funname in 'transition','arbitrage':
 
-            if funname == 'transition':
+        for funname in 'transition', 'arbitrage':
 
+            spec = recipe['specs'][funname]
+
+
+
+            if spec.get('target'):
+
+                # keep only right-hand side
+                # TODO: restore recursive definitions
                 eqs = self.symbolic.equations[funname]
                 eqs = [eq.split('=')[1] for eq in eqs]
                 eqs = [str.strip(eq) for eq in eqs]
 
-                n_output = len(self.symbols['states'])
+                target_spec = spec.get('target')
+                n_output = len(self.symbols[target_spec[0]])
+                target_short_name = spec.get('target')[2]
 
-            elif funname == 'arbitrage':
 
+            if spec.get('complementarities'):
+
+                comp_spec = spec.get('complementarities')
+                comp_order = comp_spec['middle']
+                comp_args = comp_spec['left-right']
+
+                comps = []
                 eqs = []
-
                 for i,eq in enumerate(self.symbolic.equations[funname]):
 
                     if '|' in eq:
-                        control = self.symbols['controls'][i]
+                        control = self.symbols[comp_order[0]][i]
                         eq, comp = str.split(eq,'|')
                         lhs, rhs = decode_complementarity(comp, control)
                         comps.append([lhs, rhs])
                     else:
                         comps.append(['-inf', 'inf'])
 
-                    if '=' in eq:
-                        lhs, rhs = str.split(eq,'=')
-                        eq = '{} - ( {} )'.format(rhs, lhs)
-
-                    eq = str.strip(eq)
                     eqs.append(eq)
 
-                n_output = len(self.symbols['controls'])
+                comp_lhs, comp_rhs = zip(*comps)
+                fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+
+                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0])
+                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1])
+
+                nout = len(comp_lhs)
+
+                functions[fb_names[0]] = standard_function(upper_bound, n_output )
+                functions[fb_names[1]] = standard_function(lower_bound, n_output )
 
 
-            symbols = self.symbols # should match self.symbols
-            arg_names = recipe['specs'][funname] # should match self.symbols
+            # rewrite all equations as rhs - lhs
+            def filter_equal(eq):
+                if '=' in eq:
+                    lhs, rhs = str.split(eq,'=')
+                    eq = '{} - ( {} )'.format(rhs, lhs)
+                    eq = str.strip(eq)
+                    return eq
+                else:
+                    return eq
+
+            eqs = [filter_equal(eq) for eq in eqs]
+
+
+            arg_names = recipe['specs'][funname]['eqs']
+
             fun = compile_function_ast(eqs, symbols, arg_names, funname=funname)
 
+            n_output = len(eqs)
+
             functions[funname] = standard_function(fun, n_output )
-            
-
-        arg_names = [('states', 0, 's'), ('parameters', 0, 'p')]
-
-        lower_bound = compile_function_ast([c[0] for c in comps], symbols, arg_names, funname='arbitrage_lb')
-        upper_bound = compile_function_ast([c[1] for c in comps], symbols, arg_names, funname='arbitrage_ub')
-        n_output = len(self.symbols['controls'])
-        
-        functions['arbitrage_ub'] = standard_function(upper_bound, n_output )
-        functions['arbitrage_lb'] = standard_function(lower_bound, n_output )
-
 
         self.functions = functions
 
