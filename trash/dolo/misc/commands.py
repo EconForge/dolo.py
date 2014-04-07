@@ -3,9 +3,9 @@
 
 def dynare(filename, order=1, plot=True):
 
-    from dolo.misc.modfile import dynare_import
-    from dolo.numeric.perturbations import solve_decision_rule
-    from dolo.numeric.decision_rules import stoch_simul, impulse_response_function
+    from trash.dolo.misc.modfile import dynare_import
+    from trash.dolo.numeric.perturbations import solve_decision_rule
+    from dolo.numeric.decision_rules import stoch_simul
 
     model = dynare_import(filename)
 

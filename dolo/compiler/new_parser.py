@@ -1,52 +1,8 @@
 from __future__ import division
+#
+from recipes import recipes
 
-recipes = {
 
-    'fg': {
-
-        'symbols': ['states', 'controls', 'shocks', 'parameters'],
-
-        'specs': {
-
-            'transition': {
-
-                'target': ('states', 0, 'S'),
-
-                'eqs': [
-                    ('states', -1, 's'),
-                    ('controls', -1, 'x'),
-                    ('shocks', 0, 'e'),
-                    ('parameters', 0, 'p')
-                ],
-
-            },
-
-            'arbitrage': {
-
-                'eqs': [
-                    ('states', 0, 's'),
-                    ('controls', 0, 'x'),
-                    ('states', 1, 'S'),
-                    ('controls', 1, 'X'),
-                    ('parameters', 0, 'p')
-                ],
-
-                'complementarities': {
-
-                    'left-right': [
-                        ('states', 0, 's'),
-                        ('parameters', 0, 'p'),
-                    ],
-
-                    'middle': ('controls', 0, 'x')
-
-                }
-
-            }
-        }
-    }
-
-}
 
 class SymbolicModel:
 
@@ -77,8 +33,9 @@ class SymbolicModel:
                 assert( len(self.symbols['auxiliaries']) == n_eq_auxiliary)
 
         else:
+            pass
+            # raise Exception( "No rule to check model type {}".format(self.model_type))
 
-            raise Exception( "No rule to check model type {}".format(self.model_type))
 
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")
@@ -130,11 +87,11 @@ class NumericModel:
 
         system = self.symbolic.calibration_dict 
 
-        from triangular_solver import solve_triangular_system
+        from dolo.misc.triangular_solver import solve_triangular_system
 
         self.calibration_dict = solve_triangular_system( system )
 
-        from misc2 import calibration_to_vector
+        from dolo.misc.misc2 import calibration_to_vector
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
 
 
@@ -244,18 +201,20 @@ Model object:
 
     def __compile_functions__(self):
 
-        from dolo.compiler.function_compiler_ast import compile_function_ast, eval_ast
-        from dolo.compiler.function_compiler import vector_or_matrix, standard_function
+        from .function_compiler_ast import compile_function_ast, eval_ast
+        from .function_compiler import standard_function
 
         # works for fg models only
-        recipe = recipes['fg']
+        recipe = recipes[self.model_type]
         symbols = self.symbols # should match self.symbols
 
         comps = []
 
         functions = {}
 
-        for funname in 'transition', 'arbitrage':
+        for funname in recipe['specs'].keys():
+
+            print('funname {}'.format(funname))
 
             spec = recipe['specs'][funname]
 
@@ -329,13 +288,16 @@ Model object:
 
         self.functions = functions
 
-def yaml_import(fname):
+
+def yaml_import(fname, txt=None):
 
     symbol_types = ['states', 'controls', 'shocks', 'parameters']
 
 
-    with open(fname) as f:
-        txt = f.read()
+    if txt is None:
+
+        with open(fname) as f:
+            txt = f.read()
 
     txt = txt.replace('^','**')
 
@@ -361,8 +323,17 @@ def yaml_import(fname):
         raise Exception("Missing key: 'name'.")
 
     if not 'symbols' in data:
-        raise Exception("Missing section: 'symbols'.")
-    
+        if 'declarations' in data:
+            data['symbols'] = data['declarations']
+            #TODO: raise an error/warning here
+        else:
+            raise Exception("Missing section: 'symbols'.")
+
+    if 'auxiliary' in data['symbols']:
+        aux = data['symbols'].pop('auxiliary')
+        data['symbols']['auxiliaries'] = aux
+
+    print(data['symbols'])
     # check equations
     if not 'equations' in data:
         raise Exception("Missing section: 'equations'.")
@@ -371,7 +342,17 @@ def yaml_import(fname):
     if not 'calibration' in data:
         raise Exception("Missing section: 'calibration'.")
 
-
+    if 'steady_state' in data['calibration']:
+        oldstyle = data['calibration']
+        covs = oldstyle['covariances']
+        steady = oldstyle['steady_state']
+        params = oldstyle['parameters']
+        pp = dict()
+        pp.update(steady)
+        pp.update(params)
+        data['calibration'] = pp
+        import numpy
+        data['covariances'] = eval("numpy.array({}, dtype='object')".format(covs))
 
     # model specific
 

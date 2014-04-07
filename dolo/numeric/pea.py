@@ -92,7 +92,7 @@ def pea_solve( cm, grid, dr_x, dr_z, p, nodes, weights ):
 
 from dolo import yaml_import
 
-from dolo.numeric.perturbations_to_states import approximate_controls
+from trash.dolo.numeric.perturbations_to_states import approximate_controls
 
 model = yaml_import('../../../examples/global_models/rbc_fgah.yaml')
 

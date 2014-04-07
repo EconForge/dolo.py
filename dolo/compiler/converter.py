@@ -4,19 +4,25 @@ class GModel_fg_from_fga:
     calibration = None
     functions = None
     symbols = None
+
     infos = dict()
+    options = dict()
 
 
     def __init__(self, model_fga):
 
-        self.model = model_fga.model
+
         self.parent = model_fga
+        # self.symbolic = model_fga
 
         self.model_type = 'fg'
 
         import copy
 
         self.symbols = copy.copy(self.parent.symbols)
+
+        self.covariances = copy.copy(model_fga.covariances)
+
 #        self.symbols['controls'] = self.parent.symbols['controls'] + self.parent.symbols['auxiliary']
 
         self.__create_functions__()
@@ -27,6 +33,7 @@ class GModel_fg_from_fga:
 
 
     def __create_functions__(self):
+
         ff = self.parent.functions['arbitrage']
         gg = self.parent.functions['transition']
         aa = self.parent.functions['auxiliary']

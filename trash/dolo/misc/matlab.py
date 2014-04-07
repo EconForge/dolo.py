@@ -1,6 +1,6 @@
-from dolo.symbolic.symbolic import Variable,Parameter
-
 import sympy
+
+from trash.dolo.symbolic.symbolic import Variable,Parameter
 
 def convert_struct_to_dict(s):
     # imperfect but enough for now
@@ -44,7 +44,6 @@ def send_to_matlab(model,interactive=True,rmtemp=False,append=""):
         #return None
     else:
         import os
-        import scipy
         from scipy import io
         command = "matlab -nodesktop -nojvm -r %s" % ( model.fname + "_main" )
         os.system(command)
@@ -94,7 +93,6 @@ def value_to_mat(v):
         if len(v.shape)  <= 2:
             return str(v).replace('\n','').replace('] [',' ; ')
         else:
-            import numpy
             return 'reshape( {0} , {1} )'.format(  str(v.flatten('F')).replace('\n','') , str(v.shape).strip('()')  )
         #raise Warning('list conversion to matlab not implemented (will be soon)')
     else:

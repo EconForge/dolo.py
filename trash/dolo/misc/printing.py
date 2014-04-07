@@ -50,7 +50,7 @@ def print_model( model, print_residuals=True):
 
     from sympy import latex
     if print_residuals:
-        from dolo.symbolic.model import compute_residuals
+        from trash.dolo.symbolic.model import compute_residuals
         res = compute_residuals(model)
     if len( model.equations_groups ) > 0:
         if print_residuals:

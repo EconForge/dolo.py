@@ -9,12 +9,12 @@ class StatesPerturbationsTestCase(unittest.TestCase):
         # We test that both the statefree method and the perturbation to states
         # yield the same result.
 
-        from dolo.misc.yamlfile import yaml_import
+        from dolo.algos.perturbations import yaml_import
         model = yaml_import('examples/global_models/rbc.yaml', compiler=None)
 
 
-        from dolo.numeric.perturbations import solve_decision_rule
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from trash.dolo.numeric.perturbations import solve_decision_rule
+        from trash.dolo.numeric.perturbations_to_states import approximate_controls
 
 
         coeffs = approximate_controls(model,order=2, return_dr=False)
@@ -46,20 +46,20 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
 
     def test_perturbation_1_old(self):
-        from dolo.misc.yamlfile import yaml_import
+        from dolo import yaml_import
         model = yaml_import('examples/global_models/rbc.yaml')
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from dolo.algos.perturbations import approximate_controls
         dr = approximate_controls(model,order=1)
 
     def test_perturbation_2(self):
-        from dolo.misc.yamlfile import yaml_import
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from dolo import yaml_import
+        from dolo.algos.perturbations import approximate_controls
         model = yaml_import('examples/global_models/rbc.yaml')
         dr = approximate_controls(model,order=2)
 
     def test_perturbation_3(self):
-        from dolo.misc.yamlfile import yaml_import
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from dolo import yaml_import
+        from dolo.algos.perturbations import approximate_controls
         model = yaml_import('examples/global_models/rbc.yaml')
         dr = approximate_controls(model,order=3)
 

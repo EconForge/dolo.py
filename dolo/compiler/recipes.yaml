@@ -2,28 +2,40 @@ fg:
 
     model_type: fg
     
-    variable_type: ['states', 'controls']
+    symbols: ['states', 'controls', 'shocks', 'parameters']
     
-    equation_type:
+    specs:
     
         arbitrage:
 
-            - ['states',0]
-            - ['controls',0]
-            - ['states',1]
-            - ['controls',1]
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
     
         transition:
     
-            definition: True
+            target: ['states',0,'S']
     
-            lhs:
-                - ['states',0]
-    
-            rhs:
-                - ['states',-1]
-                - ['controls',-1]
-                - ['shocks',0]
+            eqs:
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['shocks',0,'e']
+                - ['parameters', 0, 'p']
+
+
 
 fg2:
 
@@ -53,46 +65,58 @@ fg2:
                 - ['shocks',0]
 
 
-
 fga:
 
-  model_type: fga
+    model_type: fga
 
-  variable_type: ['states', 'controls', 'auxiliary']
+    symbols: ['states', 'controls', 'auxiliaries', 'shocks', 'parameters']
 
-  equation_type:
+    specs:
 
-      arbitrage:
-          - ['states',0]
-          - ['controls',0]
-          - ['auxiliary',0]
-          - ['states',1]
-          - ['controls',1]
-          - ['auxiliary',1]
+        arbitrage:
 
-      transition:
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['parameters',0,'p']
 
-          definition: True
+            complementarities:
 
-          lhs:
-              - ['states',0]
+                left-right:
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
 
-          rhs:
-              - ['states',-1]
-              - ['controls',-1]
-              - ['auxiliary',-1]
-              - ['shocks',0]
+                middle: ['controls', 0, 's']
 
-      auxiliary:
 
-          definition: True
 
-          lhs:
-              - ['auxiliary',0]
+        transition:
 
-          rhs:
-              - ['states',0]
-              - ['controls',0]
+            target: ['states',0,'S']
+
+            eqs:
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['auxiliaries',-1,'y']
+                - ['shocks',0,'e']
+                - ['parameters', 0, 'p']
+
+
+        auxiliary:
+
+            target: ['auxiliaries',0,'S']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+
 
 fgh1:
 

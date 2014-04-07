@@ -12,23 +12,22 @@ class  DivisionTestCase(unittest.TestCase):
 
         yaml_content = yaml.load(txt)
         yaml_content['equations']['transition'][0] += ' + 1/2 - 0.5' # modify first transition equation
-        yaml_content['calibration']['alpha'] = '1/3'
+        yaml_content['calibration']['parameters']['alpha'] = '1/3'
 
-        new_txt = yaml.dump( yaml_content )
+        txt = yaml.dump(yaml_content)
 
+        from dolo import yaml_import
+        print(txt)
 
+        model = yaml_import('nofile', txt=txt)
 
-        from dolo.misc.yamlfile import parse_yaml_text
-        from dolo.symbolic.model import compute_residuals
-        from dolo.symbolic.symbolic import Parameter as P
+        alpha = model.get_calibration('alpha')
 
-        model = parse_yaml_text(new_txt, compiler=None)
-
-        alpha = model.calibration_s[P('alpha')]
+        print(alpha)
 
         assert( abs(alpha - 1.0/3.0) < 0.00000001)
 
-        res = compute_residuals(model)
+        res = model.residuals()
         assert( abs(res['transition'][0]) < 0.00000001)
 
 

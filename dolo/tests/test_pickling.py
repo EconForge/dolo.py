@@ -1,8 +1,7 @@
-
 import unittest
-
-from dolo.symbolic.symbolic import Variable,Parameter,TSymbol
 import pickle
+
+from trash.dolo.symbolic.symbolic import TSymbol
 
 class  PicklingTestCase(unittest.TestCase):
 

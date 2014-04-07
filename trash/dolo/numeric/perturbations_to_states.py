@@ -1,14 +1,8 @@
 from dolo.numeric.decision_rules_states import CDR
 
-def approximate_controls(cmodel, order=1, lambda_name=None, return_dr=True, verbose=True):
+def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbose=True):
 
-    from dolo.symbolic.model import SModel
-    if not isinstance(cmodel, SModel):
-        model = cmodel.model
-    else:
-        model = cmodel
-
-    from dolo.compiler.compiler_functions import model_to_fg
+    from dolo.compiler.converter import model_to_fg
     [g_fun, f_fun] = model_to_fg(model, order=order)
 
     # get steady_state
@@ -252,7 +246,6 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True):
             K_tt += sdot( f_snext + dot(f_xnext,X_s) , sigma2_correction[0] )
 
         L_tt = f_x  + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x) )
-        from numpy.linalg import det
         X_tt = solve( L_tt, - K_tt)
 
     if approx_order == 2:

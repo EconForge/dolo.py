@@ -6,7 +6,7 @@ def portfolios_to_deterministic(model,pf_names):
     import re
     regex = re.compile('.*<=(.*)<=.*')
     for i,eq in enumerate(model.equations_groups['arbitrage']):
-        from dolo.symbolic.symbolic import Variable, Equation
+        from trash.dolo.symbolic.symbolic import Variable, Equation
         m = regex.match(eq.tags['complementarity'])
         vs = m.group(1).strip()
         if vs in pf_names:
@@ -98,7 +98,7 @@ def solve_portfolio_model(model, pf_names, order=2, lambda_name='lam', guess=Non
 
 
     # now, we need to solve for the optimal portfolio coefficients
-    from dolo.numeric.perturbations_to_states import approximate_controls
+    from trash.dolo.numeric.perturbations_to_states import approximate_controls
 
     dr = approximate_controls(new_model)
     print('ok')

@@ -2,10 +2,10 @@
 # and open the template in the editor.
 
 import unittest
+
 from sympy import log,exp,sin,cos,tan,Matrix, zeros
 
-from dolo.misc.symbolic_interactive import def_variables, def_parameters, def_shocks
-
+from trash.dolo.misc.symbolic_interactive import def_variables
 
 
 class  SyntaxTestCase(unittest.TestCase):

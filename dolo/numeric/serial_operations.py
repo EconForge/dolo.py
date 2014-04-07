@@ -62,7 +62,12 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
         
     return ret
 
+import numpy
+
 def serial_multiplication(A,B):
+
+    if A.ndim == 2 and B.ndim == 2:
+        return numpy.dot(A,B)
 
     I = A.shape[1]
     J = A.shape[2]

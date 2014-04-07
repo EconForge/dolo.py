@@ -1,9 +1,8 @@
-from dolo.symbolic.symbolic import Variable, Shock, Parameter, Equation
-from dolo.symbolic.model import SModel
+import re
 
 import sympy
-import re
-import inspect
+
+from dolo.symbolic.symbolic import Variable, Shock, Parameter, Equation
 
 line_regex = re.compile(
     "(\s*)$|"             # blank
@@ -255,7 +254,7 @@ def parse_dynare_text(txt,add_model=True,full_output=False, debug=False):
     calibration.update(init_values)
     symbols = {'variables': variables, 'shocks': shocks, 'parameters': parameters}
 
-    from dolo.symbolic.model import SModel
+    from trash.dolo.symbolic.model import SModel
     model = SModel({'dynare_block': equations}, symbols, calibration, covariances)
     return model
 

@@ -33,6 +33,10 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     # get steady_state
     import numpy
 
+    from dolo.compiler.converter import GModel_fg_from_fga
+    if model.model_type == 'fga':
+        model = GModel_fg_from_fga(model)
+
     if steady_state is not None:
         calib = steady_state
     else:

@@ -22,7 +22,7 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
             from dolo.algos.portfolio_perturbation import portfolios_to_deterministic
             model = portfolios_to_deterministic(model,['x_1','x_2'])
             model.check()
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from trash.dolo.numeric.perturbations_to_states import approximate_controls
         perturb_sol = approximate_controls(model, order = 1, return_dr=False)
         [X_bar,X_s] =  perturb_sol
     else:

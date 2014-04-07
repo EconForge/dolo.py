@@ -1,11 +1,13 @@
 from __future__ import division
 
-from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
-from dolo.symbolic.model import SModel
 from collections import OrderedDict
+import re
+
 import yaml
 import sympy
-import re
+
+from dolo.symbolic.symbolic import Variable,Parameter,Shock,Equation
+
 
 def iteritems(d):
     return zip(d.keys(), d.values())
@@ -42,7 +44,7 @@ Imports the content of a modfile into the current interpreter scope
     context = [(s.name,s) for s in variables_ordering + parameters_ordering + shocks_ordering]
     context = dict(context)
 
-    from dolo.symbolic.symbolic import timeshift as TS
+    from trash.dolo.symbolic.symbolic import timeshift as TS
 
 
     # add some common functions
@@ -60,7 +62,6 @@ Imports the content of a modfile into the current interpreter scope
         exec(tt, context)
 
 
-    import re
     # we recognize two kinds of equations:
     # lhs = rhs
     # lhs | comp where comp is a complementarity condition
@@ -161,7 +162,7 @@ Imports the content of a modfile into the current interpreter scope
     calibration_s.update(parameters_values)
     calibration_s.update(init_values)
 
-    from dolo.symbolic.model import SModel
+    from trash.dolo.symbolic.model import SModel
 
     model = SModel( equations_groups, symbols, calibration_s, covariances )
     model.__data__ = raw_dict

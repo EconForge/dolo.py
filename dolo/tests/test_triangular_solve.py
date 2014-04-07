@@ -26,25 +26,25 @@ class  TriangularSolveCase(unittest.TestCase):
         from dolo.misc.triangular_solver import solve_triangular_system
 
         import sympy
-        [w,x,y,z,t] = vars = sympy.symbols('w, x, y, z, t')
+        [w,x,y,z,t] = vars = ['w', 'x', 'y', 'z', 't']
 
         eqs = [
-            x + y + z + t,
-            y + z,
-            z,
-            1,
-            1
+            'x + y + z + t',
+            'y + z',
+            'z',
+            '1',
+            '1'
         ]
 
         sdict = {s:eqs[i] for i,s in enumerate(vars) }
 
         solution = solve_triangular_system(sdict)
 
-        assert(solution[z]==1)
-        assert(solution[t]==1)
-        assert(solution[y]==1)
-        assert(solution[x]==2)
-        assert(solution[w]==5)
+        assert(solution['z']==1)
+        assert(solution['t']==1)
+        assert(solution['y']==1)
+        assert(solution['x']==2)
+        assert(solution['w']==5)
 
 
 

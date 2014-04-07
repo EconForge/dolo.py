@@ -2,9 +2,10 @@
 # and open the template in the editor.
 
 import unittest
-from dolo.misc.modfile import parse_dynare_text
-
 import os
+
+from trash.dolo.misc.modfile import parse_dynare_text
+
 
 DYNARE_MODFILES_PATH = 'examples/dynare_modfiles/'
 exclude = [

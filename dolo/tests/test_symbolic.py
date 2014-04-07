@@ -2,7 +2,9 @@
 # and open the template in the editor.
 
 import unittest
-from dolo.symbolic.symbolic import TSymbol, Parameter, Variable
+
+from trash.dolo.symbolic.symbolic import TSymbol, Parameter, Variable
+
 
 class  FormalCalculusTestCase(unittest.TestCase):
 

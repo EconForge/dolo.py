@@ -31,7 +31,7 @@ def global_solve(modelodel,
 
         if pert_order>1:
             raise Exception("Perturbation order > 1 not supported (yet).")
-            from dolo.numeric.perturbations_to_states import approximate_controls
+            from trash.dolo.numeric.perturbations_to_states import approximate_controls
             initial_dr = approximate_controls(model, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr

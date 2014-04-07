@@ -99,7 +99,7 @@ def residuals(model, calib=None):
         s = calib['states']
         x = calib['controls']
         e = calib['shocks']
-        p = model.calibration['parameters']
+        p = calib['parameters']
         f = model.functions['arbitrage']
         g = model.functions['transition']
 
@@ -111,13 +111,16 @@ def residuals(model, calib=None):
 
         s = calib['states']
         x = calib['controls']
-        y = calib['auxiliary']
+        y = calib['auxiliaries']
+        e = calib['shocks']
+        p = calib['parameters']
+
         f = model.functions['arbitrage']
         g = model.functions['transition']
         a = model.functions['auxiliary']
         
         res['transition'] = g(s,x,y,e,p)-s
-        res['arbitrage'] = f(s,x,y,s,x,y,e,p)
+        res['arbitrage'] = f(s,x,y,s,x,y,p)
         res['auxiliary'] = a(s,x,p)-y
 
     else:

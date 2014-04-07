@@ -1,7 +1,7 @@
-from dolo.symbolic.symbolic import Variable,Parameter,Shock,IndexedSymbol
-
 import inspect
 import re
+
+from trash.dolo.symbolic.symbolic import Variable,Parameter,Shock,IndexedSymbol
 
 #def set_variables(s,names_dict={}):
 #    """
