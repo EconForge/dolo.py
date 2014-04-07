@@ -214,11 +214,7 @@ Model object:
 
         for funname in recipe['specs'].keys():
 
-            print('funname {}'.format(funname))
-
             spec = recipe['specs'][funname]
-
-
 
             if spec.get('target'):
 
@@ -333,7 +329,6 @@ def yaml_import(fname, txt=None):
         aux = data['symbols'].pop('auxiliary')
         data['symbols']['auxiliaries'] = aux
 
-    print(data['symbols'])
     # check equations
     if not 'equations' in data:
         raise Exception("Missing section: 'equations'.")
