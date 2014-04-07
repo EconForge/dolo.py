@@ -104,8 +104,6 @@ from ast import NodeVisitor
 
 def get_atoms(string):
 
-    import sympy
-
     expr = ast.parse(str.strip(str(string)))
     parser = FindNames()
     parser.visit(expr)

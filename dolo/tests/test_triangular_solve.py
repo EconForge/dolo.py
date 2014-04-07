@@ -1,8 +1,5 @@
 import unittest
 
-#from dolo.symbolic.symbolic import Variable,Parameter,TSymbol
-#import pickle
-
 class  TriangularSolveCase(unittest.TestCase):
 
     def test_solve_simple_system(self):
@@ -25,7 +22,6 @@ class  TriangularSolveCase(unittest.TestCase):
     def test_solve_symbolic_system(self):
         from dolo.misc.triangular_solver import solve_triangular_system
 
-        import sympy
         [w,x,y,z,t] = vars = ['w', 'x', 'y', 'z', 't']
 
         eqs = [
