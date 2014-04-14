@@ -257,6 +257,7 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
     while err > tol and it < maxit:
         t_start = time.time()
         it +=1
+
         dr.set_values(x0)
 
         from dolo.numeric.newton import serial_newton, SerialDifferentiableFunction
