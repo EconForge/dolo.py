@@ -13,7 +13,7 @@ setup(
     version = __version__,
     packages = find_packages(),
 
-    package_data={'dolo.symbolic':["recipes.yaml"]},
+    package_data={'dolo.compiler':["recipes.yaml"]},
 
     test_suite='dolo.tests',
 
@@ -21,7 +21,7 @@ setup(
     
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
 
-    install_requires = ["pyyaml","sympy<=0.7.3","numpy","cython"],
+    install_requires = ["pyyaml","numba>=0.13","numpy","cython"],
 
     extras_require = {
             'plots':  ["matplotlib"],
