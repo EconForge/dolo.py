@@ -257,7 +257,7 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
 
         dr.set_values(x0)
 
-        from dolo.numeric.newton import serial_newton, SerialDifferentiableFunction
+        from dolo.numeric.optimize.newton import serial_newton, SerialDifferentiableFunction
         sdfun = SerialDifferentiableFunction(fun)
         [x,nit] = serial_newton(sdfun,x0)
 

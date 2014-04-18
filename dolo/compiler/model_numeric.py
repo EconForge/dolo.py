@@ -31,7 +31,7 @@ class NumericModel:
 
         self.calibration_dict = solve_triangular_system( system )
 
-        from dolo.misc.misc2 import calibration_to_vector
+        from dolo.compiler.misc import calibration_to_vector
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
 
         from symbolic_eval import NumericEval

@@ -103,11 +103,11 @@ def global_solve(modelodel,
         dr = LinearTriangulation(domain)
 
     if integration == 'optimal_quantization':
-        from dolo.numeric.quantization import quantization_nodes
+        from dolo.numeric.discretization import quantization_nodes
         # number of shocks
         [epsilons, weights] = quantization_nodes(N_e, sigma)
     elif integration == 'gauss-hermite':
-        from dolo.numeric.quadrature import gauss_hermite_nodes
+        from dolo.numeric.discretization import gauss_hermite_nodes
 
         if not integration_orders:
             integration_orders = [3] * sigma.shape[0]

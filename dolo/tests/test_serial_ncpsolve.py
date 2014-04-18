@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from dolo.numeric.ncpsolve import ncpsolve
+from dolo.numeric.optimize.ncpsolve import ncpsolve
 
 
 def josephy(x):

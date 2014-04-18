@@ -2,8 +2,6 @@ import unittest
 
 import numpy as np
 
-from trash.dolo.numeric import solver
-
 
 def josephy(x):
     #   Computes the function value F(x) of the NCP-example by Josephy.
