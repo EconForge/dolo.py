@@ -9,7 +9,7 @@ declarations:
    auxiliaries: [c, rk, w]
    shocks: [e_z]
 
-   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar ]
+   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
 
 equations:
@@ -29,7 +29,6 @@ equations:
       
 calibration:
 
-   parameters:
 
       beta : 0.99
       phi: 1
@@ -40,8 +39,8 @@ calibration:
       sigma: 1
       eta: 1
       zbar: 1
+      sig_z: 0.016
          
-   steady_state:
 
       z: zbar
       rk: 1/beta-1+delta    
@@ -52,6 +51,6 @@ calibration:
       c: z*k^alpha*n^(1-alpha) - i
 
 
-   covariances: |
+covariances:
 
-      [ [ 0.0015 ] ]
+      [ [ sig_z] ]

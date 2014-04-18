@@ -6,7 +6,8 @@ from recipes import recipes
 
 class SymbolicModel:
 
-    def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration, symbolic_covariances, symbolic_markov_chain):
+    def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration,
+                 symbolic_covariances=None, symbolic_markov_chain=None, options=None):
         
         self.name = model_name
         self.model_type = model_type
@@ -15,6 +16,7 @@ class SymbolicModel:
         self.calibration_dict = symbolic_calibration
         self.covariances = symbolic_covariances
         self.markov_chain = symbolic_markov_chain
+        self.options = options
 
         self.check()
 
@@ -94,20 +96,15 @@ class NumericModel:
         from dolo.misc.misc2 import calibration_to_vector
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
 
+        from symbolic_eval import NumericEval
+        evaluator = NumericEval(self.calibration_dict)
 
-        if self.symbolic.covariances is not None:
+        # construct objects
+        self.covariances = evaluator.eval(self.symbolic.covariances)
+        self.markov_chain = evaluator.eval(self.symbolic.markov_chain)
 
-            import numpy
-            covs = numpy.zeros_like(self.symbolic.covariances, dtype=float)
-            for i in range(covs.shape[0]):
-                for j in range(covs.shape[1]):
-                    covs[i,j] = eval(str(self.symbolic.covariances[i,j]), self.calibration_dict )
 
-            self.covariances = covs
-
-        else:
-
-            self.covariances = None
+        self.options = evaluator.eval(self.symbolic.options)
 
 
     def get_calibration(self, pname, *args):
@@ -201,8 +198,8 @@ Model object:
 
     def __compile_functions__(self):
 
-        from .function_compiler_ast import compile_function_ast, eval_ast
-        from .function_compiler import standard_function
+        from dolo.compiler.function_compiler_ast import compile_function_ast, eval_ast
+        from dolo.compiler.function_compiler import standard_function
 
         # works for fg models only
         recipe = recipes[self.model_type]
@@ -421,9 +418,16 @@ def yaml_import(fname, txt=None):
 
 if __name__ == "__main__":
 
-    fname = "../../examples/global_models/rbc_temp.yaml"
+    fname = "../../examples/global_models/rbc.yaml"
 
     model = yaml_import(fname)
+
+
+    print(model.covariances)
+    print(model.calibration)
+    print(model.markov_chain)
+    exit()
+
 
     print("calib")
     # print(model.calibration['parameters'])
