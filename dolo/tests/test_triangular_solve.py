@@ -4,7 +4,7 @@ class  TriangularSolveCase(unittest.TestCase):
 
     def test_solve_simple_system(self):
 
-        from dolo.misc.triangular_solver import triangular_solver
+        from dolo.compiler.triangular_solver import triangular_solver
 
 
         system = [
@@ -20,7 +20,7 @@ class  TriangularSolveCase(unittest.TestCase):
         assert( tuple( solution ) == (3,4,2,1,0) ) # it should have been left unmodified
 
     def test_solve_symbolic_system(self):
-        from dolo.misc.triangular_solver import solve_triangular_system
+        from dolo.compiler.triangular_solver import solve_triangular_system
 
         [w,x,y,z,t] = vars = ['w', 'x', 'y', 'z', 't']
 

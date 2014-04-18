@@ -1,12 +1,26 @@
 import numpy as np
 
-def tensor(*args):
-    return args
+from dolo.numeric.discretization import tensor_markov
+
 
 def rouwenhorst(rho=None, sigma=None, N=None):
     from dolo.numeric.discretization import rouwenhorst
     return rouwenhorst(rho,sigma,N)
 
+def AR1(rho, sigma, *pargs, **kwargs):
+    rho_array = np.array(rho, dtype=float)
+    sigma_array = np.atleast_2d( np.array(sigma, dtype=float) )
+    try:
+        assert(rho_array.ndim<=1)
+    except:
+        raise Exception("When discretizing a Vector AR1 process, the autocorrelation coefficient must be as scalar. Found: {}".format(rho_array))
+    try:
+        assert(sigma_array.shape[0] == sigma_array.shape[1])
+    except:
+        raise Exception("The covariance matrix for a Vector AR1 process must be square. Found: {}".format())
+    from dolo.numeric.discretization import multidimensional_discretization
+    [P,Q] = multidimensional_discretization(rho_array, sigma_array, *pargs, **kwargs)
+    return P,Q
 
 
 
@@ -18,7 +32,7 @@ class NumericEval:
         for k,v in d.iteritems():
             assert(isinstance(k, str))
 
-        self.__supported_functions___ = [tensor, rouwenhorst]
+        self.__supported_functions___ = [AR1, tensor_markov]
         self.__supported_functions_names___ = [fun.__name__ for fun in self.__supported_functions___]
 
     def __call__(self, s):
@@ -59,9 +73,7 @@ class NumericEval:
 
         if len(d) == 1:
             k = d.keys()[0]
-            print('key: '+ k)
             if k in self.__supported_functions_names___:
-                print(k)
                 i = self.__supported_functions_names___.index(k)
                 fun = self.__supported_functions___[i]
 
@@ -69,9 +81,12 @@ class NumericEval:
                 if isinstance(args, dict):
                     eargs = self.eval(args)
                     res = fun(**eargs)
-                elif isinstance(args, list):
+                elif isinstance(args, (list,tuple)):
+
                     eargs = self.eval(args)
                     res = fun(*eargs)
+                else:
+                    print("Found nothing")
                 return res
 
 
@@ -92,7 +107,7 @@ class NumericEval:
         array_out = numpy.zeros_like(array_in, dtype=float)
         for i in range(array_in.shape[0]):
             for j in range(array_in.shape[1]):
-                array_out[i,j] = self.eval(str(array_in[i,j]))
+                array_out[i,j] = self.eval(array_in[i,j])
         return array_out
 
     def eval_nonetype(self, none):

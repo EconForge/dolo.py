@@ -1,11 +1,11 @@
 """
-    codegen
-    ~~~~~~~
+codegen
+~~~~~~~
 
-    Extension to ast that allow ast -> python code generation.
+Extension to ast that allow ast -> python code generation.
 
-    :copyright: Copyright 2008 by Armin Ronacher.
-    :license: BSD.
+:copyright: Copyright 2008 by Armin Ronacher.
+:license: BSD.
 """
 from ast import *
 

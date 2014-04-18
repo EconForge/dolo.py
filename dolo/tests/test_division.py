@@ -12,7 +12,7 @@ class  DivisionTestCase(unittest.TestCase):
 
         yaml_content = yaml.load(txt)
         yaml_content['equations']['transition'][0] += ' + 1/2 - 0.5' # modify first transition equation
-        yaml_content['calibration']['parameters']['alpha'] = '1/3'
+        yaml_content['calibration']['alpha'] = '1/3'
 
         txt = yaml.dump(yaml_content)
 

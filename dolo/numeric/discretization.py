@@ -93,7 +93,7 @@ def rouwenhorst(rho, sigma, N):
 
 
 
-def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
+def multidimensional_discretization(rho, sigma, N=2, method='rouwenhorst', m=2):
     """
     Discretize an VAR(1) into a markov chain. The autoregression matrix is supposed to be a scalar.
 
@@ -134,27 +134,58 @@ def multidimensional_discretization(rho, sigma, N, method='rouwenhorst', m=2):
     for i in range(d):
         transition_matrix = np.kron(transition_matrix, probas_1d)
 
+    markov_nodes = np.ascontiguousarray(markov_nodes.T)
+
     return [markov_nodes, transition_matrix]
 
-def tensor_markov( m1, m2 ):
+def tensor_markov( *args ):
     """Computes the product of two independent markov chains.
 
     :param m1: a tuple containing the nodes and the transition matrix of the first chain
     :param m2: a tuple containing the nodes and the transition matrix of the second chain
     :return: a tuple containing the nodes and the transition matrix of the product chain
     """
+    if len(args) > 2:
 
-    n1, t1 = m1
-    n2, t2 = m2
-    t = np.kron(t1, t2)
-    p = t1.shape[1]
-    q = t2.shape[1]
-    np.tile( n2, (1,p))
-    n = np.row_stack([
-        np.repeat(n1, q, axis=1),
+        m1 = args[0]
+        m2 = args[1]
+        tail = args[2:]
+        prod = tensor_markov(m1,m2)
+        return tensor_markov( prod, tail )
+
+    elif len(args) == 2:
+
+        m1,m2 = args
+        n1, t1 = m1
+        n2, t2 = m2
+
+        n1 = np.array(n1, dtype=float)
+        n2 = np.array(n2, dtype=float)
+        t1 = np.array(t1, dtype=float)
+        t2 = np.array(t2, dtype=float)
+
+        assert(n1.shape[0] == t1.shape[0] == t1.shape[1])
+        assert(n2.shape[0] == t2.shape[0] == t2.shape[1])
+
+        t = np.kron(t1, t2)
+
+        p = t1.shape[0]
+        q = t2.shape[0]
+
         np.tile( n2, (1,p))
-    ])
-    return [n,t]
+        # n = np.row_stack([
+        #     np.repeat(n1, q, axis=1),
+        #     np.tile( n2, (1,p))
+        # ])
+        n = np.column_stack([
+            np.repeat(n1, q, axis=0),
+            np.tile( n2, (p,1))
+        ])
+        return [n,t]
+
+    else:
+        raise Exception("Incorrect number of arguments. Expected at least 2. Found {}.".format(len(args)))
+
 
 
 if __name__ == '__main__':

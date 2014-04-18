@@ -229,3 +229,54 @@ vfi:
               - ['shocks',0]
 
 
+mfg:
+
+    model_type: mfg
+
+    symbols: ['markov_states', 'states', 'controls', 'auxiliaries', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['markov_states',0,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+                    - ['markov_states',0,'m']
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['markov_states',-1,'m']
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['markov_states',0,'M']
+                - ['parameters', 0, 'p']
+
+
+        auxiliary:
+
+            target: ['auxiliaries',0,'S']
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
