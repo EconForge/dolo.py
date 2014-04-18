@@ -11,7 +11,7 @@ import warnings
 
 from dolo.numeric.newton import newton
 
-def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, jactype='serial'):
+def ncpsolve(f, a, b, x, tol=1e-8, maxit=100, infos=False, verbose=False, jactype='serial'):
 
     def fcmp(z):
 
@@ -27,8 +27,10 @@ def ncpsolve(f, a, b, x, tol=None, maxit=100, infos=False, verbose=False, jactyp
 
 def smooth(x, a, b, fx, J, jactype='serial'):
 
-    dainf = isinf(a)
-    dbinf = isinf(b)
+    BIG = 1e20
+
+    dainf = a<=-BIG   #  isinf(a) |
+    dbinf = b>=BIG   #  isinf(b)
 
     da = a - x
     db = b - x

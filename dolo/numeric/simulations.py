@@ -1,5 +1,3 @@
-import numpy
-import numpy as np
 from dolo.numeric.global_solution import step_residual
 
 
@@ -79,7 +77,6 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
         x = dr(s)
 
         if solve_expectations:
-            from dolo.numeric.solver import solver
             from dolo.numeric.newton import newton_solver
 
             fobj = lambda t: step_residual(s, t, dr, f, g, parms, nodes, weights, with_derivatives=False) #
@@ -93,7 +90,7 @@ def simulate(cmodel, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, s
         if i<(horizon-1):
             s_simul[:,:,i+1] = ss
 
-    from numpy import any,isnan,all
+    from numpy import isnan,all
 
     if not 'auxiliary' in fun: # TODO: find a better test than this
         l = [s_simul, x_simul]

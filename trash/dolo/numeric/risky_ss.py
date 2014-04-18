@@ -7,6 +7,8 @@ from __future__ import division
 import numpy
 
 from dolo.numeric.decision_rules_states import CDR
+from trash.dolo.numeric import solver
+
 numpy.set_printoptions(precision=3, suppress=3)
 
 import numpy as np
@@ -196,9 +198,6 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
         np.concatenate([np.zeros(1),S_bar]),
         np.column_stack([X_bar,X_s])
     ])
-
-    from dolo.numeric.solver import solver
-
 
     fobj = lambda X: residuals(X,  sigma, parms, g_fun, f_fun)
 

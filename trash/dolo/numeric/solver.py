@@ -62,7 +62,9 @@ def solver(fobj, x0, lb=None, ub=None, jac=None, method='lmmcp', infos=False, se
     elif method == 'ncpsolve':
         from dolo.numeric.ncpsolve import ncpsolve
         fun = lambda x: [ffobj(x), Dffobj(x) ]
-        [sol,nit] = ncpsolve(fun,lb,ub,x0, verbose=verbose, infos=True, serial=serial_problem)
+        if serial_problem:
+            jactype = 'serial'
+        [sol,nit] = ncpsolve(fun,lb,ub,x0, verbose=verbose, infos=True, jactype='serial')
 
     else:
         raise Exception('Unknown method : '+str(method))

@@ -2,9 +2,7 @@ import unittest
 
 import numpy as np
 
-from dolo.numeric.ncpsolve import ncpsolve
-
-from numba import guvectorize
+from trash.dolo.numeric import solver
 
 
 def josephy(x):
@@ -65,8 +63,6 @@ class SerialSolve(unittest.TestCase):
         N = 10
         d = len(fval)
 
-        from dolo.numeric.solver import solver
-
         sol_fsolve = solver(josephy, x0, method='fsolve')
 
         sol_lmmcp = solver(josephy, x0, method='lmmcp')
@@ -79,7 +75,6 @@ class SerialSolve(unittest.TestCase):
     def test_serial_problems(self):
 
         from numpy import inf
-        import numpy
 
         fun = lambda x: [-josephy(x), -Djosephy(x)]
 
@@ -134,7 +129,7 @@ class SerialSolve(unittest.TestCase):
         serial_fun_serial_jac = lambda x: serial_fun(x,deriv='serial')[1]
         # serial_fun_full_jac = lambda x: serial_fun(x,deriv='full')[1]
 
-        from dolo.numeric.solver import solver
+        from trash.dolo.numeric.solver import solver
 
 
         print("Serial Bounded solution : ncpsolve")

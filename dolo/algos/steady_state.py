@@ -1,7 +1,6 @@
-import numpy
-from numpy import linspace, zeros, atleast_2d
-
 from collections import OrderedDict
+
+import numpy
 
 def find_deterministic_equilibrium(model, constraints=None, return_jacobian=False):
     '''
@@ -51,7 +50,7 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         res = numpy.concatenate([S-s, r, d_e, d_sx ])
         return res
 
-    from dolo.numeric.solver import MyJacobian
+    from trash.dolo.numeric.solver import MyJacobian
     jac = MyJacobian(fobj)( z )
     if return_jacobian:
         return jac
@@ -167,7 +166,7 @@ def find_steady_state(model, e=None, force_states=None, constraints=None, return
             res = numpy.concatenate([res, add])
         return res
 
-    from dolo.numeric.solver import MyJacobian
+    from trash.dolo.numeric.solver import MyJacobian
     jac = MyJacobian(fobj)( z )
     if return_jacobian:
         return jac

@@ -135,7 +135,6 @@ def step_residual_fg(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, se
 
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
-    from dolo.numeric.serial_operations import serial_multiplication as stm
     ss = np.tile(s, (1,n_draws))
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
@@ -171,7 +170,6 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
     # TODO: transpose
     n_draws = epsilons.shape[0]
     [N,n_x] = x.shape
-    from dolo.numeric.serial_operations import serial_multiplication as stm
     ss = np.tile(s, (n_draws,1))
     xx = np.tile(x, (n_draws,1))
     ee = np.repeat(epsilons, N , axis=0)
@@ -220,7 +218,6 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
 
 def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
-    from dolo.numeric.solver import solver
     import time
 
 

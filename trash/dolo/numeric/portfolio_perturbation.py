@@ -1,3 +1,6 @@
+from trash.dolo.numeric import solver
+
+
 def portfolios_to_deterministic(model,pf_names):
 
     #######
@@ -134,7 +137,6 @@ def solve_portfolio_model(model, pf_names, order=2, lambda_name='lam', guess=Non
     print('Initial guess: {}'.format(x0))
     print('Initial error: {}'.format( constant_residuals(x0) ))
 
-    from dolo.numeric.solver import solver
     portfolios_0 = solver(constant_residuals, x0)
     print('Solution: {}'.format(portfolios_0))
     print('Final error: {}'.format( constant_residuals(portfolios_0) ))

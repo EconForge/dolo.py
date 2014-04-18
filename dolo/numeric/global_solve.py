@@ -3,7 +3,6 @@ from __future__ import print_function
 import numpy
 
 
-
 def global_solve(modelodel,
                  bounds=None, verbose=False,
                  initial_dr=None, pert_order=1,
@@ -177,8 +176,6 @@ def global_solve(modelodel,
         else:
             fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
             dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=True)[1]
-
-        from dolo.numeric.solver import solver
 
         x = solver(fobj, xinit, lb=lb, ub=ub, jac=dfobj, verbose=verbose, method='ncpsolve', serial_problem=False)
 
