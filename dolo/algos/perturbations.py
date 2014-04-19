@@ -1,4 +1,4 @@
-from dolo.numeric.decision_rules_states import CDR
+from dolo.numeric.taylor_expansion import CDR
 import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot
@@ -13,8 +13,6 @@ class BlanchardKahnError(Exception):
 
         msg =  "There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(self.n_found, self.n_expected)
         return msg
-
-
 
 class GeneralizedEigenvaluesError(Exception):
 

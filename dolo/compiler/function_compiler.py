@@ -16,9 +16,13 @@ class standard_function:
         is_vector = (args[0].ndim == 1)
 
         if is_vector:
-            args = [e[None,:] for e in args]
+
+            nargs = [e[None,:] for e in args]
             # print(args)
-            resp = self.__callvec__(*args, **kwargs)
+            resp = self.__callvec__(*nargs, **kwargs)
+
+            print("Response")
+            print(resp)
             # print(resp)
             if 'diff' in kwargs:
                 return [e[0,...] for e in resp]
@@ -41,6 +45,7 @@ class standard_function:
         # if 'out' in kwargs:
         #     out = kwargs['out']
         # else:
+
         out = numpy.zeros((N,self.n_output))
 
         fun( *args , out=out )

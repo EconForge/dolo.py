@@ -12,3 +12,5 @@ from dolo.numeric.decision_rules import DynareDecisionRule
 from dolo.numeric.global_solve import global_solve
 
 from dolo.compiler.model_import import yaml_import
+
+from dolo.algos.perturbations import approximate_controls

@@ -1,7 +1,4 @@
 """
-codegen
-~~~~~~~
-
 Extension to ast that allow ast -> python code generation.
 
 :copyright: Copyright 2008 by Armin Ronacher.
@@ -439,9 +436,18 @@ class SourceGenerator(NodeVisitor):
         self.write('}')
 
     def visit_BinOp(self, node):
+        with_parentheses = isinstance(node.op, (Pow, Mult, Div))
+        if with_parentheses:
+            self.write('(')
         self.visit(node.left)
+        if with_parentheses:
+            self.write(')')
         self.write(' %s ' % BINOP_SYMBOLS[type(node.op)])
+        if with_parentheses:
+            self.write('(')
         self.visit(node.right)
+        if with_parentheses:
+            self.write(')')
 
     def visit_BoolOp(self, node):
         self.write('(')

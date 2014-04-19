@@ -1,3 +1,4 @@
+
 from __future__ import division
 
 
@@ -11,6 +12,7 @@ def std_date_symbol(s,date):
 
 
 import ast
+
 from ast import Expr, Subscript, Name, Load, Index, Num, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
 
 # import codegen
@@ -64,10 +66,12 @@ class StandardizeDates(NodeTransformer):
             else:
                 raise Exception("Symbol {} incorrectly subscripted with date {}.".format(name, date))
         else:
+
             return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
 
 
-def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False):
+def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False, print_code=False):
+
     '''
     expressions: list of equations as string
     '''
@@ -84,9 +88,8 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
 
         for b in symbols[symbol_group]:
             index = symbols[symbol_group].index(b)
+
             table[(b,date)] = (an, index)
-
-
 
     variables = [k[0] for k in table]
 
@@ -122,7 +125,6 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             line = Assign(targets=[Name(id='out_{}'.format(i), ctx=Store())], value=val)
             preamble.append(line)
 
-
     body = []
     std_dates = StandardizeDates(symbols, arg_names)
 
@@ -140,12 +142,12 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             rhs = Call( func=Name(id='evaluate', ctx=Load()),
                 args=[Str(s=src)], keywords=[keyword(arg='out', value=Name(id='out_{}'.format(i), ctx=Load()))], starargs=None, kwargs=None)
 
+
         if not use_numexpr:
             val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Store())
             line = Assign(targets=[val], value=rhs )
         else:
             line = Expr(value=rhs) #Assign(targets=[Name(id='out_{}'.format(i), ctx=Load())], value=rhs )
-
 
         body.append(line)
 
@@ -159,12 +161,16 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
-    # print("------")
-    # print("Module")
-    # print("------")
-    #
-    # import codegen
-    # print( codegen.to_source(mod) )
+    # print_code=True
+    if print_code:
+        
+        s = "Function {}".format(mod.body[0].name)
+        print("-"*len(s))
+        print(s)
+        print("-"*len(s))
+        
+        import codegen
+        print( codegen.to_source(mod) )
 
     if return_ast:
         return mod
@@ -173,6 +179,7 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
         return fun
 
 def eval_ast(mod):
+
     from numexpr import evaluate
     from numpy import inf
 
@@ -187,6 +194,7 @@ def eval_ast(mod):
     context['log'] = numpy.log
     context['sin'] = numpy.sin
     context['cos'] = numpy.cos
+    context['evaluate'] = evaluate
 
 
 
@@ -204,8 +212,6 @@ if __name__ == '__main__':
     s2 = 'x0 + x1 / y1(1)'
 
     expressions = [s1,s2]
-
-
 
     from collections import OrderedDict
 
@@ -230,7 +236,6 @@ if __name__ == '__main__':
 
     import time
 
-
     t0 = time.time()
     resp = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=True, return_ast=True)
     
@@ -251,6 +256,7 @@ if __name__ == '__main__':
 
     import numpy
     N = 100
+
     s = numpy.ones((N,4))
     x = numpy.ones((N,4))
     S = numpy.ones((N,4))
@@ -266,8 +272,10 @@ if __name__ == '__main__':
         (arbitrage(s,x,S,X,p,out))
     t2 = time.time()
 
+
     print(out)
     arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
+
     out = numpy.zeros((N,4))
     (arbitrage(s,x,S,X,p,out))  
     print(out)
