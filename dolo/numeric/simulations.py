@@ -32,7 +32,7 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
         parms = numpy.array( calib['parameters'] ) # TODO : remove reference to symbolic model
 
     if sigma is None:
-        sigma = numpy.array( calib['covariances'] )
+        sigma = model.covariances
 
     if s0 is None:
         s0 = numpy.array( calib['states'] )
@@ -125,7 +125,6 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
 
         if use_pandas:
             import pandas
-            print(simul.shape)
             ts = pandas.DataFrame(simul, columns=varnames)
             return ts
 
@@ -136,16 +135,16 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     import numpy
 
-    states_names = [str(s) for s in model.symbols['states']]
-    controls_names = [str(s) for s in model.symbols['controls']]
+    states_names = model.symbols['states']
+    controls_names = model.symbols['controls']
     index = states_names.index(str(state))
     if bounds is None:
         bounds = [dr.smin[index], dr.smax[index]]
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
     if s0 is None:
         s0 = model.calibration['states']
-    svec = numpy.column_stack([s0]*n_steps)
-    svec[index,:] = values
+    svec = numpy.row_stack([s0]*n_steps)
+    svec[:,index] = values
     xvec = dr(svec)
 
     if plot_controls is None:
@@ -154,11 +153,11 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
         from matplotlib import pyplot
         if isinstance(plot_controls, str):
             i = controls_names.index(plot_controls)
-            pyplot.plot(values, xvec[i,:], **kwargs)
+            pyplot.plot(values, xvec[:,i], **kwargs)
         else:
             for cn in  plot_controls:
                 i = controls_names.index(cn)
-                pyplot.plot(values, xvec[i,:], label=cn)
+                pyplot.plot(values, xvec[:,i], label=cn)
             pyplot.legend()
         pyplot.xlabel(state)
 

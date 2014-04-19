@@ -26,7 +26,10 @@ class GeneralizedEigenvaluesError(Exception):
 
            
 
-def approximate_controls(model, return_dr=True, verbose=False, steady_state=None):
+def approximate_controls(model, return_dr=True, verbose=False, steady_state=None, order=1):
+
+    if order>1:
+        raise Exception("Not implemented.")
 
     # get steady_state
     import numpy

@@ -7,6 +7,7 @@ class NumericModel:
 
         self.symbolic = symbolic_model
         self.symbols = symbolic_model.symbols
+        self.variables = sum( [tuple(e) for k,e in self.symbols.iteritems() if k not in ('parameters','shocks')], ())
 
         self.options = options if options is not None else {}
 

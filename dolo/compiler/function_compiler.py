@@ -21,9 +21,6 @@ class standard_function:
             # print(args)
             resp = self.__callvec__(*nargs, **kwargs)
 
-            print("Response")
-            print(resp)
-            # print(resp)
             if 'diff' in kwargs:
                 return [e[0,...] for e in resp]
             else:

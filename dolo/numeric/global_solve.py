@@ -123,7 +123,6 @@ def global_solve(modelodel,
 
     grid = dr.grid
 
-    print(grid)
     xinit = initial_dr(grid)
     xinit = xinit.real  # just in case...
 

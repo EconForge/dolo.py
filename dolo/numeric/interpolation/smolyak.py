@@ -326,8 +326,6 @@ class SmolyakGridRows(SmolyakBasic):
 
         self.grid = self.A( self.u_grid )
 
-        print("Father {}".format(self.grid.shape))
-
     # A goes from [0,1] to bounds
     def A(self,x):
 #        '''A is the inverse of B'''
@@ -345,6 +343,7 @@ class SmolyakGridRows(SmolyakBasic):
         return numpy.dot(Pinv,y-c)
 
     def interpolate(self, y, with_derivative=False, with_theta_deriv=False, with_X_deriv=False):
+
         x = self.B(y)  # Transform back to [0,1]
         res = super(SmolyakGridRows, self).interpolate( x, with_derivative=with_derivative, with_theta_deriv=with_theta_deriv, with_X_deriv=with_X_deriv)  # Call super class' (SmolyakGrid) interpolate func
         if with_derivative or with_theta_deriv or with_X_deriv:
@@ -398,7 +397,6 @@ class SmolyakGrid(SmolyakGridRows):
         super(SmolyakGrid, self).__init__( smin, smax, l, axes=None, dtype=None)
 
         self.grid = numpy.ascontiguousarray(self.grid.T)
-        print("son {}".format(self.grid.shape))
 
 
     def set_values(self, x):
@@ -412,6 +410,11 @@ class SmolyakGrid(SmolyakGridRows):
 
     #
     def interpolate(self, y):
+
+        if y.ndim == 1:
+            y = numpy.atleast_2d(y)
+            res = self.interpolate(y)
+            return res.ravel()
 
         res = super(SmolyakGrid, self).interpolate(y.T).T
         return res
