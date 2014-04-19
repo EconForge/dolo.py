@@ -23,7 +23,6 @@ def AR1(rho, sigma, *pargs, **kwargs):
     return P,Q
 
 
-
 class NumericEval:
 
     def __init__(self, d):
