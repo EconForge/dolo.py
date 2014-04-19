@@ -1,0 +1,83 @@
+name: RBC
+
+model_type: mfg
+
+declarations:
+
+   markov_states: [z,m]
+   states:  [k]
+   controls: [i, n]
+   auxiliaries: [c, rk, w]
+
+   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z, kmax]
+
+
+
+equations:
+
+
+   transition:
+      - k = (1-delta)*k(-1) + i(-1)
+
+   arbitrage:
+      - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
+      - w - chi*n^eta*c^sigma                  | 0 <= n <= inf
+
+   auxiliary:
+      - c = z*k^alpha*n^(1-alpha) - i
+      - rk = alpha*z*(n/k)^(1-alpha)
+      - w = (1-alpha)*z*(k/n)^(alpha)
+
+calibration:
+
+
+    #parameters:
+
+    beta : 0.99
+    phi: 1
+    chi : w/c^sigma/n^eta
+    delta : 0.025
+    alpha : 0.33
+    rho : 0.8
+    sigma: 1
+    eta: 1
+    zbar: 1
+    sig_z: 0.01
+    kmax: 2.0
+
+    #steady_state:
+    z: zbar
+    rk: 1/beta-1+delta
+    w: (1-alpha)*z*(k/n)^(alpha)
+    n: 0.33
+    k: n/(rk/alpha)^(1/(1-alpha))
+    i: delta*k
+    c: z*k^alpha*n^(1-alpha) - i
+
+
+
+markov_chain:
+
+    tensor_markov:
+
+        - AR1:
+
+            rho: 0.9
+            sigma:
+                [ [sig_z, 0.00],
+                  [ 0.0, 0.05] ]
+            N: 2
+
+        - [
+            [[0.0],[2.0]],
+
+            [[1.0, 0.0], [0.0,1.0]],
+        ]
+
+options:
+
+    approximation_space:
+
+        a: [0.2]
+        b: [kmax]
+        orders: [50]

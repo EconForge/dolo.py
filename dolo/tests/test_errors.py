@@ -4,18 +4,18 @@ class  ErrorsTestCase(unittest.TestCase):
 
     def test_omega_errors(self):
 
-        from dolo.misc.yamlfile import yaml_import
+        from dolo import yaml_import
         from dolo.numeric.global_solve import global_solve
 
         model = yaml_import('examples/global_models/rbc.yaml')
 
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from dolo.algos.perturbations import approximate_controls
 
         dr = approximate_controls(model)
         dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1, method='newton', polish=True)
 
 
-        sigma = model.calibration['covariances']
+        sigma = model.covariances
 
         # cmodel = CModel(model)
 
@@ -29,20 +29,18 @@ class  ErrorsTestCase(unittest.TestCase):
 
     def test_denhaan_errors(self):
 
-        from dolo.misc.yamlfile import yaml_import
+        from dolo import yaml_import
         from dolo.numeric.global_solve import global_solve
 
         model = yaml_import('examples/global_models/rbc.yaml')
 
-
-        from dolo.compiler.compiler_global import CModel
-        from dolo.numeric.perturbations_to_states import approximate_controls
+        from dolo.algos.perturbations import approximate_controls
 
         dr = approximate_controls(model)
         dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1, method='newton', polish=True)
 
 
-        sigma = model.calibration['covariances']
+        sigma = model.covariances
 
         model.sigma = sigma
 

@@ -13,58 +13,15 @@ setup(
     version = __version__,
     packages = find_packages(),
 
-    package_data={'dolo.symbolic':["recipes.yaml"]},
+    package_data={'dolo.compiler':["recipes.yaml"]},
 
     test_suite='dolo.tests',
-
-    cmdclass = {'build_ext': build_ext},
-
-    ext_modules = [
-
-        Extension(
-		    'dolo.numeric.interpolation.multilinear_cython',
-		    ['dolo/numeric/interpolation/multilinear_cython.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-
-        Extension(
-		    'dolo.numeric.interpolation.splines_filter',
-		    ['dolo/numeric/interpolation/splines_filter.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-        Extension(
-		    'dolo.numeric.interpolation.splines_cython',
-		    ['dolo/numeric/interpolation/splines_cython.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-        Extension(
-            'dolo.numeric.serial_operations_cython',
-            ['dolo/numeric/serial_operations_cython.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-        Extension(
-            'dolo.numeric.interpolation.splines_filter',
-            ['dolo/numeric/interpolation/splines_filter.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-        Extension(
-            'dolo.numeric.interpolation.splines_cython',
-            ['dolo/numeric/interpolation/splines_cython.pyx'],
-            extra_compile_args=['-O3']
-        ),
-
-    ],
 
     include_dirs = [np.get_include()],
     
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
 
-    install_requires = ["pyyaml","sympy","numpy","cython"],
+    install_requires = ["pyyaml","numba>=0.13","numpy","cython"],
 
     extras_require = {
             'plots':  ["matplotlib"],

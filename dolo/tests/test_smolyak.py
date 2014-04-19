@@ -31,9 +31,9 @@ class  TestInterpolation(unittest.TestCase):
 
         import numpy
 
-        f = lambda x: numpy.row_stack([
-            x[0,:] * x[1,:]**0.5,
-            x[1,:] * x[1,:] - x[0,:] * x[0,:]
+        f = lambda x: numpy.column_stack([
+            x[:,0] * x[:,1]**0.5,
+            x[:,1] * x[:,1] - x[:,0] * x[:,0]
         ])
 
 
@@ -53,24 +53,24 @@ class  TestInterpolation(unittest.TestCase):
             return sg(sg.grid)
 
         fobj(theta_0)
-
-    def test_smolyak_plot_2d(selfs):
-
-        import numpy
-        from dolo.numeric.interpolation.smolyak import SmolyakGrid
-
-        bounds = numpy.column_stack([[-1,1]]*2)
-        sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
-        sg.plot_grid()
-
-    def test_smolyak_plot_3d(selfs):
-
-        import numpy
-        from dolo.numeric.interpolation.smolyak import SmolyakGrid
-
-        bounds = numpy.column_stack([[-1,1]]*3)
-        sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
-        sg.plot_grid()
+    #
+    # def test_smolyak_plot_2d(selfs):
+    #
+    #     import numpy
+    #     from dolo.numeric.interpolation.smolyak import SmolyakGrid
+    #
+    #     bounds = numpy.column_stack([[-1,1]]*2)
+    #     sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
+    #     sg.plot_grid()
+    #
+    # def test_smolyak_plot_3d(selfs):
+    #
+    #     import numpy
+    #     from dolo.numeric.interpolation.smolyak import SmolyakGrid
+    #
+    #     bounds = numpy.column_stack([[-1,1]]*3)
+    #     sg = SmolyakGrid(bounds[0,:],bounds[1,:],3)
+    #     sg.plot_grid()
 
 
     def test_smolyak_2(self):
@@ -83,8 +83,8 @@ class  TestInterpolation(unittest.TestCase):
         bounds = numpy.row_stack([[-0.5]*d, [0.7]*d])
         sg = SmolyakGrid(bounds[0,:],bounds[1,:],l)
         f = lambda x: numpy.row_stack([
-                    x[0,:] * x[1,:],
-                    x[1,:] * x[1,:] - x[0,:] * x[0,:]
+                    x[:,0] * x[:,1],
+                    x[:,1] * x[:,1] - x[:,0] * x[:,0]
                 ])
         values = f(sg.grid)
 

@@ -3,31 +3,77 @@ import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot
 
-def approximate_controls(model, return_dr=True, verbose=False):
+class BlanchardKahnError(Exception):
+
+    def __init__(self, n_found, n_expected):
+        self.n_found = n_found
+        self.n_expected = n_expected
+
+    def __str__(self):
+
+        msg =  "There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(self.n_found, self.n_expected)
+        return msg
+
+
+
+class GeneralizedEigenvaluesError(Exception):
+
+    def __init__(self, diag_S, diag_T):
+        self.diag_S = diag_S
+        self.diag_T = diag_T
+
+    def __str__(self):
+        # TODO: explain better
+        return "Eigenvalues are not uniquely defined. "
+
+           
+
+def approximate_controls(model, return_dr=True, verbose=False, steady_state=None):
 
     # get steady_state
     import numpy
 
-    p = model.calibration['parameters']
-    sigma = model.calibration['covariances']
-    s = model.calibration['states'][:,None]
-    x = model.calibration['controls'][:,None]
-    e = model.calibration['shocks'][:,None]
+    from dolo.compiler.converter import GModel_fg_from_fga
+    if model.model_type == 'fga':
+        model = GModel_fg_from_fga(model)
+
+    if steady_state is not None:
+        calib = steady_state
+    else:
+        calib = model.calibration
+
+    p = calib['parameters']
+    s = calib['states']
+    x = calib['controls']
+    e = calib['shocks']
+
+    if model.covariances is not None:
+        sigma = model.covariances
+    else:
+        sigma = numpy.zeros((len(e), len(e)))
+    # sigma = model.calibration['covariances']
 
     from numpy.linalg import solve
 
     g = model.functions['transition']
     f = model.functions['arbitrage']
 
-    l = g(s,x,e,p, derivs=True)
-    [junk, g_s, g_x, g_e] = [el[...,0] for el in l]
+
+#    aux = model.functions['auxiliary']
+
+
+
+
+
+    l = g(s,x,e,p, diff=True)
+    [junk, g_s, g_x, g_e] = l[:4] # [el[0,...] for el in l[:4]]
 
     if model.model_type == "fg2":
-      l = f(s,x,e,s,x,p, derivs=True)
-      [res, f_s, f_x, f_e, f_S, f_X] = [el[...,0] for el in l]
+      l = f(s,x,e,s,x,p, diff=True)
+      [res, f_s, f_x, f_e, f_S, f_X] = l[:6] #[el[0,...] for el in l[:6]]
     else:
-      l = f(s,x,s,x,p, derivs=True)
-      [res, f_s, f_x, f_S, f_X] = [el[...,0] for el in l]
+        l = f(s,x,s,x,p, diff=True)
+        [res, f_s, f_x, f_S, f_X] = l[:5] #[el[0,...] for el in l[:5]]
 
     n_s = g_s.shape[0]           # number of controls
     n_x = g_x.shape[1]   # number of states
@@ -50,14 +96,25 @@ def approximate_controls(model, return_dr=True, verbose=False):
     Q = Q.real # is it really necessary ?
     Z = Z.real
 
+    diag_S = numpy.diag(S)
+    diag_T = numpy.diag(T)
+
     # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval>1.0)
     n_expected = n_x
     if verbose:
         print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
-    if n_big_one != n_expected:
-        raise Exception("There are {} eigenvalues greater than one. There should be exactly {} to meet Blanchard-Kahn conditions.".format(n_big_one, n_x))
+    if n_expected != n_big_one:
+        raise BlanchardKahnError(n_big_one, n_expected)
 
+
+    tol_geneigvals = 1e-10
+    try:
+        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
+    except Exception as e:
+        print e
+        print(numpy.column_stack([diag_S, diag_T]))
+        # raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
 
     Z11 = Z[:n_s,:n_s]
@@ -93,6 +150,7 @@ if __name__ == '__main__':
     model.set_calibration(dumb=1)
 
     from dolo.algos.perturbations import approximate_controls
+
     dr = approximate_controls(model)
     print(dr)
 

@@ -3,8 +3,7 @@ from __future__ import print_function
 import numpy
 
 
-
-def global_solve(cmodel,
+def global_solve(modelodel,
                  bounds=None, verbose=False,
                  initial_dr=None, pert_order=1,
                  interp_type='smolyak', smolyak_order=3, interp_orders=None,
@@ -17,27 +16,30 @@ def global_solve(cmodel,
         if verbose:
             print(t)
 
-
-    model = cmodel.model
-    cm = cmodel
+    model = modelodel
+    # model = modelodel.model
+    # model = modelodel
 
     parms = model.calibration['parameters']
-    sigma = model.calibration['covariances']
+    sigma = model.covariances # calibration['covariances']
 
     if initial_dr == None:
         if pert_order==1:
             from dolo.algos.perturbations import approximate_controls
-            initial_dr = approximate_controls(cm)
+            initial_dr = approximate_controls(model)
+
         if pert_order>1:
-            from dolo.numeric.perturbations_to_states import approximate_controls
-            initial_dr = approximate_controls(cm, order=pert_order)
+            raise Exception("Perturbation order > 1 not supported (yet).")
+            from trash.dolo.numeric.perturbations_to_states import approximate_controls
+            initial_dr = approximate_controls(model, order=pert_order)
         if interp_type == 'perturbations':
             return initial_dr
 
     if bounds is not None:
         pass
 
-    elif model.__data__ and 'approximation' in model.__data__:
+    elif model.options and 'approximation' in model.__data__:
+
         vprint('Using bounds specified by model')
 
         # this should be moved to the compiler
@@ -101,43 +103,49 @@ def global_solve(cmodel,
         dr = LinearTriangulation(domain)
 
     if integration == 'optimal_quantization':
-        from dolo.numeric.quantization import quantization_nodes
+        from dolo.numeric.discretization import quantization_nodes
         # number of shocks
         [epsilons, weights] = quantization_nodes(N_e, sigma)
     elif integration == 'gauss-hermite':
-        from dolo.numeric.quadrature import gauss_hermite_nodes
+        from dolo.numeric.discretization import gauss_hermite_nodes
 
         if not integration_orders:
             integration_orders = [3] * sigma.shape[0]
         [epsilons, weights] = gauss_hermite_nodes(integration_orders, sigma)
+
 
     vprint('Starting time iteration')
 
     from dolo.numeric.global_solution import time_iteration
     from dolo.numeric.global_solution import stochastic_residuals_2, stochastic_residuals_3
 
+    # TODO: transpose
 
-    xinit = initial_dr(dr.grid)
+    grid = dr.grid
+
+    print(grid)
+    xinit = initial_dr(grid.T).T
     xinit = xinit.real  # just in case...
 
 
-    if cm.model_type == 'fga':
-        ff = cm.functions['arbitrage']
-        gg = cm.functions['transition']
-        aa = cm.functions['auxiliary']
+
+    if model.model_type == 'fga':
+        ff = model.functions['arbitrage']
+        gg = model.functions['transition']
+        aa = model.functions['auxiliary']
         g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
         f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
-    elif cm.model_type == 'fg':
-        g = cm.functions['transition']
-        ff = cm.functions['arbitrage']
+    elif model.model_type == 'fg':
+        g = model.functions['transition']
+        ff = model.functions['arbitrage']
         f = lambda s,x,e,S,X,p : ff(s,x,S,X,p)
     else:
-        f = cm.functions['arbitrage']
-        g = cm.functions['transition']
+        f = model.functions['arbitrage']
+        g = model.functions['transition']
 
-#    cm.x_bounds = None
+#    model.x_bounds = None
 
-    dr = time_iteration(dr.grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
+    dr = time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
                         tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
 
 
@@ -151,9 +159,9 @@ def global_solve(cmodel,
 
         t1 = time.time()
 
-        if cm.x_bounds is not None:
-            lb = cm.x_bounds[0](dr.grid, parms)
-            ub = cm.x_bounds[1](dr.grid, parms)
+        if model.x_bounds is not None:
+            lb = model.x_bounds[0](dr.grid, parms)
+            ub = model.x_bounds[1](dr.grid, parms)
         else:
             lb = None
             ub = None
@@ -163,13 +171,11 @@ def global_solve(cmodel,
         shape = xinit.shape
 
         if not memory_hungry:
-            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
-            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
+            fobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_3(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=True)[1]
         else:
-            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
-            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=True)[1]
-
-        from dolo.numeric.solver import solver
+            fobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
+            dfobj = lambda t: stochastic_residuals_2(dr.grid, t, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=True)[1]
 
         x = solver(fobj, xinit, lb=lb, ub=ub, jac=dfobj, verbose=verbose, method='ncpsolve', serial_problem=False)
 
@@ -178,7 +184,7 @@ def global_solve(cmodel,
         t2 = time.time()
 
         # test solution
-        res = stochastic_residuals_2(dr.grid, x, dr, cm.f, cm.g, parms, epsilons, weights, shape, deriv=False)
+        res = stochastic_residuals_2(dr.grid, x, dr, model.f, model.g, parms, epsilons, weights, shape, deriv=False)
         if numpy.isinf(res.flatten()).sum() > 0:
             raise ( Exception('Non finite values in residuals.'))
 

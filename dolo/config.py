@@ -11,8 +11,10 @@
 save_plots = False
 real_type = 'double'
 
-from dolo.misc.termcolor import colored
 import warnings
+
+from dolo.misc.termcolor import colored
+
 
 def warning_on_one_line(message, category, filename, lineno, file=None, line=None):
     return '{}:{}:{}\n    {}\n'.format(
@@ -23,9 +25,9 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 warnings.formatwarning = warning_on_one_line
 
 try:
-    import dolo.misc.printing as printing
+    import trash.dolo.misc.printing as printing
     from numpy import ndarray
-    from dolo.symbolic.model import SModel
+    from trash.dolo.symbolic.model import SModel
     from dolo.numeric.decision_rules import DynareDecisionRule
     from dolo.compiler.compiler_python import GModel, GModel_fg_from_fga
 

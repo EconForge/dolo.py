@@ -4,9 +4,10 @@ import numpy
 
 from dolo import yaml_import
 
-def test_model(compiler='numpy', data_layout='rows'):
+def test_model_evaluation(compiler='numpy', data_layout='columns'):
 
-    model = yaml_import('examples/global_models/rbc_fg.yaml', compiler=compiler, order=data_layout)
+    #model = yaml_import('examples/global_models/rbc_fg.yaml', compiler=compiler, order=data_layout)
+    model = yaml_import('examples/global_models/rbc_fg.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
@@ -44,21 +45,21 @@ def test_model(compiler='numpy', data_layout='rows'):
 
 class TestModelImport(unittest.TestCase):
 
-    def test_standard_import(self):
+    def test_standard_import_rows(self):
 
-        test_model()
+        test_model_evaluation(data_layout='rows')
 
-    def test_import_numexpr(self):
+    def test_import_numexpr_rows(self):
 
-        test_model(compiler='numexpr')
+        test_model_evaluation(compiler='numexpr', data_layout='rows')
 
     def test_standard_import_columns(self):
 
-        test_model(data_layout='columns')
+        test_model_evaluation(data_layout='columns')
 
-    def test_import_numexpr_columns(self, data_layout='columns'):
+    def test_import_numexpr_columns(self):
 
-        test_model(compiler='numexpr', data_layout='columns')
+        test_model_evaluation(compiler='numexpr', data_layout='columns')
 
 if __name__ == '__main__':
     unittest.main()

@@ -61,9 +61,9 @@ def stochastic_residuals_2(s, x, dr, f, g, parms, epsilons, weights, shape, deri
     n_x = xx.shape[0]
     #    xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
-    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms, derivs=True)
+    [SS, SS_ss, SS_xx, SS_ee] = g(ss, xx, ee, parms, diff=True)
     [XX, XX_SS, junk, XX_t] = dr.interpolate(SS, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
-    [F, F_ss, F_xx, F_ee, F_SS, F_XX] = f(ss, xx, ee, SS, XX, parms, derivs=True)
+    [F, F_ss, F_xx, F_ee, F_SS, F_XX] = f(ss, xx, ee, SS, XX, parms, diff=True)
 
 
     res = np.zeros( (n_x,n_g) )
@@ -120,9 +120,9 @@ def stochastic_residuals_3(s, x, dr, f, g, parms, epsilons, weights, deriv=False
         for i in range(n_draws):
             tt = [epsilons[:,i:i+1]]*n_g
             e = numpy.column_stack(tt)
-            [S, S_s, S_x, S_e] = g(s, x, e, parms, derivs=True)
+            [S, S_s, S_x, S_e] = g(s, x, e, parms, diff=True)
             [X, X_S, junk, X_t] = dr.interpolate(S, with_derivative=True, with_theta_deriv=True, with_X_deriv=True)
-            [F, F_s, F_x, F_e, F_S, F_X] = f(s, x, e, S, X, parms, derivs=True)
+            [F, F_s, F_x, F_e, F_S, F_X] = f(s, x, e, S, X, parms, diff=True)
             res += weights[i] * F
             S_theta = stm(S_x, x_theta)
             X_theta = stm(X_S, S_theta) + X_t
@@ -135,7 +135,6 @@ def step_residual_fg(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, se
 
     n_draws = epsilons.shape[1]
     [n_x,n_g] = x.shape
-    from dolo.numeric.serial_operations import serial_multiplication as stm
     ss = np.tile(s, (1,n_draws))
     xx = np.tile(x, (1,n_draws))
     ee = np.repeat(epsilons, n_g , axis=1)
@@ -167,12 +166,13 @@ def step_residual_fg(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, se
 
 def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, serial_grid=True, with_derivatives=True):
 
-    n_draws = epsilons.shape[1]
-    [n_x,n_g] = x.shape
-    from dolo.numeric.serial_operations import serial_multiplication as stm
-    ss = np.tile(s, (1,n_draws))
-    xx = np.tile(x, (1,n_draws))
-    ee = np.repeat(epsilons, n_g , axis=1)
+
+    # TODO: transpose
+    n_draws = epsilons.shape[0]
+    [N,n_x] = x.shape
+    ss = np.tile(s, (n_draws,1))
+    xx = np.tile(x, (n_draws,1))
+    ee = np.repeat(epsilons, N , axis=0)
 
     if with_derivatives:
         raise Exception('not implemented')
@@ -184,9 +184,9 @@ def step_residual(s, x, dr, f, g, parms, epsilons, weights, x_bounds=None, seria
 
         val = f(ss,xx,ee,ssnext,xxnext,parms)
 
-        res = np.zeros( (n_x,n_g) )
+        res = np.zeros( (N,n_x) )
         for i in range(n_draws):
-            res += weights[i] * val[:,n_g*i:n_g*(i+1)]
+            res += weights[i] * val[N*i:N*(i+1),:]
 
         return res
 
@@ -218,7 +218,6 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
 
 def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
 
-    from dolo.numeric.solver import solver
     import time
 
 
@@ -255,10 +254,12 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
     while err > tol and it < maxit:
         t_start = time.time()
         it +=1
+
         dr.set_values(x0)
 
-        [x,nit] = solver(fun, x0, lb=lb, ub=ub, method=method, infos=True, verbose=verbit, serial_problem=True)
-
+        from dolo.numeric.optimize.newton import serial_newton, SerialDifferentiableFunction
+        sdfun = SerialDifferentiableFunction(fun)
+        [x,nit] = serial_newton(sdfun,x0)
 
         err = abs(x-x0).max()
         err_SA = err/err_0

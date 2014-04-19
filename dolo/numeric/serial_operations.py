@@ -62,23 +62,28 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
         
     return ret
 
+import numpy
+
 def serial_multiplication(A,B):
 
-    I = A.shape[0]
-    J = A.shape[1]
-    N = A.shape[2]
-    K = B.shape[1]
+    if A.ndim == 2 and B.ndim == 2:
+        return numpy.dot(A,B)
 
-    assert(B.shape[0]==J)
-    assert(B.shape[2]==N)
+    I = A.shape[1]
+    J = A.shape[2]
+    N = A.shape[0]
+    K = B.shape[2]
 
-    resp = np.zeros( (I,K,N) )
+    assert(B.shape[1]==J)
+    assert(B.shape[0]==N)
+
+    resp = np.zeros( (N,I,K) )
     for i in range(I):
         for k in range(K):
             T = np.zeros( N )
             for j in range(J):
-                T += A[i,j,:]*B[j,k,:] 
-            resp[i,k,:] = T
+                T += A[:,i,j]*B[:,j,k]
+            resp[:,i,k] = T
     return resp
 
 

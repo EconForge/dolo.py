@@ -52,22 +52,24 @@ class  TestInterpolation(unittest.TestCase):
         l = 5
         n_x = 1
         N = 1000
-        from numpy import row_stack, minimum, maximum
+        from numpy import column_stack, minimum, maximum
 
         smin = [-1]*d
         smax = [1]*d
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
         sg = SmolyakGrid(smin,smax,l)
-
+        print(sg.grid.shape)
         from numpy import exp
-        values = row_stack( [sg.grid[0,:] + exp(sg.grid[1,:])]*n_x )
+        values = column_stack( [sg.grid[:,0] + exp(sg.grid[:,0])]*n_x )
+
+        print(values.shape)
         sg.set_values(values)
 
         from numpy import random
         points = random.rand( d*N )
         points = minimum(points,1)
         points = maximum(points,-1)
-        points = points.reshape( (d,N) )
+        points = points.reshape( (N,d) )
 
         # I need to add the corners of the grid !
 
@@ -78,21 +80,23 @@ class  TestInterpolation(unittest.TestCase):
         s = time.time()
         print('Smolyak : {}'.format(s-t))
 
-        from dolo.numeric.interpolation.interpolation import SparseLinear
-        sp = SparseLinear(smin,smax,l)
 
-        xvalues = sg(sp.grid)
-
-        sp.set_values(xvalues)
-        t = time.time()
-        for i in range(10):
-            test2 = sp(points)
-        s = time.time()
-        print('Sparse linear : {}'.format(s-t))
-
-        import numpy
-        if False in numpy.isfinite(test2):
-            print('Problem')
+        #
+        # from dolo.numeric.interpolation.interpolation import SparseLinear
+        # sp = SparseLinear(smin,smax,l)
+        #
+        # xvalues = sg(sp.grid)
+        #
+        # sp.set_values(xvalues)
+        # t = time.time()
+        # for i in range(10):
+        #     test2 = sp(points)
+        # s = time.time()
+        # print('Sparse linear : {}'.format(s-t))
+        #
+        # import numpy
+        # if False in numpy.isfinite(test2):
+        #     print('Problem')
 
 #
 #        a = time.time()

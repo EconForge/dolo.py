@@ -2,11 +2,10 @@
 This module contains classes representing decision rules
 """
 
-import dolo.config
-
-from dolo.misc.caching import memoized
-
 import numpy as np
+
+import dolo.config
+from dolo.misc.caching import memoized
 
 class TaylorExpansion(dict):
 
@@ -363,7 +362,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
     if isinstance(shock,int):
         i_s = shock
     elif isinstance(shock,str):
-        from dolo.symbolic.symbolic import Shock
+        from trash.dolo.symbolic.symbolic import Shock
         shock =  Shock(shock)
         i_s = dr.model.shocks.index( shock )
     else:
@@ -398,7 +397,7 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
 
     if variables:
-        from dolo.symbolic.symbolic import Variable
+        from trash.dolo.symbolic.symbolic import Variable
         if not isinstance(variables,list):
             variables = [variables]
         variables =  [Variable(str(v)) for v in variables]
@@ -472,7 +471,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=
         raise Exception("Unknown output type")
 
     if variables:
-        from dolo.symbolic.symbolic import Variable
+        from trash.dolo.symbolic.symbolic import Variable
         if not isinstance(variables,list):
             variables = [variables]
         variables =  [Variable(str(v)) for v in variables]

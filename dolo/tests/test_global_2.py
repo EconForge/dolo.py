@@ -11,8 +11,6 @@ class TestGlobal(unittest.TestCase):
 
         model = yaml_import(filename)
 
-        print model.calibration['covariances']
-
         import time
 
         dr = global_solve(model, pert_order=1, maxit=500, smolyak_order=3, verbose=True, polish=False, method='newton')
@@ -25,11 +23,30 @@ class TestGlobal(unittest.TestCase):
         t2 = time.time()
 
         dr = global_solve(model, pert_order=1, maxit=5, interp_type='multilinear', verbose=True, polish=False, method='newton')
-
         t3 = time.time()
 
         print(t2-t1)
         print(t3-t2)
+
+    def test_global_solution(self):
+
+        import time
+        from dolo import yaml_import, global_solve
+
+
+        filename = 'examples/global_models/rbc.yaml'
+
+        model = yaml_import(filename)
+        print(model.__class__)
+
+        t3 = time.time()
+
+        dr = global_solve(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, polish=False, interp_orders=[100,100], method='newton')
+
+        t4 = time.time()
+
+
+        print(t4-t3)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,6 @@
 #from dolo.compiler.compiler_global import test_residuals
 from dolo.numeric.interpolation.interpolation import RectangularDomain
 
-from dolo.compiler.compiler_global import CModel
 import numpy
 import numpy as np
 
@@ -39,18 +38,22 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights, with_future_shocks=False)
 def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=None, return_everything=False):
 
 
+    from dolo.compiler.converter import GModel_fg_from_fga
+    if model.model_type == 'fga':
+        model = GModel_fg_from_fga(model)
+
     # TODO: this is 2d-only !
 
     N_epsilons = 1000
 
 
     #[y,x,parms] = model.read_calibration()
-    sigma = model.calibration['covariances']
+    sigma = model.covariances
     parms = model.calibration['parameters']
     mean = numpy.zeros(sigma.shape[0])
     N_epsilons=100
     numpy.random.seed(1)
-    epsilons = numpy.random.multivariate_normal(mean, sigma, N_epsilons).T
+    epsilons = numpy.random.multivariate_normal(mean, sigma, N_epsilons)
     weights = np.ones(epsilons.shape[1])/N_epsilons
 
     domain = RectangularDomain(bounds[0,:], bounds[1,:], orders)
@@ -83,8 +86,6 @@ def omega(dr, model, bounds, orders, exponent='inf', n_exp=10000, time_weight=No
     from dolo.numeric.simulations import simulate
     simul = simulate( model ,dr,s0, sigma, n_exp=n_exp, horizon=horizon+1, discard=True)
 
-    print(simul.shape)
-    print(n_s)
     s_simul = simul[:n_s,:,:]
 
     densities = [domain.compute_density(s_simul[:,:,i]) for i in range(horizon)]
@@ -128,7 +129,7 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
 
     from dolo.numeric.global_solution import step_residual
     from dolo.numeric.quadrature import gauss_hermite_nodes
-    from dolo.numeric.newton import newton_solver
+    from dolo.numeric.newton import newton as newton_solver
     from dolo.numeric.simulations import simulate
 
     # cmodel should be an fg model
@@ -173,8 +174,8 @@ def denhaanerrors( cmodel, dr, s0, horizon=100, n_sims=10, sigma=None, seed=0 ):
 
     simul_se = simulate(cmodel, dr, s0, sigma, horizon=horizon, n_exp=n_sims, parms=parms, seed=seed, solve_expectations=True, nodes=nodes, weights=weights)
 
-    x_simul = simul[n_s:,:,:]
-    x_simul_se = simul_se[n_s:,:,:]
+    x_simul = simul[:,n_s:,:]
+    x_simul_se = simul_se[:,n_s:,:]
 
 
     diff = abs( x_simul_se - x_simul )

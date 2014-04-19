@@ -6,7 +6,7 @@ import time
 
 def solve_something(name, args):
 
-    from dolo.misc.yamlfile import yaml_import
+    from dolo import yaml_import
     from dolo.numeric.global_solve import global_solve
     model = yaml_import('examples/global_models/{}.yaml'.format(name))
     dr = global_solve(model, **args)
