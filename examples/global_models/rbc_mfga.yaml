@@ -1,10 +1,10 @@
 name: RBC
 
-model_type: mfg
+model_type: mfga
 
 declarations:
 
-   markov_states: [z,m]
+   markov_states: [z]
    states:  [k]
    controls: [i, n]
    auxiliaries: [c, rk, w]
@@ -42,10 +42,10 @@ calibration:
     sigma: 1
     eta: 1
     zbar: 1
-    sig_z: 0.01
+    sig_z: 0.001
     kmax: 2.0
 
-    #steady_state:
+    # constant initial values:
     z: zbar
     rk: 1/beta-1+delta
     w: (1-alpha)*z*(k/n)^(alpha)
@@ -58,26 +58,18 @@ calibration:
 
 markov_chain:
 
-    tensor_markov:
+    AR1:
 
-        - AR1:
+         rho: 0.9
+         sigma:
+              [ [sig_z] ]
+         N: 2
 
-            rho: 0.9
-            sigma:
-                [ [sig_z, 0.00],
-                  [ 0.0, 0.05] ]
-            N: 2
-
-        - [
-            [[0.0],[2.0]],
-
-            [[1.0, 0.0], [0.0,1.0]],
-        ]
 
 options:
 
     approximation_space:
 
-        a: [0.2]
-        b: [kmax]
+        a: [5.0]
+        b: [15.0]
         orders: [50]

@@ -1,3 +1,4 @@
+import numpy
 from numpy import array, zeros
 from dolo.numeric.misc import mlinspace
 
@@ -38,29 +39,38 @@ class MarkovDecisionRule:
     def set_values(self, values):
 
         self.__values__ = values
-        self.__coefs__ = filter(self.smin, self.smax, self.orders, values)
+        self.__coefs__ = filter_controls(self.smin, self.smax, self.orders, values)
 
     def __call__(self, i_m, points, out=None):
 
+        from dolo.numeric.interpolation.eval_cubic_splines import vec_eval_cubic_multi_spline
         n_x = self.__values__.shape[-1]
 
+        assert(1<=points.ndim<=2)
+
         if points.ndim == 2:
-
-            # each line is supposed to correspond to a new point
-            N,d = points.shape
-            assert(d==len(self.orders))
-
+            N = points.shape[0]
             out = zeros((N,n_x))
-            for n in range(N):
-                self.__call__(i_m, points[n,:], out[n,:])
 
-            return out
-
-        else:
-            if out == None:
-                out = zeros(n_x)
             coefs = self.__coefs__[i_m,...]
-
-            # TODO: replace
-            eval_UB_spline(self.a, self.b, self.orders, coefs, points, out)
+            vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points, out)
             return out
+
+        elif points.ndim == 1:
+
+            pp = numpy.atleast_2d(points)
+            out = self.__call__(pp)
+            return out.ravel()
+
+
+
+def filter_controls(a,b,ndims,controls):
+    from dolo.numeric.interpolation.filter_cubic_splines import filter_data
+    dinv = (b-a)/(ndims-1)
+    ndims = array(ndims)
+    n_m, N, n_x = controls.shape
+    coefs = zeros( (n_m, n_x) + tuple(ndims + 2) )
+    for i_m in range(n_m):
+        for i_x in range(n_x):
+            coefs[i_m,i_x,...] = filter_data(dinv, controls[i_m,:,i_x].reshape(ndims))
+    return coefs
