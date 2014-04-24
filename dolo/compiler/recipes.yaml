@@ -231,9 +231,9 @@ vfi:
 
 mfga:
 
-    model_type: mfga
+    model_type: mfg
 
-    symbols: ['markov_states', 'states', 'controls', 'auxiliaries', 'shocks', 'parameters']
+    symbols: ['markov_states', 'states', 'controls', 'shocks', 'parameters']
 
     specs:
 
@@ -271,16 +271,6 @@ mfga:
                 - ['parameters', 0, 'p']
 
 
-        auxiliary:
-
-            target: ['auxiliaries',0,'S']
-
-            eqs:
-                - ['markov_states',0,'m']
-                - ['states',0,'s']
-                - ['controls',0,'x']
-                - ['parameters', 0, 'p']
-
 
 mfga:
 
@@ -293,19 +283,23 @@ mfga:
         arbitrage:
 
             eqs:
+
                 - ['markov_states',0,'m']
                 - ['states',0,'s']
                 - ['controls',0,'x']
                 - ['auxiliaries',0,'y']
+
                 - ['markov_states',0,'M']
                 - ['states',1,'S']
                 - ['controls',1,'X']
                 - ['auxiliaries',1,'Y']
+
                 - ['parameters',0,'p']
 
             complementarities:
 
                 left-right:
+
                     - ['markov_states',0,'m']
                     - ['states', 0, 's']
                     - ['parameters', 0, 'p']

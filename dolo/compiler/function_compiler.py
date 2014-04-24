@@ -36,8 +36,9 @@ class standard_function:
         fun = self.fun
         epsilon = self.epsilon
 
-
-        N = args[0].shape[0]
+        sizes = set([e.shape[0] for e in args])
+        assert( len(sizes)<=2)
+        N = max(sizes)
 
         # if 'out' in kwargs:
         #     out = kwargs['out']

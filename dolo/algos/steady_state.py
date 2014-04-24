@@ -108,6 +108,7 @@ def residuals(model, calib=None):
 
     elif model.model_type  == "fga":
 
+        m = calib['markov_states']
         s = calib['states']
         x = calib['controls']
         y = calib['auxiliaries']
@@ -118,9 +119,9 @@ def residuals(model, calib=None):
         g = model.functions['transition']
         a = model.functions['auxiliary']
         
-        res['transition'] = g(s,x,y,e,p)-s
-        res['arbitrage'] = f(s,x,y,s,x,y,p)
-        res['auxiliary'] = a(s,x,p)-y
+        res['transition'] = g(m,s,x,y,e,p)-s
+        res['arbitrage'] = f(m,s,x,y,m,s,x,y,p)
+        res['auxiliary'] = a(m,s,x,p)-y
 
     else:
         raise Exception("Not implemented")

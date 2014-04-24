@@ -24,6 +24,7 @@ class NumericModel:
 
     def __update_from_symbolic__(self):
 
+        import numpy
         # updates calibration according to the symbolic definitions
 
         system = self.symbolic.calibration_dict
@@ -33,14 +34,18 @@ class NumericModel:
         self.calibration_dict = solve_triangular_system( system )
 
         from dolo.compiler.misc import calibration_to_vector
+
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
 
         from symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
 
         # read symbolic structure
-        self.covariances = evaluator.eval(self.symbolic.covariances)
-        self.markov_chain = evaluator.eval(self.symbolic.markov_chain)
+        covariances = evaluator.eval(self.symbolic.covariances)
+        self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
+
+        markov_chain = evaluator.eval(self.symbolic.markov_chain)
+        self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
         self.options = evaluator.eval(self.symbolic.options)
 
@@ -104,7 +109,6 @@ Model object:
                 vals = '{:.4f}'.format(val)
 
                 if abs(val) > 1e-8:
-                    print('Big error')
                     vals = colored(vals, 'red')
 
                 ss += "        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
@@ -115,6 +119,9 @@ Model object:
         # s += pprint.pformat(compute_residuals(self),indent=2, depth=1)
 
         return s
+
+    def __repr__(self):
+        return self.__str__()
 
     @property
     def x_bounds(self):
@@ -128,9 +135,12 @@ Model object:
 
     def residuals(self, calib=None):
 
-        from dolo.algos.steady_state import residuals
-        return residuals(self, calib)
-
+        if self.model_type in ("fg",'fga'):
+            from dolo.algos.steady_state import residuals
+            return residuals(self, calib)
+        elif self.model_type in ('mfg','mfga'):
+            from dolo.algos.mfg.steady_state import residuals
+            return residuals(self, calib)
 
 
 
@@ -187,13 +197,16 @@ Model object:
                 comp_lhs, comp_rhs = zip(*comps)
                 fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
 
+                print(comp_lhs)
+                print(comp_rhs)
+
                 lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=True)
                 upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=True)
 
-                nout = len(comp_lhs)
+                n_output = len(comp_lhs)
 
-                functions[fb_names[0]] = standard_function(upper_bound, n_output )
-                functions[fb_names[1]] = standard_function(lower_bound, n_output )
+                functions[fb_names[0]] = standard_function(lower_bound, n_output )
+                functions[fb_names[1]] = standard_function(upper_bound, n_output )
 
 
             # rewrite all equations as rhs - lhs

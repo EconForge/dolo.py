@@ -9,7 +9,7 @@ from numpy import float64
 
 import warnings
 
-from dolo.numeric.newton import newton
+from dolo.numeric.optimize.newton import newton
 
 def ncpsolve(f, a, b, x, tol=1e-8, maxit=100, infos=False, verbose=False, jactype='serial'):
 

@@ -25,26 +25,18 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
 warnings.formatwarning = warning_on_one_line
 
 try:
-    import trash.dolo.misc.printing as printing
     from numpy import ndarray
-    from trash.dolo.symbolic.model import SModel
-    from dolo.numeric.decision_rules import DynareDecisionRule
-    from dolo.compiler.compiler_python import GModel, GModel_fg_from_fga
+    from dolo.compiler.model_numeric import NumericModel
 
     ip = get_ipython()
 
     # there could be some kind of auto-discovery there
-    ip.display_formatter.formatters['text/html'].for_type( GModel, printing.print_cmodel )
-    ip.display_formatter.formatters['text/html'].for_type( GModel_fg_from_fga, printing.print_cmodel )
-    ip.display_formatter.formatters['text/html'].for_type( ndarray, printing.print_array )
-    ip.display_formatter.formatters['text/html'].for_type( SModel, printing.print_model )
-    ip.display_formatter.formatters['text/html'].for_type( DynareDecisionRule, printing.print_dynare_decision_rule )
-
+    # ip.display_formatter.formatters['text/html'].for_type( NumericModel, lambda m: m.__str__() )
 
     from IPython.core.display import display
 
 except:
-
-    from pprint import pprint
-    def display(txt):
-        pprint(txt)
+    pass
+#     from pprint import pprint
+#     def display(txt):
+#         pprint(txt)
