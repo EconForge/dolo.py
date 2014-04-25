@@ -47,9 +47,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     n_ms = P.shape[0]   # number of markov states
     n_mv = P.shape[1] # number of markov variables
-
-    print(n_ms, n_mv)
-
+ 	
     x0 = model.calibration['controls']
     parms = model.calibration['parameters']
     n_x = len(x0)
@@ -109,10 +107,8 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     tol = 1e-8
     inner_maxit = 50
     it = 0
-    print('lb')
-    print(lb)
-    print("ub")
-    print(ub)
+
+
     if with_complementarities:
         print("Solving WITH complementarities.")
         lb = lb.reshape((-1,n_x))
@@ -140,9 +136,9 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     controls_0 = controls.reshape(sh_c)
 
-    print( controls_0.min() )
+    # print( controls_0.min() )
 
-    return controls_0
+    return mdr
 
 
 
@@ -152,7 +148,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 if __name__ == '__main__':
 
     from dolo import *
-    model = yaml_import("examples/global_models/rbc_mfga.yaml")
+    model = yaml_import("../../../examples/global_models/rbc_mfga.yaml")
     print(model.calibration['states'])
     print(model.calibration_dict)
     print(model.markov_chain)
