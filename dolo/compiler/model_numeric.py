@@ -42,10 +42,16 @@ class NumericModel:
 
         # read symbolic structure
         covariances = evaluator.eval(self.symbolic.covariances)
-        self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
+        if covariances is None:
+            self.covariances = covariances
+        else:
+            self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
 
         markov_chain = evaluator.eval(self.symbolic.markov_chain)
-        self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
+        if markov_chain is None:
+            self.markov_chain = None
+        else:
+            self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
         self.options = evaluator.eval(self.symbolic.options)
 
@@ -196,9 +202,6 @@ Model object:
 
                 comp_lhs, comp_rhs = zip(*comps)
                 fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
-
-                print(comp_lhs)
-                print(comp_rhs)
 
                 lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=True)
                 upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=True)
