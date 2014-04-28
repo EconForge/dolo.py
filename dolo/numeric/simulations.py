@@ -35,7 +35,7 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
         sigma = model.covariances
 
     if s0 is None:
-        s0 = numpy.array( calib['states'] )
+        s0 = calib['states']
 
     # s0 = numpy.atleast_2d(s0.flatten()).T
 
@@ -87,9 +87,8 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
             [x,nit] = newton_solver(dfobj, x)
 
         x_simul[i,:,:] = x
-
+    
         ss = g(s,x,epsilons,parms)
-
         if i<(horizon-1):
             s_simul[i+1,:,:] = ss
 
@@ -120,7 +119,7 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
         if n_exp > n_kept:
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
 
-    if irf:
+    if irf or (n_exp==1 and use_pandas):
         simul = simul[:,0,:]
 
         if use_pandas:
