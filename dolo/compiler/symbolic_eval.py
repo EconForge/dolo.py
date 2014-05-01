@@ -36,7 +36,7 @@ class NumericEval:
 
     def __call__(self, s):
 
-        return self. eval(s)
+        return self.eval(s)
 
     def eval(self, struct):
 
@@ -58,11 +58,8 @@ class NumericEval:
 
     def eval_str(self, s):
 
-        # expressions are not supported for now
-        return self.d[s]
-
-
-        # return eval(s, self.d)
+        # not safe
+        return eval(s, self.d)
 
     def eval_list(self, l):
 
