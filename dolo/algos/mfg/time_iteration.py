@@ -39,7 +39,7 @@ def get_initial_guess(model):
     pass
 
 
-def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementarities=True):
+def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementarities=True, verbose=True, orders=None):
 
     assert(model.model_type == 'mfga')
 
@@ -47,8 +47,6 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     n_ms = P.shape[0]   # number of markov states
     n_mv = P.shape[1] # number of markov variables
-
-    print(n_ms, n_mv)
 
     x0 = model.calibration['controls']
     parms = model.calibration['parameters']
@@ -58,7 +56,8 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     approx = model.options['approximation_space']
     a = approx['a']
     b = approx['b']
-    orders = approx['orders']
+    if orders is None:
+        orders = approx['orders']
 
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
@@ -67,7 +66,29 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     grid = mdr.grid
     N = grid.shape[0]
 
-    controls_0 = numpy.zeros((n_ms, N, n_x))
+
+
+    if isinstance(initial_guess, numpy.ndarray):
+        print("Using initial guess (1)")
+        controls = initial_guess
+    elif isinstance(initial_guess, dict):
+        print("Using initial guess (2)")
+        controls_0 = initial_guess['controls']
+        ap_space = initial_guess['approximation_space']
+        if False in (approx['orders']==orders):
+            print("Interpolating initial guess")
+            old_dr = MarkovDecisionRule(controls_0.shape[0], ap_space['smin'], ap_space['smax'], ap_space['orders'])
+            old_dr.set_values(controls_0)
+            controls_0 = numpy.zeros( (n_ms, N, n_x) )
+            for i in range(n_ms):
+                e = old_dr(i,grid)
+                controls_0[i,:,:] = e
+    else:
+        controls_0 = numpy.zeros((n_ms, N, n_x))
+
+
+
+
     if initial_guess is None:
         controls_0[:,:,:] = x0[None,None,:]
     else:
@@ -109,14 +130,16 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     tol = 1e-8
     inner_maxit = 50
     it = 0
-    print('lb')
-    print(lb)
-    print("ub")
-    print(ub)
+
+
     if with_complementarities:
         print("Solving WITH complementarities.")
         lb = lb.reshape((-1,n_x))
         ub = ub.reshape((-1,n_x))
+
+
+    import time
+    t1 = time.time()
 
     while err>tol and it<maxit:
 
@@ -140,7 +163,10 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     controls_0 = controls.reshape(sh_c)
 
-    print( controls_0.min() )
+    t2 = time.time()
+
+    if verbose:
+        print("Elapsed: {}".format(t2-t1))
 
     return controls_0
 
