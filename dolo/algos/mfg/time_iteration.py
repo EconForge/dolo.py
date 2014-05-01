@@ -168,7 +168,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     if verbose:
         print("Elapsed: {}".format(t2-t1))
 
-    return controls_0
+    return mdr
 
 
 
@@ -178,7 +178,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 if __name__ == '__main__':
 
     from dolo import *
-    model = yaml_import("examples/global_models/rbc_mfga.yaml")
+    model = yaml_import("../../../examples/global_models/rbc_mfga.yaml")
     print(model.calibration['states'])
     print(model.calibration_dict)
     print(model.markov_chain)

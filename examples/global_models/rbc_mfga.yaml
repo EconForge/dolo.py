@@ -11,8 +11,6 @@ declarations:
 
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z, kmax]
 
-
-
 equations:
 
 
@@ -61,7 +59,7 @@ markov_chain:
          rho: 0.9
          sigma:
               [ [sig_z] ]
-         N: 2
+         N: 5
 
 
 
