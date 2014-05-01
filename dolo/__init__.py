@@ -14,3 +14,5 @@ from dolo.numeric.global_solve import global_solve
 from dolo.compiler.model_import import yaml_import
 
 from dolo.algos.perturbations import approximate_controls
+
+from dolo.misc.display import pcat

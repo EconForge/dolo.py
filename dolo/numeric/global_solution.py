@@ -242,7 +242,7 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
         ub = None
 
     if verbose:
-        headline = '{0:^5} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
         stars = '-'*len(headline)
         print(stars)
         print(headline)
@@ -268,7 +268,9 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
         t_finish = time.time()
         elapsed = t_finish - t_start
         if verbose:
-            print('{0:5} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
+            print(stars)
+
         x0 = x0 + (x-x0)
         if hook:
             hook(dr,it,err)
@@ -283,6 +285,8 @@ def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=Non
 
     t2 = time.time()
     if verbose:
-        print('Elapsed: {}'.format(t2 - t1))
+        print(stars)
+        print('Elapsed: {} seconds.'.format(t2 - t1))
+        print(stars)
 
     return dr

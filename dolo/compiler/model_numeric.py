@@ -118,6 +118,7 @@ Model object:
                     vals = colored(vals, 'red')
 
                 ss += "        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+            ss += "\n"
         s += ss
 
         # import pprint

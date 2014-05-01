@@ -23,20 +23,16 @@ def warning_on_one_line(message, category, filename, lineno, file=None, line=Non
             lineno,
             message)
 warnings.formatwarning = warning_on_one_line
+import numpy
+numpy.seterr(all='ignore')
 
-try:
-    from numpy import ndarray
-    from dolo.compiler.model_numeric import NumericModel
+# try:
+#     from numpy import ndarray
+#     from dolo.compiler.model_numeric import NumericModel
+#
+#     ip = get_ipython()
+#
+#     # there could be some kind of auto-discovery there
+#     # ip.display_formatter.formatters['text/html'].for_type( NumericModel, lambda m: m.__str__() )
 
-    ip = get_ipython()
-
-    # there could be some kind of auto-discovery there
-    # ip.display_formatter.formatters['text/html'].for_type( NumericModel, lambda m: m.__str__() )
-
-    from IPython.core.display import display
-
-except:
-    pass
-#     from pprint import pprint
-#     def display(txt):
-#         pprint(txt)
+from IPython.core.display import display
