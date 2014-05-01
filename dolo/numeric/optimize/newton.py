@@ -6,23 +6,71 @@ from numpy import zeros_like, zeros
 from numpy.linalg import solve
 
 import numpy
+from numba import guvectorize
+from numba import double
 
-def serial_solve(M, res):
 
-    sol = zeros_like(res)
+def solve(m, sol):
 
-    for i in range(sol.shape[0]):
-        try:
-            sol[i,:] = solve( M[i,:,:], res[i,:])
-        except:
-            # Should be a special type of exception
-            a = Exception("Error solving point {}".format(i))
-            a.x = res[i,:]
-            a.J = M[i,:,:]
-            a.i = i
-            raise a
-    
+    h,w = m.shape
+
+
+    for y in range(0,h):
+        maxrow = y
+        for y2 in range(y+1, h):    # Find max pivot
+            if abs(m[y2,y]) > abs(m[maxrow,y]):
+                maxrow = y2
+        for y2 in range(0,w):
+            t = m[y,y2]
+            m[y,y2] = m[maxrow,y2]
+            m[maxrow,y2] = t
+
+        for y2 in range(y+1, h):    # Eliminate column y
+            c = m[y2,y] / m[y,y]
+            for x in range(y, w):
+                m[y2,x] -= m[y,x] * c
+
+    for y in range(h-1, 0-1, -1): # Backsubstitute
+        c  = m[y,y]
+        for y2 in range(0,y):
+            for x in range(w-1, y-1, -1):
+                m[y2,x] -=  m[y,x] * m[y2,y] / c
+        m[y,y] /= c
+        for x in range(h, w):       # Normalize row y
+          m[y,x] /= c
+
+    for y in range(h):
+        sol[y] = m[y,w-1]
+
+
+
+
+serial_solve_numba = guvectorize('void(f8[:,:], f8[:])', '(m,n)->(m)')(solve)  #, target=target)
+
+def serial_solve(A, B, diagnose=False):
+
+    if diagnose:
+        sol = zeros_like(B)
+
+        for i in range(sol.shape[0]):
+            try:
+                sol[i,:] = solve( A[i,:,:], B[i,:])
+            except:
+                # Should be a special type of exception
+                a = Exception("Error solving point {}".format(i))
+                a.x = B[i,:]
+                a.J = A[i,:,:]
+                a.i = i
+                raise a
+
+    else:
+        M = numpy.concatenate([A,B[:,:,None]],axis=2)
+        sol = numpy.zeros_like(B)
+        serial_solve_numba(M,sol)
+
     return sol
+#
+#     return sol
 
 import time
 
@@ -117,3 +165,35 @@ def SerialDifferentiableFunction(f, epsilon=1e-8):
         return [v0, dv]
 
     return df         
+
+
+
+def test_serial_solve():
+
+    N = 10
+
+    import numpy
+    A = numpy.random.random( (N,2,2) )
+
+
+    B = numpy.random.random( (N,2) )
+
+    print(A)
+    print(B)
+    out = serial_solve(A,B)
+    print("A")
+    print(A)
+    print("B")
+    print(B)
+    print("out")
+    print(out)
+
+    import numpy.linalg
+
+    print( numpy.linalg.solve(A[0,:,:], B[0,:]) )
+
+
+if __name__ == "__main__":
+
+    test_serial_solve()
+
