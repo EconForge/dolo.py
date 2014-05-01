@@ -39,7 +39,7 @@ def get_initial_guess(model):
     pass
 
 
-def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementarities=True, verbose=True, orders=None):
+def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementarities=True, verbose=True, orders=None, output_type='dr'):
 
     assert(model.model_type == 'mfga')
 
@@ -94,7 +94,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     else:
         for i_m in range(n_ms):
             m = P[i_m,:][None,:]
-            controls_0[i_m,:,:] = initial_guess(m, grid, parms[None,:])
+            controls_0[i_m,:,:] = initial_guess(m, grid, parms)
 
     ff = model.functions['arbitrage']
     gg = model.functions['transition']
@@ -107,8 +107,8 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
         ub = numpy.zeros_like(controls_0)*numpy.nan
         for i_m in range(n_ms):
             m = P[i_m,:]
-            lb[i_m,:,:] = lb_fun(m, grid, parms[None,:])
-            ub[i_m,:,:] = ub_fun(m, grid, parms[None,:])
+            lb[i_m,:,:] = lb_fun(m, grid, parms)
+            ub[i_m,:,:] = ub_fun(m, grid, parms)
     else:
         with_complementarities = False
 
@@ -138,12 +138,23 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
         ub = ub.reshape((-1,n_x))
 
 
+    if verbose:
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
+        stars = '-'*len(headline)
+        print(stars)
+        print(headline)
+        print(stars)
+
     import time
     t1 = time.time()
+
+    err_0 = numpy.nan
 
     while err>tol and it<maxit:
 
         it += 1
+
+        t_start = time.time()
 
         mdr.set_values(controls_0.reshape(sh_c))
 
@@ -157,18 +168,33 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
         err = abs(controls-controls_0).max()
 
+        err_SA = err/err_0
+        err_0 = err
+
         controls_0 = controls
 
-        print((it,err,nit))
+        t_finish = time.time()
+        elapsed = t_finish - t_start
+
+        if verbose:
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
 
     controls_0 = controls.reshape(sh_c)
 
     t2 = time.time()
 
     if verbose:
-        print("Elapsed: {}".format(t2-t1))
+        print(stars)
+        print("Elapsed: {} seconds.".format(t2-t1))
+        print(stars)
 
-    return mdr
+
+    if output_type == 'dr':
+        return mdr
+    elif output_type == 'controls':
+        return controls_0
+    else:
+        raise Exception("Unsupported ouput type {}.".format(output_type))
 
 
 
