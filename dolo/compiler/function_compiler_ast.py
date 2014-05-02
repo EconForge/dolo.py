@@ -181,22 +181,18 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
 def eval_ast(mod):
 
     from numexpr import evaluate
-    from numpy import inf
-
-
-    # import codegen
-    # print( codegen.to_source(mod) )
 
     context = {}
-    context['inf'] = inf
+
+    context['division'] = division # THAT seems strange !
+
     import numpy
+    context['inf'] = numpy.inf
     context['exp'] = numpy.exp
     context['log'] = numpy.log
     context['sin'] = numpy.sin
     context['cos'] = numpy.cos
     context['evaluate'] = evaluate
-
-
 
     name = mod.body[0].name
     code  = compile(mod, '<string>', 'exec')

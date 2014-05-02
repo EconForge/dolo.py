@@ -95,7 +95,7 @@ class NumericModel:
 
         from dolo.misc.termcolor import colored
 
-        s = '''
+        s = u'''
 Model object:
 ------------
 
@@ -105,8 +105,9 @@ Model object:
 
         ss = '\n- residuals:\n\n'
         res = self.residuals()
+        print( [e for e in self.symbolic.equations.iteritems() ])
         for eqgroup, eqlist in self.symbolic.equations.iteritems():
-            ss += "    {}\n".format(eqgroup)
+            ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
                 if abs(val) < 1e-8:
@@ -117,7 +118,10 @@ Model object:
                 if abs(val) > 1e-8:
                     vals = colored(vals, 'red')
 
-                ss += "        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+                # eq = eq.replace('|', u"\u27C2")
+
+                ss += u"        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+
             ss += "\n"
         s += ss
 
@@ -127,8 +131,11 @@ Model object:
 
         return s
 
-    def __repr__(self):
+    def __unicode__(self):
         return self.__str__()
+
+    # def __repr__(self):
+    #     return self.__str__()
 
     @property
     def x_bounds(self):
@@ -167,6 +174,13 @@ Model object:
         for funname in recipe['specs'].keys():
 
             spec = recipe['specs'][funname]
+
+            if funname not in self.symbolic.equations:
+                if not spec.get('optional'):
+                    raise Exception("The model doesn't contain equations of type '{}'.".format(funanme))
+                else:
+                    continue
+
 
             if spec.get('target'):
 
