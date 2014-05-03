@@ -14,16 +14,16 @@ class  ErrorsTestCase(unittest.TestCase):
         dr = approximate_controls(model)
         dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1, method='newton', polish=True)
 
+        dr_glob = global_solve(model, interp_type='spline', verbose=False, pert_order=1, method='newton', polish=True)
 
         sigma = model.covariances
-
-        # cmodel = CModel(model)
 
         model.sigma = sigma
 
         s_0 = dr.S_bar
 
-        from dolo.numeric.error_measures import  omega
+        from dolo.algos.accuracy import  omega
+
         res = omega( dr, model, dr_global.bounds, [10,10], time_weight=[50, 0.96,s_0])
 
 
@@ -44,12 +44,10 @@ class  ErrorsTestCase(unittest.TestCase):
 
         model.sigma = sigma
 
-        s_0 = dr.S_bar
+        from dolo.algos.accuracy import denhaanerrors
 
-        from dolo.numeric.error_measures import denhaanerrors
-
-        [error_1, error_2] = denhaanerrors(model, dr, s_0)
-        [error_1_glob, error_2_glob] = denhaanerrors(model, dr_global, s_0)
+        [error_1, error_2] = denhaanerrors(model, dr)
+        [error_1_glob, error_2_glob] = denhaanerrors(model, dr_global)
 
         print(error_1)
         print(error_1_glob)
