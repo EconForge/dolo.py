@@ -1,4 +1,5 @@
 from dolo.numeric.taylor_expansion import CDR
+
 import numpy as np
 from numpy import column_stack, row_stack, eye, zeros
 from numpy import dot

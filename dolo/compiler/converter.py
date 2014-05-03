@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     print(model_fg.x_bounds)
 
-    from dolo.numeric.global_solve import global_solve
+    from dolo import global_solve
 
     dr = global_solve(model_fg, verbose=True)
     print(dr)

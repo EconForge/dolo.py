@@ -69,7 +69,7 @@ fga:
 
     model_type: fga
 
-    symbols: ['states', 'controls', 'auxiliaries', 'shocks', 'parameters']
+    symbols: ['states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
 
     specs:
 
@@ -113,6 +113,23 @@ fga:
             eqs:
                 - ['states',0,'s']
                 - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['values',1,'V']
                 - ['parameters', 0, 'p']
 
 

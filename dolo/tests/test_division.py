@@ -28,6 +28,7 @@ class  DivisionTestCase(unittest.TestCase):
         assert( abs(alpha - 1.0/3.0) < 0.00000001)
 
         res = model.residuals()
+        print( abs(res['transition'][0] ) )
         assert( abs(res['transition'][0]) < 0.00000001)
 
 

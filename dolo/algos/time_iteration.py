@@ -1,9 +1,200 @@
-"""
-All informations about this module.
-I can use complex formulas: :math:`n_{\mathrm{offset}} = \sum_{k=0}^{N-1} s_k n_k`
-"""
-
+import numpy
 import numpy as np
+
+
+def time_iteration(model,  bounds=None, verbose=False,
+                 initial_dr=None, pert_order=1,
+                 interp_type='smolyak', smolyak_order=3, interp_orders=None,
+                 maxit=500, numdiff=True, polish=True, tol=1e-8,
+                 integration='gauss-hermite', integration_orders=[],
+                 compiler='numpy', memory_hungry=True, method='newton',
+                 T=200, n_s=2, N_e=40 ):
+
+    def vprint(t):
+        if verbose:
+            print(t)
+
+    # model = modelodel.model
+    # model = modelodel
+
+    parms = model.calibration['parameters']
+    sigma = model.covariances # calibration['covariances']
+
+    if initial_dr == None:
+        if pert_order==1:
+            from dolo.algos.perturbations import approximate_controls
+            initial_dr = approximate_controls(model)
+
+        if pert_order>1:
+            raise Exception("Perturbation order > 1 not supported (yet).")
+
+        if interp_type == 'perturbations':
+            return initial_dr
+
+    if bounds is not None:
+        pass
+
+    elif False and model.options and 'approximation_space' in model.options:
+
+        vprint('Using bounds specified by model')
+
+        approx = model.options['approximation_space']
+        a = approx['a']
+        b = approx['b']
+
+        bounds = numpy.row_stack([a, b])
+        bounds = numpy.array(bounds, dtype=float)
+
+        print(bounds)
+
+    else:
+        vprint('Using bounds given by second order solution.')
+
+        from dolo.numeric.timeseries import asymptotic_variance
+        # this will work only if initial_dr is a Taylor expansion
+        Q = asymptotic_variance(initial_dr.A.real, initial_dr.B.real, initial_dr.sigma, T=T)
+
+        devs = numpy.sqrt(numpy.diag(Q))
+        bounds = numpy.row_stack([
+            initial_dr.S_bar - devs * n_s,
+            initial_dr.S_bar + devs * n_s,
+        ])
+        print(bounds)
+
+    smin = bounds[0, :]
+    smax = bounds[1, :]
+
+    if interp_orders == None:
+        interp_orders = [5] * bounds.shape[1]
+
+    if interp_type == 'smolyak':
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
+        dr = SmolyakGrid(bounds[0, :], bounds[1, :], smolyak_order)
+    elif interp_type == 'spline':
+        from dolo.numeric.interpolation.splines import MultivariateSplines
+        dr = MultivariateSplines(bounds[0, :], bounds[1, :], interp_orders)
+    elif interp_type == 'multilinear':
+        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
+        dr = MultilinearInterpolator(bounds[0, :], bounds[1, :], interp_orders)
+
+    if integration == 'optimal_quantization':
+        from dolo.numeric.discretization import quantization_nodes
+        # number of shocks
+        [epsilons, weights] = quantization_nodes(N_e, sigma)
+    elif integration == 'gauss-hermite':
+        from dolo.numeric.discretization import gauss_hermite_nodes
+        if not integration_orders:
+            integration_orders = [3] * sigma.shape[0]
+        [epsilons, weights] = gauss_hermite_nodes(integration_orders, sigma)
+
+
+    vprint('Starting time iteration')
+
+    # TODO: transpose
+
+    grid = dr.grid
+
+    xinit = initial_dr(grid)
+    xinit = xinit.real  # just in case...
+
+
+
+    if model.model_type == 'fga':
+        ff = model.functions['arbitrage']
+        gg = model.functions['transition']
+        aa = model.functions['auxiliary']
+        g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
+        f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
+    elif model.model_type == 'fg':
+        g = model.functions['transition']
+        ff = model.functions['arbitrage']
+        f = lambda s,x,e,S,X,p : ff(s,x,S,X,p)
+    else:
+        f = model.functions['arbitrage']
+        g = model.functions['transition']
+
+
+    dr = time_iteration_helper(grid, dr, xinit, f, g, parms, epsilons, weights, maxit=maxit,
+                        tol=tol, nmaxit=50, numdiff=numdiff, verbose=verbose, method=method)
+
+
+    return dr
+
+
+def time_iteration_helper(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
+
+    import time
+
+
+    if numdiff == True:
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
+    else:
+        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds)
+
+    ##
+    t1 = time.time()
+    err = 1
+    x0 = xinit
+    it = 0
+
+    verbit = True if verbose=='full' else False
+
+    if x_bounds:
+        lb = x_bounds[0](grid,parms)
+        ub = x_bounds[1](grid,parms)
+    else:
+        lb = None
+        ub = None
+
+    if verbose:
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
+        stars = '-'*len(headline)
+        print(stars)
+        print(headline)
+        print(stars)
+
+
+    err_0 = 1
+
+    while err > tol and it < maxit:
+        t_start = time.time()
+        it +=1
+
+        dr.set_values(x0)
+
+        from dolo.numeric.optimize.newton import serial_newton, SerialDifferentiableFunction
+        sdfun = SerialDifferentiableFunction(fun)
+        [x,nit] = serial_newton(sdfun,x0)
+
+        err = abs(x-x0).max()
+        err_SA = err/err_0
+        err_0 = err
+
+        t_finish = time.time()
+        elapsed = t_finish - t_start
+        if verbose:
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
+            print(stars)
+
+        x0 = x0 + (x-x0)
+        if hook:
+            hook(dr,it,err)
+        if False in np.isfinite(x0):
+            print('iteration {} failed : non finite value')
+            return [x0, x]
+
+    if it == maxit:
+        import warnings
+        warnings.warn(UserWarning("Maximum number of iterations reached"))
+
+
+    t2 = time.time()
+    if verbose:
+        print(stars)
+        print('Elapsed: {} seconds.'.format(t2 - t1))
+        print(stars)
+
+    return dr
 
 
 def deterministic_residuals(s, x, interp, f, g, sigma, parms):
@@ -215,78 +406,3 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
 
     return std_errors
 
-
-def time_iteration(grid, dr, xinit, f, g, parms, epsilons, weights, x_bounds=None, tol = 1e-8, serial_grid=True, numdiff=True, verbose=True, method='ncpsolve', maxit=500, nmaxit=5, backsteps=10, hook=None, options={}):
-
-    import time
-
-
-    if numdiff == True:
-        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds, with_derivatives=False)
-    else:
-        fun = lambda x: step_residual(grid, x, dr, f, g, parms, epsilons, weights, x_bounds=x_bounds)
-
-    ##
-    t1 = time.time()
-    err = 1
-    x0 = xinit
-    it = 0
-
-    verbit = True if verbose=='full' else False
-
-    if x_bounds:
-        lb = x_bounds[0](grid,parms)
-        ub = x_bounds[1](grid,parms)
-    else:
-        lb = None
-        ub = None
-
-    if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
-        stars = '-'*len(headline)
-        print(stars)
-        print(headline)
-        print(stars)
-
-
-    err_0 = 1
-
-    while err > tol and it < maxit:
-        t_start = time.time()
-        it +=1
-
-        dr.set_values(x0)
-
-        from dolo.numeric.optimize.newton import serial_newton, SerialDifferentiableFunction
-        sdfun = SerialDifferentiableFunction(fun)
-        [x,nit] = serial_newton(sdfun,x0)
-
-        err = abs(x-x0).max()
-        err_SA = err/err_0
-        err_0 = err
-
-        t_finish = time.time()
-        elapsed = t_finish - t_start
-        if verbose:
-            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
-            print(stars)
-
-        x0 = x0 + (x-x0)
-        if hook:
-            hook(dr,it,err)
-        if False in np.isfinite(x0):
-            print('iteration {} failed : non finite value')
-            return [x0, x]
-
-    if it == maxit:
-        import warnings
-        warnings.warn(UserWarning("Maximum number of iterations reached"))
-
-
-    t2 = time.time()
-    if verbose:
-        print(stars)
-        print('Elapsed: {} seconds.'.format(t2 - t1))
-        print(stars)
-
-    return dr

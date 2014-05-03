@@ -5,7 +5,7 @@ class  ErrorsTestCase(unittest.TestCase):
     def test_omega_errors(self):
 
         from dolo import yaml_import
-        from dolo.numeric.global_solve import global_solve
+        from dolo.algos.time_iteration import time_iteration as global_solve
 
         model = yaml_import('examples/global_models/rbc.yaml')
 
@@ -30,7 +30,7 @@ class  ErrorsTestCase(unittest.TestCase):
     def test_denhaan_errors(self):
 
         from dolo import yaml_import
-        from dolo.numeric.global_solve import global_solve
+        from dolo.algos.time_iteration import time_iteration as global_solve
 
         model = yaml_import('examples/global_models/rbc.yaml')
 

@@ -122,6 +122,11 @@ def residuals(model, calib=None):
         res['arbitrage'] = f(s,x,y,s,x,y,p)
         res['auxiliary'] = a(s,x,p)-y
 
+        if 'value' in model.functions:
+            rew = model.functions['value']
+            v = calib['values']
+            res['value'] = rew(s,x,y,s,x,y,v,p) - v
+
     else:
         raise Exception("Not implemented")
 

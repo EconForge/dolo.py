@@ -1,4 +1,4 @@
-from dolo.numeric.global_solution import step_residual
+from dolo.algos.time_iteration import step_residual
 import numpy
 
 def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True, solve_expectations=False, nodes=None, weights=None, use_pandas=True, forcing_shocks=None):
@@ -137,8 +137,15 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
     states_names = model.symbols['states']
     controls_names = model.symbols['controls']
     index = states_names.index(str(state))
+
     if bounds is None:
-        bounds = [dr.smin[index], dr.smax[index]]
+        if hasattr(dr,'a'):
+            bounds = [dr.a[index], dr.b[index]]
+        else:
+            approx = model.options['approximation_space']
+            bounds = [approx['a'][index], approx['b'][index]]
+
+
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
     if s0 is None:
         s0 = model.calibration['states']
@@ -146,19 +153,34 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
     svec[:,index] = values
     xvec = dr(svec)
 
+
+    l = [svec, xvec]
+    series = model.symbols['states'] + model.symbols['controls']
+
+    if 'auxiliary' in model.functions:
+
+        p = model.calibration['parameters']
+        pp = numpy.row_stack([p]*n_steps)
+        avec = model.functions['auxiliary'](svec,xvec,pp)
+        l.append(avec)
+        series.extend(model.symbols['auxiliaries'])
+
+    import pandas
+    tb = numpy.concatenate(l, axis=1)
+    df = pandas.DataFrame(tb, columns=series)
+
     if plot_controls is None:
-        return [svec, xvec]
+        return df
     else:
         from matplotlib import pyplot
         if isinstance(plot_controls, str):
-            i = controls_names.index(plot_controls)
-            pyplot.plot(values, xvec[:,i], **kwargs)
+            cn = plot_controls
+            pyplot.plot(values, df[cn], **kwargs)
         else:
             for cn in  plot_controls:
-                i = controls_names.index(cn)
-                pyplot.plot(values, xvec[:,i], label=cn)
+                pyplot.plot(values, df[cn], label=cn, **kwargs)
             pyplot.legend()
-        pyplot.xlabel(state)
+        pyplot.xlabel('state = {}'.format(state))
 
 
 
