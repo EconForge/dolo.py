@@ -27,7 +27,36 @@ class GeneralizedEigenvaluesError(Exception):
 
            
 
-def approximate_controls(model, verbose=False, steady_state=None, order=1):
+def approximate_controls(model, verbose=False, steady_state=None, solve_steady_state=False, order=1):
+    """Compute first order approximation of optimal controls
+
+    Parameters:
+    -----------
+
+    model: NumericModel
+        Model to be solved
+
+    verbose: boolean
+        If True: displays number of contracting eigenvalues
+
+    steady_state: ndarray
+        Use supplied steady-state value to compute the approximation. The routine doesn't check whether it is really
+        a solution or not.
+
+    solve_steady_state: boolean
+        Use nonlinear solver to find the steady-state
+
+    orders: {1}
+        Approximation order. (Currently, only first order is supported).
+
+    Returns:
+    --------
+
+    TaylorExpansion:
+        Decision Rule for the optimal controls around the steady-state.
+
+    """
+
 
     if order>1:
         raise Exception("Not implemented.")
@@ -47,6 +76,10 @@ def approximate_controls(model, verbose=False, steady_state=None, order=1):
         calib = steady_state
     else:
         calib = model.calibration
+
+    if solve_steady_state:
+        from dolo.algos.steady_state import find_deterministic_equilibrium
+        calib = find_deterministic_equilibrium(model)
 
     p = calib['parameters']
     s = calib['states']

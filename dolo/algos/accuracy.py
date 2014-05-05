@@ -88,7 +88,7 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
         s0 = model.calibration['states']
 
     from dolo.algos.simulations import simulate
-    simul = simulate(model, dr, s0, sigma, n_exp=n_exp, horizon=horizon+1,
+    simul = simulate(model, dr, s0, n_exp=n_exp, horizon=horizon+1,
                      discard=True, solve_expectations=solve_expectations)
 
     s_simul = simul[:,:,:n_s]
@@ -142,8 +142,8 @@ def denhaanerrors( model, dr, s0=None, horizon=100, n_sims=10, seed=0, integrati
         s0 = model.calibration['states']
 
     # standard simulation
-    simul = simulate(model, dr, s0, sigma, horizon=horizon, n_exp=n_sims, seed=seed, solve_expectations=False)
-    simul_se = simulate(model, dr, s0, sigma, horizon=horizon, n_exp=n_sims, seed=seed, solve_expectations=True, nodes=nodes, weights=weights)
+    simul = simulate(model, dr, s0, horizon=horizon, n_exp=n_sims, seed=seed, solve_expectations=False)
+    simul_se = simulate(model, dr, s0, horizon=horizon, n_exp=n_sims, seed=seed, solve_expectations=True, nodes=nodes, weights=weights)
 
     x_simul = simul[:,n_s:n_s+n_x,:]
     x_simul_se = simul_se[:,n_s:n_s+n_x,:]

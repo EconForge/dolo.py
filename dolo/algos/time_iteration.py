@@ -9,11 +9,47 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
                  integration='gauss-hermite', integration_orders=None,
                  T=200, n_s=3, hook=None):
 
+    """Finds a global solution for ``model`` using backward time-iteration.
+
+    Parameters:
+    -----------
+
+    model: NumericModel
+        "fg" or "fga" model to be solved
+
+    bounds: ndarray
+        boundaries for approximations. First row contains minimum values. Second row contains maximum values.
+
+    verbose: boolean
+        if True, display iterations
+
+    initial_dr: decision rule
+        initial guess for the decision rule
+
+    pert_order: {1}
+        if no initial guess is supplied, the perturbation solution at order ``pert_order`` is used as initial guess
+
+    with_complementarities: boolean (True)
+        if False, complementarity conditions are ignored
+
+    interp_type: {`smolyak`, `spline`}
+        type of interpolation to use for future controls
+
+    smolyak_orders: int
+        parameter ``l`` for Smolyak interpolation
+
+    interp_orders: 1d array-like
+        list of integers specifying the number of nods in each dimension if ``interp_type="spline" ``
+
+
+    Returns:
+    --------
+    decision rule object (SmolyakGrid or MultivariateSplines)
+    """
+
     def vprint(t):
         if verbose:
             print(t)
-
-
 
     parms = model.calibration['parameters']
     sigma = model.covariances

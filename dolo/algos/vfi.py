@@ -2,7 +2,25 @@ import numpy
 
 
 
-def evaluate_policy(model, dr, tol=1e-8, interp_type='spline', maxit=2000, verbose=False, hook=None, integration_orders=None):
+def evaluate_policy(model, dr, tol=1e-8,  maxit=2000, verbose=False, hook=None, integration_orders=None):
+    """Compute value function corresponding to policy ``dr``
+
+    Parameters:
+    -----------
+
+    model:
+        "fg" or "fga" model. Must contain a 'value' function.
+
+    dr:
+        decision rule to evaluate
+
+    Returns:
+    --------
+
+    decision rule:
+        value function (a function of the space similar to a decision rule object)
+
+    """
 
     assert(model.model_type=='fga')
 
@@ -25,6 +43,7 @@ def evaluate_policy(model, dr, tol=1e-8, interp_type='spline', maxit=2000, verbo
     a = approx['a']
     b = approx['b']
     orders = approx['orders']
+
 
     from dolo.numeric.interpolation.splines import MultivariateSplines
     drv = MultivariateSplines(a,b,orders)

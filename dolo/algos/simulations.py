@@ -1,20 +1,40 @@
 from dolo.algos.time_iteration import step_residual
 import numpy
 
-def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, seed=1, discard=False, stack_series=True, solve_expectations=False, nodes=None, weights=None, use_pandas=True, forcing_shocks=None):
-    '''
-    :param model: compiled model
-    :param dr: decision rule
-    :param s0: initial state where all simulations start
-    :param sigma: covariance matrix of the normal multivariate distribution describing the random shocks
-    :param n_exp: number of draws to simulate. Use 0 for impulse-response functions
-    :param horizon: horizon for the simulation
-    :param parms: (vector) value for the parameters of the model
-    :param seed: used to initialize the random number generator. Use it to replicate exact same results among simulations
-    :param discard: (default: False) if True, then all simulations containing at least one non finite value are discarded
-    :param stack_series: return simulated series for different types of variables separately (in a list)
-    :return: a ``n_s x n_exp x horizon`` array where ``n_s`` is the number of states. The second dimension is omitted if
-    n_exp = 0.
+def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, solve_expectations=False, nodes=None, weights=None, forcing_shocks=None):
+    '''Simulate a model using the specified decision rule.
+
+    Parameters
+    ---------
+    model: NumericModel
+        an "fg" or "fga" model
+
+    dr: decision rule
+
+    s0: ndarray
+        initial state where all simulations start
+    n_exp: int
+        number of simulations. Use 0 for impulse-response functions
+    horizon: int
+        horizon for the simulations
+    seed: int
+        used to initialize the random number generator. Use it to replicate exact same results among simulations
+    discard: boolean (False)
+        if True, then all simulations containing at least one non finite value are discarded
+    solve_expectations: boolean (False)
+        if True, Euler equations are solved at each step using the controls to form expectations
+    nodes: ndarray
+        if `solve_expectations` is True use ``nodes`` for integration
+    weights: ndarray
+        if `solve_expectations` is True use ``weights`` for integration
+    forcing_shocks: ndarray
+        specify an exogenous process of shocks (requires ``n_exp<=1``)
+
+    Returns
+    -------
+    ndarray or pandas.Dataframe:
+         if `n_exp<=1` returns a DataFrame object
+         if `n_exp>1` returns a ``horizon x n_exp x n_v`` array where ``n_v`` is the number of variables.
     '''
 
 
@@ -28,11 +48,9 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
 
     calib = model.calibration
 
-    if parms is None:
-        parms = numpy.array( calib['parameters'] ) # TODO : remove reference to symbolic model
+    parms = numpy.array( calib['parameters'] )
 
-    if sigma is None:
-        sigma = model.covariances
+    sigma = model.covariances
 
     if s0 is None:
         s0 = calib['states']
@@ -63,7 +81,6 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
     for i in range(horizon):
         mean = numpy.zeros(sigma.shape[0])
         if irf:
-
             if forcing_shocks is not None and i<forcing_shocks.shape[0]:
                 epsilons = forcing_shocks[i,:] 
             else:
@@ -110,11 +127,8 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
 
         l = [s_simul, x_simul, a_simul]
         varnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
-    if not stack_series:
-        return l
 
-    else:
-        simul = numpy.concatenate(l, axis=2)
+    simul = numpy.concatenate(l, axis=2)
 
     if discard:
         iA = -isnan(x_simul)
@@ -124,13 +138,12 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
         if n_exp > n_kept:
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
 
-    if irf or (n_exp==1 and use_pandas):
+    if irf or (n_exp==1):
         simul = simul[:,0,:]
 
-        if use_pandas:
-            import pandas
-            ts = pandas.DataFrame(simul, columns=varnames)
-            return ts
+        import pandas
+        ts = pandas.DataFrame(simul, columns=varnames)
+        return ts
 
     return simul
 

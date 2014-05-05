@@ -6,9 +6,17 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     '''
     Finds the steady state calibration.
 
-    :param model: an "fg" model.
-    :param constraint: a dictionaries with forced values. Use it to set shocks to non-zero values or to add additional constraints to avoid unit roots.
-    :return: a dictionary with the same structure as "model.calibration".
+    Parameters
+    ----------
+    model: NumericModel
+        an "fg" model.
+    constraints: dict
+        a dictionaries with forced values. Use it to set shocks to non-zero values or to add additional constraints to avoid unit roots.
+
+    Returns:
+    --------
+    dict:
+        calibration dictionary
     '''
 
     from dolo.algos.convert import get_fg_functions
@@ -133,63 +141,65 @@ def residuals(model, calib=None):
         raise Exception("Not implemented")
 
     return res
- 
-def find_steady_state(model, e=None, force_states=None, constraints=None, return_jacobian=False):
-    '''n
-    Finds the steady state corresponding to exogenous shocks :math:`e`.
+#
+# def find_steady_state(model, e=None, force_states=None, constraints=None, return_jacobian=False):
+#     '''n
+#     Finds the steady state corresponding to exogenous shocks :math:`e`.
+#
+#     :param model: an "fg" model.
+#     :param e: a vector with the value for the exogenous shocks.
+#     :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.
+#     :return: a list containing a vector for the steady-states and the corresponding steady controls.
+#     '''
+#
+#     s0 = model.calibration['states']
+#     x0 = model.calibration['controls']
+#     p = model.calibration['parameters']
+#     z = numpy.concatenate([s0, x0])
+#
+#     if e is None:
+#         e = numpy.zeros( len(model.symbols['shocks']) )
+#     else:
+#         e = e.ravel()
+#
+#     if constraints is not None:
+#         if isinstance(constraints, (list, tuple)):
+#             inds =  numpy.where( numpy.isfinite( force_values ) )[0]
+#             vals = force_values[inds]
+#         elif isinstance(constraints, dict):
+#             inds = [model.symbols['states'].index(k) for k in force_values.keys()]
+#             vals = force_values.values()
+#
+#     def fobj(z):
+#         s = z[:len(s0)]
+#         x = z[len(s0):]
+#         S = model.functions['transition'](s,x,e,p)
+#         r = model.functions['arbitrage'](s,x,s,x,p)
+#         res = numpy.concatenate([S-s, r,  ])
+#         if force_values is not None:
+#             add = S[inds]-vals
+#             res = numpy.concatenate([res, add])
+#         return res
+#
+#     from trash.dolo.numeric.solver import MyJacobian
+#     jac = MyJacobian(fobj)( z )
+#     if return_jacobian:
+#         return jac
+#
+#
+#     rank = numpy.linalg.matrix_rank(jac)
+#     if rank < len(z):
+#         import warnings
+#         warnings.warn("There are {} equilibrium variables to find, but the jacobian matrix is only of rank {}. The solution is indeterminate.".format(len(z),rank))
+#
+#     from scipy.optimize import root
+#     sol = root(fobj, z, method='lm')
+#     steady_state = sol.x
+#
+#     return [steady_state[:len(s0)], steady_state[len(s0):]]
+#
 
-    :param model: an "fg" model.
-    :param e: a vector with the value for the exogenous shocks.
-    :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.
-    :return: a list containing a vector for the steady-states and the corresponding steady controls.
-    '''
 
-    s0 = model.calibration['states']
-    x0 = model.calibration['controls']
-    p = model.calibration['parameters']
-    z = numpy.concatenate([s0, x0])
-
-    if e is None:
-        e = numpy.zeros( len(model.symbols['shocks']) )
-    else:
-        e = e.ravel()
-
-    if constraints is not None:
-        if isinstance(constraints, (list, tuple)):
-            inds =  numpy.where( numpy.isfinite( force_values ) )[0]
-            vals = force_values[inds]
-        elif isinstance(constraints, dict):
-            inds = [model.symbols['states'].index(k) for k in force_values.keys()]
-            vals = force_values.values()
-
-    def fobj(z):
-        s = z[:len(s0)]
-        x = z[len(s0):]
-        S = model.functions['transition'](s,x,e,p)
-        r = model.functions['arbitrage'](s,x,s,x,p)
-        res = numpy.concatenate([S-s, r,  ])
-        if force_values is not None:
-            add = S[inds]-vals
-            res = numpy.concatenate([res, add])
-        return res
-
-    from trash.dolo.numeric.solver import MyJacobian
-    jac = MyJacobian(fobj)( z )
-    if return_jacobian:
-        return jac
-   
-
-    rank = numpy.linalg.matrix_rank(jac)
-    if rank < len(z):
-        import warnings
-        warnings.warn("There are {} equilibrium variables to find, but the jacobian matrix is only of rank {}. The solution is indeterminate.".format(len(z),rank))
-
-    from scipy.optimize import root
-    sol = root(fobj, z, method='lm')
-    steady_state = sol.x
-   
-    return [steady_state[:len(s0)], steady_state[len(s0):]]
-    
 if __name__ == '__main__':
    
     from dolo import *

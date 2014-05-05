@@ -18,8 +18,7 @@ def test_rbc_model():
 
     drg = global_solve(model)
 
-
-    from dolo.numeric.simulations import plot_decision_rule
+    from dolo.algos.simulations import plot_decision_rule
     sim = plot_decision_rule(model,dr,'k')
     print(sim)
 

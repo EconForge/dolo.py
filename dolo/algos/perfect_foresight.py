@@ -3,16 +3,46 @@ from numpy import linspace, zeros, atleast_2d
 
 from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
+def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
-    :param model: an "fga" model
-    :param shocks: a :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
-    :param T: the horizon for the perfect foresight simulation
-    :param ignore_constraints: if True, complementarity constraintes are ignored.
-    :return: a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
-    to a steady-state corresponding to the last value of the exogenous shocks.
+    The initial state is specified either by providing a series of exogenous shocks and assuming the model is initially
+    in equilibrium with the first value of the shock, or by specifying an initial value for the states.
+
+    Parameters
+    ----------
+
+    model: NumericModel
+        "fg" or "fga" model to be solved
+
+    shocks: ndarray
+        :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
+
+    start_states: ndarray or dict
+        a vector with the value of initial states, or a calibration dictionary with the initial values of states and controls
+
+    T: int
+        horizon for the perfect foresight simulation
+
+    maxit: int
+        maximum number of iteration for the nonlinear solver
+
+    verbose: boolean
+        if True, the solver displays iterations
+
+    tol: float
+        stopping criterium for the nonlinear solver
+
+    ignore_constraints: bool
+        if True, complementarity constraints are ignored.
+
+    Returns
+    -------
+    pandas dataframe:
+
+        a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
+        to a steady-state corresponding to the last value of the exogenous shocks.
     '''
 
     # TODO:
@@ -139,7 +169,7 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
         from scipy.optimize import root
         from numpy import array
-        ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
+        # ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='full')
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, diff=False).ravel()
         x0 = initial_guess.ravel()
         sol = root(ff, x0, jac=False)
@@ -209,8 +239,8 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
         SS, SS_s, SS_x, SS_e = g(s,x,e,p, diff=True)
         R, R_s, R_x, R_e, R_S, R_X = f(s,x,E,S,X,p,diff=True)
     else:
-        SS = g(s,x,shocks,p)
-        R = f(s,x,S,X,p)
+        SS = g(s,x,e,p)
+        R = f(s,x,E,S,X,p)
 
     res_s = SS - S
     res_x = R

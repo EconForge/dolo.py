@@ -41,7 +41,7 @@ class TestGlobal(unittest.TestCase):
 
         t3 = time.time()
 
-        dr = global_solve(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, polish=False, interp_orders=[100,100], method='newton')
+        dr = global_solve(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, interp_orders=[100,100])
 
         t4 = time.time()
 
