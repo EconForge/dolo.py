@@ -7,7 +7,7 @@ class  DivisionTestCase(unittest.TestCase):
 
         import yaml
 
-        with open('examples/global_models/rbc.yaml') as f:
+        with open('examples/models/rbc.yaml') as f:
             txt = f.read()
 
         yaml_content = yaml.load(txt)

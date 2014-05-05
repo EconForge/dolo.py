@@ -51,12 +51,8 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
 
     if model.model_type == 'fga':
 
-        ff = fun['arbitrage']
-        gg = fun['transition']
-        aa = fun['auxiliary']
-        g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
-        f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
-
+       from dolo.algos.convert import get_fg_functions
+       [f,g] = get_fg_functions(model)
     else:
         f = model.functions['arbitrage']
         g = model.functions['transition']
@@ -79,12 +75,21 @@ def simulate(model, dr, s0=None, sigma=None, n_exp=0, horizon=40, parms=None, se
         x = dr(s)
 
         if solve_expectations:
-            from dolo.numeric.optimize.newton import newton as newton_solver, SerialDifferentiableFunction
 
-            fobj = lambda t: step_residual(s, t, dr, f, g, parms, nodes, weights, with_derivatives=False) #
+            lbfun = model.functions['arbitrage_lb']
+            ubfun = model.functions['arbitrage_ub']
+            lb = lbfun(s, parms)
+            ub = ubfun(s, parms)
+
+            from dolo.numeric.optimize.newton import newton as newton_solver, SerialDifferentiableFunction
+            from dolo.numeric.optimize.ncpsolve import ncpsolve
+
+
+            fobj = lambda t: step_residual(s, t, dr, f, g, parms, nodes, weights)
             dfobj = SerialDifferentiableFunction(fobj)
-#            x = solver(fobj, x,  serial_problem=True)
-            [x,nit] = newton_solver(dfobj, x)
+            # [x,nit] = newton_solver(dfobj, x)
+            [x,nit] = ncpsolve(dfobj, lb, ub, x)
+
 
         x_simul[i,:,:] = x
     
@@ -187,7 +192,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 def test_simulations():
 
     from dolo import yaml_import, approximate_controls
-    model = yaml_import('../../examples/global_models/rbc.yaml')
+    model = yaml_import('../../examples/models/rbc.yaml')
 
     dr = approximate_controls(model)
 

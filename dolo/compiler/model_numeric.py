@@ -3,11 +3,16 @@ from dolo.compiler.recipes import recipes
 
 class NumericModel:
 
+    calibration = None
+    calibration_dict = None
+    covariances = None
+    markov_chain = None
+
     def __init__(self, symbolic_model, options=None, infos=None):
 
         self.symbolic = symbolic_model
         self.symbols = symbolic_model.symbols
-        self.variables = sum( [tuple(e) for k,e in self.symbols.iteritems() if k not in ('parameters','shocks')], ())
+        self.variables = sum( [tuple(e) for k,e in self.symbols.iteritems() if k not in ('parameters','shocks','values')], ())
 
         self.options = options if options is not None else {}
 
@@ -105,7 +110,7 @@ Model object:
 
         ss = '\n- residuals:\n\n'
         res = self.residuals()
-        print( [e for e in self.symbolic.equations.iteritems() ])
+
         for eqgroup, eqlist in self.symbolic.equations.iteritems():
             ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
@@ -131,11 +136,8 @@ Model object:
 
         return s
 
-    def __unicode__(self):
+    def __repr__(self):
         return self.__str__()
-
-    # def __repr__(self):
-    #     return self.__str__()
 
     @property
     def x_bounds(self):
@@ -177,7 +179,7 @@ Model object:
 
             if funname not in self.symbolic.equations:
                 if not spec.get('optional'):
-                    raise Exception("The model doesn't contain equations of type '{}'.".format(funanme))
+                    raise Exception("The model doesn't contain equations of type '{}'.".format(funname))
                 else:
                     continue
 
@@ -192,7 +194,10 @@ Model object:
 
                 target_spec = spec.get('target')
                 n_output = len(self.symbols[target_spec[0]])
-                target_short_name = spec.get('target')[2]
+                # target_short_name = spec.get('target')[2]
+                target_spec[2] = 'out'
+            else:
+                target_spec = None
 
 
             if spec.get('complementarities'):
@@ -218,8 +223,8 @@ Model object:
                 comp_lhs, comp_rhs = zip(*comps)
                 fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
 
-                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=True)
-                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=True)
+                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False)
+                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False)
 
                 n_output = len(comp_lhs)
 
@@ -242,7 +247,7 @@ Model object:
 
             arg_names = recipe['specs'][funname]['eqs']
 
-            fun = compile_function_ast(eqs, symbols, arg_names, funname=funname,  use_numexpr=True)
+            fun = compile_function_ast(eqs, symbols, arg_names, output_names=target_spec, funname=funname,  use_numexpr=True)
 
             n_output = len(eqs)
 

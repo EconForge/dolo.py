@@ -1,20 +1,15 @@
-import unittest
 
-class  ErrorsTestCase(unittest.TestCase):
-
-    def test_omega_errors(self):
+def test_omega_errors():
 
         from dolo import yaml_import
         from dolo.algos.time_iteration import time_iteration as global_solve
 
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
 
         from dolo.algos.perturbations import approximate_controls
 
         dr = approximate_controls(model)
-        dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1, method='newton', polish=True)
-
-        dr_glob = global_solve(model, interp_type='spline', verbose=False, pert_order=1, method='newton', polish=True)
+        dr_global = global_solve(model, smolyak_order=3, verbose=False, pert_order=1)
 
         sigma = model.covariances
 
@@ -24,21 +19,24 @@ class  ErrorsTestCase(unittest.TestCase):
 
         from dolo.algos.accuracy import  omega
 
-        res = omega( dr, model, dr_global.bounds, [10,10], time_weight=[50, 0.96,s_0])
+        res_1 = omega( model, dr, orders=[10,10], time_discount=0.96)
+        res_2 = omega( model, dr_global)
+        print(res_1)
+        print(res_2)
 
 
-    def test_denhaan_errors(self):
+def test_denhaan_errors():
 
         from dolo import yaml_import
         from dolo.algos.time_iteration import time_iteration as global_solve
 
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
 
         from dolo.algos.perturbations import approximate_controls
 
         dr = approximate_controls(model)
-        dr_global = global_solve(model, smolyak_order=4, verbose=False, pert_order=1, method='newton', polish=True)
 
+        dr_global = global_solve(model, interp_type='smolyak', smolyak_order=4, verbose=False)
 
         sigma = model.covariances
 
@@ -46,17 +44,19 @@ class  ErrorsTestCase(unittest.TestCase):
 
         from dolo.algos.accuracy import denhaanerrors
 
-        [error_1, error_2] = denhaanerrors(model, dr)
-        [error_1_glob, error_2_glob] = denhaanerrors(model, dr_global)
+        denerr_1 = denhaanerrors(model, dr)
+        denerr_2 = denhaanerrors(model, dr_global)
 
-        print(error_1)
-        print(error_1_glob)
-        assert( max(error_1_glob) < 10-7) # errors with solyak colocations at order 4 are very small
-        assert( max(error_2_glob) < 10-7)
-
+        print(denerr_1)
+        print(denerr_2)
+        print(denerr_2['max_errors'][0])
 
 
-        #print errs
+        assert( max(denerr_2['max_errors']) < 10-7) # errors with solyak colocations at order 4 are very small
+        # assert( max(denerr_1['mean_errors']) < 10-7)
+
+
+
 
 
 
@@ -65,4 +65,6 @@ class  ErrorsTestCase(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+
+    test_denhaan_errors()
+    test_omega_errors()

@@ -10,7 +10,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
         # yield the same result.
 
         from dolo.algos.perturbations import yaml_import
-        model = yaml_import('examples/global_models/rbc.yaml', compiler=None)
+        model = yaml_import('examples/models/rbc.yaml', compiler=None)
 
 
         from trash.dolo.numeric.perturbations import solve_decision_rule
@@ -39,7 +39,7 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
     def test_perturbation_1(self):
         from dolo import yaml_import
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
         from dolo.algos.perturbations import approximate_controls
         dr = approximate_controls(model)
 
@@ -47,20 +47,20 @@ class StatesPerturbationsTestCase(unittest.TestCase):
 
     def test_perturbation_1_old(self):
         from dolo import yaml_import
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
         from dolo.algos.perturbations import approximate_controls
         dr = approximate_controls(model,order=1)
 
     def test_perturbation_2(self):
         from dolo import yaml_import
         from dolo.algos.perturbations import approximate_controls
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
         dr = approximate_controls(model,order=2)
 
     def test_perturbation_3(self):
         from dolo import yaml_import
         from dolo.algos.perturbations import approximate_controls
-        model = yaml_import('examples/global_models/rbc.yaml')
+        model = yaml_import('examples/models/rbc.yaml')
         dr = approximate_controls(model,order=3)
 
 if __name__ == '__main__':

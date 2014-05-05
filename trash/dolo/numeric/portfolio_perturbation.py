@@ -192,7 +192,7 @@ def solve_portfolio_model(model, pf_names, order=2, lambda_name='lam', guess=Non
 if __name__ == '__main__':
 
     from dolo import *
-    #model = yaml_import('examples/global_models/open_economy_with_pf_pert.yaml')
+    #model = yaml_import('examples/models/open_economy_with_pf_pert.yaml')
 #    model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_1/code/capital.yaml')
     model = yaml_import('/home/pablo/Documents/Research/Thesis/chapter_1/code/capital_pert.yaml')
 

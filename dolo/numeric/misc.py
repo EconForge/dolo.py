@@ -62,3 +62,19 @@ def mlinspace(a,b,orders,out=None):
         cartesian(sl, out)
 
     return out
+
+def MyJacobian(fun, eps=1e-6):
+
+    def rfun(x):
+        n = len(x)
+        x0 = x.copy()
+        y0 = fun(x)
+        D = np.zeros( (len(y0),len(x0)) )
+        for i in range(n):
+            delta = np.zeros(len(x))
+            delta[i] = eps
+            y1 = fun(x+delta)
+            y2 = fun(x-delta)
+            D[:,i] = (y1 - y2)/eps/2
+        return D
+    return rfun

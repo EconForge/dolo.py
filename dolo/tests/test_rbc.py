@@ -7,7 +7,7 @@ def test_rbc_model():
 
 
 
-    model = yaml_import('examples/global_models/rbc.yaml')
+    model = yaml_import('examples/models/rbc.yaml')
 
     print(model)
 

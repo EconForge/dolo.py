@@ -70,7 +70,7 @@ class StandardizeDates(NodeTransformer):
             return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
 
 
-def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False, print_code=False):
+def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False, print_code=False):
 
     '''
     expressions: list of equations as string
@@ -79,9 +79,14 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
     vectorization_type = 'ellipsis'
     data_order = 'columns'
 
-    table = {}
-    for a in arg_names:
-        t = tuple(a)
+    from collections import OrderedDict
+    table = OrderedDict()
+
+    aa = arg_names
+    if output_names is not None:
+        aa = arg_names + [output_names]
+    for a in aa:
+
         symbol_group = a[0]
         date = a[1]
         an = a[2]
@@ -90,8 +95,6 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             index = symbols[symbol_group].index(b)
 
             table[(b,date)] = (an, index)
-
-    variables = [k[0] for k in table]
 
     table_symbols = { k: (std_date_symbol(*k)) for k in table.keys() }
 
@@ -110,6 +113,7 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
     # declare symbols
 
     preamble = []
+
     for k in table: # order it
         # k : var, date
         arg,pos = table[k]
@@ -126,7 +130,7 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
             preamble.append(line)
 
     body = []
-    std_dates = StandardizeDates(symbols, arg_names)
+    std_dates = StandardizeDates(symbols, aa)
 
     for i,expr in enumerate(expressions):
 
@@ -151,6 +155,13 @@ def compile_function_ast(expressions, symbols, arg_names, funname='anonymous', d
 
         body.append(line)
 
+        if output_names is not None:
+            varname = symbols[output_names[0]][i]
+            date = output_names[1]
+            out_name = table_symbols[(varname,date)]
+            line = Assign(targets=[Name(id=out_name.format(i), ctx=Store())],
+                          value=Name(id='out_{}'.format(i), ctx=Store()))
+            # body.append(line)
 
 
     args = [e[2] for e in arg_names] + ['out']

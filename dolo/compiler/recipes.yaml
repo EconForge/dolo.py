@@ -79,6 +79,7 @@ fga:
                 - ['states',0,'s']
                 - ['controls',0,'x']
                 - ['auxiliaries',0,'y']
+                - ['shocks', 1, 'E']
                 - ['states',1,'S']
                 - ['controls',1,'X']
                 - ['auxiliaries',1,'Y']

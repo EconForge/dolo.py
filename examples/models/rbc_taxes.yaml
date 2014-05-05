@@ -1,11 +1,12 @@
 name: taxes
 
-model_type: fg
+model_type: fga
 
 symbols:
 
    states:  [z, k, g]
-   controls: [i, n, rk, w, y, c]
+   controls: [i, n]
+   auxiliaries: [rk, w, y, c]
    shocks: [e_g]
 
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar ]
@@ -16,6 +17,8 @@ equations:
    arbitrage:
       - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
       - w = chi*n^eta*c^sigma                  | 0 <= n <= inf
+
+   auxiliary:
       - rk = alpha*z*(n/k)^(1-alpha)
       - w = (1-alpha)*z*(k/n)^(alpha)
       - y = z*k^alpha*n^(1-alpha)

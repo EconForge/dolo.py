@@ -6,8 +6,8 @@ from dolo import yaml_import
 
 def test_model_evaluation(compiler='numpy', data_layout='columns'):
 
-    #model = yaml_import('examples/global_models/rbc_fg.yaml', compiler=compiler, order=data_layout)
-    model = yaml_import('examples/global_models/rbc_fg.yaml')
+    #model = yaml_import('examples/models/rbc_fg.yaml', compiler=compiler, order=data_layout)
+    model = yaml_import('examples/models/rbc_fg.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']

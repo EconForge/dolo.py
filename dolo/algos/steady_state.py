@@ -11,7 +11,9 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     :return: a dictionary with the same structure as "model.calibration".
     '''
 
+    from dolo.algos.convert import get_fg_functions
 
+    [f,g] = get_fg_functions(model)
     
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
@@ -43,18 +45,18 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         x = z[len(s0):-n_e]
         e = z[-n_e:]
 
-        S = model.functions['transition'](s,x,e,p)
-        r = model.functions['arbitrage'](s,x,s,x,p)
+        S = g(s,x,e,p)
+        r = f(s,x,e,s,x,p)
         d_e = e - e0
         d_sx = z[addcons_ind] - addcons_val
         res = numpy.concatenate([S-s, r, d_e, d_sx ])
         return res
 
-    from trash.dolo.numeric.solver import MyJacobian
+    from dolo.numeric.misc import MyJacobian
     jac = MyJacobian(fobj)( z )
     if return_jacobian:
         return jac
-   
+
 
     rank = numpy.linalg.matrix_rank(jac)
     if rank < len(z):
@@ -119,7 +121,7 @@ def residuals(model, calib=None):
         a = model.functions['auxiliary']
         
         res['transition'] = g(s,x,y,e,p)-s
-        res['arbitrage'] = f(s,x,y,s,x,y,p)
+        res['arbitrage'] = f(s,x,y,e,s,x,y,p)
         res['auxiliary'] = a(s,x,p)-y
 
         if 'value' in model.functions:
@@ -195,7 +197,7 @@ if __name__ == '__main__':
 
     from dolo.algos.steady_state import find_steady_state
 
-    model = yaml_import("examples/global_models/open_economy.yaml")
+    model = yaml_import("examples/models/open_economy.yaml")
     
     
     ss = find_steady_state( model )

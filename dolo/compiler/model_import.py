@@ -143,7 +143,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
 if __name__ == "__main__":
 
-    fname = "../../examples/global_models/rbc.yaml"
+    fname = "../../examples/models/rbc.yaml"
 
     model = yaml_import(fname)
 

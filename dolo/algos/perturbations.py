@@ -27,7 +27,7 @@ class GeneralizedEigenvaluesError(Exception):
 
            
 
-def approximate_controls(model, return_dr=True, verbose=False, steady_state=None, order=1):
+def approximate_controls(model, verbose=False, steady_state=None, order=1):
 
     if order>1:
         raise Exception("Not implemented.")
@@ -35,9 +35,13 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
     # get steady_state
     import numpy
 
-    from dolo.compiler.converter import GModel_fg_from_fga
-    if model.model_type == 'fga':
-        model = GModel_fg_from_fga(model)
+    # if model.model_type == 'fga':
+    #     model = GModel_fg_from_fga(model)
+
+    # g = model.functions['transition']
+    # f = model.functions['arbitrage']
+    from dolo.algos.convert import get_fg_functions
+    [f,g] = get_fg_functions(model)
 
     if steady_state is not None:
         calib = steady_state
@@ -53,34 +57,19 @@ def approximate_controls(model, return_dr=True, verbose=False, steady_state=None
         sigma = model.covariances
     else:
         sigma = numpy.zeros((len(e), len(e)))
-    # sigma = model.calibration['covariances']
 
     from numpy.linalg import solve
-
-    g = model.functions['transition']
-    f = model.functions['arbitrage']
-
-
-#    aux = model.functions['auxiliary']
-
-
-
 
 
     l = g(s,x,e,p, diff=True)
     [junk, g_s, g_x, g_e] = l[:4] # [el[0,...] for el in l[:4]]
 
-    if model.model_type == "fg2":
-      l = f(s,x,e,s,x,p, diff=True)
-      [res, f_s, f_x, f_e, f_S, f_X] = l[:6] #[el[0,...] for el in l[:6]]
-    else:
-        l = f(s,x,s,x,p, diff=True)
-        [res, f_s, f_x, f_S, f_X] = l[:5] #[el[0,...] for el in l[:5]]
+    l = f(s,x,e,s,x,p, diff=True)
+    [res, f_s, f_x, f_e, f_S, f_X] = l #[el[0,...] for el in l[:6]]
 
     n_s = g_s.shape[0]           # number of controls
     n_x = g_x.shape[1]   # number of states
     n_e = g_e.shape[1]
-
     n_v = n_s + n_x
 
     A = row_stack([

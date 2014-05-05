@@ -3,14 +3,13 @@ from numpy import linspace, zeros, atleast_2d
 
 from dolo.algos.steady_state import find_deterministic_equilibrium 
 
-def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, use_pandas=True, initial_guess=None, verbose=False, tol=1e-6):
+def deterministic_solve(model, shocks=None, start_states=None, start_constraints=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
     '''
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
     :param model: an "fga" model
     :param shocks: a :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
     :param T: the horizon for the perfect foresight simulation
-    :param use_pandas: if True, returns a pandas dataframe, else the simulation matrix
     :param ignore_constraints: if True, complementarity constraintes are ignored.
     :return: a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
     to a steady-state corresponding to the last value of the exogenous shocks.
@@ -18,9 +17,9 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     # TODO:
 
-    if model.model_type == 'fga':
-        from dolo.compiler.converter import GModel_fg_from_fga
-        model = GModel_fg_from_fga(model)
+    # if model.model_type == 'fga':
+    #     from dolo.compiler.converter import GModel_fg_from_fga
+    #     model = GModel_fg_from_fga(model)
 
     # definitions
     n_s = len(model.calibration['states'])
@@ -30,7 +29,7 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         shocks = numpy.zeros( (len(model.calibration['shocks']),1))
 
     # until last period, exogenous shock takes its last value
-    epsilons = numpy.zeros( (T, shocks.shape[1]))
+    epsilons = numpy.zeros( (T+1, shocks.shape[1]))
     epsilons[:(shocks.shape[0]-1),:] = shocks[1:,:]
     epsilons[(shocks.shape[0]-1):,:] = shocks[-1:,:]
 
@@ -48,10 +47,17 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
         final_s = model.calibration['states']
         final_x = model.calibration['controls']
     else:
-        raise Exception("You must compute initial calibration yourself")
-#        final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
-#        start_dict = {model.symbols['shocks'][i]: shocks[i,0] for i in range(len(model.symbols['shocks']))}
-#        start_equilibrium = find_deterministic_equilibrium( model, constraints=start_dict)
+        # raise Exception("You must compute initial calibration yourself")
+        final_dict = {model.symbols['shocks'][i]: shocks[i,-1] for i in range(len(model.symbols['shocks']))}
+        start_dict = {model.symbols['shocks'][i]: shocks[i,0] for i in range(len(model.symbols['shocks']))}
+        start_calib = find_deterministic_equilibrium( model, constraints=start_dict)
+        final_calib = find_deterministic_equilibrium( model, constraints=start_dict)
+
+        start_s = start_calib['states']
+        start_x = start_calib['controls']
+        final_s = final_calib['states']
+        final_x = final_calib['controls']
+
 
 #        if start_constraints:
 #        ### we ignore start_constraints
@@ -119,13 +125,11 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
     if not ignore_constraints:
 
-        from dolo.numeric.ncpsolve import ncpsolve
+        from dolo.numeric.optimize.ncpsolve import ncpsolve
         ff  = lambda vec: det_residual(model, vec.reshape(sh), start_s, final_x, epsilons, jactype='sparse')
-        
-        from dolo.numeric.newton import newton
-        x0 = initial_guess.ravel()
 
-        [val, dval] = ff(x0)
+        from dolo.numeric.optimize.newton import newton
+        x0 = initial_guess.ravel()
 
         sol, nit = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol, jactype='sparse')
         
@@ -145,20 +149,21 @@ def deterministic_solve(model, shocks=None, start_states=None, start_constraints
 
         sol = sol.x.reshape(sh)
 
-    if use_pandas:
-        import pandas
-        if 'auxiliary' in model.functions:
-            colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliary']
-            # compute auxiliaries
-            y = model.functions['auxiliary'](sol[:,:n_s], sol[:,n_s:], p)
-            sol = numpy.column_stack([sol,y])
-        else:
-            colnames = model.symbols['states'] + model.symbols['controls']
-
-        ts = pandas.DataFrame(sol, columns=colnames)
-        return ts
+    import pandas
+    if 'auxiliary' in model.functions:
+        colnames = model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
+        # compute auxiliaries
+        y = model.functions['auxiliary'](sol[:,:n_s], sol[:,n_s:], p)
+        sol = numpy.column_stack([sol,y])
     else:
-        return sol
+        colnames = model.symbols['states'] + model.symbols['controls']
+
+    sol = numpy.column_stack([sol,epsilons])
+    colnames = colnames + model.symbols['shocks']
+
+    ts = pandas.DataFrame(sol, columns=colnames)
+    return ts
+
 
 
 def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'):
@@ -186,8 +191,8 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
 
     p = model.calibration['parameters']
 
-    f = model.functions['arbitrage']
-    g = model.functions['transition']
+    from dolo.algos.convert import get_fg_functions
+    [f,g] = get_fg_functions(model)
 
     vec = guess[:-1,:]
     vec_f = guess[1:,:]
@@ -197,9 +202,12 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
     S = vec_f[:,:n_s]
     X = vec_f[:,n_s:]
 
+    e = shocks[:-1,:]
+    E = shocks[1:,:]
+
     if diff:
-        SS, SS_s, SS_x, SS_e = g(s,x,shocks,p, diff=True)
-        R, R_s, R_x, R_S, R_X = f(s,x,S,X,p,diff=True)
+        SS, SS_s, SS_x, SS_e = g(s,x,e,p, diff=True)
+        R, R_s, R_x, R_e, R_S, R_X = f(s,x,E,S,X,p,diff=True)
     else:
         SS = g(s,x,shocks,p)
         R = f(s,x,S,X,p)
@@ -272,7 +280,7 @@ if __name__ == '__main__':
 
     from pylab import *
 
-    model = yaml_import('../../examples/global_models/rbc_taxes.yaml')
+    model = yaml_import('../../examples/models/rbc_taxes.yaml')
 
     s = model.calibration['states']
     p = model.calibration['parameters']

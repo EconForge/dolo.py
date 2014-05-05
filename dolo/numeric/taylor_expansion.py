@@ -39,9 +39,6 @@ class TaylorExpansion:
 
         return choice
 
-    def interpolate(self,x):
-
-        return self.__call__(x)
 
 class CDR(TaylorExpansion):
     # for compatibility

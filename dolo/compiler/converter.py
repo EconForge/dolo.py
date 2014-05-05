@@ -97,7 +97,7 @@ class GModel_fg_from_fga:
 
 if __name__ == "__main__":
     from dolo import *
-    model = yaml_import("examples/global_models/rbc.yaml")
+    model = yaml_import("examples/models/rbc.yaml")
 
     model_fg = GModel_fg_from_fga(model)
 

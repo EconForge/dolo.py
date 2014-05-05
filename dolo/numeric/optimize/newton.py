@@ -12,8 +12,9 @@ from numba import double
 
 def solve(m, sol):
 
-    h,w = m.shape
+    # seems to segfault on windows
 
+    h,w = m.shape
 
     for y in range(0,h):
         maxrow = y
@@ -42,19 +43,22 @@ def solve(m, sol):
     for y in range(h):
         sol[y] = m[y,w-1]
 
+serial_solve_numba = guvectorize('void(f8[:,:], f8[:])', '(m,n)->(m)')(solve)
 
 
+from numpy.linalg import solve as linalg_solve
 
-serial_solve_numba = guvectorize('void(f8[:,:], f8[:])', '(m,n)->(m)')(solve)  #, target=target)
 
-def serial_solve(A, B, diagnose=False):
+def serial_solve(A, B, diagnose=True):
+
 
     if diagnose:
+
         sol = zeros_like(B)
 
         for i in range(sol.shape[0]):
             try:
-                sol[i,:] = solve( A[i,:,:], B[i,:])
+                sol[i,:] = linalg_solve( A[i,:,:], B[i,:])
             except:
                 # Should be a special type of exception
                 a = Exception("Error solving point {}".format(i))
@@ -76,6 +80,16 @@ import time
 
 def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
 
+
+    """Solve nonlinear system using safeguarded Newton iterations
+
+
+    Parameters
+    ----------
+
+    Return
+    ------
+    """
     if verbose:
         print = lambda txt: old_print(txt)
     else:
@@ -108,14 +122,16 @@ def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
         error_0 = abs(v).max()
 
         if error_0 < tol:
-            
+
+            if verbose:
+                print("> Initial value solves the system. Residual={}".format(error_0))
             converged = True
 
         else:
 
             dx = solve(dv, v)
 
-            norm_dx = abs(dx).max()
+            # norm_dx = abs(dx).max()
 
             for bck in range(maxbacksteps):
                 xx = x - dx*(2**(-bck))
@@ -164,7 +180,7 @@ def SerialDifferentiableFunction(f, epsilon=1e-8):
 
         return [v0, dv]
 
-    return df         
+    return df
 
 
 

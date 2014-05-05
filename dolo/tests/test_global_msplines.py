@@ -8,7 +8,7 @@ class TestGlobal(unittest.TestCase):
         from dolo import yaml_import, global_solve
 
 
-        filename = 'examples/global_models/rbc.yaml'
+        filename = 'examples/models/rbc.yaml'
 
         model = yaml_import(filename)
 
