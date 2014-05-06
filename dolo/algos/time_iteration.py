@@ -68,7 +68,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     if bounds is not None:
         pass
 
-    elif False and model.options and 'approximation_space' in model.options:
+    elif model.options and 'approximation_space' in model.options:
 
         vprint('Using bounds specified by model')
 

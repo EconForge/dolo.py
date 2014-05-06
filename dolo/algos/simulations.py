@@ -149,6 +149,41 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
 
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=10, s0=None, **kwargs):
+    """Plots decision rule
+
+    Parameters:
+    -----------
+
+    model:
+        "fg" or "fga" model
+
+    dr:
+        decision rule
+
+    state:
+        state variable that is supposed to vary
+
+    plot_controls: string, list or None
+        if None, return a pandas dataframe
+        if a string denoting a control variable, plot this variable as a function of the state
+        if a list of strings, plot several variables
+
+    bounds: array_like
+        the state variable varies from bounds[0] to bounds[1].
+        By default, boundares boundaries are looked for in the the decision rule then in the model.
+
+    n_steps: int
+        number of points to be plotted
+
+    s0: array_like or None
+        value for the state variables, that remain constant. Defaults to `model.calibration['states']`
+
+    Returns:
+    --------
+
+    dataframe or plot, depending on the value of `plot_controls`
+
+    """
 
     import numpy
 
