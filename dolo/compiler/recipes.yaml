@@ -11,6 +11,7 @@ fg:
             eqs:
                 - ['states',0,'s']
                 - ['controls',0,'x']
+                - ['shocks', 1, 'E']
                 - ['states',1,'S']
                 - ['controls',1,'X']
                 - ['parameters',0,'p']

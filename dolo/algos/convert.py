@@ -18,9 +18,16 @@ def get_fg_functions(model):
 
     self = model
 
+
+
     ff = self.functions['arbitrage']
     gg = self.functions['transition']
+
+    if model.model_type == 'fg':
+        return [ff, gg]
+
     aa = self.functions['auxiliary']
+
     from dolo.numeric.serial_operations import serial_multiplication as serial_mult
 
     def f(s,x,E,S,X,p,diff=False):

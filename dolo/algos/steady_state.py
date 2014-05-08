@@ -113,7 +113,7 @@ def residuals(model, calib=None):
         g = model.functions['transition']
 
         res['transition'] = g(s,x,e,p)-s
-        res['arbitrage'] = f(s,x,s,x,p)
+        res['arbitrage'] = f(s,x,e,s,x,p)
         
 
     elif model.model_type  == "fga":
