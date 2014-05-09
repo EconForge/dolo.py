@@ -247,7 +247,7 @@ Model object:
 
             arg_names = recipe['specs'][funname]['eqs']
 
-            fun = compile_function_ast(eqs, symbols, arg_names, output_names=target_spec, funname=funname,  use_numexpr=True)
+            fun = compile_function_ast(eqs, symbols, arg_names, output_names=target_spec, funname=funname,  use_numexpr=False)
 
             n_output = len(eqs)
 
