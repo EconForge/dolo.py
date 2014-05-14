@@ -13,7 +13,7 @@ def std_date_symbol(s,date):
 
 import ast
 
-from ast import Expr, Subscript, Name, Load, Index, Num, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
+from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
 
 # import codegen
 
@@ -57,8 +57,13 @@ class StandardizeDates(NodeTransformer):
     def visit_Call(self, node):
 
         name = node.func.id
+        args = node.args[0]
         if name in self.variables:
-            date = node.args[0].n
+            if isinstance(args, UnaryOp):
+                # we have s(+1)
+                assert(isinstance(args.op, UAdd))
+                args = args.operand
+            date = args.n
             key = (name, date)
             newname = self.table_symbols.get(key)
             if newname is not None:
@@ -168,18 +173,18 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
     f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, defaults=[]),
                 body=preamble+body, decorator_list=[])
-    
+
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
     # print_code=True
     if print_code:
-        
+
         s = "Function {}".format(mod.body[0].name)
         print("-"*len(s))
         print(s)
         print("-"*len(s))
-        
+
         import codegen
         print( codegen.to_source(mod) )
 
@@ -198,7 +203,11 @@ def eval_ast(mod):
     context['division'] = division # THAT seems strange !
 
     import numpy
+
     context['inf'] = numpy.inf
+    context['maximum'] = numpy.maximum
+    context['minimum'] = numpy.minimum
+
     context['exp'] = numpy.exp
     context['log'] = numpy.log
     context['sin'] = numpy.sin
@@ -216,7 +225,7 @@ if __name__ == '__main__':
 
 
     s1 = '(x0(1) + x1 / y0)**p0 - (x0(1) + x1 / y0)**(p0-1) '
-    s2 = 'x0 + x1 / y1(1)'
+    s2 = 'x0 + x1 / y1(+1)'
 
     expressions = [s1,s2]
 
@@ -245,7 +254,7 @@ if __name__ == '__main__':
 
     t0 = time.time()
     resp = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=True, return_ast=True)
-    
+
     t1 = time.time()
 
     print(t1-t0)
@@ -284,7 +293,7 @@ if __name__ == '__main__':
     arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
 
     out = numpy.zeros((N,4))
-    (arbitrage(s,x,S,X,p,out))  
+    (arbitrage(s,x,S,X,p,out))
     print(out)
 
 
