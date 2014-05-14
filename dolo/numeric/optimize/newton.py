@@ -111,8 +111,6 @@ def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
 
     while it<maxit and not converged:
 
-        it += 1
-
         [v,dv] = f(x)
 
         # TODO: rewrite starting here
@@ -124,10 +122,12 @@ def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
         if error_0 < tol:
 
             if verbose:
-                print("> Initial value solves the system. Residual={}".format(error_0))
+                print("> System was solved after iteration {}. Residual={}".format(it,error_0))
             converged = True
 
         else:
+
+            it += 1
 
             dx = solve(dv, v)
 
