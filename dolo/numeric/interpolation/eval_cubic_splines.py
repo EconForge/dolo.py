@@ -29,8 +29,8 @@ def eval_cubic_multi_spline_d(a, b, orders, mcoefs, point, values, dvalues):
 
 
 from eval_cubic_splines_numba import vec_eval_cubic_multi_spline_1, vec_eval_cubic_multi_spline_2
+from eval_cubic_splines_numba import vec_eval_cubic_multi_spline_3, vec_eval_cubic_multi_spline_4
 
-# from eval_cubic_splines_numba import eval_cubic_multi_spline_3
 from eval_cubic_splines_numba import Ad, dAd
 
 def vec_eval_cubic_multi_spline(a, b, orders, mcoefs, points, values=None):
@@ -53,6 +53,10 @@ def vec_eval_cubic_multi_spline(a, b, orders, mcoefs, points, values=None):
 
     elif d == 3:
         vec_eval_cubic_multi_spline_3(a, b, orders, mcoefs, points, values)
+
+    elif d == 4:
+        vec_eval_cubic_multi_spline_4(a, b, orders, mcoefs, points, values)
+
 
     return values
 

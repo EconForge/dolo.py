@@ -155,6 +155,48 @@ def filter_coeffs_3d(dinv, data):
     return coefs
 
 
+@jit
+def filter_coeffs_4d(dinv, data):
+
+    Mx = data.shape[0]
+    My = data.shape[1]
+    Mz = data.shape[2]
+    Mz4 = data.shape[3]
+
+    Nx = Mx + 2
+    Ny = My + 2
+    Nz = Mz + 2
+    Nz4 = Mz4 +2
+
+    coefs = np.zeros((Nx, Ny, Nz, Nz4))
+
+    # First, solve in the X-direction
+    for iy in range(My):
+        for iz in range(Mz):
+            for iz4 in range(Mz4):
+                find_coefs_1d(dinv[0], Mx, data[:, iy, iz, iz4], coefs[:, iy, iz, iz4])
+
+    # Now, solve in the Y-direction
+    for ix in range(Nx):
+        for iz in range(Mz):
+            for iz4 in range(Mz4):
+                find_coefs_1d(dinv[1], My, coefs[ix, :, iz, iz4], coefs[ix, :, iz, iz4])
+
+    # Now, solve in the Z-direction
+    for ix in range(Nx):
+        for iy in range(Ny):
+            for iz4 in range(Mz4):
+                find_coefs_1d(dinv[2], Mz, coefs[ix, iy, :, iz4], coefs[ix, iy, :, iz4])
+
+    # Now, solve in the Z4-direction
+    for ix in range(Nx):
+        for iy in range(Ny):
+            for iz in range(Nz):
+                find_coefs_1d(dinv[3], Mz4, coefs[ix, iy, iz, :], coefs[ix, iy, iz, :])
+
+    return coefs
+
+
 def filter_coeffs(smin, smax, orders, data):
     smin = np.array(smin, dtype=float)
     smax = np.array(smax, dtype=float)
@@ -170,8 +212,8 @@ def filter_data(dinv, data):
         return filter_coeffs_2d(dinv, data)
     elif len(dinv) == 3:
         return filter_coeffs_3d(dinv, data)
-    # elif len(dinv) == 4:
-    #     return filter_coeffs_4d(dinv,data)
+    elif len(dinv) == 4:
+        return filter_coeffs_4d(dinv, data)
 #
 
 
