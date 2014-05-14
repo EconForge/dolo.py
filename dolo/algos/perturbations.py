@@ -27,7 +27,7 @@ class GeneralizedEigenvaluesError(Exception):
 
            
 
-def approximate_controls(model, verbose=False, steady_state=None, solve_steady_state=False, order=1):
+def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, solve_steady_state=False, order=1):
     """Compute first order approximation of optimal controls
 
     Parameters:
@@ -124,10 +124,10 @@ def approximate_controls(model, verbose=False, steady_state=None, solve_steady_s
     diag_T = numpy.diag(T)
 
     # Check Blanchard=Kahn conditions
-    n_big_one = sum(eigval>1.0)
+    n_big_one = sum(eigval>eigmax)
     n_expected = n_x
     if verbose:
-        print( "There are {} eigenvalues greater than 1. Expected: {}.".format( n_big_one, n_x ) )
+        print( "There are {} eigenvalues greater than {}. Expected: {}.".format( n_big_one, eigmax, n_x ) )
     if n_expected != n_big_one:
         raise BlanchardKahnError(n_big_one, n_expected)
 
