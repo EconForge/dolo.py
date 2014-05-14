@@ -106,9 +106,14 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
         lb = numpy.zeros_like(controls_0)*numpy.nan
         ub = numpy.zeros_like(controls_0)*numpy.nan
         for i_m in range(n_ms):
-            m = P[i_m,:]
-            lb[i_m,:,:] = lb_fun(m, grid, parms)
-            ub[i_m,:,:] = ub_fun(m, grid, parms)
+            m = P[i_m,:][None,:]
+            p = parms[None,:]
+            m = numpy.repeat(m, N, axis=0)
+            p = numpy.repeat(p, N, axis=0)
+
+            lb[i_m,:,:] = lb_fun(m, grid, p)
+            ub[i_m,:,:] = ub_fun(m, grid, p)
+
     else:
         with_complementarities = False
 
@@ -150,6 +155,8 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     err_0 = numpy.nan
 
+    verbit = (verbose == 'full')
+
     while err>tol and it<maxit:
 
         it += 1
@@ -162,9 +169,9 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
         dfn = SerialDifferentiableFunction(fn)
 
         if with_complementarities:
-            [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=False, maxit=inner_maxit)
+            [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit)
         else:
-            [controls, nit] = newton(dfn, controls_0, verbose=False, maxit=inner_maxit)
+            [controls, nit] = newton(dfn, controls_0, verbose=verbit, maxit=inner_maxit)
 
         err = abs(controls-controls_0).max()
 
