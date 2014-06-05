@@ -1,11 +1,11 @@
 fg:
 
     model_type: fg
-    
+
     symbols: ['states', 'controls', 'shocks', 'parameters']
-    
+
     specs:
-    
+
         arbitrage:
 
             eqs:
@@ -25,11 +25,11 @@ fg:
                 middle: ['controls', 0, 's']
 
 
-    
+
         transition:
-    
+
             target: ['states',0,'S']
-    
+
             eqs:
                 - ['states',-1,'s']
                 - ['controls',-1,'x']
@@ -41,25 +41,25 @@ fg:
 fg2:
 
     model_type: fg2
-    
+
     variable_type: ['states', 'controls']
-    
+
     equation_type:
-    
+
         arbitrage:
             - ['states',0]
             - ['controls',0]
             - ['shocks',1]
             - ['states',1]
             - ['controls',1]
-    
+
         transition:
-    
+
             definition: True
-    
+
             lhs:
                 - ['states',0]
-    
+
             rhs:
                 - ['states',-1]
                 - ['controls',-1]
@@ -210,7 +210,7 @@ fgh2:
           rhs:
               - ['states',0]
               - ['controls',0]
-              - ['shocks',1]  
+              - ['shocks',1]
               - ['states',1]
               - ['controls',1]
 
@@ -247,50 +247,6 @@ vfi:
               - ['controls',-1]
               - ['shocks',0]
 
-
-mfga:
-
-    model_type: mfg
-
-    symbols: ['markov_states', 'states', 'controls', 'shocks', 'parameters']
-
-    specs:
-
-        arbitrage:
-
-            eqs:
-                - ['markov_states',0,'m']
-                - ['states',0,'s']
-                - ['controls',0,'x']
-                - ['markov_states',0,'M']
-                - ['states',1,'S']
-                - ['controls',1,'X']
-                - ['parameters',0,'p']
-
-            complementarities:
-
-                left-right:
-                    - ['markov_states',0,'m']
-                    - ['states', 0, 's']
-                    - ['parameters', 0, 'p']
-
-                middle: ['controls', 0, 's']
-
-
-
-        transition:
-
-            target: ['states',0,'S']
-
-            eqs:
-                - ['markov_states',-1,'m']
-                - ['states',-1,'s']
-                - ['controls',-1,'x']
-                - ['markov_states',0,'M']
-                - ['parameters', 0, 'p']
-
-
-
 mfga:
 
     model_type: mfga
@@ -308,7 +264,7 @@ mfga:
                 - ['controls',0,'x']
                 - ['auxiliaries',0,'y']
 
-                - ['markov_states',0,'M']
+                - ['markov_states',1,'M']
                 - ['states',1,'S']
                 - ['controls',1,'X']
                 - ['auxiliaries',1,'Y']
@@ -349,3 +305,26 @@ mfga:
                 - ['states',0,'s']
                 - ['controls',0,'x']
                 - ['parameters', 0, 'p']
+
+
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['values', 0, 'v']
+
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['values', 1, 'V']
+
+                - ['parameters',0,'p']

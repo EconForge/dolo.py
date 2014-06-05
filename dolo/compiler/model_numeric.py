@@ -12,7 +12,7 @@ class NumericModel:
 
         self.symbolic = symbolic_model
         self.symbols = symbolic_model.symbols
-        self.variables = sum( [tuple(e) for k,e in self.symbols.iteritems() if k not in ('parameters','shocks','values')], ())
+        self.variables = sum( [tuple(e) for k,e in  self.symbols.iteritems() if k not in ('parameters','shocks','values')], ())
 
         self.options = options if options is not None else {}
 
@@ -25,7 +25,6 @@ class NumericModel:
 
         self.__update_from_symbolic__()
         self.__compile_functions__()
-
 
     def __update_from_symbolic__(self):
 
@@ -165,6 +164,8 @@ Model object:
         from dolo.compiler.function_compiler_ast import compile_function_ast
         from dolo.compiler.function_compiler import standard_function
 
+        defs = self.symbolic.definitions
+
         # works for fg models only
         recipe = recipes[self.model_type]
         symbols = self.symbols # should match self.symbols
@@ -223,8 +224,8 @@ Model object:
                 comp_lhs, comp_rhs = zip(*comps)
                 fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
 
-                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False)
-                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False)
+                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False, definitions=defs)
+                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False, definitions=defs)
 
                 n_output = len(comp_lhs)
 
@@ -247,7 +248,10 @@ Model object:
 
             arg_names = recipe['specs'][funname]['eqs']
 
-            fun = compile_function_ast(eqs, symbols, arg_names, output_names=target_spec, funname=funname,  use_numexpr=False)
+            fun = compile_function_ast(eqs, symbols, arg_names,
+                                    output_names=target_spec, funname=funname,
+                                        use_numexpr=False, definitions=defs
+                                    )
 
             n_output = len(eqs)
 
@@ -278,4 +282,3 @@ def decode_complementarity(comp, control):
         msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(comp, control, res[1])
         raise Exception(msg)
     return [res[0], res[2]]
-

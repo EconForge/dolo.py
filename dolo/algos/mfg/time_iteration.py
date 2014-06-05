@@ -68,26 +68,27 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
 
 
-    if isinstance(initial_guess, numpy.ndarray):
-        print("Using initial guess (1)")
-        controls = initial_guess
-    elif isinstance(initial_guess, dict):
-        print("Using initial guess (2)")
-        controls_0 = initial_guess['controls']
-        ap_space = initial_guess['approximation_space']
-        if False in (approx['orders']==orders):
-            print("Interpolating initial guess")
-            old_dr = MarkovDecisionRule(controls_0.shape[0], ap_space['smin'], ap_space['smax'], ap_space['orders'])
-            old_dr.set_values(controls_0)
-            controls_0 = numpy.zeros( (n_ms, N, n_x) )
-            for i in range(n_ms):
-                e = old_dr(i,grid)
-                controls_0[i,:,:] = e
-    else:
-        controls_0 = numpy.zeros((n_ms, N, n_x))
+#    if isinstance(initial_guess, numpy.ndarray):
+#        print("Using initial guess (1)")
+#        controls = initial_guess
+#    elif isinstance(initial_guess, dict):
+#        print("Using initial guess (2)")
+#        controls_0 = initial_guess['controls']
+#        ap_space = initial_guess['approximation_space']
+#        if False in (approx['orders']==orders):
+#            print("Interpolating initial guess")
+#            old_dr = MarkovDecisionRule(controls_0.shape[0], ap_space['smin'], ap_space['smax'], ap_space['orders'])
+#            old_dr.set_values(controls_0)
+#            controls_0 = numpy.zeros( (n_ms, N, n_x) )
+#            for i in range(n_ms):
+#                e = old_dr(i,grid)
+#                controls_0[i,:,:] = e
+#    else:
+#        controls_0 = numpy.zeros((n_ms, N, n_x))
 
 
 
+    controls_0 = numpy.zeros((n_ms, N, n_x))
 
     if initial_guess is None:
         controls_0[:,:,:] = x0[None,None,:]

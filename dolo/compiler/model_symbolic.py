@@ -5,7 +5,7 @@ from recipes import recipes
 class SymbolicModel:
 
     def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration,
-                 symbolic_covariances=None, symbolic_markov_chain=None, options=None):
+                 symbolic_covariances=None, symbolic_markov_chain=None, options=None, definitions=None):
 
         self.name = model_name
         self.model_type = model_type
@@ -15,6 +15,7 @@ class SymbolicModel:
         self.covariances = symbolic_covariances
         self.markov_chain = symbolic_markov_chain
         self.options = options
+        self.definitions = definitions
 
         self.check()
 
@@ -35,5 +36,3 @@ class SymbolicModel:
         else:
             pass
             # raise Exception( "No rule to check model type {}".format(self.model_type))
-
-

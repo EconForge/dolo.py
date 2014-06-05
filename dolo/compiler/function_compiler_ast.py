@@ -74,8 +74,22 @@ class StandardizeDates(NodeTransformer):
 
             return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
 
+class ReplaceName(ast.NodeTransformer):
 
-def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', data_order='columns', use_numexpr=False, return_ast=False, print_code=False):
+    # replaces names according to definitions
+
+    def __init__(self, defs):
+        self.definitions = defs
+
+    def visit_Name(self, expr):
+        if expr.id in self.definitions:
+            return self.definitions[expr.id]
+        else:
+            return expr
+
+
+def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous',
+     data_order='columns', use_numexpr=False, return_ast=False, print_code=False, definitions=None):
 
     '''
     expressions: list of equations as string
@@ -137,9 +151,14 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     body = []
     std_dates = StandardizeDates(symbols, aa)
 
+    if definitions is not None:
+        defs = {e: ast.parse(definitions[e]).body[0].value for e in definitions}
+
     for i,expr in enumerate(expressions):
 
         expr = ast.parse(expr).body[0].value
+        if definitions is not None:
+            expr = ReplaceName(defs).visit(expr)
 
         rexpr = std_dates.visit(expr)
 
