@@ -250,7 +250,7 @@ Model object:
 
             fun = compile_function_ast(eqs, symbols, arg_names,
                                     output_names=target_spec, funname=funname,
-                                        use_numexpr=False, definitions=defs
+                                        use_numexpr=True, definitions=defs
                                     )
 
             n_output = len(eqs)

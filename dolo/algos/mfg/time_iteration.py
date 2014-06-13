@@ -4,7 +4,6 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
-    n_x = s.shape[1]
 
     n_ms = P.shape[0]   # number of markov states
     n_mv = P.shape[1] # number of markov variable
@@ -12,6 +11,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
     res = numpy.zeros_like(x)
 
 
+    import time
 
     for i_ms in range(n_ms):
         # solving on grid for markov index i_ms
@@ -27,9 +27,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
             S = g(m, s, xm, M, parms)
             XM = dr(I_ms, S)
-
             rr = f(m,s,xm,M,S,XM,parms)
-
             res[i_ms,:,:] += prob*rr
 
     return res
@@ -95,7 +93,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
     else:
         for i_m in range(n_ms):
             m = P[i_m,:][None,:]
-            controls_0[i_m,:,:] = initial_guess(m, grid, parms)
+            controls_0[i_m,:,:] = initial_guess(i_m, grid)
 
     ff = model.functions['arbitrage']
     gg = model.functions['transition']
@@ -236,5 +234,3 @@ if __name__ == '__main__':
     ff = standard_function(fun, len(initial_guess_symbolic))
 
     sol = solve_mfg_model(model, initial_guess=ff)
-
-
