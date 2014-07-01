@@ -39,9 +39,9 @@ else: # we should determine some good output name in case none has been specifie
 
 ######
 
-from dolo.misc.yamlfile import yaml_import
+from dolo import yaml_import
 
-model = yaml_import( filename, compiler=None )
+model = yaml_import( filename )
 
 import re
 
@@ -73,12 +73,15 @@ if args.model_type:
 else:
     model_type = None
 
-from dolo.compiler.compiler_matlab import CompilerMatlab
-comp = CompilerMatlab(model, recipes=recipes, model_type=model_type)
+from dolo.compiler.function_compiler_matlab import compile_model_matlab
 
-txt = comp.process_output( diff=diff )
+txt = compile_model_matlab(model)
+# comp = CompilerMatlab(model, recipes=recipes, model_type=model_type)
+#
+# txt = comp.process_output( diff=diff )
 
 ######
+print(txt)
 
 with file(output_filename,'w') as f:
     f.write(txt)

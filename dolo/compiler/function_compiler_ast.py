@@ -2,6 +2,7 @@
 from __future__ import division
 
 
+
 def std_date_symbol(s,date):
     if date == 0:
         return '{}_'.format(s)
@@ -123,7 +124,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     elif vectorization_type == 'ellipsis':
         el = Ellipsis()
         if data_order == 'columns':
-                        # column broadcasting: i.e. k = s[...,0]
+            # column broadcasting: i.e. k = s[...,0]
             index = lambda x: ExtSlice(dims=[el, Index(value=Num(n=x))])
         else:
             # rows broadcasting: i.e. k = s[0,...]
