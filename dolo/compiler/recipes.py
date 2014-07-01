@@ -6,10 +6,17 @@ ideas :
 - dummy blocks that are basically substituted everywhere else
 '''
 
-import os, yaml
+import os, yaml, sys
 
-this_dir, this_filename = os.path.split(__file__)
-DATA_PATH = os.path.join(this_dir, "recipes.yaml")
+if getattr(sys, 'frozen', False):
+
+    this_dir, this_filename = os.path.split(__file__)
+    DATA_PATH = os.path.join(this_dir, "recipes.yaml")
+
+else:
+    # we are running in a |PyInstaller| bundle
+    DATA_PATH = sys._MEIPASS
+
 
 with file(DATA_PATH) as f:
   recipes = yaml.load(f)
