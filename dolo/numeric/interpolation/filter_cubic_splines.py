@@ -4,10 +4,10 @@ import numpy as np
 
 import time
 
-from numba import jit
+from numba import jit, njit
 
 
-@jit
+@njit
 def solve_deriv_interp_1d(bands, coefs):
 
     M = coefs.shape[0] - 2

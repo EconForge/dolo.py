@@ -1,9 +1,11 @@
+"""High-level API for cubic splines"""
+
 import numpy
 import numpy as np
 
 from .misc import mlinspace
 
- 
+
 class MultivariateCubicSplines:
 
     __grid__ = None
@@ -23,7 +25,7 @@ class MultivariateCubicSplines:
         self.__coeffs__ = None
 
     def set_values(self, values):
-        
+
         assert(values.ndim <= len(self.orders))
         self.set_mvalues(values.T)
 
@@ -77,7 +79,7 @@ class MultivariateCubicSplines:
         n_sp = self.__coeffs__.shape[0]
 
         N = points.shape[0]
-        d = points.shape[1] 
+        d = points.shape[1]
 
         if not with_derivatives:
             values = np.empty((N,n_sp), dtype=self.dtype)
@@ -86,19 +88,7 @@ class MultivariateCubicSplines:
             return values
         else:
             raise Exception("Not implemented.")
-            # values = np.empty((n_sp,N), dtype=self.dtype)
-            # dvalues = np.empty((n_sp,n_s,N), dtype=self.dtype)
-            # for i in range(n_sp):
-            #     sp =  self.__coeffs__[i]
 
-            #     [value, d_value] =  eval_UBspline(self.a, self.b, self.orders, sp.coefs, points, diff=True )
-            #     values[i,:] = value
-            #     dvalues[i,:,:] = d_value
-
-            # values = values.T
-            # dvalues = numpy.rollaxis(dvalues,2,0)
-
-            # return [values,dvalues]
 
     @property
     def grid(self):
@@ -107,7 +97,7 @@ class MultivariateCubicSplines:
         return self.__grid__
 
     def __call__(self, s):
-        
+
         if s.ndim == 1:
             res = self.__call__( numpy.atleast_2d(s).T )
             return res.ravel()

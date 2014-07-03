@@ -81,7 +81,6 @@ txt = compile_model_matlab(model)
 # txt = comp.process_output( diff=diff )
 
 ######
-print(txt)
 
 with file(output_filename,'w') as f:
     f.write(txt)
