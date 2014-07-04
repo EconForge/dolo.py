@@ -34,6 +34,31 @@ from eval_cubic_splines_numba import vec_eval_cubic_multi_spline_3, vec_eval_cub
 from eval_cubic_splines_numba import Ad, dAd
 
 def vec_eval_cubic_multi_spline(a, b, orders, mcoefs, points, values=None):
+    """Evaluates multi-splines on a series of points.
+
+    Parameters:
+    -----------
+    a : array of size d (float)
+        Lower bounds of the cartesian grid.
+    b : array of size d (float)
+        Upper bounds of the cartesian grid.
+    orders : array of size d (int)
+        Number of nodes along each dimension.
+    mcoefs : array of dimension d+1, and size (p, n1, ..., nd)
+        Filtered coefficients. For i in 1:(mcoefs.shape[0]), mcoefs[i,...] contains
+        the coefficients of splines number i.
+    points : array of size N x d
+        List of points where the splines must be interpolated.
+    values (optional) :  array of size (N x p)
+        If not None, contains the result.
+
+
+
+    Returns
+    -------
+    values : array of size (N x p)
+        Interpolated values. values[i,j] contains spline n-j evaluated at point points[i,:].
+    """
 
 
 
