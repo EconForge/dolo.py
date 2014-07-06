@@ -98,8 +98,8 @@ def eval_cubic_multi_spline_{{d}}(smin, smax, orders, coefs, point, vals, Ad, dA
 
     {{endfor}}
 
-    for n in range(n_vals):
-        vals[n] = {{values[d]}}
+    for k in range(n_vals):
+        vals[k] = {{values[d]}}
 
 
 {{endfor}}

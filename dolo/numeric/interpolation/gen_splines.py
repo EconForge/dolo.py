@@ -19,7 +19,7 @@ max_order = args.max_order
 def print_expr(symbs, inds=[]):
     if len(symbs) == 0:
         if multispline:
-            return 'coefs[n,{}]'.format(str.join(',',['i{}+{}'.format(i,k) for i,k in enumerate(inds)]))
+            return 'coefs[k,{}]'.format(str.join(',',['i{}+{}'.format(i,k) for i,k in enumerate(inds)]))
         else:
             return 'coefs[{}]'.format(str.join(',',['i{}+{}'.format(i,k) for i,k in enumerate(inds)]))
     else:

@@ -37,15 +37,30 @@ def test_eval_splines_2():
 
     [a, b, orders, raw_vals, coeffs] = test_splines_filter()
 
-    fine_grid = mlinspace(a, b, [10, 10])
+    fine_grid = mlinspace(a, b, [10000, 10000])
 
+
+    # print(output.flags)
     N = fine_grid.shape[0]
 
     output = numpy.zeros((N, 1))
 
-    cc = coeffs[None,:,:]
+    cc = numpy.ascontiguousarray(coeffs[None,:,:])
 
+    print(fine_grid.flags)
+    print(output.flags)
+    print(cc.flags)
+
+    import time
+    t1 = time.time()
     vec_eval_cubic_multi_spline(a, b, orders, cc, fine_grid, output)
+    t2 = time.time()
+    print(t2-t1)
+
+    t1 = time.time()
+    vec_eval_cubic_multi_spline(a, b, orders, cc, fine_grid, output)
+    t2 = time.time()
+    print(t2-t1)
 
 
 def test_eval_splines_3():
@@ -63,7 +78,7 @@ def test_eval_splines_3():
     fine_grid = mlinspace(a, b, [10, 10])
 
 
-    values = csp(fine_grid)    
+    values = csp(fine_grid)
 
 
 if __name__ == '__main__':
