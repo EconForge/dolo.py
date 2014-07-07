@@ -1,7 +1,6 @@
 from setuptools import setup, find_packages
 from distutils.extension import Extension
 
-from Cython.Distutils import build_ext
 import numpy as np
 
 # get version number
@@ -21,7 +20,7 @@ setup(
     
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
 
-    install_requires = ["pyyaml","numba>=0.13","numpy","cython"],
+    install_requires = ["pyyaml","numba>=0.13","numpy"],
 
     extras_require = {
             'plots':  ["matplotlib"],

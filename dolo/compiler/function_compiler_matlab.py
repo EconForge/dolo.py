@@ -7,12 +7,12 @@ def convert_ast_to_sympy(a):
     pass
 
 
-class WriteMatlab(ast.NodeVisitor):
-
-    def visit_BinOp(self,b):
-        lhs = self.visit(b.left)
-        rhs = self.visit(b.right)
-        print( "{} + {}".format(lhs,rhs) )
+#class WriteMatlab(ast.NodeVisitor):
+#
+#    def visit_BinOp(self,b):
+#        lhs = self.visit(b.left)
+#        rhs = self.visit(b.right)
+#        print( "{} + {}".format(lhs,rhs) ) """
 
 
 def print_matlab(sexpr):
@@ -122,7 +122,6 @@ def compile_model_matlab(model):
     for funname, v in recipe['specs'].iteritems():
 
         spec = v['eqs']
-        print(spec)
         if 'complementarities' in v:
             print("ignoring complementarities")
 
