@@ -6,9 +6,6 @@ import numpy
 from ..filter_cubic_splines import filter_coeffs
 
 
-# import pyximport
-# pyximport.install()
-
 from ..eval_cubic_splines_cython import vec_eval_cubic_multi_spline_2 as vec_eval_cubic_multi_spline_2_cython
 
 from ..eval_cubic_splines_numba import vec_eval_cubic_multi_spline_2 as vec_eval_cubic_multi_spline_2_numba

@@ -1,11 +1,10 @@
 import ast
+import codegen
 
 def str_to_expr(s):
     return ast.parse(s).body[0]
 
-def convert_ast_to_sympy(a):
-    pass
-
+from diff_ast_sympy import diff_ast
 
 #class WriteMatlab(ast.NodeVisitor):
 #
@@ -23,11 +22,6 @@ def print_matlab(sexpr):
     ss = ss.replace(' / ', './')
     return ss
 
-def expr_to_sympy(sexpr):
-    from dolo.compiler.codegen import to_source
-    ss = (to_source(sexpr))
-    import sympy
-    return sympy.sympify(ss)
 
 
 def compile_function_matlab(equations, symbols, arg_names, output_names=None, funname='anonymous'):
@@ -67,11 +61,15 @@ def compile_function_matlab(equations, symbols, arg_names, output_names=None, fu
     else:
         out_s = 'out'
 
+    expressions = []
+
     code_expr = ""
+    import sympy
     for i,eq in enumerate(equations):
         expr = str_to_expr(eq)
         sd = StandardizeDates(symbols, arg_names)
         sexpr = sd.visit(expr)
+        expressions.append(sexpr)
         eq_string = (print_matlab(sexpr))
         if output_names is None:
             code_expr += "out(:,{}) = {} ;\n".format(i+1, eq_string)
@@ -81,23 +79,81 @@ def compile_function_matlab(equations, symbols, arg_names, output_names=None, fu
             code_expr += "{} = {} ;\n".format(out_name, eq_string)
             code_expr += "{}(:,{}) = {} ;\n".format(out_s,i+1, out_name)
 
-    code = """\
-function [{out_s}] = {funname}({args_list})
 
+    ## temporary code to differentiate equations using sympy
+    if output_names:
+        # solve triangular system
+        sympy_names = [sympy.Symbol(e) for e in symbols[out_group]]
+        eq_dict = OrderedDict()
+        for i,name in enumerate(sympy_names):
+            eq = sympy.sympify(codegen.to_source(expressions[i]))
+            eq_dict[name] = eq.subs(eq_dict)
+        sympy_equations = eq_dict.values()
+    else:
+        sympy_equations = [sympy.sympify(codegen.to_source(expr)) for expr in expressions]
+
+
+    all_derivatives = OrderedDict()
+    for agn in arg_names:
+        sym_group = agn[0]
+        date = agn[1]
+        short_sym_group =  agn[2]
+        sym_names = [std_date_symbol(s, date) for s in symbols[sym_group]]
+        dvals = []
+        for eq in sympy_equations:
+            deq = []
+            for s in sym_names:
+                sym = sympy.Symbol(s)
+                ddif = (eq.diff(sym))
+                deq.append(ast.parse(str(ddif)).body[0])
+            dvals.append(deq)
+        all_derivatives[short_sym_group] = dvals
+    ## end of temporary code
+
+    code_dexpr = ""
+    for k,derivs in all_derivatives.iteritems():
+        code_dexpr += '\n%derivatives w.r.t {}\n'.format(k)
+        assign_name = "d_{}".format(k)
+        code_dexpr += '{} = zeros(N,{},{});\n'.format(assign_name, len(derivs), len(derivs[0]))
+        for i in range(len(derivs)):
+            for j in range(len(derivs[0])):
+                eq = derivs[i][j]
+                ss = print_matlab(eq)
+                if ss != '0':
+                    code_dexpr += "{}(:,{},{}) = {};\n".format(assign_name, i+1, j+1, ss)
+
+        code_dexpr += '\n'
+
+    code = """\
+function [{out_s}, {dout_s}] = {funname}({args_list})
+
+%% preamble
 {preamble}
 
 N = size({first_arg},1);
 out = zeros(N,{n_out});
+
+%% equations
+
 {equations}
+
+%% derivatives
+
+if nargout > 1
+{dequations}
+end
+
 end
 """.format(
     out_s = out_s,
+    dout_s = str.join(', ', ["d_{}".format(e[2]) for e in arg_names]),
     preamble = code_preamble,
     funname = funname,
     args_list = str.join(', ', [e[2] for e in arg_names]),
     n_out = len(equations),
     first_arg = arg_names[0][2],
-    equations = code_expr
+    equations = code_expr,
+    dequations = code_dexpr
 )
 
     return code
@@ -258,4 +314,8 @@ if __name__ == '__main__':
 
     from dolo import *
     model = yaml_import('examples/models/rbc.yaml')
+
+    import time
+    t1 = time.time()
     print( compile_model_matlab(model) )
+    t2 = time.time()
