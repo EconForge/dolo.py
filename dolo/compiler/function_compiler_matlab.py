@@ -4,8 +4,6 @@ import codegen
 def str_to_expr(s):
     return ast.parse(s).body[0]
 
-from diff_ast_sympy import diff_ast
-
 #class WriteMatlab(ast.NodeVisitor):
 #
 #    def visit_BinOp(self,b):
