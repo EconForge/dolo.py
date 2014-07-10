@@ -52,9 +52,8 @@ model.name = fname
 
 # check steady-state
 if args.print_residuals:
-    from dolo.symbolic.model import print_residuals
-    print_residuals(model)
 
+    print(model)
 
 if args.recipes:
     import yaml

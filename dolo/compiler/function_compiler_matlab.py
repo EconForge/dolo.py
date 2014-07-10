@@ -229,7 +229,7 @@ function [model] = construct_model()
     tv = [str(float(e)) for e in model.covariances.flatten()]
     tv = '[{}]'.format(str.join(', ', tv))
     n_c = model.covariances.shape[0]
-    code += "\n    covariances = reshape( {} , {}, {})\n".format(tv, n_c, n_c)
+    code += "\n    covariances = reshape( {} , {}, {});\n".format(tv, n_c, n_c)
 
     code += """\
 
