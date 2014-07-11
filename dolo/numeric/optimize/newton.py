@@ -145,10 +145,10 @@ def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype='serial'):
             if verbose:
                 print("\t> {} | {} | {}".format(it, err, bck))
 
-    if converged:
-        return [x, it]
-    else:
-        raise Exception("Did not converge")
+    if not converged:
+        import warnings
+        warnings.warn("Did not converge")
+    return [x, it]
 
 serial_newton = newton
 

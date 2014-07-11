@@ -32,12 +32,78 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
     return res
 
-def get_initial_guess(model):
+def residuals(f, g, s, x, dr, P, Q, parms):
 
-    pass
+    N = s.shape[0]
+    n_s = s.shape[1]
+    n_x = x.shape[2]
+
+    n_ms = P.shape[0]   # number of markov states
+    n_mv = P.shape[1] # number of markov variable
+
+    res = numpy.zeros_like(x)
+
+    m = P
+
+    import time
+
+    s_ = numpy.tile(s, (n_ms*n_ms, 1))
+    x_ = numpy.repeat(x[None,:,:,:], n_ms, axis=0)
+    
+    m_ = numpy.repeat( m, N, axis=1 )
+    m_ = numpy.tile( m_, (n_ms,1) )
+
+    M_ = numpy.repeat( m, N*n_ms, axis=1 )
+
+    # reshape everything as 2d arrays
+    s_ = s_.reshape( (-1, n_s) )
+    x_ = x_.reshape( (-1, n_x) )
+    m_ = m_.reshape( (-1, n_mv) )
+    M_ = M_.reshape( (-1, n_mv) )
 
 
-def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementarities=True, verbose=True, orders=None, output_type='dr'):
+    S_ = g(m_, s_, x_, M_, parms)
+    X_ = numpy.zeros_like(x_)
+
+    S_r = S_.reshape( (n_ms, n_ms, N, n_s) )
+    X_r = X_.reshape( (n_ms, n_ms, N, n_x) )
+
+    for I_ms in range(n_ms):
+        SS_ = S_r[I_ms, :, :, :].reshape( (n_ms*N, n_s) )
+        X_r[I_ms,:,:,:] = dr(I_ms, SS_).reshape( (n_ms, N, n_x) )
+
+
+    rr = f(m_, s_, x_, M_, S_, X_, parms)
+
+    rr = rr.reshape( (n_ms, n_ms, N, n_x) )
+
+    for i_ms in range(n_ms):
+        for I_ms in range(n_ms):
+            res[i_ms, :, :] += Q[i_ms, I_ms] * rr[I_ms, i_ms, :, :]
+
+
+#    for i_ms in range(n_ms):
+#        # solving on grid for markov index i_ms
+#        # m = P[i_ms,:][None,:]
+#        m = numpy.tile(P[i_ms,:],(N,1))
+#        xm = x[i_ms,:,:]
+#
+#        for I_ms in range(n_ms):
+#
+#            # M = P[I_ms,:][None,:]
+#            M = numpy.tile(P[I_ms,:], (N,1))
+#            prob = Q[i_ms, I_ms]
+#
+#            S = g(m, s, xm, M, parms)
+#            XM = dr(I_ms, S)
+#            rr = f(m,s,xm,M,S,XM,parms)
+#            res[i_ms,:,:] += prob*rr
+
+    return res
+
+
+
+def solve_mfg_model(model, initial_guess=None, with_complementarities=True, verbose=True, orders=None, output_type='dr', maxit=1000, inner_maxit=5, tol=1e-8) :
 
     assert(model.model_type == 'mfga')
 
@@ -132,9 +198,7 @@ def solve_mfg_model(model, maxit=1000, initial_guess=None, with_complementaritie
 
     err = 10
     tol = 1e-8
-    inner_maxit = 50
     it = 0
-
 
     if with_complementarities:
         print("Solving WITH complementarities.")
