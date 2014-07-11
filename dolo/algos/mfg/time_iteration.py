@@ -1,6 +1,6 @@
 import numpy
 
-def residuals(f, g, s, x, dr, P, Q, parms):
+def residuals_simple(f, g, s, x, dr, P, Q, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
@@ -9,9 +9,6 @@ def residuals(f, g, s, x, dr, P, Q, parms):
     n_mv = P.shape[1] # number of markov variable
 
     res = numpy.zeros_like(x)
-
-
-    import time
 
     for i_ms in range(n_ms):
         # solving on grid for markov index i_ms
@@ -45,15 +42,12 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
     m = P
 
-    import time
-
     s_ = numpy.tile(s, (n_ms*n_ms, 1))
     x_ = numpy.repeat(x[None,:,:,:], n_ms, axis=0)
-    
-    m_ = numpy.repeat( m, N, axis=1 )
+    m_ = numpy.repeat( m, N, axis=0 )
     m_ = numpy.tile( m_, (n_ms,1) )
 
-    M_ = numpy.repeat( m, N*n_ms, axis=1 )
+    M_ = numpy.repeat( m, N*n_ms, axis=0 )
 
     # reshape everything as 2d arrays
     s_ = s_.reshape( (-1, n_s) )
@@ -72,32 +66,14 @@ def residuals(f, g, s, x, dr, P, Q, parms):
         SS_ = S_r[I_ms, :, :, :].reshape( (n_ms*N, n_s) )
         X_r[I_ms,:,:,:] = dr(I_ms, SS_).reshape( (n_ms, N, n_x) )
 
-
     rr = f(m_, s_, x_, M_, S_, X_, parms)
 
     rr = rr.reshape( (n_ms, n_ms, N, n_x) )
 
     for i_ms in range(n_ms):
+        res[i_ms,:,:] = 0
         for I_ms in range(n_ms):
             res[i_ms, :, :] += Q[i_ms, I_ms] * rr[I_ms, i_ms, :, :]
-
-
-#    for i_ms in range(n_ms):
-#        # solving on grid for markov index i_ms
-#        # m = P[i_ms,:][None,:]
-#        m = numpy.tile(P[i_ms,:],(N,1))
-#        xm = x[i_ms,:,:]
-#
-#        for I_ms in range(n_ms):
-#
-#            # M = P[I_ms,:][None,:]
-#            M = numpy.tile(P[I_ms,:], (N,1))
-#            prob = Q[i_ms, I_ms]
-#
-#            S = g(m, s, xm, M, parms)
-#            XM = dr(I_ms, S)
-#            rr = f(m,s,xm,M,S,XM,parms)
-#            res[i_ms,:,:] += prob*rr
 
     return res
 
