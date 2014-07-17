@@ -56,7 +56,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
 
     if initial_dr == None:
         if pert_order==1:
-            from dolo.algos.perturbations import approximate_controls
+            from dolo.algos.fg.perturbations import approximate_controls
             initial_dr = approximate_controls(model)
 
         if pert_order>1:
@@ -251,4 +251,3 @@ def test_residuals(s,dr, f,g,parms, epsilons, weights):
     std_errors = np.sqrt( np.sum(squared_errors,axis=0)/len(squared_errors) )
 
     return std_errors
-
