@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-import pyximport
-pyximport.install()
 from numba import jit, njit
 
 import numpy
