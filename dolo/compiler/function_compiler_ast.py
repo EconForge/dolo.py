@@ -18,6 +18,45 @@ from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, 
 
 # import codegen
 
+class StandardizeDatesSimple(NodeTransformer):
+
+    # replaces calls to variables by time subscripts
+
+    def __init__(self, tvariables):
+
+        self.tvariables = tvariables # list of variables
+        self.variables = [e[0] for e in tvariables]
+
+
+    def visit_Name(self, node):
+
+        name = node.id
+        newname = std_date_symbol(name, 0)
+        if (name,0) in self.tvariables:
+            expr = Name(newname, Load())
+            return expr
+        else:
+            return node
+
+    def visit_Call(self, node):
+
+        name = node.func.id
+        args = node.args[0]
+
+        if name in self.variables:
+            if isinstance(args, UnaryOp):
+                # we have s(+1)
+                assert(isinstance(args.op, UAdd))
+                args = args.operand
+            date = args.n
+            newname = std_date_symbol(name, date)
+            if newname is not None:
+                return Name(newname, Load())
+
+        else:
+
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+
 
 class StandardizeDates(NodeTransformer):
 
@@ -39,9 +78,8 @@ class StandardizeDates(NodeTransformer):
         table_symbols = { k: (std_date_symbol(*k)) for k in table.keys() }
 
         self.table = table
-        self.variables = variables
+        self.variables = variables # list of vari
         self.table_symbols = table_symbols
-        self.variables = variables
 
 
     def visit_Name(self, node):

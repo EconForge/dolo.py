@@ -20,3 +20,14 @@ def simulate(model, *args, **kwargs):
         raise Exception("Model type {} not supported.".format(model.model_type))
 
     return simulate(model, *args, **kwargs)
+
+def plot_decision_rule(model, *args, **kwargs):
+
+    if model.model_type == 'fga':
+        from dolo.algos.fg.simulations import plot_decision_rule
+    elif model.model_type == 'mfg':
+        from dolo.algos.mfg.simulations import plot_decision_rule
+    else:
+        raise Exception("Model type {} not supported.".format(model.model_type))
+
+    return plot_decision_rule(model, *args, **kwargs)

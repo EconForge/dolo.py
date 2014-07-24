@@ -11,7 +11,9 @@ class NumericModel:
     def __init__(self, symbolic_model, options=None, infos=None):
 
         self.symbolic = symbolic_model
+
         self.symbols = symbolic_model.symbols
+
         self.variables = sum( [tuple(e) for k,e in  self.symbols.iteritems() if k not in ('parameters','shocks','values')], ())
 
         self.options = options if options is not None else {}
@@ -34,13 +36,9 @@ class NumericModel:
         system = self.symbolic.calibration_dict
 
         from dolo.compiler.triangular_solver import solve_triangular_system
-
         self.calibration_dict = solve_triangular_system( system )
-
         from dolo.compiler.misc import calibration_to_vector
-
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
-
         from symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
 

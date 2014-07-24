@@ -19,25 +19,32 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     except Exception as e:
         raise e
 
-    if 'model_type' not in data:
-        raise Exception("Missing key: 'model_type'.")
-    else:
-        model_type = data['model_type']
-
-    # if model_type == 'fga':
-    #     raise Exception(
-    #         "Model type 'fga' is deprecated. Replace it with 'fg'."
-    #     )
-
-    if 'name' not in data:
-        raise Exception("Missing key: 'name'.")
-
     if 'symbols' not in data:
         if 'declarations' in data:
             data['symbols'] = data['declarations']
             # TODO: raise an error/warning here
         else:
             raise Exception("Missing section: 'symbols'.")
+
+    if 'model_type' not in data:
+        if 'markov_states' in data['symbols']:
+            model_type = 'mfg'
+        elif 'states' in data['symbols']:
+            model_type = 'fg'
+        elif 'variables' in data['symbols']:
+            model_type = 'dynare'
+        else:
+            raise Exception("'model_type' was not defined and couldn't be guessed.")
+        print("Model type detected as {}".format(model_type))
+    else:
+        model_type = data['model_type']
+
+
+    if 'name' not in data:
+        data['name'] = 'anonymous'
+        print("Missing model name. Set as '{}'".format(data['name']))
+
+
 
     if 'auxiliary' in data['symbols']:
         aux = data['symbols'].pop('auxiliary')
@@ -68,7 +75,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     # model specific
 
-    if model_type in ('fga', 'fgh', 'vfi'):
+    if model_type in ('fga', 'fgh', 'vfi', 'dynare'):
         if 'covariances' not in data:
             raise Exception(
                 "Missing section (model {}): 'covariances'.".format(model_type)
@@ -87,7 +94,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     symbolic_equations = data['equations']
     symbolic_calibration = data['calibration']
 
-    # shocks are initialized to zero if not calibrated
+    # all symbols are initialized to nan
+    # except shocks and markov_states which are initialized to 0
     initial_values = {
         'shocks': 0,
         'markov_states': 0,
@@ -95,15 +103,20 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         'states': float('nan')
     }
 
-    for symbol_group, default in initial_values.iteritems():
-        if symbol_group in symbols:
-            for s in symbols[symbol_group]:
-                if s not in symbolic_calibration:
-                    symbolic_calibration[s] = default
+    for symbol_group in symbols:
+        if symbol_group in initial_values:
+            default = initial_values[symbol_group]
+        else:
+            default = float('nan')
+        for s in symbols[symbol_group]:
+            if s not in symbolic_calibration:
+                symbolic_calibration[s] = default
+
 
     # read covariance matrix
 
     symbolic_covariances = data.get('covariances')
+
     if symbolic_covariances is not None:
         try:
             tl = numpy.array(symbolic_covariances, dtype='object')
@@ -142,8 +155,12 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     if return_symbolic:
         return smodel
 
-    from dolo.compiler.model_numeric import NumericModel
-    model = NumericModel(smodel, infos=infos)
+    if model_type in ('fg','fga','mfg'):
+        from dolo.compiler.model_numeric import NumericModel
+        model = NumericModel(smodel, infos=infos)
+    else:
+        from dolo.compiler.model_dynare import DynareModel
+        model = DynareModel(smodel, infos=infos)
     return model
 
 

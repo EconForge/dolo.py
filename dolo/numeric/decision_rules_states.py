@@ -44,6 +44,7 @@ class CDR:
             for i in range(n_s):
                 choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2
                 choice[:,i] += mdot(self.X_sss,[ds[:,i],ds[:,i],ds[:,i]]) / 6
+
         return choice
 
     def interpolate(self,x):
