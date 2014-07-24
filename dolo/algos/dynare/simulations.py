@@ -6,7 +6,6 @@ def impulse_response_function(decision_rule, shock, variables = None, horizon=40
 
     model = decision_rule.model
 
-    print(model.symbols)
 
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
@@ -99,7 +98,6 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=
 
     dr = decision_rule
     model = dr.model
-    print(model.symbols)
 
     [n_v, n_s] = [ len(model.symbols['variables']), len(model.symbols['shocks']) ]
 
