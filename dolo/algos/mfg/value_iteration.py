@@ -1,6 +1,6 @@
 import numpy
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, verbose=False, hook=None, integration_orders=None):
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=False, hook=None, integration_orders=None):
 
     assert(model.model_type == 'mfga')
 
@@ -10,7 +10,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, verbose=False, hook=None,
     n_mv = P.shape[1] # number of markov variables
 
     x0 = model.calibration['controls']
-    v0 = model.calibration['controls']
+    v0 = model.calibration['values']
     parms = model.calibration['parameters']
     n_x = len(x0)
     n_v = len(v0)
@@ -19,17 +19,21 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, verbose=False, hook=None,
     approx = model.options['approximation_space']
     a = approx['a']
     b = approx['b']
-    orders = approx['orders']
+
+    if orders is None:
+        orders = approx['orders']
+    else:
+        orders = numpy.array(orders,dtype=int)
 
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule
     mdrv = MarkovDecisionRule(n_ms, a, b, orders) # values
 
-    grid = mdr.grid
+    grid = mdrv.grid
     N = grid.shape[0]
 
     controls = numpy.zeros((n_ms, N, n_x))
     for i_m in range(n_ms):
-        controls[i_m,:,:] = v0[None,:]
+        controls[i_m,:,:] = mdr(i_m,grid) #x0[None,:]
 
     values_0 = numpy.zeros((n_ms, N, n_v))
     for i_m in range(n_ms):
@@ -44,19 +48,21 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, verbose=False, hook=None,
 
     f = lambda m,s,x,M,S,X,p: ff(m,s,x,aa(m,s,x,p),M,S,X,aa(M,S,X,p),p)
     g = lambda m,s,x,M,p: gg(m,s,x,aa(m,s,x,p),M,p)
-    val = lambda m,s,x,v,M,S,X,V,p: vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)
+
+    def val(m,s,x,v,M,S,X,V,p):
+        return vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)
+    # val = lambda m,s,x,v,M,S,X,V,p: vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)
 
 
     sh_v = values_0.shape
 
     err = 10
-    tol = 1e-8
     inner_maxit = 50
     it = 0
 
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format( 'N',' Error', 'Gain','Time')
         stars = '-'*len(headline)
         print(stars)
         print(headline)
@@ -77,20 +83,20 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, verbose=False, hook=None,
 
         mdrv.set_values(values_0.reshape(sh_v))
 
-        values = update_value(val, g, grid, controls, values_0, mdr, mdrv, P, Q, parms).reshape((-1,n_x))
+        values = update_value(val, g, grid, controls, values_0, mdr, mdrv, P, Q, parms).reshape((-1,n_v))
 
-        err = abs(values-values_0).max()
+        err = abs(values.reshape(sh_v)-values_0).max()
 
         err_SA = err/err_0
         err_0 = err
 
-        values_0 = values
+        values_0 = values.reshape(sh_v)
 
         t_finish = time.time()
         elapsed = t_finish - t_start
 
         if verbose:
-            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'.format( it, err, err_SA, elapsed  ))
 
     # values_0 = values.reshape(sh_v)
 
@@ -134,7 +140,7 @@ def update_value(val, g, s, x, v, dr, drv, P, Q, parms):
             XM = dr(I_ms, S)
             VM = drv(I_ms, S)
 
-            rr = val(m,s,xm,M,S,XM,VM,parms)
+            rr = val(m,s,xm,v,M,S,XM,VM,parms)
 
             res[i_ms,:,:] += prob*rr
 

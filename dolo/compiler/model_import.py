@@ -82,7 +82,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             )
         symbolic_covariances = data['covariances']
 
-    if model_type in ('mfg', 'mvfi'):
+    if model_type in ('mfg', 'mfga', 'mvfi'):
         if 'markov_chain' not in data:
             raise Exception(
                 "Missing section (model {}): 'markov_chain'.".format(model_type)
@@ -155,7 +155,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     if return_symbolic:
         return smodel
 
-    if model_type in ('fg','fga','mfg'):
+    if model_type in ('fg','fga','mfg', 'mfga'):
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:

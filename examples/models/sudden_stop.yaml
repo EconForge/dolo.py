@@ -1,0 +1,73 @@
+# This file adapts the model described in
+# "From Sudden Stops to Fisherian Deflation, Quantitative Theory and Policy"
+# by Anton Korinek and Enrique G. Mendoza
+
+name: Sudden Stop (General)
+
+model_type: mfga
+
+symbols:
+
+    markov_states: [y]
+    states: [l]
+    controls: [b, lam]
+    auxiliaries: [c]
+    values: [V, Vc]
+    parameters: [beta, R, sigma, a, mu, kappa, delta_y, pi, lam_inf]
+
+equations:
+
+    transition:
+
+        - l = b(-1)
+
+    arbitrage:
+
+        - lam = b/c
+        - beta*(c(1)/c)^(-sigma)*R - 1    |  lam_inf <= lam <= inf
+
+
+    auxiliary:
+
+        - c = 1 + y + l*R - b
+
+    value:
+
+        - V = c^(1.0-sigma)/(1.0-sigma) + beta*V(1)
+        - Vc = c^(1.0-sigma)/(1.0-sigma)
+
+markov_chain:
+
+    - [[ 1.0-delta_y ],  # bad state
+       [ 1.0 ]]          # good state
+
+    - [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
+       [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
+
+calibration:
+
+    beta: 0.95
+    R: 1.03
+    sigma: 2.0
+    a: 1/3
+    mu: 0.8
+    kappa: 1.3
+    delta_y: 0.03
+    pi: 0.05
+    lam_inf: -0.2
+    y: 1.0
+    c: 1.0 + y
+    b: 0.0
+    l: 0.0
+    lam: 0.0
+
+    V: c^(1.0-sigma)/(1.0-sigma)/(1.0-beta)
+    Vc: c^(1.0-sigma)/(1.0-sigma)
+
+options:
+
+    approximation_space:
+
+        a: [-1.0]
+        b: [ 1.0]
+        orders: [10]
