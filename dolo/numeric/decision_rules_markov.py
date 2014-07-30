@@ -61,7 +61,18 @@ class MarkovDecisionRule:
             pp = numpy.atleast_2d(points)
             out = self.__call__(pp)
             return out.ravel()
-
+        
+    def eval_all(self, points):
+        
+        N = points.shape[0]
+        dims = self.__coefs__.shape
+        n_m = dims[0]
+        n_x = dims[1]
+        coefs = self.__coefs__.reshape( [n_m*n_x] + dims[2:] )
+        out = numpy.zeros( (N, n_m*n_x) )
+        vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points, out)
+        out = numpy.transpose(out, (1,2,0))
+        return out
 
 
 def filter_controls(a,b,ndims,controls):
