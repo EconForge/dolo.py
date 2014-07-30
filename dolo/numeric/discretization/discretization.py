@@ -120,6 +120,12 @@ def multidimensional_discretization(rho, sigma, N=2, method='rouwenhorst', m=2):
 
     d = sigma.shape[1]
 
+    sigma = sigma.copy()
+
+    zero_columns = np.where(sigma.sum(axis=0)==0)[0]
+    for i in zero_columns:
+        sigma[i,i] = 1
+
     L = scipy.linalg.cholesky(sigma)
 
     N = int(N)
@@ -140,6 +146,9 @@ def multidimensional_discretization(rho, sigma, N=2, method='rouwenhorst', m=2):
         transition_matrix = np.kron(transition_matrix, probas_1d)
 
     markov_nodes = np.ascontiguousarray(markov_nodes.T)
+
+    for i in zero_columns:
+        markov_nodes[:,i] = 0
 
     return [markov_nodes, transition_matrix]
 

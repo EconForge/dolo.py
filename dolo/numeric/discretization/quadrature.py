@@ -63,6 +63,8 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
     import numpy
 
+    sigma = sigma.copy()
+
     if mu is None:
         mu = numpy.array( [0]*sigma.shape[0] )
 
@@ -83,11 +85,18 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
         from functools import reduce
         w = reduce( numpy.kron, weights)
 
+        zero_columns = numpy.where(sigma.sum(axis=0)==0)[0]
+        for i in zero_columns:
+            sigma[i,i] = 1.0
+
         C = numpy.linalg.cholesky(sigma)
 
         x = numpy.dot(C, x) + mu[:,numpy.newaxis]
 
         x = numpy.ascontiguousarray(x.T)
+
+        for i in zero_columns:
+            x[:,i] =0
 
         return [x,w]
 
