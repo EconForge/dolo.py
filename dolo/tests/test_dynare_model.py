@@ -1,18 +1,18 @@
-from dolo import *
+def test_dynare_model():
 
-model = yaml_import("examples/models/rbc_dynare.yaml")
-from dolo.algos.dynare.perturbations import *
+    from dolo import *
 
-from dolo.algos.dynare.simulations import *
+    model = yaml_import("examples/models/rbc_dynare.yaml")
+    from dolo.algos.dynare.perturbations import *
 
-dr = solve_decision_rule(model)
+    from dolo.algos.dynare.simulations import *
+
+    dr = solve_decision_rule(model)
 
 
-# sim = impulse_response_function(dr, 'e_z')
-sim = stoch_simul(dr, 'e_z', plot=False)
+    # sim = impulse_response_function(dr, 'e_z')
+    sim = stoch_simul(dr, 'e_z', plot=False)
 
-print(sim)
-print(sim.shape)
+if __name__ == '__main__':
 
-# print(sim)
-# print(dr)
+    test_dynare_model()
