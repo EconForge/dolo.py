@@ -72,7 +72,7 @@ class NumericModel:
         try:
             group = group[0]
         except:
-            raise Exception('Unknown symbol {}.')
+            raise Exception('Unknown symbol {}.'.format(pname))
         i = self.symbols[group].index(pname)
         v = self.calibration[group][i]
 
