@@ -137,8 +137,9 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     symbolic_markov_chain = data.get('markov_chain')
     # TODO: read markov chain
 
-    definitions = data.get('definitions')
+    definitions = data.get('definitions', {})
 
+    
     options = data.get('options')
 
     infos = dict()

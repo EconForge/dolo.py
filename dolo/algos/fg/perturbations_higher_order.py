@@ -3,7 +3,7 @@ from dolo.numeric.decision_rules_states import CDR
 import sympy
 import ast
 from ast import Compare, BinOp, Sub
-#from dolo.compiler.derivatives import ast_to_sympy
+from dolo.compiler.function_compiler_sympy import ast_to_sympy
 
 
 def timeshift(expr, variables, date):
@@ -60,7 +60,7 @@ def model_to_fg(model, order=2):
     if hasattr(model.symbolic,'definitions'):
         definitions = model.symbolic.definitions
     else:
-        definitions = None
+        definitions = {}
 
 
     ddef = dict()
@@ -74,16 +74,11 @@ def model_to_fg(model, order=2):
 
     # all_sym_variables = [std_date_symbol(s,0) for s in all_variables]
 
-    from dolo.compiler.derivatives import compile_higher_order_function
+    from dolo.compiler.function_compiler_sympy import compile_higher_order_function
 
     params = model.symbols['parameters']
 
     f_eqs = model.symbolic.equations['arbitrage']
-
-
-
-
-
     f_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True) for eq in f_eqs]
     f_eqs = [eq.subs(ddef) for eq in f_eqs] # TODO : replace it everywhere else
 
