@@ -3,7 +3,7 @@ from dolo.numeric.decision_rules_states import CDR
 import sympy
 import ast
 from ast import Compare, BinOp, Sub
-from dolo.compiler.derivatives import ast_to_sympy
+#from dolo.compiler.derivatives import ast_to_sympy
 
 
 def timeshift(expr, variables, date):

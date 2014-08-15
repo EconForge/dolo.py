@@ -18,8 +18,6 @@ def get_fg_functions(model):
 
     self = model
 
-
-
     ff = self.functions['arbitrage']
     gg = self.functions['transition']
 
