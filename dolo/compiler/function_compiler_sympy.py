@@ -71,13 +71,13 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
 
 
     if isinstance(eqs[0], str):
-        eqs = [ast.parse(eq).body[0] for eq in eqs]
     # elif not isinstance(eqs[0], sympy.Basic):
     # assume we have ASTs
-    eqs_std = [sds.visit(eq) for eq in eqs]
-    eqs_sym = [ast_to_sympy(eq) for eq in eqs_std]
-    # else:
-        # eqs_sym = eqs
+        eqs = [ast.parse(eq).body[0] for eq in eqs]
+        eqs_std = [sds.visit(eq) for eq in eqs]
+        eqs_sym = [ast_to_sympy(eq) for eq in eqs_std]
+    else:
+        eqs_sym = eqs
 
     symsd = [std_date_symbol(a,b) for a,b in syms]
     paramsd = [std_date_symbol(a,0) for a in params]
