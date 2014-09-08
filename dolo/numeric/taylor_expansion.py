@@ -128,7 +128,8 @@ def test_taylor_expansion():
     s0 = array([0.2, 0.4, 1.1])
     x0 = array([1.2, 0.9])
 
-    points = numpy.random.random((10,3))
+    N = 1000
+    points = numpy.random.random((N,3))
 
     X_s = numpy.random.random((2,3))
     X_ss = numpy.random.random((2,3,3))
