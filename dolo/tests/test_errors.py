@@ -2,11 +2,11 @@
 def test_omega_errors():
 
         from dolo import yaml_import
-        from dolo.algos.time_iteration import time_iteration as global_solve
+        from dolo.algos.fg.time_iteration import time_iteration as global_solve
 
         model = yaml_import('examples/models/rbc.yaml')
 
-        from dolo.algos.perturbations import approximate_controls
+        from dolo.algos.fg.perturbations import approximate_controls
 
         dr = approximate_controls(model)
         dr_global = global_solve(model, smolyak_order=3, verbose=False, pert_order=1)
@@ -17,7 +17,7 @@ def test_omega_errors():
 
         s_0 = dr.S_bar
 
-        from dolo.algos.accuracy import  omega
+        from dolo.algos.fg.accuracy import  omega
 
         res_1 = omega( model, dr, orders=[10,10], time_discount=0.96)
         res_2 = omega( model, dr_global)
@@ -28,11 +28,11 @@ def test_omega_errors():
 def test_denhaan_errors():
 
         from dolo import yaml_import
-        from dolo.algos.time_iteration import time_iteration as global_solve
+        from dolo.algos.fg.time_iteration import time_iteration as global_solve
 
         model = yaml_import('examples/models/rbc.yaml')
 
-        from dolo.algos.perturbations import approximate_controls
+        from dolo.algos.fg.perturbations import approximate_controls
 
         dr = approximate_controls(model)
 
@@ -42,7 +42,7 @@ def test_denhaan_errors():
 
         model.sigma = sigma
 
-        from dolo.algos.accuracy import denhaanerrors
+        from dolo.algos.fg.accuracy import denhaanerrors
 
         denerr_1 = denhaanerrors(model, dr)
         denerr_2 = denhaanerrors(model, dr_global)

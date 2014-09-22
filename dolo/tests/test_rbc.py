@@ -18,13 +18,13 @@ def test_rbc_model():
 
     drg = global_solve(model)
 
-    from dolo.algos.simulations import plot_decision_rule
+    from dolo.algos.fg.simulations import plot_decision_rule
     sim = plot_decision_rule(model,dr,'k')
     print(sim)
 
     eri = array(sim[['z','k']])
 
-    from dolo.algos.vfi import evaluate_policy
+    from dolo.algos.fg.vfi import evaluate_policy
 
     pol = evaluate_policy(model, dr, verbose=True)
     polg = evaluate_policy(model, drg, verbose=True)

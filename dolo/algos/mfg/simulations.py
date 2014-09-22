@@ -9,12 +9,14 @@ from numba import jit, njit
 
 @njit
 def choice(x, n, cumul):
-    ind = 0
-    for i in range(n):
+    i = 0
+    running = True
+    while i<n and running:
         if x < cumul[i]:
-            ind = i
-            break
-    return ind
+            running = False
+        else:
+            i += 1
+    return i
 
 
 @jit
@@ -27,12 +29,13 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
     rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
 
     cumuls = transitions.cumsum(axis=1)
+    cumuls = numpy.ascontiguousarray(cumuls)
 
     for t in range(horizon-1):
         for i in range(n_exp):
             s = simul[t,i]
             p = cumuls[s,:]
-            simul[t+1,i] = choice(  rnd[t,i], n_states, p)
+            simul[t+1,i] = choice(rnd[t,i], n_states, p)
 
     res = numpy.row_stack(simul)
 

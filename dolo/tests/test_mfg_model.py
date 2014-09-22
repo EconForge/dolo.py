@@ -10,7 +10,12 @@ def test_mfg_model():
 
     mdr = solve_mfg_model(model)
 
+
+    print mdr.n_m
+    # exit()
     sim = simulate(model, mdr, 0)
+    print(sim)
+    # exit()
 
     mv = evaluate_policy(model, mdr, verbose=True, maxit=500)
 

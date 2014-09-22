@@ -149,7 +149,7 @@ Model object:
     def residuals(self, calib=None):
 
         if self.model_type in ("fg",'fga'):
-            from dolo.algos.steady_state import residuals
+            from dolo.algos.fg.steady_state import residuals
             return residuals(self, calib)
         elif self.model_type in ('mfg','mfga'):
             from dolo.algos.mfg.steady_state import residuals

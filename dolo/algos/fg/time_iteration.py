@@ -126,7 +126,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     xinit = xinit.real  # just in case...
 
 
-    from dolo.algos.convert import get_fg_functions
+    from dolo.algos.fg.convert import get_fg_functions
 
     f,g = get_fg_functions(model)
 
