@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 from dolo import *
-from pylab import *
 
 def test_rbc_model():
 
@@ -10,7 +9,6 @@ def test_rbc_model():
     model = yaml_import('examples/models/rbc.yaml')
 
     print(model)
-
     print(model.options)
 
 
