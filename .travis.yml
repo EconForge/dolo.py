@@ -23,7 +23,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numba scipy
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION setuptools numba scipy
   - source activate test-environment
   - pip install pp --allow-external pp --allow-unverified pp
   - python setup.py install
