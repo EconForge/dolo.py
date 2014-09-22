@@ -5,7 +5,6 @@ from dolo import *
 def test_rbc_model():
 
 
-
     model = yaml_import('examples/models/rbc.yaml')
 
     print(model)
@@ -19,8 +18,6 @@ def test_rbc_model():
     from dolo.algos.fg.simulations import plot_decision_rule
     sim = plot_decision_rule(model,dr,'k')
     print(sim)
-
-    eri = array(sim[['z','k']])
 
     from dolo.algos.fg.vfi import evaluate_policy
 
