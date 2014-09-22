@@ -30,14 +30,6 @@ def test_rbc_model():
     polg = evaluate_policy(model, drg, verbose=True)
 
 
-    plot(sim['k'], polg(eri).ravel() - pol(eri).ravel())
-
-
-    # plot(sim['k'], pol(eri).ravel())
-    # plot(sim['k'], polg(eri).ravel())
-    show()
-
-
 
 if __name__ == '__main__':
 

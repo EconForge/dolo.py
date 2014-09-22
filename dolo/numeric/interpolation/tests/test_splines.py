@@ -47,10 +47,6 @@ def test_eval_splines_2():
 
     cc = numpy.ascontiguousarray(coeffs[None,:,:])
 
-    print(fine_grid.flags)
-    print(output.flags)
-    print(cc.flags)
-
     import time
     t1 = time.time()
     vec_eval_cubic_multi_spline(a, b, orders, cc, fine_grid, output)
