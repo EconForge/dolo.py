@@ -9,7 +9,19 @@ class SymbolicModel:
 
         self.name = model_name
         self.model_type = model_type
-        self.symbols = symbols
+
+        # reorder symbols
+        from collections import OrderedDict
+        canonical_order = ['markov_states', 'states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
+        osyms = OrderedDict()
+        for vg in canonical_order:
+            if vg in symbols:
+                 osyms[vg] = symbols[vg]
+        for vg in symbols:
+            if vg not in canonical_order:
+                 osyms[vg] = symbols[vg]
+
+        self.symbols = osyms
         self.equations = symbolic_equations
         self.calibration_dict = symbolic_calibration
         self.covariances = symbolic_covariances

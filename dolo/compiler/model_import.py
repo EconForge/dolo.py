@@ -28,9 +28,15 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     if 'model_type' not in data:
         if 'markov_states' in data['symbols']:
-            model_type = 'mfg'
+            if 'auxiliaries' in data['symbols']:
+                model_type = 'mfga'
+            else:
+                model_type = 'mfg'
         elif 'states' in data['symbols']:
-            model_type = 'fg'
+            if 'auxiliaries' in data['symbols']:
+                model_type = 'fga'
+            else:
+                model_type = 'fg'
         elif 'variables' in data['symbols']:
             model_type = 'dynare'
         else:
