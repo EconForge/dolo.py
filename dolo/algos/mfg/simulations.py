@@ -24,8 +24,9 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 
     n_states = nodes.shape[0]
 
-    start = numpy.array( (i_0,)*n_exp )
+#    start = numpy.array( (i_0,)*n_exp )
     simul = numpy.zeros( (horizon, n_exp), dtype=int)
+    simul[0,:] = i_0
     rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
 
     cumuls = transitions.cumsum(axis=1)
