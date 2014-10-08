@@ -176,11 +176,11 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbo
         g_pert = g_fun(g_args_ss, pert_parms)
         sig2 = (g_pert[0] - g[0])/epsilon*2
         sig2_s = (g_pert[1] - g[1])/epsilon*2
-        pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s], eigmax=eigmax)
+        pert_sol = state_perturb(f, g, sigma, sigma2_correction = [sig2, sig2_s], eigmax=eigmax, verbose=verbose)
 
     else:
         g = g_fun( g_args_ss, parms, order=order)
-        pert_sol = state_perturb(f, g, sigma, eigmax=eigmax )
+        pert_sol = state_perturb(f, g, sigma, eigmax=eigmax, verbose=verbose )
 
     n_s = len(states_ss)
     n_c = len(controls_ss)
