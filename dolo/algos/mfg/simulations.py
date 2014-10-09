@@ -1,7 +1,7 @@
 import numpy
 
 
-from dolo import *
+# from dolo import *
 import pickle
 
 # should be moved to markov
@@ -42,11 +42,10 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 
     return res
 
-def simulate(model, dr, i_0, s0=None, n_exp=100, horizon=50, use_pandas=True, markov_indices=None):
+def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_indices=None):
 
     if n_exp<1:
         is_irf = True
-        use_pandas = True
         n_exp = 1
 
     nodes, transitions = model.markov_chain
@@ -113,19 +112,37 @@ def simulate(model, dr, i_0, s0=None, n_exp=100, horizon=50, use_pandas=True, ma
     else:
         l = [markov_states, states, controls]
 
+
+    l = [markov_indices[:,:,None]] + l
+
+
+    if with_aux:
+        columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
+    else:
+        columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls']
+
+    if drv is not None:
+        n_vals = len(model.symbols['values'])
+        vals = numpy.zeros((horizon, n_exp, n_vals))
+        for t in range(horizon):
+            vals[t,:,:] = drv(markov_indices[t,:], states[t,:,:] )
+        l.append(vals)
+        columns.extend(model.symbols['values'])
+
+    import pandas
+
     sims = numpy.concatenate(l,  axis=2)
 
-    if not use_pandas or n_exp != 1:
-        return sims
+    if n_exp > 1:
+        sims = pandas.Panel(sims, minor_axis=['m_ind']+columns)
+        print(sims.shape)
+        sims = sims.swapaxes(0,1)
+
     else:
-        import pandas
-        if with_aux:
-            columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
-        else:
-            columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls']
-            
-        sims = pandas.DataFrame(sims[:,0,:], columns=columns)
-        return sims
+        sims = pandas.DataFrame(sims[:,0,:], columns=['m_ind']+columns)
+
+
+    return sims
 
 
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=10, s0=None, i0=None, **kwargs):
@@ -170,7 +187,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     import pandas
     tb = numpy.concatenate(l, axis=1)
-    df = pandas.DataFrame(tb, columns=series)
+    df = pandas.DataFrame(tb, columns=['mindex']+series)
 
     if plot_controls is None:
         return df

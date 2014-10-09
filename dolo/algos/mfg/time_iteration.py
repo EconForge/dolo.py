@@ -79,7 +79,9 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
 
 
-def solve_mfg_model(model, initial_guess=None, with_complementarities=True, verbose=True, orders=None, output_type='dr', maxit=1000, inner_maxit=10, tol=1e-6) :
+def solve_mfg_model(model, initial_guess=None, with_complementarities=True,
+                        verbose=True, orders=None, output_type='dr',
+                        maxit=1000, inner_maxit=10, tol=1e-6) :
 
     assert(model.model_type == 'mfga')
 

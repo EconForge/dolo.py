@@ -43,6 +43,7 @@ class MarkovDecisionRule:
 
     def __call__(self, i_m, points, out=None):
 
+
         from dolo.numeric.interpolation.eval_cubic_splines import vec_eval_cubic_multi_spline
         n_x = self.__values__.shape[-1]
 
@@ -50,10 +51,17 @@ class MarkovDecisionRule:
 
         if points.ndim == 2:
             N = points.shape[0]
-            out = zeros((N,n_x))
 
-            coefs = self.__coefs__[i_m,...]
-            vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points, out)
+            out = zeros((N,n_x))
+            if isinstance(i_m, (float,int)):
+                coefs = self.__coefs__[i_m,...]
+                vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points, out)
+            else:
+                assert(len(i_m)==N)
+                for n in range(N):
+                    coefs = self.__coefs__[i_m[n]]
+                    vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points[n:n+1,:], out[n:n+1,:])
+
             return out
 
         elif points.ndim == 1:
@@ -61,9 +69,9 @@ class MarkovDecisionRule:
             pp = numpy.atleast_2d(points)
             out = self.__call__(pp)
             return out.ravel()
-        
+
     def eval_all(self, points):
-        
+
         N = points.shape[0]
         dims = self.__coefs__.shape
         n_m = dims[0]
