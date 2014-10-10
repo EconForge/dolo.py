@@ -7,7 +7,7 @@ from dolo import yaml_import
 def test_web_import():
 
     model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
-    assert(len(model.symbols['states'])==3)
+    assert(len(model.symbols['states'])==2)
 
 def model_evaluation(compiler='numpy', data_layout='columns'):
 
