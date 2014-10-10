@@ -2,13 +2,13 @@ from __future__ import division
 
 import numpy
 
+from dolo.misc.display import read_file_or_url
 
 def yaml_import(fname, txt=None, return_symbolic=False):
 
     if txt is None:
 
-        with open(fname) as f:
-            txt = f.read()
+        txt = read_file_or_url(fname)
 
     txt = txt.replace('^', '**')
 
@@ -145,7 +145,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     definitions = data.get('definitions', {})
 
-    
+
     options = data.get('options')
 
     infos = dict()
