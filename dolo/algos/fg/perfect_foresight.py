@@ -1,7 +1,7 @@
 import numpy
 from numpy import linspace, zeros, atleast_2d
 
-from dolo.algos.steady_state import find_deterministic_equilibrium 
+from dolo.algos.fg.steady_state import find_deterministic_equilibrium 
 
 def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
     '''
@@ -55,7 +55,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_con
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
 
-    if shocks == None:
+    if shocks is None:
         shocks = numpy.zeros( (len(model.calibration['shocks']),1))
 
     # until last period, exogenous shock takes its last value
@@ -221,7 +221,7 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
 
     p = model.calibration['parameters']
 
-    from dolo.algos.convert import get_fg_functions
+    from dolo.algos.fg.convert import get_fg_functions
     [f,g] = get_fg_functions(model)
 
     vec = guess[:-1,:]
