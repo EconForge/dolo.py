@@ -187,7 +187,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     import pandas
     tb = numpy.concatenate(l, axis=1)
-    df = pandas.DataFrame(tb, columns=['mindex']+series)
+    df = pandas.DataFrame(tb, columns=series)
 
     if plot_controls is None:
         return df
