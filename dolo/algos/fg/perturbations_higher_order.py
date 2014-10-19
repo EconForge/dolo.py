@@ -182,6 +182,7 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbo
         g = g_fun( g_args_ss, parms, order=order)
         pert_sol = state_perturb(f, g, sigma, eigmax=eigmax, verbose=verbose )
 
+
     n_s = len(states_ss)
     n_c = len(controls_ss)
 
@@ -201,6 +202,7 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbo
             dr.B = B
             dr.sigma = sigma
             return dr
+
         return [controls_ss] + pert_sol
 
     if order == 2:
@@ -371,7 +373,8 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
 #    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,[V1_3,V1_3]) ) + D
 
 
-    if not sigma == None:
+    # if sigma is not None:
+    if True:
         g_ee = g2[:,n_v:,n_v:]
 
         v = np.row_stack([
@@ -391,10 +394,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
         X_tt = solve( L_tt, - K_tt)
 
     if approx_order == 2:
-        if sigma == None:
-            return [X_s,X_ss]  # here, we don't approximate the law of motion of the states
-        else:
-            return [[X_s,X_ss],[X_tt]]  # here, we don't approximate the law of motion of the states
+        return [[X_s,X_ss],[X_tt]]
 
     # third order solution
 
@@ -427,7 +427,8 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
 
     # now doing sigma correction with sigma replaced by l in the subscripts
 
-    if not sigma is None:
+    # if not sigma is None:
+    if True:
         g_se= g2[:,:n_s,n_v:]
         g_xe= g2[:,n_s:n_v,n_v:]
 
@@ -496,16 +497,17 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
         X_stt = solve_sylvester(A,B,C,D)
 
     if approx_order == 3:
-        if sigma is None:
-            return [X_s,X_ss,X_sss]
-        else:
-            return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
+        # if sigma is None:
+        #     return [X_s,X_ss,X_sss]
+        # else:
+        #     return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
+        return [[X_s,X_ss,X_sss],[X_tt, X_stt]]
 
 
 if __name__ == '__main__':
     from dolo import yaml_import
-    # model = yaml_import('/home/pablo/Programming/econforge/dolo/examples/models/rbc.yaml')
-    model = yaml_import('/home/pablo/Programming/papers/finint/models/integration_B_pert.yaml')
+    model = yaml_import('examples/models/rbc.yaml')
+    # model = yaml_import('/home/pablo/Programming/papers/finint/models/integration_B_pert.yaml')
 
     import time
     t1 = time.time()

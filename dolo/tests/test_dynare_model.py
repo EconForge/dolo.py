@@ -27,11 +27,7 @@ def test_dynare_model():
     assert(sim2.shape == (10,41,n_a))
 
     sim_shock = simulate(dr, n_exp=0, shock=[0.01])
-    print(sim_shock.keys())
-    from matplotlib import pyplot
-    pyplot.plot(sim_shock['z'])
-    # pyplot.plot(sim_shock['c'])
-    pyplot.show()
+
 
 
 if __name__ == '__main__':

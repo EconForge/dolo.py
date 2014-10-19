@@ -15,9 +15,7 @@ def test_rbc_model():
 
     drg = global_solve(model)
 
-    from dolo.algos.fg.simulations import plot_decision_rule
     sim = plot_decision_rule(model,dr,'k')
-    print(sim)
 
     from dolo.algos.fg.vfi import evaluate_policy
 

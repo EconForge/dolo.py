@@ -54,7 +54,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     parms = model.calibration['parameters']
     sigma = model.covariances
 
-    if initial_dr == None:
+    if initial_dr is None:
         if pert_order==1:
             from dolo.algos.fg.perturbations import approximate_controls
             initial_dr = approximate_controls(model)
@@ -92,7 +92,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
             initial_dr.S_bar + devs * n_s,
         ])
 
-    if interp_orders == None:
+    if interp_orders is None:
         interp_orders = [5] * bounds.shape[1]
 
     if interp_type == 'smolyak':
@@ -192,7 +192,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         if False in np.isfinite(x0):
             print('iteration {} failed : non finite value')
             return [x0, x]
-
+    
     if it == maxit:
         import warnings
         warnings.warn(UserWarning("Maximum number of iterations reached"))
