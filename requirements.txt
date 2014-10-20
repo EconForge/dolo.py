@@ -1,0 +1,9 @@
+ipython
+pyyaml
+numba
+numpy
+numexpr
+sympy
+pandas
+slycot
+matplotlib
