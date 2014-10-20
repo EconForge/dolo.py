@@ -67,7 +67,7 @@ class MarkovDecisionRule:
         elif points.ndim == 1:
 
             pp = numpy.atleast_2d(points)
-            out = self.__call__(pp)
+            out = self.__call__(i_m, pp)
             return out.ravel()
 
     def eval_all(self, points):

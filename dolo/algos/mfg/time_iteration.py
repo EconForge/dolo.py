@@ -79,7 +79,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
 
 
-def solve_mfg_model(model, initial_guess=None, with_complementarities=True,
+def time_iteration(model, initial_guess=None, with_complementarities=True,
                         verbose=True, orders=None, output_type='dr',
                         maxit=1000, inner_maxit=10, tol=1e-6) :
 
@@ -245,9 +245,6 @@ def solve_mfg_model(model, initial_guess=None, with_complementarities=True,
 
 
 
-
-
-
 if __name__ == '__main__':
 
     from dolo import *
@@ -274,4 +271,4 @@ if __name__ == '__main__':
     fun = compile_function_ast(initial_guess_symbolic, model.symbols, arg_names,'initial_guess')
     ff = standard_function(fun, len(initial_guess_symbolic))
 
-    sol = solve_mfg_model(model, initial_guess=ff)
+    sol = time_iteration(model, initial_guess=ff)

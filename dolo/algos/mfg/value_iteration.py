@@ -1,6 +1,6 @@
 import numpy
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=False, hook=None, integration_orders=None):
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=False, initial_guess=None, hook=None, integration_orders=None):
 
     assert(model.model_type == 'mfga')
 
@@ -36,8 +36,12 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=Fals
         controls[i_m,:,:] = mdr(i_m,grid) #x0[None,:]
 
     values_0 = numpy.zeros((n_ms, N, n_v))
-    for i_m in range(n_ms):
-        values_0[i_m,:,:] = v0[None,:]
+    if initial_guess is None:
+        for i_m in range(n_ms):
+            values_0[i_m,:,:] = v0[None,:]
+    else:
+        for i_m in range(n_ms):
+            values_0[i_m,:,:] = initial_guess(i_m, grid)
 
 
     ff = model.functions['arbitrage']
