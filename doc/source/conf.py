@@ -70,8 +70,11 @@ try:
     version = pkg_resources.get_distribution('dolo').version
 except pkg_resources.DistributionNotFound:
     # get version number
-    exec( open('dolo/version.py').read())
-    sys.exit(1)
+    import os
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+    exec( open(dirpath + '/../../dolo/version.py').read())
+    version = __version__
+
 del pkg_resources
 
 # The version info for the project you're documenting, acts as replacement for
