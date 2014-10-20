@@ -1,9 +1,0 @@
-ipython
-pyyaml
-numpy
-numba
-numexpr
-sympy
-pandas
-slycot
-matplotlib

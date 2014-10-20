@@ -69,13 +69,10 @@ import pkg_resources
 try:
     version = pkg_resources.get_distribution('dolo').version
 except pkg_resources.DistributionNotFound:
-    print 'To build the documentation, The distribution information of dolo'
-    print 'Has to be available.  Either install the package into your'
-    print 'development environment or run "setup.py develop" to setup the'
-    print 'metadata.  A virtualenv is recommended!'
+    # get version number
+    exec( open('dolo/version.py').read())
     sys.exit(1)
 del pkg_resources
-
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
