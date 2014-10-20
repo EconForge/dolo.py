@@ -1,19 +1,3 @@
-#
-# def get_fg_functions(model):
-#
-#     if model.model_type == 'fga':
-#
-#         ff = model.functions['arbitrage']
-#         gg = model.functions['transition']
-#         aa = model.functions['auxiliary']
-#         g = lambda s,x,e,p : gg(s,x,aa(s,x,p),e,p)
-#         f = lambda s,x,e,S,X,p : ff(s,x,aa(s,x,p),S,X,aa(S,X,p),p)
-#     else:
-#         f = model.functions['arbitrage']
-#         g = model.functions['transition']
-#
-#     return [f,g]
-
 def get_fg_functions(model):
 
     self = model
