@@ -194,7 +194,11 @@ Model object:
                 target_spec = spec.get('target')
                 n_output = len(self.symbols[target_spec[0]])
                 # target_short_name = spec.get('target')[2]
-                target_spec[2] = 'out'
+                print(spec)
+                if spec.get('recursive') is False:
+                    target_spec = None
+                else:
+                    target_spec[2] = 'out'
             else:
                 target_spec = None
 

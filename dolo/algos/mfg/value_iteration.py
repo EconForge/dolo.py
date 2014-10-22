@@ -1,6 +1,6 @@
 import numpy
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=False, initial_guess=None, hook=None, integration_orders=None):
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True, initial_guess=None, hook=None, integration_orders=None):
 
     assert(model.model_type == 'mfga')
 
@@ -111,7 +111,6 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=Fals
         print("Elapsed: {} seconds.".format(t2-t1))
         print(stars)
 
-
     return mdrv
 
 
@@ -119,32 +118,29 @@ def update_value(val, g, s, x, v, dr, drv, P, Q, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
-    n_x = s.shape[1]
 
     n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1] # number of markov variable
 
     res = numpy.zeros_like(v)
 
-
-
     for i_ms in range(n_ms):
-        # solving on grid for markov index i_ms
-        # m = P[i_ms,:][None,:]
-        m = numpy.tile(P[i_ms,:],(N,1))
+
+        m = P[i_ms,:][None,:].repeat(N,axis=0)
+
         xm = x[i_ms,:,:]
+        vm = v[i_ms,:,:]
 
         for I_ms in range(n_ms):
 
             # M = P[I_ms,:][None,:]
-            M = numpy.tile(P[I_ms,:], (N,1))
+            M = P[I_ms,:][None,:].repeat(N,axis=0)
             prob = Q[i_ms, I_ms]
 
             S = g(m, s, xm, M, parms)
             XM = dr(I_ms, S)
             VM = drv(I_ms, S)
 
-            rr = val(m,s,xm,v,M,S,XM,VM,parms)
+            rr = val(m,s,xm,vm,M,S,XM,VM,parms)
 
             res[i_ms,:,:] += prob*rr
 

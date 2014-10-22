@@ -282,6 +282,7 @@ def eval_ast(mod):
 if __name__ == '__main__':
 
 
+
     s1 = '(x0(1) + x1 / y0)**p0 - (x0(1) + x1 / y0)**(p0-1) '
     s2 = 'x0 + x1 / y1(+1)'
 
@@ -298,7 +299,7 @@ if __name__ == '__main__':
     arg_names = [
         ('states', 0, 's'),
         ('controls', 0, 'x'),
-        ('states', 1, 'S'),
+        # ('states', 1, 'S'),
         ('controls', 1, 'X'),
         ('parameters', 0, 'p')
     ]
@@ -311,7 +312,15 @@ if __name__ == '__main__':
     import time
 
     t0 = time.time()
-    resp = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=True, return_ast=True)
+    resp = compile_function_ast([s1,s2], symbols, arg_names,
+            output_names=('states',1,'out'), funname='arbitrage', use_numexpr=True, return_ast=True)
+    # resp = compile_function_ast([s1,s2], symbols, arg_names,
+        # funname='arbitrage', use_numexpr=True, return_ast=True)
+
+
+    # resp = compile_function_ast([s1,s2], symbols, arg_names,
+        # funname='arbitrage', use_numexpr=True, return_ast=True)
+
 
     t1 = time.time()
 
@@ -320,6 +329,7 @@ if __name__ == '__main__':
     import codegen
     print( codegen.to_source(resp) )
 
+    exit()
     t0 = time.time()
     code  = compile(resp, '<string>', 'exec')
     t1 = time.time()
@@ -348,7 +358,8 @@ if __name__ == '__main__':
 
 
     print(out)
-    arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
+
+        # arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
 
     out = numpy.zeros((N,4))
     (arbitrage(s,x,S,X,p,out))

@@ -313,6 +313,7 @@ mfga:
             optional: True
 
             target: ['values',0,'v']
+            recursive: False
 
             eqs:
                 - ['markov_states',0,'m']
