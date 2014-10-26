@@ -22,7 +22,7 @@ def evaluate_policy(model, dr, tol=1e-8,  maxit=2000, verbose=False, hook=None, 
 
     """
 
-    assert(model.model_type=='fga')
+    assert(model.model_spec=='fga')
 
     vfun = model.functions["value"]
     gfun = model.functions['transition']

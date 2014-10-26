@@ -19,7 +19,7 @@ def solve_model_around_risky_ss(model, verbose=False, return_dr=True, initial_so
 
 
     if initial_sol == None:
-        if model.model_type == 'portfolios':
+        if model.model_spec == 'portfolios':
             print('This is a portfolio model ! Converting to deterministic one.')
             from dolo.algos.portfolio_perturbation import portfolios_to_deterministic
             model = portfolios_to_deterministic(model,['x_1','x_2'])

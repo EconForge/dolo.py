@@ -103,7 +103,7 @@ def residuals(model, calib=None):
     from collections import OrderedDict
     res = OrderedDict()
 
-    if model.model_type == "fg":
+    if model.model_spec == "fg":
 
         s = calib['states']
         x = calib['controls']
@@ -116,7 +116,7 @@ def residuals(model, calib=None):
         res['arbitrage'] = f(s,x,e,s,x,p)
         
 
-    elif model.model_type  == "fga":
+    elif model.model_spec  == "fga":
 
         s = calib['states']
         x = calib['controls']

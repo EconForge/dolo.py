@@ -23,7 +23,7 @@ class NumericModel:
         self.infos['data_layout'] = 'columns'
 
         self.name = self.infos['name']
-        self.model_type = self.infos['type']
+        self.model_spec = self.infos['type']
 
         self.__update_from_symbolic__()
         self.__compile_functions__()
@@ -148,10 +148,10 @@ Model object:
 
     def residuals(self, calib=None):
 
-        if self.model_type in ("fg",'fga'):
+        if self.model_spec in ("fg",'fga'):
             from dolo.algos.fg.steady_state import residuals
             return residuals(self, calib)
-        elif self.model_type in ('mfg','mfga'):
+        elif self.model_spec in ('mfg','mfga'):
             from dolo.algos.mfg.steady_state import residuals
             return residuals(self, calib)
 
@@ -165,7 +165,7 @@ Model object:
         defs = self.symbolic.definitions
 
         # works for fg models only
-        recipe = recipes[self.model_type]
+        recipe = recipes[self.model_spec]
         symbols = self.symbols # should match self.symbols
 
         comps = []

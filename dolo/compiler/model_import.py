@@ -26,24 +26,24 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         else:
             raise Exception("Missing section: 'symbols'.")
 
-    if 'model_type' not in data:
+    if 'model_spec' not in data:
         if 'markov_states' in data['symbols']:
             if 'auxiliaries' in data['symbols']:
-                model_type = 'mfga'
+                model_spec = 'mfga'
             else:
-                model_type = 'mfg'
+                model_spec = 'mfg'
         elif 'states' in data['symbols']:
             if 'auxiliaries' in data['symbols']:
-                model_type = 'fga'
+                model_spec = 'fga'
             else:
-                model_type = 'fg'
+                model_spec = 'fg'
         elif 'variables' in data['symbols']:
-            model_type = 'dynare'
+            model_spec = 'dynare'
         else:
-            raise Exception("'model_type' was not defined and couldn't be guessed.")
-        print("Model type detected as {}".format(model_type))
+            raise Exception("'model_spec' was not defined and couldn't be guessed.")
+        print("Model type detected as {}".format(model_spec))
     else:
-        model_type = data['model_type']
+        model_spec = data['model_spec']
 
 
     if 'name' not in data:
@@ -81,17 +81,17 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     # model specific
 
-    if model_type in ('fga', 'fgh', 'vfi', 'dynare'):
+    if model_spec in ('fga', 'fgh', 'vfi', 'dynare'):
         if 'covariances' not in data:
             raise Exception(
-                "Missing section (model {}): 'covariances'.".format(model_type)
+                "Missing section (model {}): 'covariances'.".format(model_spec)
             )
         symbolic_covariances = data['covariances']
 
-    if model_type in ('mfg', 'mfga', 'mvfi'):
+    if model_spec in ('mfg', 'mfga', 'mvfi'):
         if 'markov_chain' not in data:
             raise Exception(
-                "Missing section (model {}): 'markov_chain'.".format(model_type)
+                "Missing section (model {}): 'markov_chain'.".format(model_spec)
             )
         symbolic_markov_chain = data['markov_chain']
 
@@ -151,10 +151,10 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     infos = dict()
     infos['filename'] = fname
     infos['name'] = model_name
-    infos['type'] = model_type
+    infos['type'] = model_spec
 
     from dolo.compiler.model_symbolic import SymbolicModel
-    smodel = SymbolicModel(model_name, model_type, symbols, symbolic_equations,
+    smodel = SymbolicModel(model_name, model_spec, symbols, symbolic_equations,
                            symbolic_calibration, symbolic_covariances,
                            symbolic_markov_chain,
                            options=options, definitions=definitions)
@@ -162,7 +162,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     if return_symbolic:
         return smodel
 
-    if model_type in ('fg','fga','mfg', 'mfga'):
+    if model_spec in ('fg','fga','mfg', 'mfga'):
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:

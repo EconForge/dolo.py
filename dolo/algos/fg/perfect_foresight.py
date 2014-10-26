@@ -47,7 +47,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_con
 
     # TODO:
 
-    # if model.model_type == 'fga':
+    # if model.model_spec == 'fga':
     #     from dolo.compiler.converter import GModel_fg_from_fga
     #     model = GModel_fg_from_fga(model)
 

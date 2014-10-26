@@ -1,6 +1,6 @@
 name: RBC
 
-model_type: fg
+model_spec: fg
 
 declarations:
 

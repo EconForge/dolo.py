@@ -1,6 +1,6 @@
 name: rbc_perfect_foresight
 
-model_type: fga
+model_spec: fga
 
 declarations:
 

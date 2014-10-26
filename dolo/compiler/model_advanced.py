@@ -117,14 +117,14 @@ def import_model(filename):
     if "complementarities" in e:
         funs[ "complementarities"] = e["complementarities"]
 
-    model_type = e['model_type']
+    model_spec = e['model_spec']
     model_name = e.get('name')
     if model_name is None:
         model_name = 'anonymous'
 
     infos = dict()
     infos['filename'] = filename
-    infos['type'] = model_type
+    infos['type'] = model_spec
     infos['name'] = model_name
 
     if 'options' in e:

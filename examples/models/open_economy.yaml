@@ -1,6 +1,6 @@
 name: Open economy
 
-model_type: fga
+model_spec: fga
 
 description: Two endowment economies with one riskless bond
 

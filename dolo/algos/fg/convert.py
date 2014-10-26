@@ -5,7 +5,7 @@ def get_fg_functions(model):
     ff = self.functions['arbitrage']
     gg = self.functions['transition']
 
-    if model.model_type == 'fg':
+    if model.model_spec == 'fg':
         return [ff, gg]
 
     aa = self.functions['auxiliary']

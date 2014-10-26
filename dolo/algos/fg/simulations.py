@@ -67,7 +67,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
     fun = model.functions
 
-    if model.model_type == 'fga':
+    if model.model_spec == 'fga':
 
        from dolo.algos.fg.convert import get_fg_functions
        [f,g] = get_fg_functions(model)

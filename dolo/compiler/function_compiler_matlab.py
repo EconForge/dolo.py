@@ -160,9 +160,9 @@ def compile_model_matlab(model):
 
     symbolic_model = model.symbolic
 
-    model_type = symbolic_model.model_type
+    model_spec = symbolic_model.model_spec
 
-    if model_type != 'fga':
+    if model_spec != 'fga':
         raise Exception("For now, only supported model type is fga")
 
     from collections import OrderedDict

@@ -1,6 +1,6 @@
 fg:
 
-    model_type: fg
+    model_spec: fg
 
     symbols: ['states', 'controls', 'shocks', 'parameters']
 
@@ -40,7 +40,7 @@ fg:
 
 fg2:
 
-    model_type: fg2
+    model_spec: fg2
 
     variable_type: ['states', 'controls']
 
@@ -68,7 +68,7 @@ fg2:
 
 fga:
 
-    model_type: fga
+    model_spec: fga
 
     symbols: ['states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
 
@@ -139,7 +139,7 @@ fga:
 
 fgh1:
 
-  model_type: fgh1
+  model_spec: fgh1
 
   variable_type: ['states', 'controls', 'expectations']
 
@@ -176,7 +176,7 @@ fgh1:
 
 fgh2:
 
-  model_type: fgh2
+  model_spec: fgh2
 
   variable_type: ['states', 'controls', 'expectations']
 
@@ -218,7 +218,7 @@ fgh2:
 
 vfi:
 
-  model_type: vfi
+  model_spec: vfi
 
   variable_type: ['states', 'controls', 'utility']
 
@@ -249,7 +249,7 @@ vfi:
 
 mfga:
 
-    model_type: mfga
+    model_spec: mfga
 
     symbols: ['markov_states', 'states', 'controls', 'auxiliaries', 'shocks', 'parameters']
 

@@ -8,7 +8,7 @@ def residuals(model, calib=None):
     from collections import OrderedDict
     res = OrderedDict()
 
-    if model.model_type == "mfg":
+    if model.model_spec == "mfg":
 
         m = calib['markov_states']
         s = calib['states']
@@ -21,7 +21,7 @@ def residuals(model, calib=None):
         res['arbitrage'] = f(m,s,x,m,s,x,p)
 
 
-    elif model.model_type  == "mfga":
+    elif model.model_spec  == "mfga":
 
         m = calib['markov_states']
 

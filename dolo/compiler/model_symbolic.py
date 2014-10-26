@@ -4,11 +4,11 @@ from recipes import recipes
 
 class SymbolicModel:
 
-    def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration,
+    def __init__(self, model_name, model_spec, symbols, symbolic_equations, symbolic_calibration,
                  symbolic_covariances=None, symbolic_markov_chain=None, options=None, definitions=None):
 
         self.name = model_name
-        self.model_type = model_type
+        self.model_spec = model_spec
 
         # reorder symbols
         from collections import OrderedDict
@@ -33,7 +33,7 @@ class SymbolicModel:
 
     def check(self):
 
-        if self.model_type == 'fg':
+        if self.model_spec == 'fg':
 
             n_eq_transition = len(self.equations['transition'])
             n_eq_arbitrage = len(self.equations['arbitrage'])
@@ -47,4 +47,4 @@ class SymbolicModel:
 
         else:
             pass
-            # raise Exception( "No rule to check model type {}".format(self.model_type))
+            # raise Exception( "No rule to check model type {}".format(self.model_spec))

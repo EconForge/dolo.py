@@ -2,7 +2,7 @@ import numpy
 
 def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True, initial_guess=None, hook=None, integration_orders=None):
 
-    assert(model.model_type == 'mfga')
+    assert(model.model_spec == 'mfga')
 
     [P, Q] = model.markov_chain
 

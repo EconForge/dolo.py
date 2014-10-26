@@ -142,7 +142,7 @@ def model_to_fg(model, order=2):
 
 def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbose=True, eigmax=1.0):
 
-    assert(model.model_type=='fga')
+    assert(model.model_spec=='fga')
 
     [f_fun, g_fun] = model_to_fg(model, order=order)
 

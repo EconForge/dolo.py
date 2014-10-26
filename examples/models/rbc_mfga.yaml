@@ -1,6 +1,6 @@
 name: RBC
 
-model_type: mfga
+model_spec: mfga
 
 declarations:
 

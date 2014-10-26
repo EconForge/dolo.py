@@ -64,7 +64,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     # get steady_state
     import numpy
 
-    # if model.model_type == 'fga':
+    # if model.model_spec == 'fga':
     #     model = GModel_fg_from_fga(model)
 
     # g = model.functions['transition']
