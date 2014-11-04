@@ -14,3 +14,4 @@ Advanced topics
 
     conventions
 
+    notebook

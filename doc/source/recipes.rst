@@ -18,7 +18,7 @@ algorithm.
     :language: yaml
     :linenos:
 
-- First the ``model_type`` key defines a short name for the recipe.
+- First the ``model_spec`` key defines a short name for the recipe.
 
 - Second, a list of symbol types is declared. Two types of symbols are automatically
 added to that list : ``shocks`` and ``parameters``.

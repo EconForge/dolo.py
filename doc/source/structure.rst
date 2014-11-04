@@ -22,6 +22,3 @@ Here is how the code in dolo is organized :
 
 5. commands (to be done)
     - define user-friendly commands
-
-.. image:: _static/structure.png
-    :width: 100 %

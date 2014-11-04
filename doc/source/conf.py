@@ -24,7 +24,6 @@ try:
 except ImportError:
     def install(package):
         pip.main(['install', package])
-
     install('mock')
     from mock import Mock as MagicMock
 
@@ -39,6 +38,7 @@ sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
 # -- General configuration -----------------------------------------------------
+
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'dolo'
-copyright = u'2012, Pablo Winant'
+copyright = u'2012-2014, Pablo Winant'
 
 
 ## Code to get version number taken from Flask
@@ -121,17 +121,29 @@ pygments_style = 'sphinx'
 
 # -- Options for HTML output ---------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-html_theme = 'sphinxdoc'
 
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#html_theme_options = {}
+th = 'better'
 
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['_themes']
+if th == 'better':
+    from better import better_theme_path
+    html_theme_path = [better_theme_path]
+    html_theme = 'better'
+elif th == 'bootstrap':
+    import sphinx_bootstrap_theme
+    # Activate the theme.
+    html_theme = 'bootstrap'
+    html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+else:
+    # The theme to use for HTML and HTML Help pages.  See the documentation for
+    # a list of builtin themes.
+    html_theme = 'sphinxdoc'
+    # Theme options are theme-specific and customize the look and feel of a theme
+    # further.  For a list of options available for each theme, see the
+    # documentation.
+    html_theme_options = {}
+
+    # Add any paths that contain custom themes here, relative to this directory.
+    # html_theme_path = ['_themes']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -142,7 +154,7 @@ html_theme_path = ['_themes']
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = 
+#html_logo =
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

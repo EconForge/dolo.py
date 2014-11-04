@@ -2,8 +2,8 @@ Welcome to dolo's documentation!
 ================================
 
 .. toctree::
-    :hidden:
-    :maxdepth: 2
+    :titlesonly:
+
 
     installation
 
@@ -14,7 +14,7 @@ Welcome to dolo's documentation!
     algos
 
     api
-    
+
 What is dolo ?
 --------------
 
