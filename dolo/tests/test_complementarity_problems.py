@@ -114,25 +114,6 @@ class ComplementaritySolve(unittest.TestCase):
     #     assert( abs(sol - resp).max()<1e-6 )
 
 
-    def test_serial_inversion(self):
-
-        import numpy
-        N = 10
-        d = 4
-        jac = numpy.zeros((d,d,N))
-        for i in range(d):
-            jac[i,i,:] = 1
-
-        from dolo.numeric.serial_operations import serial_inversion
-        from time import time
-        t = time()
-        ijac = serial_inversion(jac)
-        u = time()
-        print('elapsed : {}'.format(u-t))
-
-
-
-
 if __name__ == '__main__':
 
     unittest.main()
