@@ -41,7 +41,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             model_spec = 'dynare'
         else:
             raise Exception("'model_spec' was not defined and couldn't be guessed.")
-        print("Model type detected as {}".format(model_spec))
+        print("Model type detected as '{}'".format(model_spec))
     else:
         model_spec = data['model_spec']
 
@@ -81,14 +81,14 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     # model specific
 
-    if model_spec in ('fga', 'fgh', 'vfi', 'dynare'):
+    if model_spec in ('dtcscc', 'dynare'):
         if 'covariances' not in data:
             raise Exception(
                 "Missing section (model {}): 'covariances'.".format(model_spec)
             )
         symbolic_covariances = data['covariances']
 
-    if model_spec in ('mfg', 'mfga', 'mvfi'):
+    if model_spec == 'dtmscc':
         if 'markov_chain' not in data:
             raise Exception(
                 "Missing section (model {}): 'markov_chain'.".format(model_spec)

@@ -97,39 +97,6 @@ class ComplementaritySolve(unittest.TestCase):
         print(sol)
         print(resp)
         assert( abs(sol - resp).max()<1e-5 )
-    #
-    # def test_solver(self):
-    #
-    #     fun = lambda x: -josephy(x)
-    #     dfun = lambda x: -Djosephy(x)
-    #
-    #
-    #     x0=np.array( [1.25, 0.00, 0.00, 0.50] )
-    #     lb=np.array( [0.00, 0.00, 0.00, 0.00] )
-    #     ub=np.array( [1e20, 1e20, 1e20, 1e20] )
-    #
-    #     resp = solver( fun, x0, lb, ub, verbose=True, jac=dfun, method='lmmcp')
-    #
-    #     sol = np.array([1.22474487, -0.0000, 0.0000, 0.5000])
-    #     assert( abs(sol - resp).max()<1e-6 )
-
-
-    def test_serial_inversion(self):
-
-        import numpy
-        N = 10
-        d = 4
-        jac = numpy.zeros((d,d,N))
-        for i in range(d):
-            jac[i,i,:] = 1
-
-        from dolo.numeric.serial_operations import serial_inversion
-        from time import time
-        t = time()
-        ijac = serial_inversion(jac)
-        u = time()
-        print('elapsed : {}'.format(u-t))
-
 
 
 
