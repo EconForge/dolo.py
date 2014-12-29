@@ -1,4 +1,4 @@
-from dolo.algos.fg.time_iteration import step_residual
+from dolo.algos.dtcscc.time_iteration import step_residual
 import numpy
 
 def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, solve_expectations=False, nodes=None, weights=None, forcing_shocks=None):
@@ -69,7 +69,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
     if model.model_spec == 'fga':
 
-       from dolo.algos.fg.convert import get_fg_functions
+       from dolo.algos.dtcscc.convert import get_fg_functions
        [f,g] = get_fg_functions(model)
     else:
         f = model.functions['arbitrage']

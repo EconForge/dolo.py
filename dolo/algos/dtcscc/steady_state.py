@@ -19,7 +19,7 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         calibration dictionary
     '''
 
-    from dolo.algos.fg.convert import get_fg_functions
+    from dolo.algos.dtcscc.convert import get_fg_functions
 
     [f,g] = get_fg_functions(model)
     

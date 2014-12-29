@@ -69,7 +69,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
 
     # g = model.functions['transition']
     # f = model.functions['arbitrage']
-    from dolo.algos.fg.convert import get_fg_functions
+    from dolo.algos.dtcscc.convert import get_fg_functions
     [f,g] = get_fg_functions(model)
 
     if steady_state is not None:
@@ -78,7 +78,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
         calib = model.calibration
 
     if solve_steady_state:
-        from dolo.algos.fg.steady_state import find_deterministic_equilibrium
+        from dolo.algos.dtcscc.steady_state import find_deterministic_equilibrium
         calib = find_deterministic_equilibrium(model)
 
     p = calib['parameters']

@@ -3,7 +3,7 @@ from __future__ import division
 from dolo.numeric.misc import mlinspace
 import numpy
 import numpy as np
-from dolo.algos.fg.convert import get_fg_functions
+from dolo.algos.dtcscc.convert import get_fg_functions
 
 class EulerErrors(dict):
 
@@ -87,7 +87,7 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
     if s0 is None:
         s0 = model.calibration['states']
 
-    from dolo.algos.fg.simulations import simulate
+    from dolo.algos.dtcscc.simulations import simulate
     simul = simulate(model, dr, s0, n_exp=n_exp, horizon=horizon+1,
                      discard=True, solve_expectations=solve_expectations)
 
@@ -126,7 +126,7 @@ def denhaanerrors( model, dr, s0=None, horizon=100, n_sims=10, seed=0, integrati
     assert(model.model_spec in ('fg', 'fga'))
 
     from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
-    from dolo.algos.fg.simulations import simulate
+    from dolo.algos.dtcscc.simulations import simulate
 
     n_x = len(model.symbols['controls'])
     n_s = len(model.symbols['states'])

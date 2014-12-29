@@ -149,10 +149,10 @@ Model object:
     def residuals(self, calib=None):
 
         if self.model_spec in ("fg",'fga'):
-            from dolo.algos.fg.steady_state import residuals
+            from dolo.algos.dtcscc.steady_state import residuals
             return residuals(self, calib)
         elif self.model_spec in ('mfg','mfga'):
-            from dolo.algos.mfg.steady_state import residuals
+            from dolo.algos.dtmscc.steady_state import residuals
             return residuals(self, calib)
 
 
