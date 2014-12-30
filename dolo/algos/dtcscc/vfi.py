@@ -22,7 +22,7 @@ def evaluate_policy(model, dr, tol=1e-8,  maxit=2000, verbose=False, hook=None, 
 
     """
 
-    assert(model.model_spec=='fga')
+    assert(model.model_type=='dtcscc')
 
     vfun = model.functions["value"]
     gfun = model.functions['transition']
@@ -84,7 +84,7 @@ def evaluate_policy(model, dr, tol=1e-8,  maxit=2000, verbose=False, hook=None, 
 
         drv.set_values(guess_0)
 
-        guess = update_value(gfun, afun, vfun, grid, controls, auxiliaries, dr, drv, epsilons, weights, parms, n_vals)
+        guess = update_value(gfun, afun, vfun, grid, controls, dr, drv, epsilons, weights, parms, n_vals)
 
 
         err = abs(guess-guess_0).max()
@@ -113,7 +113,7 @@ def evaluate_policy(model, dr, tol=1e-8,  maxit=2000, verbose=False, hook=None, 
     return drv
 
 
-def update_value(g, a, v, s, x, y, dr, drv, epsilons, weights, parms, n_vals):
+def update_value(g, a, v, s, x, dr, drv, epsilons, weights, parms, n_vals):
 
     N = s.shape[0]
     n_s = s.shape[1]
@@ -127,12 +127,11 @@ def update_value(g, a, v, s, x, y, dr, drv, epsilons, weights, parms, n_vals):
         e = epsilons[i,:]
         w = weights[i]
 
-        S = g(s,x,y,e,parms)
+        S = g(s,x,e,parms)
 
         X = dr(S)
         V = drv(S)
-        Y = a(S,X,parms)
 
-        res += w*v(s,x,y,S,X,Y,V,parms)
+        res += w*v(s,x,S,X,V,parms)
 
     return res

@@ -21,8 +21,9 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
 
     from dolo.algos.dtcscc.convert import get_fg_functions
 
-    [f,g] = get_fg_functions(model)
-    
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
+
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
     p = model.calibration['parameters']
@@ -31,7 +32,7 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     else:
         e0 = numpy.zeros( len(model.symbols['shocks']) )
     n_e = len(e0)
-    
+
     z = numpy.concatenate([s0, x0, e0])
 
     symbs = model.symbols['states'] + model.symbols['controls']
@@ -75,8 +76,8 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     sol = root(fobj, z, method='lm')
     steady_state = sol.x
 
-    
-   
+
+
     s = steady_state[:len(s0)]
     x = steady_state[len(s0):-n_e]
     e = steady_state[-n_e:]
@@ -87,23 +88,23 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
         shocks = e,
         parameters = p.copy()
     )
-    
+
     if 'auxiliary' in model.functions:
         a = model.functions['auxiliary'](s,x,p)
         calib['auxiliaries'] = a
-    
+
     return calib
 
 
 def residuals(model, calib=None):
-   
+
     if calib is None:
         calib = model.calibration
 
     from collections import OrderedDict
     res = OrderedDict()
 
-    if model.model_spec == "fg":
+    if 'auxiliaries' not in model.symbols:
 
         s = calib['states']
         x = calib['controls']
@@ -114,9 +115,7 @@ def residuals(model, calib=None):
 
         res['transition'] = g(s,x,e,p)-s
         res['arbitrage'] = f(s,x,e,s,x,p)
-        
-
-    elif model.model_spec  == "fga":
+    else:
 
         s = calib['states']
         x = calib['controls']
@@ -127,18 +126,15 @@ def residuals(model, calib=None):
         f = model.functions['arbitrage']
         g = model.functions['transition']
         a = model.functions['auxiliary']
-        
-        res['transition'] = g(s,x,y,e,p)-s
-        res['arbitrage'] = f(s,x,y,e,s,x,y,p)
+
+        res['transition'] = g(s,x,e,p)-s
+        res['arbitrage'] = f(s,x,e,s,x,p)
         res['auxiliary'] = a(s,x,p)-y
 
         if 'value' in model.functions:
             rew = model.functions['value']
             v = calib['values']
-            res['value'] = rew(s,x,y,s,x,y,v,p) - v
-
-    else:
-        raise Exception("Not implemented")
+            res['value'] = rew(s,x,s,x,v,p) - v
 
     return res
 #
@@ -201,33 +197,32 @@ def residuals(model, calib=None):
 
 
 if __name__ == '__main__':
-   
+
     from dolo import *
     from numpy import nan
 
     from dolo.algos.steady_state import find_steady_state
 
     model = yaml_import("examples/models/open_economy.yaml")
-    
-    
+
+
     ss = find_steady_state( model )
 
     print("Steady-state variables")
     print("states: {}".format(ss[0]))
     print("controls: {}".format(ss[1]))
-    
+
     jac = find_steady_state(model, return_jacobian=True)
 
     rank = numpy.linalg.matrix_rank(jac)
 
-    
+
     sol2 = find_steady_state(model, force_values=[0.3,nan] )  # -> returns steady-state, using calibrated values as starting point
     sol3 = find_steady_state(model, force_values={'W_1':0.3} )  # -> returns steady-state, using calibrated values as starting point
 
     print(sol2)
     print(sol3)
-    
+
 #    steady_state( model, e ) # -> sets exogenous values for shocks
-    
+
 #    steady_state( model, {'e_a':1, 'e':9}, {'k':[8,9]})
-    

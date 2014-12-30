@@ -1,16 +1,19 @@
-def get_fg_functions(model):
+from dolo.numeric.serial_operations import serial_multiplication as serial_mult
 
-    self = model
+def get_f(model):
 
-    ff = self.functions['arbitrage']
-    gg = self.functions['transition']
 
-    if model.model_spec == 'fg':
-        return [ff, gg]
+    if isinstance(model, dict):
+        functions = model
+    else:
+        functions = model.functions
 
-    aa = self.functions['auxiliary']
+    ff = functions['arbitrage']
 
-    from dolo.numeric.serial_operations import serial_multiplication as serial_mult
+    if 'auxiliary' not in functions:
+        return ff
+
+    aa = functions['auxiliary']
 
     def f(s,x,E,S,X,p,diff=False):
         if diff:
@@ -27,6 +30,24 @@ def get_fg_functions(model):
         r = ff(s,x,y,E,S,X,Y,p)
         return r
 
+    return f
+
+
+
+def get_g(model):
+
+    if isinstance(model, dict):
+        functions = model
+    else:
+        functions = model.functions
+
+    gg = functions['transition']
+
+    if 'auxiliary' not in functions:
+        return gg
+
+    aa = functions['auxiliary']
+
     def g(s,x,e,p,diff=False):
         if diff:
             [y,y_s,y_x] = aa(s,x,p,diff=True)
@@ -37,8 +58,59 @@ def get_fg_functions(model):
         y = aa(s,x,p)
         S = gg(s,x,y,e,p)
         return S
-    #
-    # from dolo.compiler.function_compiler import standard_function
-    # f = standard_function(f, len(model.symbols['controls']))
-    # g = standard_function(g, len(model.symbols['states']))
-    return [f,g]
+
+    return g
+
+def get_v(model):
+
+    if isinstance(model, dict):
+        functions = model
+    else:
+        functions = model.functions
+
+    vv = functions['value']
+
+    if 'auxiliary' not in functions:
+        return gg
+
+    aa = functions['auxiliary']
+
+    def value(s,x,S,X,V,p,diff=False):
+        if diff:
+            [y,y_s,y_x] = aa(s,x,p,diff=True)
+            [y,y_X,y_X] = aa(S,x,p,diff=True)
+            [v, v_s, v_x, v_y, v_S, v_X, v_Y, v_V] = vv(s,x,y,S,X,Y,V,p,diff=True)
+            v_s = v_s + serial_mult(v_y,y_s)
+            v_x = v_x + serial_mult(v_y,y_x)
+            v_S = v_S + serial_mult(v_Y,Y_S)
+            v_X = v_X + serial_mult(v_Y,Y_X)
+            return [v, v_s, v_x, v_S, v_X, v_V]
+        y = aa(s,x,p)
+        Y = aa(S,X,p)
+        v = vv(s,x,y,S,X,Y,V,p)
+        return v
+
+    return value
+
+def convert_all(d):
+    if 'auxiliary' not in d:
+        return d
+    new_d = dict()
+    for k in d:
+        fun = d[k]
+        print("k : {}".format(k))
+        if k == 'arbitrage':
+            new_fun = get_f(d)
+        elif k == 'value':
+            new_fun = get_v(d)
+        elif k == 'transition':
+            new_fun = get_g(d)
+        else:
+            # TODO: ensure that we never reach that branch
+            new_fun = fun
+        new_d[k] = new_fun
+    return new_d
+#
+def get_fg_functions(model):
+
+    return [fun(model) for fun in [get_f, get_g]]

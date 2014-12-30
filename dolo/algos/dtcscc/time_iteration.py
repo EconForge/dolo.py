@@ -128,8 +128,8 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
 
     from dolo.algos.dtcscc.convert import get_fg_functions
 
-    f,g = get_fg_functions(model)
-
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     import time
 
@@ -192,7 +192,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         if False in np.isfinite(x0):
             print('iteration {} failed : non finite value')
             return [x0, x]
-    
+
     if it == maxit:
         import warnings
         warnings.warn(UserWarning("Maximum number of iterations reached"))

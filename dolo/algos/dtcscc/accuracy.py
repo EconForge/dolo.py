@@ -51,9 +51,10 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
           n_draws=100, seed=0, horizon=50, s0=None,
           solve_expectations=False, time_discount=None):
 
-    assert(model.model_spec =='fga')
+    assert(model.model_type =='dtcscc')
 
-    [f,g] = get_fg_functions(model)
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     sigma = model.covariances
     parms = model.calibration['parameters']
@@ -123,7 +124,7 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
 
 def denhaanerrors( model, dr, s0=None, horizon=100, n_sims=10, seed=0, integration_orders=None):
 
-    assert(model.model_spec in ('fg', 'fga'))
+    assert(model.model_type == 'dtcscc')
 
     from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
     from dolo.algos.dtcscc.simulations import simulate

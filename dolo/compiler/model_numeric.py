@@ -23,7 +23,8 @@ class NumericModel:
         self.infos['data_layout'] = 'columns'
 
         self.name = self.infos['name']
-        self.model_spec = self.infos['type']
+        self.model_type = self.infos['type']
+        # self.model_spec
 
         self.__update_from_symbolic__()
         self.__compile_functions__()
@@ -148,10 +149,10 @@ Model object:
 
     def residuals(self, calib=None):
 
-        if self.model_spec in ("fg",'fga'):
+        if self.model_type == 'dtcscc':
             from dolo.algos.dtcscc.steady_state import residuals
             return residuals(self, calib)
-        elif self.model_spec in ('mfg','mfga'):
+        elif self.model_type == 'dtmscc':
             from dolo.algos.dtmscc.steady_state import residuals
             return residuals(self, calib)
 
@@ -165,7 +166,11 @@ Model object:
         defs = self.symbolic.definitions
 
         # works for fg models only
-        recipe = recipes[self.model_spec]
+        model_type = self.model_type
+        if 'auxiliaries' not in self.symbols:
+            model_type += '_'
+
+        recipe = recipes[model_type]
         symbols = self.symbols # should match self.symbols
 
         comps = []
@@ -258,8 +263,14 @@ Model object:
 
             functions[funname] = standard_function(fun, n_output )
 
-        self.functions = functions
+        self.__original_functions__ = functions
 
+        print(self.model_type)
+        if self.model_type == 'dtcscc':
+            from dolo.algos.dtcscc.convert import convert_all
+            self.functions = convert_all(functions)
+        else:
+            self.functions = functions
 
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")

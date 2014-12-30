@@ -143,7 +143,7 @@ def model_to_fg(model, order=2):
 
 def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True, eigmax=1.0):
 
-    assert(model.model_spec=='fga')
+    assert(model.model_type=='dtcscc')
 
     [f_fun, g_fun] = model_to_fg(model, order=order)
 
