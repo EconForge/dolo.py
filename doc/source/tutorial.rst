@@ -59,7 +59,7 @@ Solving the RBC model
 
 Here we present an example where we solve the RBC model and performs irfs, and stochastic simulation.
 
-.. seealso:: this example is also included in dolo's distribution as a notebook that you can run interactively.
+.. seealso:: this example is also available as `a notebook<http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/rbc_model.ipynb>_` that you can run interactively.
 
 Importing the model :
 +++++++++++++++++++++
