@@ -7,8 +7,8 @@ Here we illustrate how to solve the RBC model.
 Write a model
 -------------
 
-Take a look at the ``rbc.yaml`` from the ``examples/global_models``
-directory. Here is its content.
+Models are defined in YAML, which is a very readable standard for coding native data structures (see http://yaml.org/). This makes the model definition file quite easy to read. Take a look at the ``rbc.yaml`` from the ``examples/global_models``
+directory. Here is its content:
 
 .. literalinclude:: ../../examples/global_models/rbc.yaml
     :language: yaml
@@ -17,7 +17,7 @@ directory. Here is its content.
 
 
 
-It is a valid YAML file (see http://yaml.org/). In particular, it is sensitive to indentation and cannot contain tabs.
+It is a valid YAML file. In particular, it is sensitive to indentation and cannot contain tabs.
 
 It consists in several part:
 
@@ -59,12 +59,12 @@ Solving the RBC model
 
 Here we present an example where we solve the RBC model and performs irfs, and stochastic simulation.
 
-.. seealso:: this example is also available as `a notebook<http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/rbc_model.ipynb>_` that you can run interactively.
+.. seealso:: this example is also available as `a notebook <http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/rbc_model.ipynb>`_ that you can run interactively.
 
 Importing the model :
 +++++++++++++++++++++
 
-nImport dolo:
+Import dolo:
 
 .. code-block:: python
 
@@ -86,12 +86,12 @@ Get a first order approximation of the decision rule,
 
    dr_1 = approximate_controls(model, order=1)
 
-... and a second order one
+... For a second order approximation pass order=2
 
 Compute the global solution. Unless bounds have been given in the yaml file, this will use the first order solution
 to approximate the asymptotic distribution. Then the state-space is defined as 2 standard deviations of this
 distribution around the deterministic steady-state. By default the solution algorithm uses time-iteration to determine
-the decision rules and molyak collocation to interpolation future decision rules.
+the decision rules and Smolyak collocation to interpolation future decision rules.
 
 .. code-block:: python
 
