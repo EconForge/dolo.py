@@ -51,7 +51,7 @@ It consists in several part:
 Solving the RBC model
 ---------------------
 
-Here we present an example where we solve the classic Real Business Cycle (RBC) model, trace its impulse response functions, and run a stochastic simulation. But unlike most packages for solving Dynamic Stochastic General Equilibrium (DSGE) models, the solution will be based on a global method, i.e., a method that remains accurate also far from the deterministic steady state. For the RBC model this does not make much of a difference because local methods happen to hold up rather well. But for other models it can make a sizable difference.
+Here we present an example where we solve the classic Real Business Cycle (RBC) model, trace its impulse response functions, and run a stochastic simulation. But unlike most packages for solving Dynamic Stochastic General Equilibrium (DSGE) models the solution will be based on a global method, i.e., a method that remains accurate also far from the deterministic steady state. For the RBC model this does not make much of a difference because local methods happen to hold up rather well. But for other models it can make a sizable difference.
 
 .. seealso:: This example is also available as an IPython `notebook <http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/rbc_model.ipynb>`_ that you can run interactively.
 
