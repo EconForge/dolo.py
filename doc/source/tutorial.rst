@@ -7,17 +7,11 @@ Here we illustrate how to solve the RBC model.
 Write a model
 -------------
 
-Take a look at the ``rbc.yaml`` from the ``examples/global_models``
-directory. Here is its content.
+Models are defined in YAML, which is a very readable standard for coding native data structures (see http://yaml.org/). This makes the model definition file quite easy to read. Take a look at the ``rbc.yaml`` from the ``examples/models`` directory. It is a valid YAML file. In particular, indentation defines nesting, colons define key-value associations that generate Python dicts, dashes generate Python lists, and the file must not contain any tabs. Here is its content:
 
-.. literalinclude:: ../../examples/global_models/rbc.yaml
+.. literalinclude:: ../../examples/models/rbc.yaml
     :language: yaml
     :linenos:
-
-
-
-
-It is a valid YAML file (see http://yaml.org/). In particular, it is sensitive to indentation and cannot contain tabs.
 
 It consists in several part:
 
@@ -57,24 +51,24 @@ It consists in several part:
 Solving the RBC model
 ---------------------
 
-Here we present an example where we solve the RBC model and performs irfs, and stochastic simulation.
+Here we present an example where we solve the classic Real Business Cycle (RBC) model, trace its impulse response functions, and run a stochastic simulation. But unlike most packages for solving Dynamic Stochastic General Equilibrium (DSGE) models the solution will be based on a global method, i.e., a method that remains accurate also far from the deterministic steady state. For the RBC model this does not make much of a difference because local methods happen to hold up rather well. But for other models it can make a sizable difference.
 
-.. seealso:: this example is also included in dolo's distribution as a notebook that you can run interactively.
+.. seealso:: This example is also available as an IPython `notebook <http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/rbc_model.ipynb>`_ that you can run interactively.
 
 Importing the model :
 +++++++++++++++++++++
 
-nImport dolo:
+Import dolo:
 
 .. code-block:: python
 
    from dolo import *
 
-Import the example file provided with dolo in ``examples/global_models`` subdirectory and display it.
+Import the example file provided with dolo in ``examples/models`` subdirectory and display it.
 
 .. code-block:: python
 
-   model = yaml_import('examples/global_models/rbc.yaml')
+   model = yaml_import('examples/models/rbc.yaml')
    display(model) # this prints the model equations
 
 Solving the model :
@@ -86,12 +80,12 @@ Get a first order approximation of the decision rule,
 
    dr_1 = approximate_controls(model, order=1)
 
-... and a second order one
+... For a second order approximation pass order=2
 
 Compute the global solution. Unless bounds have been given in the yaml file, this will use the first order solution
 to approximate the asymptotic distribution. Then the state-space is defined as 2 standard deviations of this
 distribution around the deterministic steady-state. By default the solution algorithm uses time-iteration to determine
-the decision rules and molyak collocation to interpolation future decision rules.
+the decision rules and Smolyak collocation to interpolation future decision rules.
 
 .. code-block:: python
 
