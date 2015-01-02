@@ -1,6 +1,23 @@
 from numpy import atleast_2d, dot
 
 class TaylorExpansion:
+    '''An instance of class TaylorExpansion stores steady state values
+and the derivatives around that steady state and uses that to provide
+a () interface that computes the approximation.
+
+To generate an instance of a first-order taylor expansion use:
+
+approx_dr = TaylorExpansion(steady_state, steady_state_decision,
+                            decision_first_derivatives)
+
+Second order and third order approximations are also supported by
+adding second and third derivative arguments.
+
+To compute an approximation from an instance use:
+
+decision = approx_dr(state)
+
+    ''' 
 
     def __init__(self,*l):
 
