@@ -63,7 +63,9 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
     return ret
 
 import numpy
+from numba import jit
 
+@jit
 def serial_multiplication(A,B):
 
     if A.ndim == 2 and B.ndim == 2:
@@ -77,13 +79,16 @@ def serial_multiplication(A,B):
     assert(B.shape[1]==J)
     assert(B.shape[0]==N)
 
+    v = 0.0
     resp = np.zeros( (N,I,K) )
-    for i in range(I):
-        for k in range(K):
-            T = np.zeros( N )
-            for j in range(J):
-                T += A[:,i,j]*B[:,j,k]
-            resp[:,i,k] = T
+    for n in range(N):
+        for i in range(I):
+            for k in range(K):
+                v = 0
+                for j in range(J):
+                    v += A[n,i,j]*B[n,j,k]
+                resp[n,i,k] = v
+
     return resp
 
 
