@@ -1,3 +1,3 @@
 __author__ = 'pablo'
 
-from commands import *
+from .commands import *

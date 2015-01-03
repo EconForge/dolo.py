@@ -14,7 +14,7 @@ class NumericModel:
 
         self.symbols = symbolic_model.symbols
 
-        self.variables = sum( [tuple(e) for k,e in  self.symbols.iteritems() if k not in ('parameters','shocks','values')], ())
+        self.variables = sum( [tuple(e) for k,e in  self.symbols.items() if k not in ('parameters','shocks','values')], ())
 
         self.options = options if options is not None else {}
 
@@ -39,7 +39,7 @@ class NumericModel:
         self.calibration_dict = solve_triangular_system( system )
         from dolo.compiler.misc import calibration_to_vector
         self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
-        from symbolic_eval import NumericEval
+        from .symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
 
         # read symbolic structure
@@ -108,7 +108,7 @@ Model object:
         ss = '\n- residuals:\n\n'
         res = self.residuals()
 
-        for eqgroup, eqlist in self.symbolic.equations.iteritems():
+        for eqgroup, eqlist in self.symbolic.equations.items():
             ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]

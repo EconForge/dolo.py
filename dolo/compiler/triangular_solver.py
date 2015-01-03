@@ -31,7 +31,7 @@ def triangular_solver(incidence, context=None):
                 if i in e:
                     e.remove(i)
             solved.append(i)
-        
+
         steps += 1
 
     if len(solved) < n:
@@ -63,7 +63,7 @@ def solve_triangular_system(system, values=None, context=None):
 
     system = OrderedDict(system)
 
-    var_order = system.keys()
+    var_order = list(system.keys())
 
     ll = get_incidence(system)
 
