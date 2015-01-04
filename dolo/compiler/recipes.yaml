@@ -1,3 +1,280 @@
+dtcscc_:
+
+    model_spec: dtcscc
+
+    symbols: ['states', 'controls', 'values', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['shocks', 1, 'E']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['shocks',0,'e']
+                - ['parameters', 0, 'p']
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['values',1,'V']
+                - ['parameters', 0, 'p']
+
+dtcscc:
+
+    model_spec: dtcscc
+
+    symbols: ['states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['shocks', 1, 'E']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['auxiliaries',-1,'y']
+                - ['shocks',0,'e']
+                - ['parameters', 0, 'p']
+
+
+        auxiliary:
+
+            target: ['auxiliaries',0,'S']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['values',1,'V']
+                - ['parameters', 0, 'p']
+
+
+dtmscc:
+
+    model_spec: dtmscc
+
+    symbols: ['markov_states', 'states', 'controls', 'auxiliaries', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+
+                    - ['markov_states',0,'m']
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['markov_states',-1,'m']
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['auxiliaries',-1,'y']
+                - ['markov_states',0,'M']
+                - ['parameters', 0, 'p']
+
+
+        auxiliary:
+
+            target: ['auxiliaries',0,'S']
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+            recursive: False
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['auxiliaries',0,'y']
+                - ['values', 0, 'v']
+
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+                - ['values', 1, 'V']
+
+                - ['parameters',0,'p']
+
+
+dtmscc_:
+
+    model_spec: dtmscc
+
+    symbols: ['markov_states', 'states', 'controls', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+
+                    - ['markov_states',0,'m']
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['markov_states',-1,'m']
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['markov_states',0,'M']
+                - ['parameters', 0, 'p']
+
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+            recursive: False
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['values', 0, 'v']
+
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['values', 1, 'V']
+
+                - ['parameters',0,'p']
+
+
+
+###########
+### OLD ###
+###########
+
 fg:
 
     model_spec: fg

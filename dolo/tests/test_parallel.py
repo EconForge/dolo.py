@@ -7,7 +7,7 @@ import time
 def solve_something(name, args):
 
     from dolo import yaml_import
-    from dolo.algos.fg.time_iteration import time_iteration as global_solve
+    from dolo.algos.dtcscc.time_iteration import time_iteration as global_solve
 
     model = yaml_import('examples/models/{}.yaml'.format(name))
     dr = global_solve(model, **args)

@@ -3,9 +3,9 @@ def test_mfg_model():
     from dolo import yaml_import
 
     # from dolo.algos.commands import time_iteration, simulate, evaluate_policy
-    from dolo.algos.mfg.time_iteration import time_iteration
-    from dolo.algos.mfg.value_iteration import evaluate_policy
-    from dolo.algos.mfg.simulations import simulate
+    from dolo.algos.dtmscc.time_iteration import time_iteration
+    from dolo.algos.dtmscc.value_iteration import evaluate_policy
+    from dolo.algos.dtmscc.simulations import simulate
 
 
     model = yaml_import("examples/models/sudden_stop.yaml")

@@ -2,14 +2,18 @@ import unittest
 import numpy
 
 
-from dolo import yaml_import
 
 def test_web_import():
+
+    from dolo import yaml_import
+
 
     model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
     assert(len(model.symbols['states'])==2)
 
 def model_evaluation(compiler='numpy', data_layout='columns'):
+
+    from dolo import yaml_import
 
     #model = yaml_import('examples/models/rbc_fg.yaml', compiler=compiler, order=data_layout)
     model = yaml_import('examples/models/rbc_fg.yaml')
@@ -37,7 +41,6 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
 
     vec_res = f(ss,xx,ee,ss,xx,p)
 
-
     res = f(s0, x0, e0, s0, x0, p)
 
     assert(res.ndim==1)
@@ -49,6 +52,39 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
         else:
             d += abs(vec_res[:,i] - res).max()
     assert(d == 0)
+
+
+def test_fg_functions():
+
+    from dolo import yaml_import
+    model = yaml_import('examples/models/rbc_fg.yaml')
+
+    s = model.calibration['states']
+    x = model.calibration['controls']
+    e = model.calibration['shocks']
+    p = model.calibration['parameters']
+
+    r = model.functions['arbitrage'](s,x,e,s,x,p)
+
+
+def test_fga_model():
+
+    from dolo import yaml_import
+    model = yaml_import('examples/models/rbc.yaml')
+
+    s = model.calibration['states']
+    x = model.calibration['controls']
+    y = model.calibration['auxiliaries']
+    e = model.calibration['shocks']
+    v = model.calibration['values']
+    p = model.calibration['parameters']
+
+
+    r = model.functions['arbitrage'](s,x,e,s,x,p)
+    S = model.functions['transition'](s,x,e,p)
+    y = model.functions['auxiliary'](s,x,p)
+    V = model.functions['value'](s,x,s,x,v,p)
+
 
 
 class TestModelImport(unittest.TestCase):

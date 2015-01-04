@@ -1,9 +1,10 @@
-from dolo.numeric.decision_rules_states import CDR
+import ast
+from ast import BinOp, Compare, Sub
 
 import sympy
-import ast
-from ast import Compare, BinOp, Sub
+
 from dolo.compiler.function_compiler_sympy import ast_to_sympy
+from dolo.numeric.decision_rules_states import CDR
 
 
 def timeshift(expr, variables, date):
@@ -140,9 +141,9 @@ def model_to_fg(model, order=2):
 
 
 
-def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbose=True, eigmax=1.0):
+def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True, eigmax=1.0):
 
-    assert(model.model_spec=='fga')
+    assert(model.model_type=='dtcscc')
 
     [f_fun, g_fun] = model_to_fg(model, order=order)
 
@@ -155,9 +156,14 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, verbo
     parms = model.calibration['parameters']
     sigma = model.covariances
 
-    states_ss = model.calibration['states']
-    controls_ss = model.calibration['controls']
-    shocks_ss = model.calibration['shocks']
+    if steady_state is None:
+        calibration = model.calibration
+    else:
+        calibration = steady_state
+
+    states_ss = calibration['states']
+    controls_ss = calibration['controls']
+    shocks_ss = calibration['shocks']
 
     f_args_ss = numpy.concatenate( [states_ss, controls_ss, states_ss, controls_ss] )
     g_args_ss = numpy.concatenate( [states_ss, controls_ss, shocks_ss] )
