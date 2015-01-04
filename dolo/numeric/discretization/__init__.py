@@ -1,5 +1,5 @@
 __author__ = 'pablo'
 
 
-from discretization import *
-from quadrature import *
+from .discretization import *
+from .quadrature import *

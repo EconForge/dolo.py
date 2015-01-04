@@ -28,7 +28,7 @@ class NumericEval:
     def __init__(self, d):
 
         self.d = d # dictionary of substitutions
-        for k,v in d.iteritems():
+        for k,v in d.items():
             assert(isinstance(k, str))
 
         self.__supported_functions___ = [AR1, tensor_markov]
@@ -68,7 +68,7 @@ class NumericEval:
     def eval_dict(self, d):
 
         if len(d) == 1:
-            k = d.keys()[0]
+            k = list(d.keys())[0]
             if k in self.__supported_functions_names___:
                 i = self.__supported_functions_names___.index(k)
                 fun = self.__supported_functions___[i]
@@ -86,7 +86,7 @@ class NumericEval:
                 return res
 
 
-        return {k: self.eval(e) for k,e in d.iteritems()}
+        return {k: self.eval(e) for k,e in d.items()}
 
     def eval_ordereddict(self, s):
 
@@ -151,7 +151,3 @@ tensor:
     s = yaml.safe_load(txt)
 
     print(NumericEval(d)(s))
-
-
-
-

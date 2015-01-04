@@ -1,5 +1,6 @@
 
 from __future__ import division
+from .codegen import to_source
 
 
 
@@ -15,6 +16,8 @@ def std_date_symbol(s,date):
 import ast
 
 from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
+
+# def Name(id=id, ctx=None): return ast.arg(arg=id)
 
 # import codegen
 
@@ -204,8 +207,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         if not use_numexpr:
             rhs = rexpr
         else:
-            import codegen
-            src = codegen.to_source(rexpr)
+            src = to_source(rexpr)
             rhs = Call( func=Name(id='evaluate', ctx=Load()),
                 args=[Str(s=src)], keywords=[keyword(arg='out', value=Name(id='out_{}'.format(i), ctx=Load()))], starargs=None, kwargs=None)
 
@@ -229,8 +231,12 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
     args = [e[2] for e in arg_names] + ['out']
 
-    f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, defaults=[]),
-                body=preamble+body, decorator_list=[])
+    # f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, defaults=[]),
+    #             body=preamble+body, decorator_list=[])
+
+    f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
+            body=preamble+body, decorator_list=[])
+
 
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
@@ -243,8 +249,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         print(s)
         print("-"*len(s))
 
-        import codegen
-        print( codegen.to_source(mod) )
+        print( to_source(mod) )
 
     if return_ast:
         return mod
@@ -273,115 +278,8 @@ def eval_ast(mod):
     context['evaluate'] = evaluate
 
     name = mod.body[0].name
+    mod = ast.fix_missing_locations(mod)
     code  = compile(mod, '<string>', 'exec')
     exec(code, context, context)
     fun = context[name]
     return fun
-
-
-if __name__ == '__main__':
-
-
-
-    s1 = '(x0(1) + x1 / y0)**p0 - (x0(1) + x1 / y0)**(p0-1) '
-    s2 = 'x0 + x1 / y1(+1)'
-
-    expressions = [s1,s2]
-
-    from collections import OrderedDict
-
-    symbols = OrderedDict(
-        states = ('x0', 'x1'),
-        controls = ('y0','y1'),
-        parameters = ('p0','p1')
-    )
-
-    arg_names = [
-        ('states', 0, 's'),
-        ('controls', 0, 'x'),
-        # ('states', 1, 'S'),
-        ('controls', 1, 'X'),
-        ('parameters', 0, 'p')
-    ]
-
-
-
-
-    from numexpr import evaluate
-
-    import time
-
-    t0 = time.time()
-    resp = compile_function_ast([s1,s2], symbols, arg_names,
-            output_names=('states',1,'out'), funname='arbitrage', use_numexpr=True, return_ast=True)
-    # resp = compile_function_ast([s1,s2], symbols, arg_names,
-        # funname='arbitrage', use_numexpr=True, return_ast=True)
-
-
-    # resp = compile_function_ast([s1,s2], symbols, arg_names,
-        # funname='arbitrage', use_numexpr=True, return_ast=True)
-
-
-    t1 = time.time()
-
-    print(t1-t0)
-
-    import codegen
-    print( codegen.to_source(resp) )
-
-    exit()
-    t0 = time.time()
-    code  = compile(resp, '<string>', 'exec')
-    t1 = time.time()
-
-
-    exec(code)
-    print(t1-t0)
-
-    import numpy
-    N = 100
-
-    s = numpy.ones((N,4))
-    x = numpy.ones((N,4))
-    S = numpy.ones((N,4))
-    X = numpy.ones((N,4))
-    p = numpy.ones((N,4))
-    out = numpy.ones((N,4))
-    out2 = numpy.ones((N,4))
-
-    import time
-    t1 = time.time()
-
-    for n in range(100):
-        (arbitrage(s,x,S,X,p,out))
-    t2 = time.time()
-
-
-    print(out)
-
-        # arbitrage = compile_function_ast([s1,s2], symbols, arg_names, funname='arbitrage', use_numexpr=False)
-
-    out = numpy.zeros((N,4))
-    (arbitrage(s,x,S,X,p,out))
-    print(out)
-
-
-    exit()
-
-
-
-    from numba import jit
-    # ff = jit(arbitrage)
-
-    ff = arbitrage
-    ff(s,x,S,X,p,out2)
-    t22 = time.time()
-    ff(s,x,S,X,p,out2)
-
-    t3 = time.time()
-
-
-    print(out)
-    print(out2)
-    print(t2-t1, t3-t22)
-    exit()

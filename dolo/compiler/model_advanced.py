@@ -78,7 +78,7 @@ def prepare_model(symbols, calibration_dict, funs):
     calibration = read_calibration(symbols, calibration_dict)
     functions = dict()
 
-#    for k,f in funs.iteritems():
+#    for k,f in funs.items():
     for k,f in funs.items():
 
         argspec = inspect.getargspec(f)
