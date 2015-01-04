@@ -1,4 +1,4 @@
-from recipes import recipes
+from .recipes import recipes
 
 
 

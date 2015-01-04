@@ -25,7 +25,7 @@ class GeneralizedEigenvaluesError(Exception):
         # TODO: explain better
         return "Eigenvalues are not uniquely defined. "
 
-           
+
 
 def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, solve_steady_state=False, order=1):
     """Compute first order approximation of optimal controls
@@ -136,7 +136,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     try:
         assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
     except Exception as e:
-        print e
+        print(e)
         print(numpy.column_stack([diag_S, diag_T]))
         # raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
@@ -163,7 +163,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     dr.A = A
     dr.B = B
     dr.sigma = sigma
-   
+
     return dr
 
 if __name__ == '__main__':
@@ -177,5 +177,3 @@ if __name__ == '__main__':
 
     dr = approximate_controls(model)
     print(dr)
-
-
