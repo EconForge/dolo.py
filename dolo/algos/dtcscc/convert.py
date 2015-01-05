@@ -78,7 +78,7 @@ def get_v(model):
     def value(s,x,S,X,V,p,diff=False):
         if diff:
             [y,y_s,y_x] = aa(s,x,p,diff=True)
-            [y,y_X,y_X] = aa(S,x,p,diff=True)
+            [y,y_S,y_X] = aa(S,X,p,diff=True)
             [v, v_s, v_x, v_y, v_S, v_X, v_Y, v_V] = vv(s,x,y,S,X,Y,V,p,diff=True)
             v_s = v_s + serial_mult(v_y,y_s)
             v_x = v_x + serial_mult(v_y,y_x)
@@ -92,19 +92,47 @@ def get_v(model):
 
     return value
 
+def get_h(model):
+
+    if isinstance(model, dict):
+        functions = model
+    else:
+        functions = model.functions
+
+    hh = functions['expectation']
+
+    if 'auxiliary' not in functions:
+        return hh
+
+    aa = functions['auxiliary']
+
+    def expectation(S,X,p,diff=False):
+        if diff:
+            [y,y_S,y_X] = aa(S,X,p,diff=True)
+            [z, z_S, z_X, z_Y] = hh(S,X,Y,p,diff=True)
+            z_S = z_S + serial_mult(z_Y,Y_S)
+            z_X = z_X + serial_mult(z_Y,Y_X)
+            return [z, z_S, z_X]
+        Y = aa(S,X,p)
+        z = hh(S,X,Y,p)
+        return z
+
+    return expectation
+
 def convert_all(d):
     if 'auxiliary' not in d:
         return d
     new_d = dict()
     for k in d:
         fun = d[k]
-        print("k : {}".format(k))
         if k == 'arbitrage':
             new_fun = get_f(d)
         elif k == 'value':
             new_fun = get_v(d)
         elif k == 'transition':
             new_fun = get_g(d)
+        elif k == 'expectation':
+            new_fun = get_h(d)
         else:
             # TODO: ensure that we never reach that branch
             new_fun = fun

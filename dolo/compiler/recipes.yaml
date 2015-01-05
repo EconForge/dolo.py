@@ -50,6 +50,20 @@ dtcscc_:
                 - ['values',1,'V']
                 - ['parameters', 0, 'p']
 
+        expectation:
+
+            optional: True
+
+            target: ['expectations',0,'z']
+            recursive: False
+
+            eqs:
+                - ['states',1,'S']
+                - ['controls',1,'X']
+
+                - ['parameters',0,'p']
+
+
 dtcscc:
 
     model_spec: dtcscc
@@ -117,6 +131,33 @@ dtcscc:
                 - ['auxiliaries',1,'Y']
                 - ['values',1,'V']
                 - ['parameters', 0, 'p']
+
+        expectation:
+
+            optional: True
+
+            target: ['expectations',0,'z']
+            recursive: False
+
+            eqs:
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+
+                - ['parameters',0,'p']
+
+        direct_response:
+
+            optional: True
+
+            target: ['controls',0,'x']
+            recursive: True
+
+            eqs:
+                - ['states',0,'s']
+                - ['expectations',0,'z']
+
+                - ['parameters',0,'p']
 
 
 dtmscc:
@@ -202,6 +243,22 @@ dtmscc:
 
                 - ['parameters',0,'p']
 
+        expectation:
+
+            optional: True
+
+            target: ['expectations',0,'z']
+            recursive: False
+
+            eqs:
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['auxiliaries',1,'Y']
+
+                - ['parameters',0,'p']
+
+
 
 dtmscc_:
 
@@ -269,7 +326,19 @@ dtmscc_:
 
                 - ['parameters',0,'p']
 
+        expectation:
 
+            optional: True
+
+            target: ['expectations',0,'z']
+            recursive: False
+
+            eqs:
+                - ['markov_states',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+
+                - ['parameters',0,'p']
 
 ###########
 ### OLD ###

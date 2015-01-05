@@ -1,12 +1,9 @@
 import unittest
 import numpy
 
-
-
 def test_web_import():
 
     from dolo import yaml_import
-
 
     model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
     assert(len(model.symbols['states'])==2)
@@ -54,8 +51,9 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
     assert(d == 0)
 
 
-def test_fg_functions():
+def test_dtscc__functions():
 
+    # test a model defined without auxiliary variables
     from dolo import yaml_import
     model = yaml_import('examples/models/rbc_fg.yaml')
 
@@ -67,24 +65,31 @@ def test_fg_functions():
     r = model.functions['arbitrage'](s,x,e,s,x,p)
 
 
-def test_fga_model():
+def test_dtcscc_model():
 
+    # test a model defined with auxiliary variables
     from dolo import yaml_import
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/rbc_full.yaml')
 
     s = model.calibration['states']
     x = model.calibration['controls']
+    X = x
     y = model.calibration['auxiliaries']
-    e = model.calibration['shocks']
-    v = model.calibration['values']
+    E = model.calibration['shocks']
+    V = model.calibration['values']
     p = model.calibration['parameters']
 
 
-    r = model.functions['arbitrage'](s,x,e,s,x,p)
-    S = model.functions['transition'](s,x,e,p)
+    S = model.functions['transition'](s,x,E,p)
+    r = model.functions['arbitrage'](s,x,E,S,X,p)
     y = model.functions['auxiliary'](s,x,p)
-    V = model.functions['value'](s,x,s,x,v,p)
+    v = model.functions['value'](s,x,S,X,V,p)
 
+    z = model.functions['expectation'](S, X, p)
+
+    x1 = model.functions['direct_response'](s,z, p)
+
+    assert(abs(x-x1).max()<1e-12)
 
 
 class TestModelImport(unittest.TestCase):

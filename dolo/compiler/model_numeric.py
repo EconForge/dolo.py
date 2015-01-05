@@ -265,7 +265,6 @@ Model object:
 
         self.__original_functions__ = functions
 
-        print(self.model_type)
         if self.model_type == 'dtcscc':
             from dolo.algos.dtcscc.convert import convert_all
             self.functions = convert_all(functions)
