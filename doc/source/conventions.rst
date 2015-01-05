@@ -1,7 +1,7 @@
 Model conventions
 =================
 
-This page describes various conventions used in dolo.
+This page describes various conventions used in dolo, but is now a bit deprecated due to the introduction of a simpler `model classification<http://nbviewer.ipython.org/github/EconForge/dolo/blob/master/examples/notebooks/model_classification.ipynb>`_ system.
 
 +++++++++++
 Model types
