@@ -5,7 +5,6 @@ Advanced topics
     :maxdepth: 2
 
     recipes
-    structure
 
     model
 
@@ -13,5 +12,3 @@ Advanced topics
     compilation
 
     conventions
-
-    notebook

@@ -34,5 +34,5 @@ The stacked system of equations satisfied by the solution is:
 
 
 
-.. autofunction:: dolo.algos.perfect_foresight.deterministic_solve
-.. autofunction:: dolo.algos.perfect_foresight.find_steady_state
+.. autofunction:: dolo.algos.dtcscc.perfect_foresight.deterministic_solve
+autofunction:: dolo.algos.dtcscc.perfect_foresight.find_steady_state

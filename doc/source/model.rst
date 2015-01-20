@@ -1,9 +1,15 @@
 Model object
 ============
 
-compiled model
+Model object
 --------------
 
-.. automodule:: dolo.compiler.compiler_python
+.. autoclass:: dolo.compiler.model_numeric.NumericModel
    :members:
 
+
+Symbolic Model
+--------------
+
+.. autoclass:: dolo.compiler.model_symbolic.SymbolicModel
+   :members:

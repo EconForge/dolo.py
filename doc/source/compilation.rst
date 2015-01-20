@@ -1,15 +1,9 @@
 Compilation
 ===========
 
-Compiled model
---------------
-
-..  autoclass:: dolo.compiler.compiler_global.CModel
-
-
 Compile a generic symbolic expression
 -------------------------------------
 
-.. autofunction:: dolo.compiler.function_compiler.compile_function
+.. autofunction:: dolo.compiler.function_compiler_ast.compile_function_ast
 
-.. autofunction:: dolo.compiler.function_compiler.compile_multiargument_function
+.. autofunction:: dolo.compiler.function_compiler_sympy.compile_higher_order_function

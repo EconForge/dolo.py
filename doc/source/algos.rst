@@ -1,7 +1,7 @@
 
 
 Solution algorithms
----------------
+-------------------
 
 .. toctree::
     :maxdepth: 2

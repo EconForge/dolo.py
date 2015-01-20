@@ -3,16 +3,12 @@ Welcome to dolo's documentation!
 
 .. toctree::
     :titlesonly:
-
+    :maxdepth: 2
 
     installation
-
-    tutorial
-
+    quick_tutorial
     examples
-
     algos
-
     api
 
 What is dolo ?
