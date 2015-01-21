@@ -1,5 +1,5 @@
-Perfect foresight algorithm
-===========================
+Perfect foresight
+.................
 
 
 We consider an `fg` model, that is a model with in the form:

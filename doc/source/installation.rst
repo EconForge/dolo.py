@@ -24,5 +24,3 @@ You can choose between one of the three following options.
 
 The option -e tells the installer to make symlinks so that the installed version is automatically updated when a new
 version is pulled.
-
-
