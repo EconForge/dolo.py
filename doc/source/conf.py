@@ -229,7 +229,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'dolo.tex', u'dolo Documentation',
+  ('index', 'dolo.tex', u'Dolo Manual',
    u'Pablo Winant', 'manual'),
 ]
 
@@ -273,7 +273,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'dolo', u'dolo Documentation',
+  ('index', 'dolo', u'Dolo Manual',
    u'Pablo Winant', 'dolo', 'One line description of project.',
    'Miscellaneous'),
 ]
