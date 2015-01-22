@@ -97,22 +97,6 @@ class ComplementaritySolve(unittest.TestCase):
         print(sol)
         print(resp)
         assert( abs(sol - resp).max()<1e-5 )
-    #
-    # def test_solver(self):
-    #
-    #     fun = lambda x: -josephy(x)
-    #     dfun = lambda x: -Djosephy(x)
-    #
-    #
-    #     x0=np.array( [1.25, 0.00, 0.00, 0.50] )
-    #     lb=np.array( [0.00, 0.00, 0.00, 0.00] )
-    #     ub=np.array( [1e20, 1e20, 1e20, 1e20] )
-    #
-    #     resp = solver( fun, x0, lb, ub, verbose=True, jac=dfun, method='lmmcp')
-    #
-    #     sol = np.array([1.22474487, -0.0000, 0.0000, 0.5000])
-    #     assert( abs(sol - resp).max()<1e-6 )
-
 
 if __name__ == '__main__':
 

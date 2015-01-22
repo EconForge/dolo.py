@@ -1,7 +1,7 @@
 import numpy
 from numpy import linspace, zeros, atleast_2d
 
-from dolo.algos.fg.steady_state import find_deterministic_equilibrium 
+from dolo.algos.dtcscc.steady_state import find_deterministic_equilibrium
 
 def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
     '''
@@ -105,7 +105,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_con
     #TODO: for start_x, it should be possible to use first order guess
 
 
-    
+
 
     final = numpy.concatenate( [final_s, final_x] )
     start = numpy.concatenate( [start_s, start_x] )
@@ -162,7 +162,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_con
         x0 = initial_guess.ravel()
 
         sol, nit = ncpsolve(ff, lower_bound.ravel(), upper_bound.ravel(), initial_guess.ravel(), verbose=verbose, maxit=maxit, tol=tol, jactype='sparse')
-        
+
         sol = sol.reshape(sh)
 
     else:
@@ -221,8 +221,9 @@ def det_residual(model, guess, start, final, shocks, diff=True, jactype='sparse'
 
     p = model.calibration['parameters']
 
-    from dolo.algos.fg.convert import get_fg_functions
-    [f,g] = get_fg_functions(model)
+    from dolo.algos.dtcscc.convert import get_fg_functions
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     vec = guess[:-1,:]
     vec_f = guess[1:,:]
@@ -317,7 +318,7 @@ if __name__ == '__main__':
 
     e = model.calibration['shocks']
     x = model.calibration['controls']
-    
+
     f = model.functions['arbitrage']
     g = model.functions['transition']
 
@@ -341,7 +342,7 @@ if __name__ == '__main__':
     t2 = time.time()
 
     sol1 = deterministic_solve(model, start_states=start_s,  T=50, use_pandas=True, ignore_constraints=False, verbose=True)
-    
+
     t3 = time.time()
 
     t1 = time.time()
@@ -349,13 +350,13 @@ if __name__ == '__main__':
     sol2 = deterministic_solve(model, start_states=start_s,  T=50, use_pandas=True, ignore_constraints=True, verbose=True)
 
     t2 = time.time()
-    
+
 
 
 
     print("Elapsed : {}, {}".format(t2-t1, t3 - t2))
 
-    
+
     from pylab import *
 
     subplot(211)
@@ -372,4 +373,3 @@ if __name__ == '__main__':
 
     legend()
     show()
-

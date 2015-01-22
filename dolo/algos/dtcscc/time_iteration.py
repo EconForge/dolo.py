@@ -56,7 +56,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
 
     if initial_dr is None:
         if pert_order==1:
-            from dolo.algos.fg.perturbations import approximate_controls
+            from dolo.algos.dtcscc.perturbations import approximate_controls
             initial_dr = approximate_controls(model)
 
         if pert_order>1:
@@ -126,10 +126,10 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     xinit = xinit.real  # just in case...
 
 
-    from dolo.algos.fg.convert import get_fg_functions
+    from dolo.algos.dtcscc.convert import get_fg_functions
 
-    f,g = get_fg_functions(model)
-
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     import time
 
@@ -192,7 +192,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         if False in np.isfinite(x0):
             print('iteration {} failed : non finite value')
             return [x0, x]
-    
+
     if it == maxit:
         import warnings
         warnings.warn(UserWarning("Maximum number of iterations reached"))

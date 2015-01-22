@@ -25,7 +25,7 @@ class GeneralizedEigenvaluesError(Exception):
         # TODO: explain better
         return "Eigenvalues are not uniquely defined. "
 
-           
+
 
 def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, solve_steady_state=False, order=1):
     """Compute first order approximation of optimal controls
@@ -69,8 +69,9 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
 
     # g = model.functions['transition']
     # f = model.functions['arbitrage']
-    from dolo.algos.fg.convert import get_fg_functions
-    [f,g] = get_fg_functions(model)
+    from dolo.algos.dtcscc.convert import get_fg_functions
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     if steady_state is not None:
         calib = steady_state
@@ -78,7 +79,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
         calib = model.calibration
 
     if solve_steady_state:
-        from dolo.algos.fg.steady_state import find_deterministic_equilibrium
+        from dolo.algos.dtcscc.steady_state import find_deterministic_equilibrium
         calib = find_deterministic_equilibrium(model)
 
     p = calib['parameters']
@@ -136,7 +137,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     try:
         assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
     except Exception as e:
-        print e
+        print(e)
         print(numpy.column_stack([diag_S, diag_T]))
         # raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
@@ -163,7 +164,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     dr.A = A
     dr.B = B
     dr.sigma = sigma
-   
+
     return dr
 
 if __name__ == '__main__':
@@ -177,5 +178,3 @@ if __name__ == '__main__':
 
     dr = approximate_controls(model)
     print(dr)
-
-

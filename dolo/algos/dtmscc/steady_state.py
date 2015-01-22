@@ -8,7 +8,7 @@ def residuals(model, calib=None):
     from collections import OrderedDict
     res = OrderedDict()
 
-    if model.model_spec == "mfg":
+    if 'auxiliary' not in model.functions:
 
         m = calib['markov_states']
         s = calib['states']
@@ -20,8 +20,7 @@ def residuals(model, calib=None):
         res['transition'] = g(m,s,x,m,p)-s
         res['arbitrage'] = f(m,s,x,m,s,x,p)
 
-
-    elif model.model_spec  == "mfga":
+    else:
 
         m = calib['markov_states']
 
@@ -37,8 +36,5 @@ def residuals(model, calib=None):
         res['transition'] = g(m,s,x,y,m,p)-s
         res['arbitrage'] = f(m,s,x,y,m,s,x,y,p)
         res['auxiliary'] = a(m,s,x,p)-y
-
-    else:
-        raise Exception("Not implemented")
 
     return res

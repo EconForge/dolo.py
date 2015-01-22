@@ -1,4 +1,4 @@
-from dolo.algos.fg.time_iteration import step_residual
+from dolo.algos.dtcscc.time_iteration import step_residual
 import numpy
 
 def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, solve_expectations=False, nodes=None, weights=None, forcing_shocks=None):
@@ -67,13 +67,8 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
     fun = model.functions
 
-    if model.model_spec == 'fga':
-
-       from dolo.algos.fg.convert import get_fg_functions
-       [f,g] = get_fg_functions(model)
-    else:
-        f = model.functions['arbitrage']
-        g = model.functions['transition']
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
 
     numpy.random.seed(seed)
@@ -82,13 +77,13 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
         mean = numpy.zeros(sigma.shape[0])
         if irf:
             if forcing_shocks is not None and i<forcing_shocks.shape[0]:
-                epsilons = forcing_shocks[i,:] 
+                epsilons = forcing_shocks[i,:]
             else:
                 epsilons = numpy.zeros( (1,sigma.shape[0]) )
         else:
             epsilons = numpy.random.multivariate_normal(mean, sigma, n_exp)
         s = s_simul[i,:,:]
-        
+
         x = dr(s)
 
         if solve_expectations:
@@ -109,7 +104,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
 
         x_simul[i,:,:] = x
-    
+
         ss = g(s,x,epsilons,parms)
         if i<(horizon-1):
             s_simul[i+1,:,:] = ss
@@ -121,8 +116,8 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
         varnames = model.symbols['states'] + model.symbols['controls']
     else:
         aux = fun['auxiliary']
-    
-        a_simul = aux( s_simul.reshape((n_exp*horizon,-1)), x_simul.reshape( (n_exp*horizon,-1) ), parms)    
+
+        a_simul = aux( s_simul.reshape((n_exp*horizon,-1)), x_simul.reshape( (n_exp*horizon,-1) ), parms)
         a_simul = a_simul.reshape(horizon, n_exp, -1)
 
         l = [s_simul, x_simul, a_simul]

@@ -17,7 +17,7 @@ def test_rbc_model():
 
     sim = plot_decision_rule(model,dr,'k')
 
-    from dolo.algos.fg.vfi import evaluate_policy
+    from dolo.algos.dtcscc.vfi import evaluate_policy
 
     pol = evaluate_policy(model, dr, verbose=True)
     polg = evaluate_policy(model, drg, verbose=True)

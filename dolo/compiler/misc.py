@@ -41,7 +41,7 @@ def calibration_to_dict(model, calib):
     from collections import OrderedDict
 
     d = OrderedDict()
-    for group, values in calib.iteritems():
+    for group, values in calib.items():
         if group == 'covariances':
             continue
         syms = model.symbols[group]

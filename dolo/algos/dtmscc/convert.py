@@ -1,14 +1,17 @@
 def get_fg_functions(model):
 
-    self = model
+    if isinstance(model, dict):
+        functions = model
+    else:
+        functions = model.functions
 
-    ff = self.functions['arbitrage']
-    gg = self.functions['transition']
+    ff = functions['arbitrage']
+    gg = functions['transition']
 
-    if model.model_spec == 'mfg':
+    if 'auxiliary' not in model.functions:
         return [ff, gg]
 
-    aa = self.functions['auxiliary']
+    aa = functions['auxiliary']
 
     from dolo.numeric.serial_operations import serial_multiplication as serial_mult
 
@@ -37,8 +40,5 @@ def get_fg_functions(model):
         y = aa(m,s,x,p)
         S = gg(m,s,x,y,M,p)
         return S
-    #
-    # from dolo.compiler.function_compiler import standard_function
-    # f = standard_function(f, len(model.symbols['controls']))
-    # g = standard_function(g, len(model.symbols['states']))
+
     return [f,g]

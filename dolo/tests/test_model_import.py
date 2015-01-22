@@ -1,15 +1,16 @@
 import unittest
 import numpy
 
-
-from dolo import yaml_import
-
 def test_web_import():
+
+    from dolo import yaml_import
 
     model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
     assert(len(model.symbols['states'])==2)
 
 def model_evaluation(compiler='numpy', data_layout='columns'):
+
+    from dolo import yaml_import
 
     #model = yaml_import('examples/models/rbc_fg.yaml', compiler=compiler, order=data_layout)
     model = yaml_import('examples/models/rbc_fg.yaml')
@@ -37,7 +38,6 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
 
     vec_res = f(ss,xx,ee,ss,xx,p)
 
-
     res = f(s0, x0, e0, s0, x0, p)
 
     assert(res.ndim==1)
@@ -49,6 +49,47 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
         else:
             d += abs(vec_res[:,i] - res).max()
     assert(d == 0)
+
+
+def test_dtscc__functions():
+
+    # test a model defined without auxiliary variables
+    from dolo import yaml_import
+    model = yaml_import('examples/models/rbc_fg.yaml')
+
+    s = model.calibration['states']
+    x = model.calibration['controls']
+    e = model.calibration['shocks']
+    p = model.calibration['parameters']
+
+    r = model.functions['arbitrage'](s,x,e,s,x,p)
+
+
+def test_dtcscc_model():
+
+    # test a model defined with auxiliary variables
+    from dolo import yaml_import
+    model = yaml_import('examples/models/rbc_full.yaml')
+
+    s = model.calibration['states']
+    x = model.calibration['controls']
+    X = x
+    y = model.calibration['auxiliaries']
+    E = model.calibration['shocks']
+    V = model.calibration['values']
+    p = model.calibration['parameters']
+
+
+    S = model.functions['transition'](s,x,E,p)
+    r = model.functions['arbitrage'](s,x,E,S,X,p)
+    y = model.functions['auxiliary'](s,x,p)
+    v = model.functions['value'](s,x,S,X,V,p)
+
+    z = model.functions['expectation'](S, X, p)
+
+    x1 = model.functions['direct_response'](s,z, p)
+
+    assert(abs(x-x1).max()<1e-12)
 
 
 class TestModelImport(unittest.TestCase):
