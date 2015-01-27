@@ -318,9 +318,8 @@ The continuous states :math:`s_t` evolve after the law of motion:
 
 .. math::
 
-    s_t = g(s_{t-1}, x_{t-1}, \epsilon_t):math:` where `\epsilon_t
+    s_t = g(m_{t-1}, s_{t-1}, x_{t-1}, m_t)
 
-where :math:`\epsilon_t` is a vector of i.i.d. shocks.
 
 Boundaries
 ~~~~~~~~~~

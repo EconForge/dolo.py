@@ -24,9 +24,9 @@ What is dolo ?
     that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and
     Julia are supported.
 
-
-Index
-#####
+.. 
+.. Index
+.. #####
 
 .. toctree::
     :maxdepth: 2
