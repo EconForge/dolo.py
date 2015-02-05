@@ -86,8 +86,8 @@ Generalized Value Equation
     - short name: `v_2`
 
 A more general updating equation can be useful to express
-non-separable utilities
-or prices. In that case, we define a function :math:`U^{*}` such that
+non-separable utilities or prices.
+In that case, we define a function :math:`U^{*}` such that
 
 .. math::
 
@@ -105,7 +105,7 @@ Boundaries
 
 The optimal controls must also satisfy bounds
 that are function of states. There are two functions
-:math:`\underline{b}()$ and $\overline{b}()` such that:
+:math:`\underline{b}()` and :math:`\overline{b}()` such that:
 
 .. math::
 
@@ -128,22 +128,22 @@ A general formulation of the Euler equation is:
 Note that the Euler equation and the boundaries interact via
 "complentarity equations". Evaluated at one given state, with
 the vector of controls :math:`x=(x_1, ..., x_i, ..., x_{n_x})`, the
-Euler equation gives us the residuals $r=(f_1, ..., f_i, ...,
-f_{n_x})$.
-Suppose that the :math:`i$-th control $x_i` is supposed to lie in the
+Euler equation gives us the residuals :math:`r=(f_1, ..., f_i, ...,
+f_{n_x})`.
+Suppose that the :math:`i`-th control :math:`x_i` is supposed to lie in the
 interval
-:math:`[ \underline{b}\ *i, \overline{b}*\ i ]`. Then one of the following
+:math:`[ \underline{b}_i, \overline{b}_i ]`. Then one of the following
 conditions
 must be true:
 
 -  :math:`f_i` = 0
--  :math:`f_i>0$ and $x_i=\underline{b}_i`
--  :math:`f_i<0$ and $x_i=\overline{b}_i`
+-  :math:`f_i<0` and :math:`x_i=\overline{b}_i`
+-  :math:`f_i>0` and :math:`x_i=\underline{b}_i`
+
 
 By definition, this set of conditions is denoted by:
 
--  $f_i = 0 \perp \underline{b}\ *i \leq x*\ i \leq
-   \overline{b}_i$
+-  :math:`f_i = 0 \perp \underline{b}_i \leq x*\ i \leq \overline{b}_i`
 
 These notations extend to a vector setting so that the Euler
 equations can also be written:
@@ -171,8 +171,7 @@ Expectations
     - name: `expectation`
     - short name: `h`
 
-The vector of explicit expectations :math:`z_t$ is defined by a function $h`
-such that:
+    The vector of explicit expectations :math:`z_t` is defined by a function  :math:`h` such that:
 
 .. math::
 
@@ -269,14 +268,14 @@ Auxiliary variables
     - short name: `a`
 
 In order to reduce the number of variables, it is useful to define
-auxiliary variables :math:`y_t$ using a function $a` such that:
+auxiliary variables :math:`y_t` using a function :math:`a` such that:
 
 .. math::
 
     y_t = a(s_t, x_t)
 
 When they appear in an equation they are automatically substituted by
-the corresponding expression in :math:`s_t$ and $x_t`.
+the corresponding expression in :math:`s_t` and :math:`x_t`.
 
 Discrete Time - Mixed States - Continuous Controls models (DTMSCC)
 ------------------------------------------------------------------
@@ -294,7 +293,7 @@ of a vector of "markov states" :math:`m_t` that can take a finite number of
 values and a vector of "continuous states" :math:`s_t` which takes
 continuous values.
 
-The unknown controls :math:`x_t$ is a function $\varphi` such that:
+The unknown controls :math:`x_t` is a function :math:`\varphi` such that:
 
 .. math::
 
@@ -310,9 +309,8 @@ Transitions
 
 :math:`(m_t)` follows an exogenous and discrete markov chain.
 The whole markov chain is specified by two matrices :math:`P,Q` where each
-line of :math:`P$ is one admissible value for $m_t` and where each element
-:math:`Q(i,j)$ is the conditional probability to go from state $i` to state
-:math:`j`.
+line of :math:`P` is one admissible value for :math:`m_t` and where each element
+:math:`Q(i,j)` is the conditional probability to go from state :math:`i` to state :math:`j`.
 
 The continuous states :math:`s_t` evolve after the law of motion:
 
@@ -349,7 +347,7 @@ The (separable) Bellman equation defines a value :math:`v_t` as:
 
 .. math::
 
-    v_t = U(m_t,s_t,x_t) \| \beta E_t \left[v_{t+1}\right]
+    v_t = U(m_t,s_t,x_t) + \beta E_t \left[v_{t+1}\right]
 
 It is completely characterized by the reward function :math:`U` and
 the discount rate :math:`\beta`.
@@ -395,12 +393,11 @@ Expectations
     - name: `expectation`
     - short name: `h`
 
-The vector of explicit expectations :math:`z_t$ is defined by a function $h`
-such that:
+The vector of explicit expectations :math:`z_t` is defined by a function :math:`h` such that:
 
 .. math::
 
-    z_t = E_t \left[ h(m_{t+1},s_{t+1},x_{t1}) \right]
+    z_t = E_t \left[ h(m_{t+1},s_{t+1},x_{t+1}) \right]
 
 Generalized expectations
 ~~~~~~~~~~~~~~~~~~~~~~~~
