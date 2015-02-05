@@ -5,7 +5,7 @@ from .recipes import recipes
 class SymbolicModel:
 
     def __init__(self, model_name, model_spec, symbols, symbolic_equations, symbolic_calibration,
-                 symbolic_covariances=None, symbolic_markov_chain=None, options=None, definitions=None):
+                 symbolic_distribution=None, options=None, definitions=None):
 
         self.name = model_name
         self.model_spec = model_spec
@@ -24,8 +24,7 @@ class SymbolicModel:
         self.symbols = osyms
         self.equations = symbolic_equations
         self.calibration_dict = symbolic_calibration
-        self.covariances = symbolic_covariances
-        self.markov_chain = symbolic_markov_chain
+        self.distribution = symbolic_distribution
         self.options = options
         self.definitions = definitions
 

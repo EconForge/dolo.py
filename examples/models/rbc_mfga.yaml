@@ -52,9 +52,9 @@ calibration:
     c: z*k^alpha*n^(1-alpha) - i
 
 
-markov_chain:
+distribution:
 
-    AR1:  #  autoMATIC discretizatino using Rouwenhorst
+    AR1:  #  automatic discretization using Rouwenhorst
 
          rho: 0.9
          sigma:

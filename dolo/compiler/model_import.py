@@ -57,7 +57,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     if 'calibration' not in data:
         raise Exception("Missing section: 'calibration'.")
 
-    options = data.get('options')
 
     if 'steady_state' in data['calibration']:
         oldstyle = data['calibration']
@@ -76,18 +75,28 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     # model specific
 
     if model_type in ('dtcscc', 'dynare'):
-        if 'covariances' not in data:
-            raise Exception(
-                "Missing section (model {}): 'covariances'.".format(model_type)
-            )
-        symbolic_covariances = data['covariances']
+        if 'distribution' not in data:
+            if 'covariances' in data:
+                data['distribution'] = {'Normal':data['covariances']}
+            else:
+                raise Exception(
+                    "Unspecified structure of shocks for model type ({}).".format(model_type)
+                )
+
+        # TODO: accept non normal distributions
+        data['covariances'] = data['distribution']['Normal']
 
     if model_type == 'dtmscc':
-        if 'markov_chain' not in data:
-            raise Exception(
-                "Missing section (model {}): 'markov_chain'.".format(model_type)
-            )
-        symbolic_markov_chain = data['markov_chain']
+        if 'distribution' not in data:
+            if 'markov_chain' not in data:
+                raise Exception(
+                    "Missing section (model {}): 'markov_chain'.".format(model_type)
+                )
+            else:
+                data['distribution'] = {'MarkovChain': data['markov_chain']}
+
+        # data['markov_chain'] = data['distribution']['MarkovChain']
+
 
     model_name = data['name']
     symbols = data['symbols']
@@ -134,7 +143,9 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             raise Exception(msg)
         symbolic_covariances = tl
 
-    symbolic_markov_chain = data.get('markov_chain')
+    symbolic_distribution = data.get('distribution')
+
+    print(symbolic_distribution)
     # TODO: read markov chain
 
     definitions = data.get('definitions', {})
@@ -149,8 +160,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(model_name, model_type, symbols, symbolic_equations,
-                           symbolic_calibration, symbolic_covariances,
-                           symbolic_markov_chain,
+                           symbolic_calibration,
+                           symbolic_distribution,
                            options=options, definitions=definitions)
 
     if return_symbolic:
