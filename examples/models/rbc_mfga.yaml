@@ -52,7 +52,7 @@ calibration:
     c: z*k^alpha*n^(1-alpha) - i
 
 
-discrete_transitions:
+discrete_transition:
 
     AR1:  #  automatic discretization using Rouwenhorst
 

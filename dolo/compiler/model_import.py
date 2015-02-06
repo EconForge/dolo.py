@@ -67,7 +67,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         pp.update(steady)
         pp.update(params)
         data['calibration'] = pp
-
         data['covariances'] = eval(
             "numpy.array({}, dtype='object')".format(covs)
         )
