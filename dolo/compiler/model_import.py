@@ -80,20 +80,20 @@ def yaml_import(fname, txt=None, return_symbolic=False):
                 data['distribution'] = {'Normal':data['covariances']}
             else:
                 raise Exception(
-                    "Unspecified structure of shocks for model type ({}).".format(model_type)
+                    "Missing section (model type {}): 'distribution'.".format(model_type)
                 )
 
         # TODO: accept non normal distributions
         data['covariances'] = data['distribution']['Normal']
 
     if model_type == 'dtmscc':
-        if 'distribution' not in data:
+        if 'discrete_transition' not in data:
             if 'markov_chain' not in data:
                 raise Exception(
-                    "Missing section (model {}): 'markov_chain'.".format(model_type)
+                    "Missing section (model {}): 'discrete_transition'.".format(model_type)
                 )
             else:
-                data['distribution'] = {'MarkovChain': data['markov_chain']}
+                data['discrete_transition'] = {'MarkovChain': data['markov_chain']}
 
         # data['markov_chain'] = data['distribution']['MarkovChain']
 
@@ -144,9 +144,7 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         symbolic_covariances = tl
 
     symbolic_distribution = data.get('distribution')
-
-    print(symbolic_distribution)
-    # TODO: read markov chain
+    symbolic_discrete_transition = data.get('discrete_transition')
 
     definitions = data.get('definitions', {})
 
@@ -161,7 +159,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(model_name, model_type, symbols, symbolic_equations,
                            symbolic_calibration,
-                           symbolic_distribution,
+                           discrete_transition=symbolic_discrete_transition,
+                           distribution=symbolic_distribution,
                            options=options, definitions=definitions)
 
     if return_symbolic:

@@ -47,21 +47,20 @@ class NumericModel:
         self.options = evaluator.eval(self.symbolic.options)
 
         distribution = evaluator.eval(self.symbolic.distribution)
+        discrete_transition = evaluator.eval(self.symbolic.discrete_transition)
 
-        if self.model_type is not 'dtmscc':
-            covariances = distribution
-            if covariances is None:
-                self.covariances = None
-            else:
-                self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
 
+        covariances = distribution
+        if distribution is None:
+            self.covariances = None
         else:
-            markov_chain = distribution
-            if markov_chain is None:
-                self.markov_chain = None
-            else:
-                self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
+            self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
 
+        markov_chain = discrete_transition
+        if markov_chain is None:
+            self.markov_chain = None
+        else:
+            self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
     def get_calibration(self, pname, *args):
 
