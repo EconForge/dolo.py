@@ -10,7 +10,6 @@ symbols:
    values: [V]
    shocks: [e_z]
 
-
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
 
@@ -59,14 +58,16 @@ calibration:
       V: log(c)/(1-beta)
 
 
-covariances:
+distribution:
 
-      [ [ sig_z**2] ]
+    Normal:
+
+        [ [ sig_z**2] ]
 
 
 options:
 
-    approximation_space:
+    Approximation:
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

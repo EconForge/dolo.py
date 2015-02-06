@@ -51,4 +51,6 @@ calibration:
     theta: 0.3
     rho: 0.0
 
-covariances: [[ 0.00001 ]]
+distribution:
+    Normal:
+        [[ 0.00001 ]]

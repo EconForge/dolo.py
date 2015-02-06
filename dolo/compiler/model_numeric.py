@@ -44,20 +44,23 @@ class NumericModel:
         evaluator = NumericEval(self.calibration_dict)
 
         # read symbolic structure
-        covariances = evaluator.eval(self.symbolic.covariances)
-        if covariances is None:
-            self.covariances = covariances
+        self.options = evaluator.eval(self.symbolic.options)
+
+        distribution = evaluator.eval(self.symbolic.distribution)
+        discrete_transition = evaluator.eval(self.symbolic.discrete_transition)
+
+
+        covariances = distribution
+        if distribution is None:
+            self.covariances = None
         else:
             self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
 
-        markov_chain = evaluator.eval(self.symbolic.markov_chain)
+        markov_chain = discrete_transition
         if markov_chain is None:
             self.markov_chain = None
         else:
             self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
-
-        self.options = evaluator.eval(self.symbolic.options)
-
 
     def get_calibration(self, pname, *args):
 

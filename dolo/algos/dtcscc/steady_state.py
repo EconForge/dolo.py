@@ -120,6 +120,7 @@ def residuals(model, calib=None):
         residuals vectors by equation type
     '''
 
+
     if calib is None:
         calib = model.calibration
 

@@ -36,13 +36,16 @@ equations:
         - V = c^(1.0-sigma)/(1.0-sigma) + beta*V(1)
         - Vc = c^(1.0-sigma)/(1.0-sigma)
 
-markov_chain:
 
-    - [[ 1.0-delta_y ],  # bad state
-       [ 1.0 ]]          # good state
+discrete_transition:
 
-    - [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
-       [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
+    MarkovChain:
+
+        - [[ 1.0-delta_y ],  # bad state
+           [ 1.0 ]]          # good state
+
+        - [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
+           [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
 
 calibration:
 

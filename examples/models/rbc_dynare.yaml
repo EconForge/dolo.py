@@ -37,6 +37,8 @@ calibration:
       c: z*k^alpha*n^(1-alpha) - i
 
 
-covariances:
+distribution:
 
-  [ [ 0.0015 ] ]
+    Normal:
+
+        [ [ 0.0015 ] ]

@@ -98,6 +98,8 @@ class ComplementaritySolve(unittest.TestCase):
         print(resp)
         assert( abs(sol - resp).max()<1e-5 )
 
+
+
 if __name__ == '__main__':
 
     unittest.main()
