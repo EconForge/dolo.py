@@ -6,7 +6,7 @@ Advanced topics
 
     recipes
 
-    model
+    
 
     interpolation
     compilation

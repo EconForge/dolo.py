@@ -19,12 +19,9 @@ What is dolo ?
     there will also be value function iteration and parametrized expectations. High level functions are provided so that
     should be extremely easy in most of the cases.
 
-    Dolo is written in python and so are his solution routines. If you prefer or need to use another language for the solution
-    (such as a legacy scientific Fortran wrapper edited by Mathworks...), you can always use dolo as a preprocessor. In
-    that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and
-    Julia are supported.
+    Dolo is written in python and so are his solution routines. If you prefer or need to use another language for the solution (such as a legacy scientific Fortran wrapper edited by Mathworks...), you can always use dolo as a preprocessor. In that case, dolo will just translate the model file into a numerical file usable by your sofware. Currently, Matlab and Julia are supported.
 
-.. 
+..
 .. Index
 .. #####
 
@@ -33,8 +30,10 @@ What is dolo ?
 
     introduction
     installation
-    quick_tutorial
+    tutorial
+
     modeling_language
+    model_api
     model_specification
     algos
     examples
