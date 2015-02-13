@@ -75,12 +75,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     # model specific
 
     if model_type in ('dtcscc', 'dynare'):
-        if 'covariances' not in data:
-            raise Exception(
-                "Missing section (model {}): 'covariances'.".format(model_type)
-            )
-        symbolic_covariances = data['covariances']
-    if model_type in ('dtcscc', 'dynare'):
         if 'distribution' not in data:
             if 'covariances' in data:
                 data['distribution'] = {'Normal':data['covariances']}
@@ -90,22 +84,17 @@ def yaml_import(fname, txt=None, return_symbolic=False):
                 )
 
     if model_type == 'dtmscc':
-        if 'markov_chain' not in data:
-            raise Exception(
-                "Missing section (model {}): 'markov_chain'.".format(model_type)
-            )
-        symbolic_markov_chain = data['markov_chain']
-        # TODO: accept non normal distributions
-        data['covariances'] = data['distribution']['Normal']
-
-    if model_type == 'dtmscc':
         if 'discrete_transition' not in data:
             if 'markov_chain' not in data:
                 raise Exception(
                     "Missing section (model {}): 'discrete_transition'.".format(model_type)
                 )
             else:
-                data['discrete_transition'] = {'MarkovChain': data['markov_chain']}
+                mc = data['markov_chain']
+                if isinstance(mc, list):
+                    data['discrete_transition'] = {'MarkovChain': mc}
+                else:
+                    data['discrete_transition'] = mc
 
         # data['markov_chain'] = data['distribution']['MarkovChain']
 

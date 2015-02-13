@@ -176,7 +176,28 @@ The `equations` section contains blocks of equations sorted by type.
 Epxressions follow (roughly) the Dynare conventions. Common arithmetic operators (`+,-,*,/,^`) are allowed with conventional priorities as well as usual functions (`sqrt, log, exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh`). The definitions of these functions match the definitions from the `numpy` package. All symbols appearing in an expression must either be declared in the `symbols` section or be one of the predefined functions.
 Any symbol `s` that is not a parameter is assumed to be considered at date `t`. Values at date `t+1` and `t-1` are denoted by `s(1)` and `s(-1)` respectively.
 
-All equations are implicitly enclosed by the expectation operator :math:`E_t\left[\right]`. Consequently, the evolution equation `a_t = \rho a_{t-1} + \epsilon_t` would be written as: `a = rho*a(-1) + e` while pricing equation :math:`p_t = E_t \left[ p_{t+1} + d_{t+1}\right]` would be written `p = p(1) + d(1)`
+All equations are implicitly enclosed by the expectation operator :math:`E_t\left[\cdots \right]`. Consequently, the law of motion for the capital
+
+.. math::
+    k_{t+1} = (1-\delta) k_{t} +  i_{t} + \epsilon_t
+
+is written as:
+
+.. code:: yaml
+
+    k = (1-delta)*k(-1) + i(-1)
+
+while the Euler equation
+
+.. math::
+
+    E_t \left[ 1=\beta \left( \frac{c_{t+1}}{c_t} + (1-\delta)+r_{t+1} \right) \right]
+
+is translated by:
+
+.. code:: yaml
+
+    1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))
 
 .. note::
 
@@ -184,7 +205,7 @@ All equations are implicitly enclosed by the expectation operator :math:`E_t\lef
 
 .. note::
 
-    The default evaluator in dolo preserves the evaluation order. Thus `(c(1)/c)^(-gamma)` is not evaluated in the same way (and is numerically more stable) than `c(1)^(-gamma)/c^(-gamma)`. Currently, this is not true for symbolically computed derivatives, as expressions are automatically simplified, implying that execution order is not guaranteed. Currently, this impacts only higher order perturbations.
+    The default evaluator in dolo preserves the evaluation order. Thus       ``(c(1)/c)^(-gamma)`` is not evaluated in the same way (and is numerically more stable) than ``c(1)^(-gamma)/c^(-gamma)``. Currently, this is not true for symbolically computed derivatives, as expressions are automatically simplified, implying that execution order is not guaranteed. This impacts only higher order perturbations.
 
 .. idea: we could allow for equations like a = E[ fsjlkjaskldf ] and completely ignore E[ ] unless it doesn't enclose the equation completely.
 
@@ -195,45 +216,39 @@ There are two types of equation blocks:
 
 - condition blocks
 
-    In these blocks, each equation `lhs = rhs` define the scalar value `(rhs)-(lhs)`. A list of of such equations (the block) defines a multivariate function of the appearing symbols.
-    Certain condition blocks, can be associated with complementarity conditions separated by `|` as in `rhs-lhs | 0 < x < 1`. In this case it is advised to omit the equal sign in order to make it easier to interpret the complementarity. Also, when complementarity conditions are used, the ordering of variables appearing in the complementarities must match the declaration order (more in section Y).
+    In these blocks, each equation ``lhs = rhs`` define the scalar value ``(rhs)-(lhs)```. A list of of such equations, i.e a block, defines a multivariate function of the appearing symbols.
+    Certain condition blocks, can be associated with complementarity conditions separated by ``|`` as in ``rhs-lhs | 0 < x < 1``. In this case it is advised to omit the equal sign in order to make it easier to interpret the complementarity. Also, when complementarity conditions are used, the ordering of variables appearing in the complementarities must match the declaration order (more in section Y).
 
 - definition blocks
 
-    Definition blocks differ from condition blocks in that they define a group of variables (`states` or `auxiliaries`) as a function of the right hand side.
+    Definition blocks differ from condition blocks in that they define a group of variables (``states`` or ``auxiliaries``) as a function of the right hand side.
 The types of variables appearing on the right hand side depend on the block type. The variables enumerated on the left hand-side must appear in the declaration order.
 
-In the example above, the states `a, b` are driven by the exogenous shocks `epsilon, eta`. According to the definition of the transition equations (`s=g(s(-1),x(-1),e)`), the right hand side can contain states at `t-1` and shocks at date `t` as well as parameters.
 
-The following example is correct
+.. note::
 
-.. code:: yaml
+    In the RBC example, the ``auxiliary`` block defines variables (``y,c,rk,w``) that can be directly deduced from the states and the controls:
 
-   - a = rho*a(-1) + epsilon
-   - b = rho*b(-1) + eta
+    .. code:: yaml
 
-as well as the next one, where the second variable depend on the first one
+        auxiliary:
+            - y = z*k^alpha*n^(1-alpha)
+            - c = y - i
+            - rk = alpha*y/k
+            - w = (1-alpha)*y/w
 
-.. code:: yaml
+    Note that the declaration order matches the order in which variables appear on the left hand side. Also, these variables are defined recursively: ``c``, ``rk`` and ``w`` depend on the value for ``y``. In contrast to the calibration block, the definition order matters. Assuming that variables where listed as (``c,y,rk,w``) the following block would provide incorrect result since ``y`` is not known when ``c`` is evaluated.
 
-   - a = rho*a(-1) + epsilon
-   - b = rho*b(-1) + mu*a + eta
+    .. code:: yaml
 
-but not
+        auxiliary:
+            - c = y - i
+            - y = z*k^alpha*n^(1-alpha)
+            - rk = alpha*y/k
+            - w = (1-alpha)*y/w
 
-.. code:: yaml
 
-   - a = rho*a(-1) + mu*b + epsilon
-   - b = rho*b(-1) + mu*a + eta
 
-or
-
-.. code:: yaml
-
-    - b = rho*b(-1) + eta
-    - a = rho*a(-1) + epsilon
-
-since the first one can not be evaluated recursively, while the second one doesn't define the variables in the right order.
 
 Calibration section
 ~~~~~~~~~~~~~~~~~~~
@@ -242,20 +257,9 @@ The role of the calibration section consists in providing values for the paramet
 
 The calibrated values are also substituted in other sections, including the `shocks` and `options` section. This is particularly useful to make the covariance matrix depend on model parameters, or to adapt the state-space to the model's calibration.
 
-The calibration is given by an associative dictionary mapping symbols to define with values. The values can be either a scalar or an expression. All symbols are treated in the same way, regardless of their type so that it is possible to define a parameter in order to target a special value of an endogenous variable at the steady-state. Values can depend upon each other, as long as there is a way to resolve them recursively.
+The calibration is given by an associative dictionary mapping symbols to define with values. The values can be either a scalar or an expression. All symbols are treated in the same way, and values can depend upon each other as long as there is a way to resolve them recursively.
 
-The following declaration section is valid:
-
-.. code:: yaml
-
-   a: 1
-   b: 1
-   abar: 1
-   sigma: sqrt(sigma_asymptotic*(1-rho^2))
-   sigma_asymptotic: 0.01
-   rho: 0.99
-
-..... Say which error happens
+In particular, it is possible to define a parameter in order to target a special value of an endogenous variable at the steady-state. This is done in the RBC example where steady-state labour is targeted with ``n: 0.33`` and the parameter ``phi`` calibrated so that the optimal labour supply equation holds at the steady-state (``chi: w/c^sigma/n^eta``).
 
 All symbols that are defined in the `symbols` section but do not appear in the calibration section are initialized with the value `nan` without issuing any warning.
 
@@ -266,57 +270,48 @@ All symbols that are defined in the `symbols` section but do not appear in the c
 Shock specification
 ~~~~~~~~~~~~~~~~~~~
 
-The way shocks are specified depends on the type of model.
+The way shocks are specified depends on the type of model. They are constructed using a the rules for mini-languages defined in section [ref].
 
-Normally distributed shocks
-...........................
+Distribution
+............
 
-For Dynare models and DTCSCC types, they are defined in the `shocks` section by a covariance matrix expressed as a list of list in yaml as in:
+For Dynare and continuous-states models, one has to specifiy a multivariate distribution of the i.i.d. process for the vector of ``shocks`` (otherwise shocks are assumed to be constantly 0). This is done in the distribution section. A gaussian distrubution (only one supported so far), is specified by supplying the covariance matrix as a list of list as in the following example.
 
 .. code:: yaml
 
-    shocks: [
-        [sigma_1, 0.0],
-        [0.0, sigma_2]
-    ]
+    distribution:
 
-Markov chains mini-language
-...........................
+        Normal: [
+                [sigma_1, 0.0],
+                [0.0, sigma_2]
+            ]
 
-For DTMSCC models, the markov chain is defined in the `markov_chain` section. A markov chain can be constructed in several ways:
+Markov chains
+.............
+
+When the model is driven by an exogenous discrete markov chain, that is for DTMSCC models, shocks are defined in the ``discrete_transition`` section. The objects allowed in this section are: `MarkovChain, AR1, MarkovTensor`
+
+ markov chain can be constructed in several ways:
 
    - by listing directly a list of states, and a transition matrix as in :
 
         .. code:: yaml
 
-            - [ [0.0, -0.02],
-                [0.0,  0.02]
-                [-0.1, 0.02]]
-
-            - [ [ 0.98, 0.01, 0.01],
-                [ 0.10, 0.01, 0.90],
-                [ 0.05, 0.05, 0.90] ]
+            discrete_transition:
+                MarkovChain:   # a markov chain is defined by providing:
+                    - [ [0.0, -0.02]           # a list of markov states
+                        [0.0,  0.02]
+                        [-0.1, 0.02]]
+                    - [ [ 0.98, 0.01, 0.01],   # a transition matrix
+                        [ 0.10, 0.01, 0.90],
+                        [ 0.05, 0.05, 0.90] ]
 
     - by using primitives to construct a discretized process from an AR1:
 
         .. code:: yaml
 
-            AR1:
-                rho: 0.9
-                sigma: [
-                        [0.01, 0.001]
-                        [0.001, 0.02]
-                    ]
-                N: 3
-                method: rouwenhorst   # the alternative is tauchen
-
-    - by combining two processes together:
-
-        .. code:: yaml
-
-            tensor_markov:
-
-                - AR1:
+            discrete_transition:
+                AR1:
                     rho: 0.9
                     sigma: [
                             [0.01, 0.001]
@@ -325,24 +320,41 @@ For DTMSCC models, the markov chain is defined in the `markov_chain` section. A 
                     N: 3
                     method: rouwenhorst   # the alternative is tauchen
 
-                - AR1:
-                    rho: 0.9
-                    sigma: 0.01
-                    N: 2
-                    method: rouwenhorst   # the alternative is tauchen
+    - by combining two processes together:
+
+        .. code:: yaml
+
+            discrete_transition:
+                MarkovTensor:
+                    - AR1:
+                        rho: 0.9
+                        sigma: [
+                                [0.01, 0.001]
+                                [0.001, 0.02]
+                            ]
+                        N: 3
+                        method: rouwenhorst   # the alternative is tauchen
+                    - AR1:
+                        rho: 0.9
+                        sigma: 0.01
+                        N: 2
+                        method: rouwenhorst   # the alternative is tauchen
 
 
 Options
 ~~~~~~~
 
-The `options` section contains all informatons necessary to solve the model. It can also contain arbitrary additional informations. As in other sections, calibrated values are replaced by their calibrated equivalent.
+The `options` section contains all informations necessary to solve the model. It can also contain arbitrary additional informations. The section follows the mini-language convention, with all calibrated values replaced by scalars and all keywords allowed.
 
 Global solutions require the definition of an approximation space. The lower, upper bounds and approximation orders (number of nodes in each dimension) are defined as in the following example:
 
 .. code:: yaml
 
-    approximation_space:
-        a: [0, 0]
-        b: [0.5, 1.2*k]   # if k is among the calibrated values, it will be substituted
-                          # a and b would not be susbstitued since they are used as keys
-        orders: [10, 20]
+    options:
+        Approximation:
+            a: [ 1-2*asig_z, k*0.9 ]
+            b: [ 1+2*asig_z, k*1.1 ]
+            orders: [10, 50]
+        arbitrary_information
+
+This reads as follows: the upper and lower bounds for the productivity process are 1 minus and plus two times its asymptotic standard deviation. The boundaries for the capital level are defined by a 10% bracket around its steady-state value (or the one defined in the calibration section). 10 points are used to discretize the state-space for the productivity process and 50 are used for the capital level.

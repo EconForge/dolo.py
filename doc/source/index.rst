@@ -30,12 +30,12 @@ What is dolo ?
 
     introduction
     installation
-    tutorial
 
     modeling_language
     model_api
     model_specification
+
     algos
     examples
     faq
-    api
+    misc

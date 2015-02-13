@@ -5,7 +5,7 @@ For numerical purposes, models are essentially represented as a set of symbols,
 calibration and functions representing the various equation types of the model.
 This data is held in a ``NumericalModel`` object whose API is described in this chapter. Models are usually created by writing a Yaml files as described in the the previous chapter, but as we will see below, they can also be written directly.
 
-
+.. document model.residuals
 
 Numerical Model Object
 ----------------------
@@ -26,7 +26,7 @@ The object contains few meta-data:
 
 The ``model.name`` field contains a possibly long string identifying the model.
 The ``model_type`` field is either ``'dtmscc'``, ``'dtcscc'`` or ``'dynare'`` depending on the convention used.
-The ``'model.model_features'`` field summarizes which equations types are provided which determines the solution algorithms that can be used to solve the model. Here ``(f,g,v)`` means that ``arbitrage`` (short ``f``), ``transition`` (short ``g``) and ``value`` equations were provided meaning that time-iteration or value function iteration can both be used to solve the model. When using a yaml files, the ``model_type` and ``model_specs` properties are automatically set.
+The ``'model.model_features'`` field summarizes which equations types are provided which determines the solution algorithms that can be used to solve the model. Here ``(f,g,v)`` means that ``arbitrage`` (short ``f``), ``transition`` (short ``g``) and ``value`` equations were provided meaning that time-iteration or value function iteration can both be used to solve the model. When using a yaml files, the ``model_type` and ``model_specs`` properties are automatically set.
 
 The various attributes of the model directly echoe the the sections from the Yaml file.
 
@@ -81,7 +81,7 @@ This method also understands symbolic expressions (as string) which makes it pos
     model.set_calibration(delta=0.04)
     print(model.get_calibration(['beta', 'delta'])) # -> [0.96, 0.04]
 
-Under the hood, the method stores the symbolic relations between symbols (accessible in ``model.symbolic.calibration_dict``). It is precisely equivalent
+Under the hood, the method stores the symbolic relations between symbols. It is precisely equivalent
 to use the ``set_calibration`` method or to change the values in the yaml files. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.
 
 Functions
@@ -108,7 +108,13 @@ Let's call the arbitrage function on the steady-state value, to see the residual
 
 The output (``res``) is two element vector, representing the residuals of the two arbitrage equations at the steady-state. It should be full of zero. Is it ? Great !
 
-By inspecting the arbitrage function ( ``f?`` ), one can see that its call api is ``f(s,x,S,X,p,diff=False,out=None)``. Since `s` and `x` are the short names for states and controls, their values at date :math:`t+1` is denoted with ``S`` and ``X``. This simple convention prevails in most of dolo source code: when possible, vectors at date ``t`` are denoted with lowercase, while future vectors are with upper case. We have already commented the presence of the paramter vector ``p``.
+By inspecting the arbitrage function ( ``f?`` ), one can see that its call api is:
+
+.. code:: python
+
+    f(s,x,S,X,p,diff=False,out=None)
+
+Since ``s`` and ``x`` are the short names for states and controls, their values at date :math:`t+1` is denoted with ``S`` and ``X``. This simple convention prevails in most of dolo source code: when possible, vectors at date ``t`` are denoted with lowercase, while future vectors are with upper case. We have already commented the presence of the paramter vector ``p``.
 Now, the generated functions also gives the option to perform in place computations, when an output vector is given:
 
 .. code:: python
@@ -168,7 +174,7 @@ The ``model.options`` structure holds an information required by a particular so
 
     display( model.options['approximation_space'] )
 
-
+..
 Source documentation
 --------------------
 
