@@ -81,7 +81,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
 def time_iteration(model, initial_guess=None, with_complementarities=True,
                         verbose=True, orders=None, output_type='dr',
-                        maxit=1000, inner_maxit=10, tol=1e-6) :
+                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
     assert(model.model_type == 'dtmscc')
 
@@ -208,6 +208,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         fn = lambda x: residuals(f, g, grid, x.reshape(sh_c), mdr, P, Q, parms).reshape((-1,n_x))
         dfn = SerialDifferentiableFunction(fn)
 
+
+        if hook:
+            hook()
+            
         if with_complementarities:
             [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit)
         else:

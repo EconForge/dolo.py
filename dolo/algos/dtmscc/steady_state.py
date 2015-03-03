@@ -20,6 +20,11 @@ def residuals(model, calib=None):
         res['transition'] = g(m,s,x,m,p)-s
         res['arbitrage'] = f(m,s,x,m,s,x,p)
 
+        if 'value' in model.functions:
+            v = calib['values']
+            vfun = model.functions['value']
+            res['value'] = vfun(m,s,x,v,m,s,x,v,p) - v
+
     else:
 
         m = calib['markov_states']
@@ -36,5 +41,10 @@ def residuals(model, calib=None):
         res['transition'] = g(m,s,x,y,m,p)-s
         res['arbitrage'] = f(m,s,x,y,m,s,x,y,p)
         res['auxiliary'] = a(m,s,x,p)-y
+
+        if 'value' in model.functions:
+            v = calib['values']
+            vfun = model.functions['value']
+            res['value'] = vfun(m,s,x,y,v,m,s,x,y,v,p) - v
 
     return res

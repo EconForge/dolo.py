@@ -26,7 +26,7 @@ equations:
         - y = z*k^alpha*n^(1-alpha)
         - c = y - i
         - rk = alpha*y/k
-        - w = (1-alpha)*y/w
+        - w = (1-alpha)*y/n
 
     value:
         - V = log(c) + beta*V(1)
@@ -50,7 +50,8 @@ calibration:
     k: n/(rk/alpha)^(1/(1-alpha))
     w: (1-alpha)*z*(k/n)^(alpha)
     i: delta*k
-    c: z*k^alpha*n^(1-alpha) - i
+    y: z*k^alpha*n^(1-alpha)
+    c: y - i
     z: zbar
     rk: 1/beta-1+delta
     V: log(c)/(1-beta)

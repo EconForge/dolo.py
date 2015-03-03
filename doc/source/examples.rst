@@ -4,9 +4,10 @@ Examples
 .. toctree::
     :maxdepth: 2
 
+    sudden_stop
+
     rbc_tutorial
 
-    sudden_stop
 
 Online examples
 ----------------

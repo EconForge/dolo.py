@@ -42,6 +42,7 @@ writing the model
 .. code:: python
 
     filename = 'https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/sudden_stop.yaml'
+    filename = 'sudden_stop.yaml'
     # the model file is coded in a separate file called sudden_stop.yaml
     # note how the borrowing constraint is implemented as complementarity condition
     pcat(filename)
@@ -186,7 +187,10 @@ writing the model
     70
     71
     72
-    73</pre></div></td><td class="code"><div class="source"><pre><span class="c1"># This file adapts the model described in</span>
+    73
+    74
+    75
+    76</pre></div></td><td class="code"><div class="source"><pre><span class="c1"># This file adapts the model described in</span>
     <span class="c1"># &quot;From Sudden Stops to Fisherian Deflation, Quantitative Theory and Policy&quot;</span>
     <span class="c1"># by Anton Korinek and Enrique G. Mendoza</span>
     
@@ -224,13 +228,16 @@ writing the model
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">V = c^(1.0-sigma)/(1.0-sigma) + beta*V(1)</span>
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">Vc = c^(1.0-sigma)/(1.0-sigma)</span>
     
-    <span class="l-Scalar-Plain">markov_chain</span><span class="p-Indicator">:</span>
     
-        <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">1.0-delta_y</span> <span class="p-Indicator">],</span>  <span class="c1"># bad state</span>
-           <span class="p-Indicator">[</span> <span class="nv">1.0</span> <span class="p-Indicator">]]</span>          <span class="c1"># good state</span>
+    <span class="l-Scalar-Plain">discrete_transition</span><span class="p-Indicator">:</span>
     
-        <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">1-0.5</span> <span class="p-Indicator">],</span>   <span class="c1"># probabilities   [p(L|L), p(H|L)]</span>
-           <span class="p-Indicator">[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">0.5</span> <span class="p-Indicator">]]</span>     <span class="c1"># probabilities   [p(L|H), p(H|H)]</span>
+        <span class="l-Scalar-Plain">MarkovChain</span><span class="p-Indicator">:</span>
+    
+            <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">1.0-delta_y</span> <span class="p-Indicator">],</span>  <span class="c1"># bad state</span>
+               <span class="p-Indicator">[</span> <span class="nv">1.0</span> <span class="p-Indicator">]]</span>          <span class="c1"># good state</span>
+    
+            <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">1-0.5</span> <span class="p-Indicator">],</span>   <span class="c1"># probabilities   [p(L|L), p(H|L)]</span>
+               <span class="p-Indicator">[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">0.5</span> <span class="p-Indicator">]]</span>     <span class="c1"># probabilities   [p(L|H), p(H|H)]</span>
     
     <span class="l-Scalar-Plain">calibration</span><span class="p-Indicator">:</span>
     
@@ -285,62 +292,35 @@ By default, the calibrated value for endogenous variables are used as a
     Model type detected as 'dtmscc'
     
 
-::
 
 
-    ---------------------------------------------------------------------------
+.. parsed-literal::
 
-    KeyError                                  Traceback (most recent call last)
-
-    c:\users\pablo\documents\github\ipython\IPython\core\formatters.pyc in __call__(self, obj)
-        693                 type_pprinters=self.type_printers,
-        694                 deferred_pprinters=self.deferred_printers)
-    --> 695             printer.pretty(obj)
-        696             printer.flush()
-        697             return stream.getvalue()
+    
+    Model object:
+    ------------
+    
+    - name: "Sudden Stop (General)"
+    - type: "dtmscc"
+    - file: "sudden_stop.yaml
+    
+    - residuals:
+    
+        transition
+            1   : 0.0000 : l = b(-1)
+    
+        arbitrage
+            1   : 0.0000 : lam = b/c
+            2   : [31m-0.0215[0m : beta*(c(1)/c)**(-sigma)*R - 1    |  lam_inf <= lam <= inf
+    
+        auxiliary
+            1   : 0.0000 : c = 1 + y + l*R - b
+    
+        value
+            1   : 0.0000 : V = c**(1.0-sigma)/(1.0-sigma) + beta*V(1)
+            2   : 0.0000 : Vc = c**(1.0-sigma)/(1.0-sigma)
     
 
-    c:\users\pablo\documents\github\ipython\IPython\lib\pretty.pyc in pretty(self, obj)
-        399                             if callable(meth):
-        400                                 return meth(obj, self, cycle)
-    --> 401             return _default_pprint(obj, self, cycle)
-        402         finally:
-        403             self.end_group()
-    
-
-    c:\users\pablo\documents\github\ipython\IPython\lib\pretty.pyc in _default_pprint(obj, p, cycle)
-        519     if _safe_getattr(klass, '__repr__', None) not in _baseclass_reprs:
-        520         # A user-provided repr. Find newlines and replace them with p.break_()
-    --> 521         _repr_pprint(obj, p, cycle)
-        522         return
-        523     p.begin_group(1, '<')
-    
-
-    c:\users\pablo\documents\github\ipython\IPython\lib\pretty.pyc in _repr_pprint(obj, p, cycle)
-        701     """A pprint that just redirects to the normal repr function."""
-        702     # Find newlines and replace them with p.break_()
-    --> 703     output = repr(obj)
-        704     for idx,output_line in enumerate(output.splitlines()):
-        705         if idx:
-    
-
-    c:\users\pablo\documents\github\dolo\dolo\compiler\model_numeric.pyc in __repr__(self)
-        139 
-        140     def __repr__(self):
-    --> 141         return self.__str__()
-        142 
-        143     @property
-    
-
-    c:\users\pablo\documents\github\dolo\dolo\compiler\model_numeric.pyc in __str__(self)
-        116             ss += u"    {}\n".format(eqgroup)
-        117             for i, eq in enumerate(eqlist):
-    --> 118                 val = res[eqgroup][i]
-        119                 if abs(val) < 1e-8:
-        120                     val = 0
-    
-
-    KeyError: 'value'
 
 
 .. code:: python
@@ -354,30 +334,30 @@ By default, the calibrated value for endogenous variables are used as a
     ------------------------------------------------
     | N   |  Error     | Gain     | Time     | nit |
     ------------------------------------------------
-    |   1 |  5.014e-01 |      nan |    1.944 |   7 |
-    |   2 |  1.600e-01 |    0.319 |    0.237 |   6 |
-    |   3 |  7.472e-02 |    0.467 |    0.260 |   6 |
-    |   4 |  4.065e-02 |    0.544 |    0.264 |   5 |
-    |   5 |  2.388e-02 |    0.587 |    0.228 |   5 |
-    |   6 |  1.933e-02 |    0.809 |    0.457 |   9 |
-    |   7 |  1.609e-02 |    0.832 |    0.303 |   6 |
-    |   8 |  1.370e-02 |    0.852 |    0.192 |   5 |
-    |   9 |  1.187e-02 |    0.867 |    0.195 |   4 |
-    |  10 |  1.049e-02 |    0.883 |    0.178 |   3 |
-    |  11 |  9.381e-03 |    0.894 |    0.117 |   3 |
-    |  12 |  8.467e-03 |    0.903 |    0.110 |   3 |
-    |  13 |  7.711e-03 |    0.911 |    0.140 |   3 |
-    |  14 |  7.060e-03 |    0.916 |    0.182 |   3 |
-    |  15 |  6.503e-03 |    0.921 |    0.087 |   2 |
-    |  16 |  6.016e-03 |    0.925 |    0.097 |   2 |
-    |  17 |  4.611e-03 |    0.766 |    0.087 |   2 |
-    |  18 |  8.356e-04 |    0.181 |    0.082 |   2 |
-    |  19 |  8.879e-05 |    0.106 |    0.068 |   1 |
-    |  20 |  1.449e-05 |    0.163 |    0.054 |   1 |
-    |  21 |  2.483e-06 |    0.171 |    0.053 |   1 |
-    |  22 |  2.605e-07 |    0.105 |    0.051 |   1 |
+    |   1 |  5.014e-01 |      nan |    1.878 |   7 |
+    |   2 |  1.600e-01 |    0.319 |    0.235 |   6 |
+    |   3 |  7.472e-02 |    0.467 |    0.221 |   6 |
+    |   4 |  4.065e-02 |    0.544 |    0.198 |   5 |
+    |   5 |  2.388e-02 |    0.587 |    0.204 |   5 |
+    |   6 |  1.933e-02 |    0.809 |    0.354 |   9 |
+    |   7 |  1.609e-02 |    0.832 |    0.234 |   6 |
+    |   8 |  1.370e-02 |    0.852 |    0.200 |   5 |
+    |   9 |  1.187e-02 |    0.867 |    0.148 |   4 |
+    |  10 |  1.049e-02 |    0.883 |    0.112 |   3 |
+    |  11 |  9.381e-03 |    0.894 |    0.138 |   3 |
+    |  12 |  8.467e-03 |    0.903 |    0.120 |   3 |
+    |  13 |  7.711e-03 |    0.911 |    0.126 |   3 |
+    |  14 |  7.060e-03 |    0.916 |    0.123 |   3 |
+    |  15 |  6.503e-03 |    0.921 |    0.078 |   2 |
+    |  16 |  6.016e-03 |    0.925 |    0.102 |   2 |
+    |  17 |  4.611e-03 |    0.766 |    0.083 |   2 |
+    |  18 |  8.356e-04 |    0.181 |    0.101 |   2 |
+    |  19 |  8.879e-05 |    0.106 |    0.056 |   1 |
+    |  20 |  1.449e-05 |    0.163 |    0.060 |   1 |
+    |  21 |  2.483e-06 |    0.171 |    0.056 |   1 |
+    |  22 |  2.605e-07 |    0.105 |    0.056 |   1 |
     ------------------------------------------------
-    Elapsed: 5.40899991989 seconds.
+    Elapsed: 4.91300010681 seconds.
     ------------------------------------------------
     
 
@@ -418,7 +398,7 @@ By default, the calibrated value for endogenous variables are used as a
 
 .. parsed-literal::
 
-    <matplotlib.text.Text at 0x18343080>
+    <matplotlib.text.Text at 0x179751d0>
 
 
 
@@ -444,7 +424,7 @@ By default, the calibrated value for endogenous variables are used as a
 
 .. parsed-literal::
 
-    [<matplotlib.lines.Line2D at 0x187ac3c8>]
+    [<matplotlib.lines.Line2D at 0x18f07668>]
 
 
 
@@ -471,72 +451,72 @@ the high aversion scenario :math:`\sigma=16`.
     ------------------------------------------------
     | N   |  Error     | Gain     | Time     | nit |
     ------------------------------------------------
-    |   1 |  5.133e-01 |      nan |    0.600 |  10 |
-    |   2 |  1.703e-01 |    0.332 |    0.347 |   8 |
-    |   3 |  8.435e-02 |    0.495 |    0.336 |   7 |
-    |   4 |  5.005e-02 |    0.593 |    0.322 |   7 |
-    |   5 |  3.292e-02 |    0.658 |    0.394 |   7 |
-    |   6 |  2.313e-02 |    0.703 |    0.384 |   7 |
-    |   7 |  1.702e-02 |    0.736 |    0.364 |   7 |
-    |   8 |  1.295e-02 |    0.761 |    0.369 |   7 |
-    |   9 |  1.011e-02 |    0.780 |    0.401 |   7 |
-    |  10 |  8.045e-03 |    0.796 |    0.368 |   7 |
-    |  11 |  6.501e-03 |    0.808 |    0.384 |   7 |
-    |  12 |  5.316e-03 |    0.818 |    0.401 |   7 |
-    |  13 |  4.387e-03 |    0.825 |    0.416 |   6 |
-    |  14 |  3.647e-03 |    0.831 |    0.463 |   7 |
-    |  15 |  3.048e-03 |    0.836 |    0.401 |   7 |
-    |  16 |  2.558e-03 |    0.839 |    0.353 |   6 |
-    |  17 |  2.206e-03 |    0.863 |    0.309 |   6 |
+    |   1 |  5.133e-01 |      nan |    0.395 |  10 |
+    |   2 |  1.703e-01 |    0.332 |    0.295 |   8 |
+    |   3 |  8.435e-02 |    0.495 |    0.284 |   7 |
+    |   4 |  5.005e-02 |    0.593 |    0.277 |   7 |
+    |   5 |  3.292e-02 |    0.658 |    0.281 |   7 |
+    |   6 |  2.313e-02 |    0.703 |    0.281 |   7 |
+    |   7 |  1.702e-02 |    0.736 |    0.268 |   7 |
+    |   8 |  1.295e-02 |    0.761 |    0.267 |   7 |
+    |   9 |  1.011e-02 |    0.780 |    0.286 |   7 |
+    |  10 |  8.045e-03 |    0.796 |    0.271 |   7 |
+    |  11 |  6.501e-03 |    0.808 |    0.283 |   7 |
+    |  12 |  5.316e-03 |    0.818 |    0.268 |   7 |
+    |  13 |  4.387e-03 |    0.825 |    0.249 |   6 |
+    |  14 |  3.647e-03 |    0.831 |    0.294 |   7 |
+    |  15 |  3.048e-03 |    0.836 |    0.279 |   7 |
+    |  16 |  2.558e-03 |    0.839 |    0.256 |   6 |
+    |  17 |  2.206e-03 |    0.863 |    0.235 |   6 |
     |  18 |  2.010e-03 |    0.911 |    0.334 |   6 |
-    |  19 |  1.842e-03 |    0.916 |    0.360 |   5 |
-    |  20 |  1.699e-03 |    0.922 |    0.331 |   5 |
+    |  19 |  1.842e-03 |    0.916 |    0.330 |   5 |
+    |  20 |  1.699e-03 |    0.922 |    0.307 |   5 |
     |  21 |  1.580e-03 |    0.930 |    0.314 |   5 |
-    |  22 |  1.472e-03 |    0.932 |    0.381 |   5 |
-    |  23 |  1.374e-03 |    0.933 |    0.279 |   5 |
-    |  24 |  1.289e-03 |    0.938 |    0.277 |   5 |
-    |  25 |  1.210e-03 |    0.939 |    0.259 |   5 |
-    |  26 |  1.137e-03 |    0.940 |    0.277 |   5 |
-    |  27 |  1.073e-03 |    0.944 |    0.215 |   4 |
-    |  28 |  1.013e-03 |    0.944 |    0.219 |   4 |
-    |  29 |  9.575e-04 |    0.945 |    0.183 |   3 |
-    |  30 |  9.075e-04 |    0.948 |    0.170 |   3 |
-    |  31 |  8.600e-04 |    0.948 |    0.167 |   3 |
-    |  32 |  8.166e-04 |    0.950 |    0.170 |   3 |
-    |  33 |  7.764e-04 |    0.951 |    0.170 |   3 |
-    |  34 |  7.384e-04 |    0.951 |    0.176 |   3 |
-    |  35 |  7.035e-04 |    0.953 |    0.166 |   3 |
-    |  36 |  6.705e-04 |    0.953 |    0.286 |   2 |
-    |  37 |  6.396e-04 |    0.954 |    0.167 |   2 |
-    |  38 |  6.108e-04 |    0.955 |    0.216 |   2 |
-    |  39 |  5.835e-04 |    0.955 |    0.170 |   2 |
-    |  40 |  5.579e-04 |    0.956 |    0.125 |   2 |
-    |  41 |  5.338e-04 |    0.957 |    0.139 |   2 |
-    |  42 |  5.110e-04 |    0.957 |    0.152 |   2 |
-    |  43 |  4.895e-04 |    0.958 |    0.125 |   2 |
-    |  44 |  4.691e-04 |    0.958 |    0.123 |   2 |
-    |  45 |  4.499e-04 |    0.959 |    0.154 |   2 |
-    |  46 |  4.316e-04 |    0.959 |    0.139 |   2 |
-    |  47 |  4.143e-04 |    0.960 |    0.165 |   2 |
-    |  48 |  3.978e-04 |    0.960 |    0.139 |   2 |
-    |  49 |  3.821e-04 |    0.961 |    0.131 |   2 |
-    |  50 |  3.598e-04 |    0.941 |    0.132 |   2 |
-    |  51 |  3.132e-04 |    0.871 |    0.177 |   2 |
-    |  52 |  2.476e-04 |    0.790 |    0.158 |   2 |
-    |  53 |  1.782e-04 |    0.720 |    0.118 |   2 |
-    |  54 |  1.190e-04 |    0.668 |    0.218 |   2 |
-    |  55 |  7.541e-05 |    0.634 |    0.152 |   2 |
-    |  56 |  4.634e-05 |    0.615 |    0.134 |   2 |
-    |  57 |  2.802e-05 |    0.605 |    0.137 |   2 |
-    |  58 |  1.684e-05 |    0.601 |    0.124 |   2 |
-    |  59 |  1.010e-05 |    0.600 |    0.085 |   1 |
-    |  60 |  6.072e-06 |    0.601 |    0.085 |   1 |
-    |  61 |  3.659e-06 |    0.603 |    0.088 |   1 |
-    |  62 |  2.211e-06 |    0.604 |    0.078 |   1 |
-    |  63 |  1.340e-06 |    0.606 |    0.082 |   1 |
-    |  64 |  8.141e-07 |    0.607 |    0.087 |   1 |
+    |  22 |  1.472e-03 |    0.932 |    0.316 |   5 |
+    |  23 |  1.374e-03 |    0.933 |    0.302 |   5 |
+    |  24 |  1.289e-03 |    0.938 |    0.303 |   5 |
+    |  25 |  1.210e-03 |    0.939 |    0.316 |   5 |
+    |  26 |  1.137e-03 |    0.940 |    0.310 |   5 |
+    |  27 |  1.073e-03 |    0.944 |    0.263 |   4 |
+    |  28 |  1.013e-03 |    0.944 |    0.259 |   4 |
+    |  29 |  9.575e-04 |    0.945 |    0.202 |   3 |
+    |  30 |  9.075e-04 |    0.948 |    0.204 |   3 |
+    |  31 |  8.600e-04 |    0.948 |    0.194 |   3 |
+    |  32 |  8.166e-04 |    0.950 |    0.211 |   3 |
+    |  33 |  7.764e-04 |    0.951 |    0.185 |   3 |
+    |  34 |  7.384e-04 |    0.951 |    0.186 |   3 |
+    |  35 |  7.035e-04 |    0.953 |    0.204 |   3 |
+    |  36 |  6.705e-04 |    0.953 |    0.145 |   2 |
+    |  37 |  6.396e-04 |    0.954 |    0.150 |   2 |
+    |  38 |  6.108e-04 |    0.955 |    0.152 |   2 |
+    |  39 |  5.835e-04 |    0.955 |    0.142 |   2 |
+    |  40 |  5.579e-04 |    0.956 |    0.138 |   2 |
+    |  41 |  5.338e-04 |    0.957 |    0.153 |   2 |
+    |  42 |  5.110e-04 |    0.957 |    0.134 |   2 |
+    |  43 |  4.895e-04 |    0.958 |    0.151 |   2 |
+    |  44 |  4.691e-04 |    0.958 |    0.135 |   2 |
+    |  45 |  4.499e-04 |    0.959 |    0.149 |   2 |
+    |  46 |  4.316e-04 |    0.959 |    0.135 |   2 |
+    |  47 |  4.143e-04 |    0.960 |    0.138 |   2 |
+    |  48 |  3.978e-04 |    0.960 |    0.143 |   2 |
+    |  49 |  3.821e-04 |    0.961 |    0.152 |   2 |
+    |  50 |  3.598e-04 |    0.941 |    0.133 |   2 |
+    |  51 |  3.132e-04 |    0.871 |    0.151 |   2 |
+    |  52 |  2.476e-04 |    0.790 |    0.146 |   2 |
+    |  53 |  1.782e-04 |    0.720 |    0.134 |   2 |
+    |  54 |  1.190e-04 |    0.668 |    0.141 |   2 |
+    |  55 |  7.541e-05 |    0.634 |    0.140 |   2 |
+    |  56 |  4.634e-05 |    0.615 |    0.176 |   2 |
+    |  57 |  2.802e-05 |    0.605 |    0.145 |   2 |
+    |  58 |  1.684e-05 |    0.601 |    0.146 |   2 |
+    |  59 |  1.010e-05 |    0.600 |    0.086 |   1 |
+    |  60 |  6.072e-06 |    0.601 |    0.081 |   1 |
+    |  61 |  3.659e-06 |    0.603 |    0.077 |   1 |
+    |  62 |  2.211e-06 |    0.604 |    0.098 |   1 |
+    |  63 |  1.340e-06 |    0.606 |    0.081 |   1 |
+    |  64 |  8.141e-07 |    0.607 |    0.086 |   1 |
     ------------------------------------------------
-    Elapsed: 15.1730000973 seconds.
+    Elapsed: 13.4159998894 seconds.
     ------------------------------------------------
     
 
@@ -561,7 +541,7 @@ the high aversion scenario :math:`\sigma=16`.
 
 .. parsed-literal::
 
-    <matplotlib.legend.Legend at 0x18a98828>
+    <matplotlib.legend.Legend at 0x192abac8>
 
 
 

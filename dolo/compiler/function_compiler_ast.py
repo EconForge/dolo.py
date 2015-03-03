@@ -19,7 +19,6 @@ from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, 
 
 # def Name(id=id, ctx=None): return ast.arg(arg=id)
 
-# import codegen
 
 class StandardizeDatesSimple(NodeTransformer):
 
@@ -241,7 +240,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
-    # print_code=True
+    # print_code = True
     if print_code:
 
         s = "Function {}".format(mod.body[0].name)
@@ -276,6 +275,8 @@ def eval_ast(mod):
     context['sin'] = numpy.sin
     context['cos'] = numpy.cos
     context['evaluate'] = evaluate
+
+    context['abs'] = numpy.abs
 
     name = mod.body[0].name
     mod = ast.fix_missing_locations(mod)
