@@ -34,5 +34,5 @@ install:
 script:
 
   - nosetests
-  - runipy examples/notebooks/rbc_model.ipynb
-  - runipy examples/notebooks/sudden_stops.ipynb
+  # - runipy examples/notebooks/rbc_model.ipynb
+  # - runipy examples/notebooks/sudden_stops.ipynb
