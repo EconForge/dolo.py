@@ -212,6 +212,7 @@ Model object:
 
             if spec.get('complementarities'):
 
+                # TODO: Rewrite and simplify
                 comp_spec = spec.get('complementarities')
                 comp_order = comp_spec['middle']
                 comp_args = comp_spec['left-right']
@@ -231,7 +232,8 @@ Model object:
                     eqs.append(eq)
 
                 comp_lhs, comp_rhs = zip(*comps)
-                fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+                # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+                fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
                 lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False, definitions=defs)
                 upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False, definitions=defs)
