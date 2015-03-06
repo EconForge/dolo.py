@@ -143,9 +143,9 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     gg = model.functions['transition']
     aa = model.functions['auxiliary']
 
-    if 'arbitrage_lb' in model.functions and with_complementarities==True:
-        lb_fun = model.functions['arbitrage_lb']
-        ub_fun = model.functions['arbitrage_ub']
+    if 'controls_lb' in model.functions and with_complementarities==True:
+        lb_fun = model.functions['controls_lb']
+        ub_fun = model.functions['controls_ub']
         lb = numpy.zeros_like(controls_0)*numpy.nan
         ub = numpy.zeros_like(controls_0)*numpy.nan
         for i_m in range(n_ms):

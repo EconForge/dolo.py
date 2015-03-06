@@ -88,8 +88,8 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
 
         if solve_expectations:
 
-            lbfun = model.functions['arbitrage_lb']
-            ubfun = model.functions['arbitrage_ub']
+            lbfun = model.functions['controls_lb']
+            ubfun = model.functions['controls_ub']
             lb = lbfun(s, parms)
             ub = ubfun(s, parms)
 

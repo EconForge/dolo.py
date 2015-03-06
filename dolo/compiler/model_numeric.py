@@ -143,9 +143,9 @@ Model object:
     @property
     def x_bounds(self):
 
-        if 'arbitrage_ub' in self.functions:
-            fun_lb = self.functions['arbitrage_lb']
-            fun_ub = self.functions['arbitrage_ub']
+        if 'controls_ub' in self.functions:
+            fun_lb = self.functions['controls_lb']
+            fun_ub = self.functions['controls_ub']
             return [fun_lb, fun_ub]
         else:
             return None

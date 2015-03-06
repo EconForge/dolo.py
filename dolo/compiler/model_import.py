@@ -207,8 +207,8 @@ if __name__ == "__main__":
     p = model.calibration['parameters'][None,:]
 
     S = model.functions['transition'](s,x,e,p)
-    lb = model.functions['arbitrage_lb'](s,p)
-    ub = model.functions['arbitrage_ub'](s,p)
+    lb = model.functions['controls_lb'](s,p)
+    ub = model.functions['controls_ub'](s,p)
 
 
     print(S)

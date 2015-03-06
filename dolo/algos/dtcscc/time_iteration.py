@@ -135,8 +135,8 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     verbit = True if verbose=='full' else False
 
     if with_complementarities:
-        lbfun = model.functions['arbitrage_lb']
-        ubfun = model.functions['arbitrage_ub']
+        lbfun = model.functions['controls_lb']
+        ubfun = model.functions['controls_ub']
         lb = lbfun(grid, parms)
         ub = ubfun(grid, parms)
     else:
