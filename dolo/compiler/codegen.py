@@ -466,9 +466,9 @@ class SourceGenerator(NodeVisitor):
         # self.write(')')
 
     def visit_UnaryOp(self, node):
-        self.write('(')
         op = UNARYOP_SYMBOLS[type(node.op)]
         self.write(op)
+        self.write('(')
         if op == 'not':
             self.write(' ')
         self.visit(node.operand)
@@ -587,3 +587,31 @@ class SourceGenerator(NodeVisitor):
 
     def visit_arguments(self, node):
         self.signature(node)
+
+
+
+# tests
+
+def test_generation():
+    import ast
+    from math import exp
+
+    d = dict(a=1.290, b=2.28)
+
+    expressions = [
+        '-(a+b)',
+        'exp(-a)',
+    ]
+
+    print("Testing ast to source")
+    for s in expressions:
+        expr = ast.parse(s)
+        new_s = to_source(expr)
+        print('{} -> {}'.format(s,new_s))
+        lhs = (eval(s, locals(), d))
+        rhs = (eval(new_s, locals(), d))
+        assert(lhs==rhs)
+
+if __name__ == '__main__':
+
+    test_generation()
