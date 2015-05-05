@@ -68,7 +68,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         pp.update(steady)
         pp.update(params)
         data['calibration'] = pp
-
         data['covariances'] = eval(
             "numpy.array({}, dtype='object')".format(covs)
         )
@@ -76,18 +75,29 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     # model specific
 
     if model_type in ('dtcscc', 'dynare'):
-        if 'covariances' not in data:
-            raise Exception(
-                "Missing section (model {}): 'covariances'.".format(model_type)
-            )
-        symbolic_covariances = data['covariances']
+        if 'distribution' not in data:
+            if 'covariances' in data:
+                data['distribution'] = {'Normal':data['covariances']}
+            else:
+                raise Exception(
+                    "Missing section (model type {}): 'distribution'.".format(model_type)
+                )
 
     if model_type == 'dtmscc':
-        if 'markov_chain' not in data:
-            raise Exception(
-                "Missing section (model {}): 'markov_chain'.".format(model_type)
-            )
-        symbolic_markov_chain = data['markov_chain']
+        if 'discrete_transition' not in data:
+            if 'markov_chain' not in data:
+                raise Exception(
+                    "Missing section (model {}): 'discrete_transition'.".format(model_type)
+                )
+            else:
+                mc = data['markov_chain']
+                if isinstance(mc, list):
+                    data['discrete_transition'] = {'MarkovChain': mc}
+                else:
+                    data['discrete_transition'] = mc
+
+        # data['markov_chain'] = data['distribution']['MarkovChain']
+
 
     model_name = data['name']
     symbols = data['symbols']
@@ -134,8 +144,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             raise Exception(msg)
         symbolic_covariances = tl
 
-    symbolic_markov_chain = data.get('markov_chain')
-    # TODO: read markov chain
+    symbolic_distribution = data.get('distribution')
+    symbolic_discrete_transition = data.get('discrete_transition')
 
     definitions = data.get('definitions', {})
 
@@ -149,8 +159,9 @@ def yaml_import(fname, txt=None, return_symbolic=False):
 
     from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(model_name, model_type, symbols, symbolic_equations,
-                           symbolic_calibration, symbolic_covariances,
-                           symbolic_markov_chain,
+                           symbolic_calibration,
+                           discrete_transition=symbolic_discrete_transition,
+                           distribution=symbolic_distribution,
                            options=options, definitions=definitions)
 
     if return_symbolic:
@@ -196,8 +207,8 @@ if __name__ == "__main__":
     p = model.calibration['parameters'][None,:]
 
     S = model.functions['transition'](s,x,e,p)
-    lb = model.functions['arbitrage_lb'](s,p)
-    ub = model.functions['arbitrage_ub'](s,p)
+    lb = model.functions['controls_lb'](s,p)
+    ub = model.functions['controls_ub'](s,p)
 
 
     print(S)

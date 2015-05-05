@@ -8,44 +8,35 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
                  maxit=500, tol=1e-8,
                  integration='gauss-hermite', integration_orders=None,
                  T=200, n_s=3, hook=None):
+    '''
+    Finds a global solution for ``model`` using backward time-iteration.
 
-    """Finds a global solution for ``model`` using backward time-iteration.
-
-    Parameters:
-    -----------
-
-    model: NumericModel
+    Parameters
+    ----------
+    model : NumericModel
         "fg" or "fga" model to be solved
-
-    bounds: ndarray
+    bounds : ndarray
         boundaries for approximations. First row contains minimum values. Second row contains maximum values.
-
-    verbose: boolean
+    verbose : boolean
         if True, display iterations
-
-    initial_dr: decision rule
+    initial_dr : decision rule
         initial guess for the decision rule
-
-    pert_order: {1}
+    pert_order : {1}
         if no initial guess is supplied, the perturbation solution at order ``pert_order`` is used as initial guess
-
-    with_complementarities: boolean (True)
+    with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
-
-    interp_type: {`smolyak`, `spline`}
+    interp_type : {`smolyak`, `spline`}
         type of interpolation to use for future controls
-
-    smolyak_orders: int
+    smolyak_orders : int
         parameter ``l`` for Smolyak interpolation
-
-    interp_orders: 1d array-like
+    interp_orders : 1d array-like
         list of integers specifying the number of nods in each dimension if ``interp_type="spline" ``
 
-
-    Returns:
-    --------
-    decision rule object (SmolyakGrid or MultivariateSplines)
-    """
+    Returns
+    -------
+    decision rule :
+        approximated solution
+    '''
 
     def vprint(t):
         if verbose:
@@ -144,8 +135,8 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     verbit = True if verbose=='full' else False
 
     if with_complementarities:
-        lbfun = model.functions['arbitrage_lb']
-        ubfun = model.functions['arbitrage_ub']
+        lbfun = model.functions['controls_lb']
+        ubfun = model.functions['controls_ub']
         lb = lbfun(grid, parms)
         ub = ubfun(grid, parms)
     else:

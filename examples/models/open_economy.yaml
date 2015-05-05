@@ -51,9 +51,13 @@ calibration:
         kappa: 0.00
         dumb: 0
 
-covariances:
-   [[ 0.005,    0,      ],
-    [     0,      0.005 ]]
+
+distribution:
+
+    Normal:
+
+        [[ 0.005,    0,      ],
+         [     0,      0.005 ]]
 
 options:
     approximation_space:

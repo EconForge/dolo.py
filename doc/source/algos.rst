@@ -1,10 +1,11 @@
 
 
 Solution algorithms
----------------
+*******************
 
 .. toctree::
     :maxdepth: 2
 
-    perturbations
-    perfect_foresight
+    algos_dtcscc
+    algos_dtmscc
+    algos_dynare

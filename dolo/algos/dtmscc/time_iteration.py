@@ -81,7 +81,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
 def time_iteration(model, initial_guess=None, with_complementarities=True,
                         verbose=True, orders=None, output_type='dr',
-                        maxit=1000, inner_maxit=10, tol=1e-6) :
+                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
     assert(model.model_type == 'dtmscc')
 
@@ -143,9 +143,9 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     gg = model.functions['transition']
     aa = model.functions['auxiliary']
 
-    if 'arbitrage_lb' in model.functions and with_complementarities==True:
-        lb_fun = model.functions['arbitrage_lb']
-        ub_fun = model.functions['arbitrage_ub']
+    if 'controls_lb' in model.functions and with_complementarities==True:
+        lb_fun = model.functions['controls_lb']
+        ub_fun = model.functions['controls_ub']
         lb = numpy.zeros_like(controls_0)*numpy.nan
         ub = numpy.zeros_like(controls_0)*numpy.nan
         for i_m in range(n_ms):
@@ -208,6 +208,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         fn = lambda x: residuals(f, g, grid, x.reshape(sh_c), mdr, P, Q, parms).reshape((-1,n_x))
         dfn = SerialDifferentiableFunction(fn)
 
+
+        if hook:
+            hook()
+            
         if with_complementarities:
             [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit)
         else:

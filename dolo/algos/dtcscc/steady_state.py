@@ -6,17 +6,24 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     '''
     Finds the steady state calibration.
 
+    Taking the value of parameters as given, finds the values for endogenous
+    variables consistent with the deterministic steady-state.
+
+    This function requires the specification of the first order equations.
+
     Parameters
     ----------
     model: NumericModel
-        an "fg" model.
+        an `(f,g)` compliant model
     constraints: dict
-        a dictionaries with forced values. Use it to set shocks to non-zero values or to add additional constraints to avoid unit roots.
+        a dictionaries with forced values.
+        Use it to set shocks to non-zero values or to add additional
+        constraints in order to avoid unit roots.
 
     Returns:
     --------
-    dict:
-        calibration dictionary
+    OrderedDict:
+        calibration dictionary (i.e. endogenous variables and parameters by type)
     '''
 
     from dolo.algos.dtcscc.convert import get_fg_functions
@@ -97,6 +104,22 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
 
 
 def residuals(model, calib=None):
+    '''
+    Computes the residuals associated to a calibration.
+
+    Parameters
+    ----------
+    model: NumericModel
+
+    calib: OrderedDict
+        calibration dictionary (i.e. endogenous variables and parameters by type)
+
+    Returns:
+    --------
+    OrderedDict:
+        residuals vectors by equation type
+    '''
+
 
     if calib is None:
         calib = model.calibration

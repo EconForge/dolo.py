@@ -7,7 +7,7 @@ symbols:
    states:  [z, k]
    controls: [n, i]
    auxiliaries: [c, rk, w]
-   expectations: [z_1]
+   expectations: [m]
    values: [V]
    shocks: [e_z]
 
@@ -32,11 +32,11 @@ equations:
       - w = (1-alpha)*z*(k/n)^(alpha)
 
    expectation:
-      - z_1 = beta/c(1)^sigma*(1-delta+rk(1))
+      - m = beta/c(1)^sigma*(1-delta+rk(1))
 
    direct_response:
-      - n = ((1-alpha)*z*k^alpha*z_1/chi)^(1/(eta+alpha))
-      - i = z*k^alpha*n^(1-alpha) - (z_1)^(-1/sigma)
+      - n = ((1-alpha)*z*k^alpha*m/chi)^(1/(eta+alpha))
+      - i = z*k^alpha*n^(1-alpha) - (m)^(-1/sigma)
 
    value:
       - V = log(c) + beta*V(1)

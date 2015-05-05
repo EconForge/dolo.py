@@ -1,15 +1,12 @@
-name: RBC
-
-model_spec: fga
+name: Real Business Cycle
 
 symbols:
 
    states:  [z, k]
    controls: [i, n]
-   auxiliaries: [c, rk, w]
+   auxiliaries: [y, c, rk, w]
    values: [V]
    shocks: [e_z]
-
 
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
@@ -17,56 +14,59 @@ symbols:
 equations:
 
 
-   arbitrage:
-      - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
-      - w - chi*n^eta*c^sigma                  | 0 <= n <= inf
+    arbitrage:
+        - 1 = beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
+        - w - chi*n^eta*c^sigma                  | 0 <= n <= inf
 
-   transition:
-      - z = (1-rho)*zbar + rho*z(-1) + e_z
-      - k = (1-delta)*k(-1) + i(-1)
+    transition:
+        - z = (1-rho)*zbar + rho*z(-1) + e_z
+        - k = (1-delta)*k(-1) + i(-1)
 
-   auxiliary:
-      - c = z*k^alpha*n^(1-alpha) - i
-      - rk = alpha*z*(n/k)^(1-alpha)
-      - w = (1-alpha)*z*(k/n)^(alpha)
+    auxiliary:
+        - y = z*k^alpha*n^(1-alpha)
+        - c = y - i
+        - rk = alpha*y/k
+        - w = (1-alpha)*y/n
 
-   value:
-      - V = log(c) + beta*V(1)
+    value:
+        - V = log(c) + beta*V(1)
 
 calibration:
 
+    # parameters
+    beta : 0.99
+    phi: 1
+    delta : 0.025
+    alpha : 0.33
+    rho : 0.8
+    sigma: 1
+    eta: 1
+    sig_z: 0.016
+    zbar: 1
+    chi : w/c^sigma/n^eta
 
-      beta : 0.99
-      phi: 1
-      chi : w/c^sigma/n^eta
-      delta : 0.025      
-      alpha : 0.33      
-      rho : 0.8
-      sigma: 1
-      eta: 1
-      zbar: 1
-      sig_z: 0.016
+    # endogenous variables
+    n: 0.33
+    k: n/(rk/alpha)^(1/(1-alpha))
+    w: (1-alpha)*z*(k/n)^(alpha)
+    i: delta*k
+    y: z*k^alpha*n^(1-alpha)
+    c: y - i
+    z: zbar
+    rk: 1/beta-1+delta
+    V: log(c)/(1-beta)
 
 
-      z: zbar
-      rk: 1/beta-1+delta    
-      w: (1-alpha)*z*(k/n)^(alpha)
-      n: 0.33
-      k: n/(rk/alpha)^(1/(1-alpha))
-      i: delta*k
-      c: z*k^alpha*n^(1-alpha) - i
+distribution:
 
-      V: log(c)/(1-beta)
+    Normal:
 
-
-covariances:
-
-      [ [ sig_z**2] ]
+        [ [ sig_z**2] ]
 
 
 options:
 
-    approximation_space:
+    Approximation:
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

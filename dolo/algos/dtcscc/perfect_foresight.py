@@ -4,42 +4,52 @@ from numpy import linspace, zeros, atleast_2d
 from dolo.algos.dtcscc.steady_state import find_deterministic_equilibrium
 
 def deterministic_solve(model, shocks=None, start_states=None, T=100, ignore_constraints=False, maxit=100, initial_guess=None, verbose=False, tol=1e-6):
-    '''
-    Computes a perfect foresight simulation using a stacked-time algorithm.
+    '''Computes a perfect foresight simulation using a stacked-time algorithm.
 
     The initial state is specified either by providing a series of exogenous shocks and assuming the model is initially
     in equilibrium with the first value of the shock, or by specifying an initial value for the states.
 
     Parameters
     ----------
+    a : array_like
+        The shape and data-type of `a` define these same attributes of
+        the returned array.
+    dtype : data-type, optional
+        .. versionadded:: 1.6.0
+        Overrides the data type of the result.
+    order : {'C', 'F', 'A', or 'K'}, optional
+        .. versionadded:: 1.6.0
+        Overrides the memory layout of the result. 'C' means C-order,
+        'F' means F-order, 'A' means 'F' if `a` is Fortran contiguous,
+        'C' otherwise. 'K' means match the layout of `a` as closely
+        as possible.
+    subok : bool, optional.
+        If True, then the newly created array will use the sub-class
+        type of 'a', otherwise it will be a base-class array. Defaults
+        to True.
 
-    model: NumericModel
+    Parameters
+    ----------
+    model : NumericModel
         "fg" or "fga" model to be solved
-
-    shocks: ndarray
+    shocks : ndarray
         :math:`n_e\\times N` matrix containing :math:`N` realizations of the shocks. :math:`N` must be smaller than :math:`T`.    The exogenous process is assumed to remain constant and equal to its last value after `N` periods.
-
-    start_states: ndarray or dict
+    start_states : ndarray or dict
         a vector with the value of initial states, or a calibration dictionary with the initial values of states and controls
-
-    T: int
+    T : int
         horizon for the perfect foresight simulation
-
-    maxit: int
+    maxit : int
         maximum number of iteration for the nonlinear solver
-
-    verbose: boolean
+    verbose : boolean
         if True, the solver displays iterations
-
-    tol: float
+    tol : float
         stopping criterium for the nonlinear solver
-
-    ignore_constraints: bool
+    ignore_constraints : bool
         if True, complementarity constraints are ignored.
 
     Returns
     -------
-    pandas dataframe:
+    pandas dataframe
 
         a dataframe with T+1 observations of the model variables along the simulation (states, controls, auxiliaries). The first observation is the steady-state corresponding to the first value of the shocks. The simulation should return
         to a steady-state corresponding to the last value of the exogenous shocks.

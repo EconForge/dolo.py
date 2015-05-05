@@ -44,20 +44,23 @@ class NumericModel:
         evaluator = NumericEval(self.calibration_dict)
 
         # read symbolic structure
-        covariances = evaluator.eval(self.symbolic.covariances)
-        if covariances is None:
-            self.covariances = covariances
+        self.options = evaluator.eval(self.symbolic.options)
+
+        distribution = evaluator.eval(self.symbolic.distribution)
+        discrete_transition = evaluator.eval(self.symbolic.discrete_transition)
+
+
+        covariances = distribution
+        if distribution is None:
+            self.covariances = None
         else:
             self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
 
-        markov_chain = evaluator.eval(self.symbolic.markov_chain)
+        markov_chain = discrete_transition
         if markov_chain is None:
             self.markov_chain = None
         else:
             self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
-
-        self.options = evaluator.eval(self.symbolic.options)
-
 
     def get_calibration(self, pname, *args):
 
@@ -140,9 +143,9 @@ Model object:
     @property
     def x_bounds(self):
 
-        if 'arbitrage_ub' in self.functions:
-            fun_lb = self.functions['arbitrage_lb']
-            fun_ub = self.functions['arbitrage_ub']
+        if 'controls_ub' in self.functions:
+            fun_lb = self.functions['controls_lb']
+            fun_ub = self.functions['controls_ub']
             return [fun_lb, fun_ub]
         else:
             return None
@@ -209,6 +212,7 @@ Model object:
 
             if spec.get('complementarities'):
 
+                # TODO: Rewrite and simplify
                 comp_spec = spec.get('complementarities')
                 comp_order = comp_spec['middle']
                 comp_args = comp_spec['left-right']
@@ -228,7 +232,8 @@ Model object:
                     eqs.append(eq)
 
                 comp_lhs, comp_rhs = zip(*comps)
-                fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+                # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+                fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
                 lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False, definitions=defs)
                 upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False, definitions=defs)

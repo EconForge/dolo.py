@@ -54,7 +54,7 @@ calibration:
 
 markov_chain:
 
-    AR1:  #  autoMATIC discretizatino using Rouwenhorst
+    AR1:  #  automatic discretization using Rouwenhorst
 
          rho: 0.9
          sigma:

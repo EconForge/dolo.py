@@ -2,6 +2,13 @@ import numpy as np
 
 from dolo.numeric.discretization import tensor_markov
 
+TensorMarkov = tensor_markov
+
+def Normal(a):
+    return a
+
+def Approximation(**kwargs):
+    return {'approximation_space': kwargs}
 
 def rouwenhorst(rho=None, sigma=None, N=None):
     from dolo.numeric.discretization import rouwenhorst
@@ -22,6 +29,8 @@ def AR1(rho, sigma, *pargs, **kwargs):
     [P,Q] = multidimensional_discretization(rho_array, sigma_array, *pargs, **kwargs)
     return P,Q
 
+def MarkovChain(a,b):
+    return [a,b]
 
 class NumericEval:
 
@@ -31,7 +40,7 @@ class NumericEval:
         for k,v in d.items():
             assert(isinstance(k, str))
 
-        self.__supported_functions___ = [AR1, tensor_markov]
+        self.__supported_functions___ = [AR1, TensorMarkov, MarkovChain, Normal, Approximation]
         self.__supported_functions_names___ = [fun.__name__ for fun in self.__supported_functions___]
 
     def __call__(self, s):
@@ -78,11 +87,10 @@ class NumericEval:
                     eargs = self.eval(args)
                     res = fun(**eargs)
                 elif isinstance(args, (list,tuple)):
-
                     eargs = self.eval(args)
                     res = fun(*eargs)
                 else:
-                    print("Found nothing")
+                    res = args
                 return res
 
 

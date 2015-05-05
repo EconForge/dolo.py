@@ -1,5 +1,5 @@
-Perfect foresight algorithm
-===========================
+Perfect foresight
+.................
 
 
 We consider an `fg` model, that is a model with in the form:
@@ -34,5 +34,4 @@ The stacked system of equations satisfied by the solution is:
 
 
 
-.. autofunction:: dolo.algos.perfect_foresight.deterministic_solve
-.. autofunction:: dolo.algos.perfect_foresight.find_steady_state
+.. autofunction:: dolo.algos.dtcscc.perfect_foresight.deterministic_solve

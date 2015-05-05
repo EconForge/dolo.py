@@ -23,7 +23,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - deps='pip nose ipython pyyaml numba numpy scipy pandas numexpr sympy matplotlib runipy'
+  - deps='pip nose ipython jsonschema pyyaml numba numpy scipy pandas numexpr sympy matplotlib runipy mistune'
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION $deps
   - source activate test-environment
   - pip install pp --allow-external pp --allow-unverified pp
@@ -34,4 +34,5 @@ install:
 script:
 
   - nosetests
-  - runipy examples/notebooks/rbc_model.ipynb
+  # - runipy examples/notebooks/rbc_model.ipynb
+  # - runipy examples/notebooks/sudden_stops.ipynb

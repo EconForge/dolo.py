@@ -258,6 +258,30 @@ dtmscc:
 
                 - ['parameters',0,'p']
 
+        direct_response:
+
+            optional: True
+            recursive: True
+            target: ['controls', 0,'x']
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['expectations', 0, 'z']
+                - ['parameters',0,'p']
+
+        arbitrage_2:
+
+            optional: True
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                #- ['auxiliaries',0,'y']
+                - ['parameters', 0, 'p']
+
+
+
 
 
 dtmscc_:
