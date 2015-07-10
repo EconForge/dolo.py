@@ -21,9 +21,9 @@ equations:
         - w = (w(-1)-c(-1))^(theta)*(  1 + rho_A*(A(-1)-1) + e_A   )  + 1
 
     arbitrage:
-        - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  = 1     |   0 <= c <= w
+        - 1 - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)      |   0 <= c <= w
         - c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf <=  Welf <= inf
-        
+
     expectation:
         - eh = c(1)^(-gamma)*A(1)
         - eW = Welf(1)
@@ -50,4 +50,3 @@ calibration:
 
   covariances: |
     [ [ 0.01 ] ]
-    

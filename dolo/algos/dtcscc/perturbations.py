@@ -6,7 +6,7 @@ from numpy import dot
 
 class BlanchardKahnError(Exception):
 
-    def __init__(self, n_found, n_expected):
+    def __init__(self, n_found, n_expected, jac=None, diags=None ):
         self.n_found = n_found
         self.n_expected = n_expected
 
@@ -124,6 +124,14 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     diag_S = numpy.diag(S)
     diag_T = numpy.diag(T)
 
+    tol_geneigvals = 1e-10
+    try:
+        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
+    except Exception as e:
+        print(e)
+        # print(numpy.column_stack([diag_S, diag_T]))
+        raise GeneralizedEigenvaluesError(diag_S, diag_T)
+
     # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval>eigmax)
     n_expected = n_x
@@ -132,14 +140,6 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     if n_expected != n_big_one:
         raise BlanchardKahnError(n_big_one, n_expected)
 
-
-    tol_geneigvals = 1e-10
-    try:
-        assert( sum(  (abs( diag_S ) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals) ) == 0)
-    except Exception as e:
-        print(e)
-        print(numpy.column_stack([diag_S, diag_T]))
-        # raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
 
     Z11 = Z[:n_s,:n_s]

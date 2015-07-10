@@ -1,12 +1,7 @@
 from numpy import sqrt, finfo, inf
-
 from numpy import isinf, newaxis, diag, zeros
-
-
 from numpy.linalg import norm, solve
-
 from numpy import float64
-
 import warnings
 
 from dolo.numeric.optimize.newton import newton
@@ -16,8 +11,13 @@ def ncpsolve(f, a, b, x, tol=1e-8, maxit=100, infos=False, verbose=False, jactyp
     def fcmp(z):
 
         [val, dval] = f(z)
-        [val, dval] = smooth(z, a, b, val, dval, jactype=jactype)
 
+        # revert convention
+        val = -val
+        dval = -dval
+
+        [val, dval] = smooth(z, a, b, val, dval, jactype=jactype)
+        
         return [val, dval]
 
     [sol, nit] = newton(fcmp, x, tol=tol, maxit=maxit, verbose=verbose, jactype=jactype)

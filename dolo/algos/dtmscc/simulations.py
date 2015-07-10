@@ -135,7 +135,6 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
 
     if n_exp > 1:
         sims = pandas.Panel(sims, minor_axis=['m_ind']+columns)
-        print(sims.shape)
         sims = sims.swapaxes(0,1)
 
     else:

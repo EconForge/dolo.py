@@ -85,6 +85,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     assert(model.model_type == 'dtmscc')
 
+    def vprint(t):
+        if verbose:
+            print(t)
+
     [P, Q] = model.markov_chain
 
     n_ms = P.shape[0]   # number of markov states
@@ -178,7 +182,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     it = 0
 
     if with_complementarities:
-        print("Solving WITH complementarities.")
+        vprint("Solving WITH complementarities.")
         lb = lb.reshape((-1,n_x))
         ub = ub.reshape((-1,n_x))
 
@@ -211,7 +215,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
         if hook:
             hook()
-            
+
         if with_complementarities:
             [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit)
         else:

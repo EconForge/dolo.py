@@ -52,7 +52,7 @@ class standard_function:
         #     return out
 
         if not 'diff' in kwargs:
-            
+
             return out
 
         else:

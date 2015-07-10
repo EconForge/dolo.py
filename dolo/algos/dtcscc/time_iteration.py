@@ -5,7 +5,7 @@ import numpy as np
 def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
                  pert_order=1, with_complementarities=True,
                  interp_type='smolyak', smolyak_order=3, interp_orders=None,
-                 maxit=500, tol=1e-8,
+                 maxit=500, tol=1e-8, inner_maxit=10,
                  integration='gauss-hermite', integration_orders=None,
                  T=200, n_s=3, hook=None):
     '''
@@ -163,7 +163,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         sdfun = SerialDifferentiableFunction(fun)
 
         if with_complementarities:
-            [x,nit] = ncpsolve(sdfun, lb, ub, x0, verbose=verbit)
+            [x,nit] = ncpsolve(sdfun, lb, ub, x0, verbose=verbit, maxit=inner_maxit)
 
         else:
             [x,nit] = serial_newton(sdfun, x0, verbose=verbit)

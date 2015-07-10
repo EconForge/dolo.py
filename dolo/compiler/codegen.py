@@ -436,7 +436,7 @@ class SourceGenerator(NodeVisitor):
         self.write('}')
 
     def visit_BinOp(self, node):
-        with_parentheses = isinstance(node.op, (Pow, Mult, Div))
+        with_parentheses = isinstance(node.op, (Pow, Mult, Div, Sub))
         if with_parentheses:
             self.write('(')
         self.visit(node.left)

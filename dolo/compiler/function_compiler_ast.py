@@ -240,7 +240,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
-    # print_code = True
+    print_code = True
     if print_code:
 
         s = "Function {}".format(mod.body[0].name)

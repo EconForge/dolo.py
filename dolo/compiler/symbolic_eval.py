@@ -32,6 +32,8 @@ def AR1(rho, sigma, *pargs, **kwargs):
 def MarkovChain(a,b):
     return [a,b]
 
+supported_functions = [AR1, TensorMarkov, MarkovChain, Normal, Approximation]
+
 class NumericEval:
 
     def __init__(self, d):
@@ -40,7 +42,7 @@ class NumericEval:
         for k,v in d.items():
             assert(isinstance(k, str))
 
-        self.__supported_functions___ = [AR1, TensorMarkov, MarkovChain, Normal, Approximation]
+        self.__supported_functions___ = supported_functions
         self.__supported_functions_names___ = [fun.__name__ for fun in self.__supported_functions___]
 
     def __call__(self, s):

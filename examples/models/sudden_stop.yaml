@@ -24,7 +24,7 @@ equations:
     arbitrage:
 
         - lam = b/c
-        - beta*(c(1)/c)^(-sigma)*R - 1    |  lam_inf <= lam <= inf
+        - 1 - beta*(c(1)/c)^(-sigma)*R    |  lam_inf <= lam <= inf
 
 
     auxiliary:
