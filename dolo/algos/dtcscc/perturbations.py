@@ -6,9 +6,13 @@ from numpy import dot
 
 class BlanchardKahnError(Exception):
 
-    def __init__(self, n_found, n_expected, jac=None, diags=None ):
+    def __init__(self, n_found, n_expected, jac=None, diags=None, eigval=None, eigmax=None ):
         self.n_found = n_found
         self.n_expected = n_expected
+        self.jac = jac
+        self.diags = diags
+        self.eigval = eigval
+        self.eigmax = eigmax
 
     def __str__(self):
 
@@ -138,7 +142,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0, so
     if verbose:
         print( "There are {} eigenvalues greater than {}. Expected: {}.".format( n_big_one, eigmax, n_x ) )
     if n_expected != n_big_one:
-        raise BlanchardKahnError(n_big_one, n_expected)
+        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval, eigmax=eigmax)
 
 
 
