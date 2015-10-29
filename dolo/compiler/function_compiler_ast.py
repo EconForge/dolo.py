@@ -2,7 +2,8 @@
 from __future__ import division
 from .codegen import to_source
 
-
+import sys
+is_python_3 =  sys.version_info >= (3, 0)
 
 def std_date_symbol(s,date):
     if date == 0:
@@ -15,7 +16,7 @@ def std_date_symbol(s,date):
 
 import ast
 
-from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer
+from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, Assign, Store, Call, Module, FunctionDef, arguments, Param, ExtSlice, Slice, Ellipsis, Call, Str, keyword, NodeTransformer, Tuple, USub
 
 # def Name(id=id, ctx=None): return ast.arg(arg=id)
 
@@ -48,9 +49,16 @@ class StandardizeDatesSimple(NodeTransformer):
         if name in self.variables:
             if isinstance(args, UnaryOp):
                 # we have s(+1)
-                assert(isinstance(args.op, UAdd))
-                args = args.operand
-            date = args.n
+                if (isinstance(args.op, UAdd)):
+                    args = args.operand
+                    date = args.n
+                elif (isinstance(args.op, USub)):
+                    args = args.operand
+                    date = -args.n
+                else:
+                    raise Exception("Unrecognized subscript.")
+            else:
+                date = args.n
             newname = std_date_symbol(name, date)
             if newname is not None:
                 return Name(newname, Load())
@@ -102,9 +110,16 @@ class StandardizeDates(NodeTransformer):
         if name in self.variables:
             if isinstance(args, UnaryOp):
                 # we have s(+1)
-                assert(isinstance(args.op, UAdd))
-                args = args.operand
-            date = args.n
+                if (isinstance(args.op, UAdd)):
+                    args = args.operand
+                    date = args.n
+                elif (isinstance(args.op, USub)):
+                    args = args.operand
+                    date = -args.n
+                else:
+                    raise Exception("Unrecognized subscript.")
+            else:
+                date = args.n
             key = (name, date)
             newname = self.table_symbols.get(key)
             if newname is not None:
@@ -165,10 +180,26 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         el = Ellipsis()
         if data_order == 'columns':
             # column broadcasting: i.e. k = s[...,0]
-            index = lambda x: ExtSlice(dims=[el, Index(value=Num(n=x))])
+            if is_python_3:
+                index = lambda x: Index(
+                        value=Tuple(
+                            elts=[el, Num(n=x)],
+                            ctx=Load()
+                        )
+                    )
+            else:
+                index = lambda x: ExtSlice(dims=[el, Index(value=Num(n=x))])
         else:
             # rows broadcasting: i.e. k = s[0,...]
-            index = lambda x: ExtSlice(dims=[Index(value=Num(n=x)),el])
+            if is_python_3:
+                index = lambda x: Index(
+                        value=Tuple(
+                            elts=[Num(n=x), el],
+                            ctx=Load()
+                        )
+                    )
+            else:
+                index = lambda x: ExtSlice(dims=[Index(value=Num(n=x)),el])
 
     # declare symbols
 
@@ -233,8 +264,13 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     # f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, defaults=[]),
     #             body=preamble+body, decorator_list=[])
 
-    f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
-            body=preamble+body, decorator_list=[])
+    if is_python_3:
+        from ast import arg
+        f = FunctionDef(name=funname, args=arguments(args=[arg(arg=a) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
+                body=preamble+body, decorator_list=[])
+    else:
+        f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
+                body=preamble+body, decorator_list=[])
 
 
     mod = Module(body=[f])

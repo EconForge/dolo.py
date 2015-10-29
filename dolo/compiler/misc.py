@@ -6,13 +6,13 @@ from numpy import array, zeros
 
 
 def filter(smin, smax, orders, controls):
-    
+
     from dolo.numeric.interpolation.filter_cubic_splines import filter_data
     n_mc, N, n_x = controls.shape
     dinv = (smax-smin)/(orders-1)
     oorders = ( orders + 2 ).tolist()
     res = zeros( [n_mc] + [n_x] + oorders )
-   
+
     for i in range(n_mc):
         for j in range(n_x):
             ddd = controls[i,:,j].reshape(orders).copy()
@@ -22,17 +22,17 @@ def filter(smin, smax, orders, controls):
 
 
 def calibration_to_vector(symbols, calibration_dict):
-  
+
     from dolo.compiler.triangular_solver import solve_triangular_system
 
     sol = solve_triangular_system(calibration_dict)
-    
+
     calibration  = OrderedDict()
     for group in symbols:
         calibration[group] = numpy.array(
                                 [sol[s] for s in symbols[group]],
                              dtype=float)
-    
+
     return calibration
 
 
@@ -57,7 +57,7 @@ def allocating_function(inplace_function, size_output):
 
     def new_function(*args, **kwargs):
         val = numpy.zeros(size_output)
-        nargs = args + (val,) 
+        nargs = args + (val,)
         inplace_function( *nargs )
         if 'diff' in kwargs:
             return numdiff(new_function, args)
@@ -107,12 +107,12 @@ def check(model, silent=False):
     names = ['markov_states', 'states', 'controls', 'parameters']
 
     m,s,x,p = [model.calibration[name] for name in names]
-    
-    
+
+
     # check steady_state
     g = model.functions['transition']
     S = g(m,s,x,m, p)
-    
+
 
     R = model.functions['arbitrage'](m,s,x, m, s, x,p)
     e = abs( concatenate([S-s,R]) ).max()
@@ -135,7 +135,7 @@ def check(model, silent=False):
 
         P = model.options['markov_transitions']
         N = model.options['markov_nodes']
-        
+
         try:
             assert( N.shape[1] == n_ms )
         except:
@@ -153,7 +153,7 @@ def check(model, silent=False):
                 raise Exception("Markov transitions incorrect. Row {} sums to {} instead of 1.".format(i,q))
 
     if 'approximation_space' in model.options:
-        
+
         ap = model.options['approximation_space']
         smin = ap['smin']
         smax = ap['smax']
@@ -177,5 +177,3 @@ def check(model, silent=False):
                 raise Exception("Incorrect number of nodes for state {} ({}). Found {}. Must be greater than or equal to {}".format(i,model.symbols['states'][i],orders[i]))
 
     return checks
-       
-

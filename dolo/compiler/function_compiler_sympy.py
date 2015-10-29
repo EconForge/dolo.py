@@ -4,11 +4,12 @@ import sympy
 import numpy
 import ast
 
+
 def ast_to_sympy(expr):
     '''Converts an AST expression to a sympy expression (STUPID)'''
 
-    import codegen
-    s = codegen.to_source(expr)
+    from .codegen import to_source
+    s = to_source(expr)
     return sympy.sympify(s)
 
 def non_decreasing_series(n, size):
@@ -31,8 +32,8 @@ def higher_order_diff(eqs, syms, order=2):
 
     import numpy
 
-    eqs = [sympy.sympify(eq) for eq in eqs]
-    syms = [sympy.sympify(s) for s in syms]
+    eqs = list([sympy.sympify(eq) for eq in eqs])
+    syms = list([sympy.sympify(s) for s in syms])
 
     neq = len(eqs)
     p = len(syms)
@@ -64,7 +65,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     return_code=False, compile=False):
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
-    from function_compiler_ast import StandardizeDatesSimple, std_date_symbol
+    from .function_compiler_ast import StandardizeDatesSimple, std_date_symbol
     all_vars = syms + [(p,0) for p in params]
     sds = StandardizeDatesSimple(all_vars)
 
@@ -73,14 +74,14 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     if isinstance(eqs[0], str):
     # elif not isinstance(eqs[0], sympy.Basic):
     # assume we have ASTs
-        eqs = [ast.parse(eq).body[0] for eq in eqs]
-        eqs_std = [sds.visit(eq) for eq in eqs]
-        eqs_sym = [ast_to_sympy(eq) for eq in eqs_std]
+        eqs = list([ast.parse(eq).body[0] for eq in eqs])
+        eqs_std = list( [sds.visit(eq) for eq in eqs] )
+        eqs_sym = list( [ast_to_sympy(eq) for eq in eqs_std] )
     else:
         eqs_sym = eqs
 
-    symsd = [std_date_symbol(a,b) for a,b in syms]
-    paramsd = [std_date_symbol(a,0) for a in params]
+    symsd = list( [std_date_symbol(a,b) for a,b in syms] )
+    paramsd = list( [std_date_symbol(a,0) for a in params] )
     D = higher_order_diff(eqs_sym, symsd, order=order)
 
     txt = """def {funname}(x, p, order=1):

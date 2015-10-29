@@ -53,7 +53,7 @@ class MarkovDecisionRule:
             N = points.shape[0]
 
             out = zeros((N,n_x))
-            if isinstance(i_m, (float,int)):
+            if numpy.isscalar(i_m):
                 coefs = self.__coefs__[i_m,...]
                 vec_eval_cubic_multi_spline(self.a, self.b, self.orders, coefs, points, out)
             else:

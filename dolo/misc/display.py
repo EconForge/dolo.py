@@ -1,10 +1,16 @@
+import sys
+is_python_3 =  sys.version_info >= (3, 0)
 
 def read_file_or_url(url):
 
     if 'http' in url:
-        import urllib2
-        txt = urllib2.urlopen(url).read()
-
+        if is_python_3:
+            import urllib.request
+            txt = urllib.request.urlopen(url).read()
+            txt = txt.decode('utf8') # not very robust
+        else:
+            import urllib2
+            txt = urllib2.urlopen(url).read()
     else:
         # must be a file
         with open(url) as f:

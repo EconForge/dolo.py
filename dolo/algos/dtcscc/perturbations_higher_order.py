@@ -95,7 +95,7 @@ def model_to_fg(model, order=2):
         d[eq[0]] = eq[1].subs(d)
 
     # Construct dictionary
-    for k in d.keys():
+    for k in list(d.keys()):
         d[timeshift(k,all_variables,1)] = timeshift(d[k],all_variables,1)
         d[timeshift(k,all_variables,-1)] = timeshift(d[k],all_variables,-1)
     f_eqs = [eq.subs(d) for eq in f_eqs]

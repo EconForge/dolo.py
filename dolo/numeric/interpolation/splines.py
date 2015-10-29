@@ -32,7 +32,7 @@ class MultivariateCubicSplines:
 
     def set_mvalues(self, values):
 
-        from filter_cubic_splines import filter_coeffs
+        from .filter_cubic_splines import filter_coeffs
 
 
         if not np.all( np.isfinite(values)):
@@ -67,7 +67,7 @@ class MultivariateCubicSplines:
 
         import time
 
-        from eval_cubic_splines import vec_eval_cubic_multi_spline
+        from .eval_cubic_splines import vec_eval_cubic_multi_spline
 
         if points.ndim == 1:
             raise Exception('Expected 2d array. Received {}d array'.format(points.ndim))
