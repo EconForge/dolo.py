@@ -13,7 +13,7 @@ def read_file_or_url(url):
             txt = urllib2.urlopen(url).read()
     else:
         # must be a file
-        with open(url) as f:
+        with open(url,  encoding='utf8') as f:
             txt = f.read()
 
     return txt

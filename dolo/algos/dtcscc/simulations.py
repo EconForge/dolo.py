@@ -133,6 +133,8 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
         if n_exp > n_kept:
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
 
+    # TODO: always use dataframes
+    
     if irf or (n_exp==1):
         simul = simul[:,0,:]
 

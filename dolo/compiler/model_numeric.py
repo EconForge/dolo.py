@@ -112,7 +112,9 @@ Model object:
         ss = '\n- residuals:\n\n'
         res = self.residuals()
 
-        for eqgroup, eqlist in self.symbolic.equations.items():
+        # for eqgroup, eqlist in self.symbolic.equations.items():
+        for eqgroup in res.keys():
+            eqlist = self.symbolic.equations[eqgroup]
             ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
