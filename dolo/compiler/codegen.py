@@ -205,19 +205,19 @@ class SourceGenerator(NodeVisitor):
             self.visit(base)
         # XXX: the if here is used to keep this module compatible
         #      with python 2.6.
-        if hasattr(node, 'keywords'):
-            for keyword in node.keywords:
-                paren_or_comma()
-                self.write(keyword.arg + '=')
-                self.visit(keyword.value)
-            if node.starargs is not None:
-                paren_or_comma()
-                self.write('*')
-                self.visit(node.starargs)
-            if node.kwargs is not None:
-                paren_or_comma()
-                self.write('**')
-                self.visit(node.kwargs)
+        # if hasattr(node, 'keywords'):
+        #     for keyword in node.keywords:
+        #         paren_or_comma()
+        #         self.write(keyword.arg + '=')
+        #         self.visit(keyword.value)
+        #     if node.starargs is not None:
+        #         paren_or_comma()
+        #         self.write('*')
+        #         self.visit(node.starargs)
+        #     if node.kwargs is not None:
+        #         paren_or_comma()
+        #         self.write('**')
+        #         self.visit(node.kwargs)
         self.write(have_args and '):' or ':')
         self.body(node.body)
 
@@ -376,18 +376,18 @@ class SourceGenerator(NodeVisitor):
         for arg in node.args:
             write_comma()
             self.visit(arg)
-        for keyword in node.keywords:
-            write_comma()
-            self.write(keyword.arg + '=')
-            self.visit(keyword.value)
-        if node.starargs is not None:
-            write_comma()
-            self.write('*')
-            self.visit(node.starargs)
-        if node.kwargs is not None:
-            write_comma()
-            self.write('**')
-            self.visit(node.kwargs)
+        # for keyword in node.keywords:
+        #     write_comma()
+        #     self.write(keyword.arg + '=')
+        #     self.visit(keyword.value)
+        # if node.starargs is not None:
+        #     write_comma()
+        #     self.write('*')
+        #     self.visit(node.starargs)
+        # if node.kwargs is not None:
+        #     write_comma()
+        #     self.write('**')
+        #     self.visit(node.kwargs)
         self.write(')')
 
     def visit_Name(self, node):

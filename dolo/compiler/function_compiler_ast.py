@@ -65,7 +65,7 @@ class StandardizeDatesSimple(NodeTransformer):
 
         else:
 
-            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args]) #, keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
 
 
 class StandardizeDates(NodeTransformer):
@@ -128,7 +128,7 @@ class StandardizeDates(NodeTransformer):
                 raise Exception("Symbol {} incorrectly subscripted with date {}.".format(name, date))
         else:
 
-            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args]) #, keywords=node.keywords,  kwargs=node.kwargs)
 
 class ReplaceName(ast.NodeTransformer):
 

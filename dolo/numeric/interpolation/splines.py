@@ -26,7 +26,8 @@ class MultivariateCubicSplines:
 
     def set_values(self, values):
 
-        assert(values.ndim <= len(self.orders))
+
+        # assert(values.ndim <= len(self.orders))
         self.set_mvalues(values.T)
 
 
