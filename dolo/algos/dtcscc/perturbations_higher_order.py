@@ -3,20 +3,22 @@ from ast import BinOp, Compare, Sub
 
 import sympy
 
+from dolo.compiler.function_compiler_sympy import compile_higher_order_function
 from dolo.compiler.function_compiler_sympy import ast_to_sympy
 from dolo.numeric.decision_rules_states import CDR
-
+from dolo.compiler.function_compiler_ast import (StandardizeDatesSimple,
+                                                 std_date_symbol)
+from dolo.compiler.function_compiler_ast import std_date_symbol
 
 def timeshift(expr, variables, date):
     from sympy import Symbol
     from dolo.compiler.function_compiler_ast import std_date_symbol
-    d = {Symbol(std_date_symbol(v,0)):Symbol(std_date_symbol(v,date))  for v in variables}
+    d = {Symbol(std_date_symbol(v, 0)): Symbol(std_date_symbol(v, date))
+         for v in variables}
     return expr.subs(d)
 
 
 def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
-
-    from dolo.compiler.function_compiler_ast import StandardizeDatesSimple, std_date_symbol
 
     sds = StandardizeDatesSimple(vars)
 
@@ -46,47 +48,41 @@ def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
         return expr_std
 
 
-
 def model_to_fg(model, order=2):
 
-    if hasattr(model,'__higher_order_functions__') and model.__highest_order__ >= order:
+    if hasattr(model, '__higher_order_functions__') and model.__highest_order__  >= order:
         f = model.__higher_order_functions__['f']
         g = model.__higher_order_functions__['g']
-        return [f,g]
+        return [f, g]
 
     all_variables = sum([model.symbols[e] for e in model.symbols if e != 'parameters'], [])
-    all_dvariables = [(d,0) for d in all_variables] + [(d,1) for d in all_variables] + [(d,-1) for d in all_variables]
+    all_dvariables = ([(d, 0) for d in all_variables] +
+                      [(d, 1) for d in all_variables] +
+                      [(d, -1) for d in all_variables])
     psyms = [(e,0) for e in model.symbols['parameters']]
 
-    if hasattr(model.symbolic,'definitions'):
+    if hasattr(model.symbolic, 'definitions'):
         definitions = model.symbolic.definitions
     else:
         definitions = {}
-
 
     ddef = dict()
     for k in definitions:
         v = parse_equation(definitions[k], all_dvariables + psyms, to_sympy=True)
         ddef[sympy.Symbol(k)] = v
 
-
-    from dolo.compiler.function_compiler_ast import std_date_symbol
-
-
     # all_sym_variables = [std_date_symbol(s,0) for s in all_variables]
-
-    from dolo.compiler.function_compiler_sympy import compile_higher_order_function
 
     params = model.symbols['parameters']
 
     f_eqs = model.symbolic.equations['arbitrage']
     f_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True) for eq in f_eqs]
-    f_eqs = [eq.subs(ddef) for eq in f_eqs] # TODO : replace it everywhere else
+    f_eqs = [eq.subs(ddef) for eq in f_eqs]  # TODO : replace it everywhere else
 
     y_eqs = model.symbolic.equations['auxiliary']
-    syms = [(e,0) for e in model.symbols['states']] + \
-           [(e,0) for e in model.symbols['controls']] + \
-           [(e,0) for e in model.symbols['auxiliaries']]
+    syms = [(e, 0) for e in model.symbols['states']] + \
+           [(e, 0) for e in model.symbols['controls']] + \
+           [(e, 0) for e in model.symbols['auxiliaries']]
 
     # Solve recursively
     y_eqs = [parse_equation(eq, all_dvariables+psyms, to_sympy=True, substract_lhs=False) for eq in y_eqs]
