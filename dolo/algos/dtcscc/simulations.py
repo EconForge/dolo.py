@@ -1,7 +1,7 @@
 from dolo.algos.dtcscc.time_iteration import step_residual
 import numpy
 
-def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, solve_expectations=False, nodes=None, weights=None, forcing_shocks=None):
+def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, solve_expectations=False, nodes=None, weights=None, forcing_shocks=None, return_array=False):
     '''Simulate a model using the specified decision rule.
 
     Parameters
@@ -134,15 +134,19 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False, sol
             print( 'Discarded {}/{}'.format(n_exp-n_kept,n_exp))
 
     # TODO: always use dataframes
-    
+
+    if return_array:
+        return simul
+
+    import pandas
     if irf or (n_exp==1):
         simul = simul[:,0,:]
-
-        import pandas
         ts = pandas.DataFrame(simul, columns=varnames)
         return ts
+    else:
+        panel = pandas.Panel(simul.swapaxes(0,1), minor_axis=varnames)
+        return panel
 
-    return simul
 
 
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=10, s0=None, **kwargs):

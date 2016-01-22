@@ -53,5 +53,3 @@ def plot_decision_rule(model, *args, **kwargs):
         raise Exception("Model type {} not supported.".format(model.model_type))
 
     return plot_decision_rule(model, *args, **kwargs)
-
-from dolo.misc.decorators import deprecated

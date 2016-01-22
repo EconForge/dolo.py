@@ -7,20 +7,22 @@ def test_rbc_model():
 
     model = yaml_import('examples/models/rbc.yaml')
 
-    print(model)
-    print(model.options)
-
-
     dr = approximate_controls(model)
 
     drg = time_iteration(model)
 
-    sim = plot_decision_rule(model,dr,'k')
+    sim_dr = plot_decision_rule(model,dr,'k')
 
     from dolo.algos.dtcscc.vfi import evaluate_policy
 
     pol = evaluate_policy(model, dr, verbose=True)
     polg = evaluate_policy(model, drg, verbose=True)
+
+    sim = simulate(model, dr, n_exp=0) # irf
+    print(sim.shape)
+    sim = simulate(model, dr, n_exp=2) # sttochastic simulations (2 draws)
+    # extract first simulation
+    assert(len(sim[0]['k'])==40)
 
 
 

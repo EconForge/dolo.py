@@ -92,7 +92,7 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
         s0 = model.calibration['states']
 
     simul = simulate(model, dr, s0, n_exp=n_exp, horizon=horizon+1,
-                     discard=True, solve_expectations=solve_expectations)
+                     discard=True, solve_expectations=solve_expectations, return_array=True)
 
     s_simul = simul[:, :, :n_s]
 
@@ -144,10 +144,10 @@ def denhaanerrors(model, dr, s0=None, horizon=100, n_sims=10, seed=0,
 
     # standard simulation
     simul = simulate(model, dr, s0, horizon=horizon, n_exp=n_sims, seed=seed,
-                     solve_expectations=False)
+                     solve_expectations=False, return_array=True)
     simul_se = simulate(model, dr, s0, horizon=horizon, n_exp=n_sims,
                         seed=seed, solve_expectations=True, nodes=nodes,
-                        weights=weights)
+                        weights=weights, return_array=True)
 
     x_simul = simul[:, n_s:n_s+n_x, :]
     x_simul_se = simul_se[:, n_s:n_s+n_x, :]

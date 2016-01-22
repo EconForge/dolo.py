@@ -42,7 +42,7 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 
     return res
 
-def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_indices=None):
+def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_indices=None, return_array=False):
 
     if n_exp<1:
         is_irf = True
@@ -132,6 +132,9 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
     import pandas
 
     sims = numpy.concatenate(l,  axis=2)
+
+    if return_array:
+        return sims
 
     if n_exp > 1:
         sims = pandas.Panel(sims, minor_axis=['m_ind']+columns)
