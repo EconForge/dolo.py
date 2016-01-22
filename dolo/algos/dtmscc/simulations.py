@@ -147,7 +147,7 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
     return sims
 
 
-def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=10, s0=None, i0=None, **kwargs):
+def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, **kwargs):
 
     import numpy
 
@@ -174,14 +174,14 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     xvec = dr(i0,svec)
 
-    l = [svec, xvec]
-    series = model.symbols['states'] + model.symbols['controls']
+    m = model.markov_chain[0][i0]
+    mm = numpy.row_stack([m]*n_steps)
+    l = [mm, svec, xvec]
+
+    series = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls']
 
     if 'auxiliary' in model.functions:
-
         p = model.calibration['parameters']
-        m = model.markov_chain[0][i0]
-        mm = numpy.row_stack([m]*n_steps)
         pp = numpy.row_stack([p]*n_steps)
         avec = model.functions['auxiliary'](mm, svec,xvec,pp)
         l.append(avec)

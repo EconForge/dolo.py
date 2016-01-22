@@ -5,7 +5,7 @@ def test_mfg_model():
     # from dolo.algos.commands import time_iteration, simulate, evaluate_policy
     from dolo.algos.dtmscc.time_iteration import time_iteration
     from dolo.algos.dtmscc.value_iteration import evaluate_policy
-    from dolo.algos.dtmscc.simulations import simulate
+    from dolo.algos.dtmscc.simulations import simulate, plot_decision_rule
 
 
     model = yaml_import("examples/models/sudden_stop.yaml")
@@ -26,7 +26,10 @@ def test_mfg_model():
     mv = evaluate_policy(model, mdr, verbose=True, maxit=500, initial_guess=mv)
 
     sim_v = simulate(model, mdr, 0, drv=mv, horizon=50, n_exp=10)
+    sim_irf = simulate(model, mdr, 0, drv=mv, horizon=50, n_exp=0)
 
+    sim_dr = plot_decision_rule(model, mdr, 'l')
+    print(sim_dr)
 
 
 
