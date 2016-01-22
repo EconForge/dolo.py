@@ -62,19 +62,19 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
     sigma = model.covariances
     parms = model.calibration['parameters']
 
-    mean = numpy.zeros(sigma.shape[0])
+    mean = np.zeros(sigma.shape[0])
 
-    numpy.random.seed(seed)
-    epsilons = numpy.random.multivariate_normal(mean, sigma, n_draws)
+    np.random.seed(seed)
+    epsilons = np.random.multivariate_normal(mean, sigma, n_draws)
     weights = np.ones(epsilons.shape[0])/n_draws
 
     if bounds is None:
         approx = model.options['approximation_space']
         a = approx['a']
         b = approx['b']
-        bounds = numpy.row_stack([a, b])
+        bounds = np.row_stack([a, b])
     else:
-        a, b = numpy.row_stack(bounds)
+        a, b = np.row_stack(bounds)
 
     if orders is None:
         orders = [100]*len(a)
@@ -100,8 +100,8 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
                  for t in range(horizon)]
     ergo_dens = densities[-1]
 
-    max_error = numpy.max(errors, axis=0)        # maximum errors
-    ergo_error = numpy.dot(ergo_dens, errors)    # weighted by erg. distr.
+    max_error = np.max(errors, axis=0)        # maximum errors
+    ergo_error = np.dot(ergo_dens, errors)    # weighted by erg. distr.
 
     d = dict(
             errors=errors,
@@ -116,7 +116,7 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
         beta = time_discount
         time_weighted_errors = max_error*0
         for i in range(horizon):
-            err = numpy.dot(densities[i], errors)
+            err = np.dot(densities[i], errors)
             time_weighted_errors += beta**i * err
         time_weighted_errors /= (1-beta**(horizon-1))/(1-beta)
         d['time_weighted'] = time_weighted_errors
@@ -173,7 +173,7 @@ class RectangularDomain:
         self.a = a
         self.b = b
         self.bounds = np.row_stack([a, b])
-        self.orders = numpy.array(orders, dtype=int)
+        self.orders = np.array(orders, dtype=int)
         nodes = [np.linspace(a[i], b[i], orders[i])
                  for i in range(len(orders))]
 
@@ -190,14 +190,14 @@ class RectangularDomain:
         inf = self.a
         sup = self.b
         N = x.shape[0]
-        indices = numpy.zeros((N, self.d), dtype=int)
+        indices = np.zeros((N, self.d), dtype=int)
         for i in range(self.d):
             xi = (x[:, i] - inf[i])/(sup[i]-inf[i])
-            ni = numpy.floor(xi*self.orders[i])
-            ni = numpy.minimum(numpy.maximum(ni, 0), self.orders[i]-1)
+            ni = np.floor(xi*self.orders[i])
+            ni = np.minimum(np.maximum(ni, 0), self.orders[i]-1)
             indices[:, i] = ni
 
-        return numpy.ravel_multi_index(indices.T, self.orders)
+        return np.ravel_multi_index(indices.T, self.orders)
 
     def compute_density(self, x):
 
@@ -207,12 +207,12 @@ class RectangularDomain:
         cell_indices = self.find_cell(x)
         t2 = time.time()
 
-        keep = numpy.isfinite(cell_indices)
+        keep = np.isfinite(cell_indices)
         cell_linear_indices = cell_indices[keep]
 
         npoints = cell_indices.shape[0]
 
-        counts = numpy.bincount(cell_linear_indices,
+        counts = np.bincount(cell_linear_indices,
                                 minlength=self.orders.prod())
 
         dens = counts/npoints
