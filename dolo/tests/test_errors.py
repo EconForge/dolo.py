@@ -2,14 +2,14 @@
 def test_omega_errors():
 
         from dolo import yaml_import
-        from dolo.algos.dtcscc.time_iteration import time_iteration as global_solve
+        from dolo.algos.dtcscc.time_iteration import time_iteration as time_iteration
 
         model = yaml_import('examples/models/rbc.yaml')
 
         from dolo.algos.dtcscc.perturbations import approximate_controls
 
         dr = approximate_controls(model)
-        dr_global = global_solve(model, smolyak_order=3, verbose=False, pert_order=1)
+        dr_global = time_iteration(model, smolyak_order=3, verbose=False, pert_order=1)
 
         sigma = model.covariances
 
@@ -28,7 +28,7 @@ def test_omega_errors():
 def test_denhaan_errors():
 
         from dolo import yaml_import
-        from dolo.algos.dtcscc.time_iteration import time_iteration as global_solve
+        from dolo.algos.dtcscc.time_iteration import time_iteration as time_iteration
 
         model = yaml_import('examples/models/rbc.yaml')
 
@@ -36,7 +36,7 @@ def test_denhaan_errors():
 
         dr = approximate_controls(model)
 
-        dr_global = global_solve(model, interp_type='smolyak', smolyak_order=4, verbose=False)
+        dr_global = time_iteration(model, interp_type='smolyak', smolyak_order=4, verbose=False)
 
         sigma = model.covariances
 

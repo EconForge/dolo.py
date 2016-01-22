@@ -5,7 +5,7 @@ class TestGlobal(unittest.TestCase):
 
     def test_global_solution(self):
 
-        from dolo import yaml_import, global_solve
+        from dolo import yaml_import, time_iteration
 
 
         filename = 'examples/models/rbc.yaml'
@@ -16,4 +16,4 @@ class TestGlobal(unittest.TestCase):
 
         t1 = time.time()
 
-        dr = global_solve(model, pert_order=1, maxit=5, interp_type='spline', verbose=True)
+        dr = time_iteration(model, pert_order=1, maxit=5, interp_type='spline', verbose=True)

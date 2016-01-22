@@ -13,7 +13,7 @@ def test_rbc_model():
 
     dr = approximate_controls(model)
 
-    drg = global_solve(model)
+    drg = time_iteration(model)
 
     sim = plot_decision_rule(model,dr,'k')
 

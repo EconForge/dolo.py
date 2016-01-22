@@ -38,7 +38,7 @@ if args.print_residuals:
     print_residuals(model)
 
 
-from dolo import global_solve
+from dolo import time_iteration
 
 
-dr = global_solve(model, smolyak_order=args.smolyak_order, interp_type=args.interp_type, verbose=True)
+dr = time_iteration(model, smolyak_order=args.smolyak_order, interp_type=args.interp_type, verbose=True)

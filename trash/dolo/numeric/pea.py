@@ -105,8 +105,8 @@ print(dr_pert.X_bar)
 
 
 from dolo.numeric.interpolation.smolyak import SmolyakGrid
-from dolo.numeric.global_solve import global_solve
-dr_smol = global_solve(model, smolyak_order=2, maxit=2, polish=True)
+from dolo.numeric.time_iteration import time_iteration
+dr_smol = time_iteration(model, smolyak_order=2, maxit=2, polish=True)
 
 smin = dr_smol.bounds[0,:]
 smax = dr_smol.bounds[1,:]
@@ -154,5 +154,5 @@ dr_x.set_values(x_sol)
 
 # <codecell>
 
-#dr_glob_3 = global_solve(model_bis, smolyak_order=3)
-#dr_glob_4 = global_solve(model_bis, smolyak_order=4)
+#dr_glob_3 = time_iteration(model_bis, smolyak_order=3)
+#dr_glob_4 = time_iteration(model_bis, smolyak_order=4)

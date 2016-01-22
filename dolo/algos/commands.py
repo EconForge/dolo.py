@@ -55,7 +55,3 @@ def plot_decision_rule(model, *args, **kwargs):
     return plot_decision_rule(model, *args, **kwargs)
 
 from dolo.misc.decorators import deprecated
-
-@deprecated
-def global_solve(*args, **kwargs):
-    return time_iteration(*args, **kwargs)

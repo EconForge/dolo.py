@@ -89,7 +89,7 @@ the decision rules and Smolyak collocation to interpolation future decision rule
 
 .. code-block:: python
 
-   dr_s = global_solve(model)
+   dr_s = time_iteration(model)
 
 
 Simulate the solution
