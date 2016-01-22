@@ -26,7 +26,6 @@ install:
   - deps='pip nose ipython jsonschema pyyaml numba numpy scipy pandas numexpr sympy matplotlib runipy mistune'
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION $deps
   - source activate test-environment
-  - pip install pp --allow-external pp --allow-unverified pp
   - pip install slycot
   - python setup.py install
 
