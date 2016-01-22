@@ -125,8 +125,6 @@ n_x = len(model['variables_groups']['controls'])
 dr_x.set_values( xh_init[:n_x,:] )
 dr_h.set_values( xh_init[n_x:,:] )
 
-#phi = MultilinearInterpolator( smin, smax, [10,10])
-#psi = MultilinearInterpolator( smin, smax, [10,10])
 
 import numpy
 

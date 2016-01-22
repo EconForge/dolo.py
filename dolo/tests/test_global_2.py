@@ -1,52 +1,33 @@
-import unittest
+def test_time_iteration_smolyak():
+    from dolo import yaml_import, time_iteration
 
 
-class TestGlobal(unittest.TestCase):
+    filename = 'examples/models/rbc.yaml'
 
-    def test_global_solution(self):
-        from dolo import yaml_import, time_iteration
+    model = yaml_import(filename)
 
+    import time
 
-        filename = 'examples/models/rbc.yaml'
-
-        model = yaml_import(filename)
-
-        import time
-
-        dr = time_iteration(model, pert_order=1, maxit=500, smolyak_order=3, verbose=True, polish=False, method='newton')
-
-        t1 = time.time()
+    dr = time_iteration(model, pert_order=1, maxit=500, smolyak_order=3, verbose=True)
+    dr = time_iteration(model, pert_order=1, maxit=5, smolyak_order=5, verbose=True)
 
 
-        dr = time_iteration(model, pert_order=1, maxit=5, smolyak_order=5, verbose=True, polish=False, method='newton')
+def test_time_iteration_spline():
 
-        t2 = time.time()
-
-        dr = time_iteration(model, pert_order=1, maxit=5, interp_type='multilinear', verbose=True, polish=False, method='newton')
-        t3 = time.time()
-
-        print(t2-t1)
-        print(t3-t2)
-
-    def test_global_solution(self):
-
-        import time
-        from dolo import yaml_import, time_iteration
+    import time
+    from dolo import yaml_import, time_iteration
 
 
-        filename = 'examples/models/rbc.yaml'
+    filename = 'examples/models/rbc.yaml'
 
-        model = yaml_import(filename)
-        print(model.__class__)
-
-        t3 = time.time()
-
-        dr = time_iteration(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, interp_orders=[100,100])
-
-        t4 = time.time()
+    model = yaml_import(filename)
+    print(model.__class__)
 
 
-        print(t4-t3)
+    dr = time_iteration(model, pert_order=1, maxit=5, interp_type='spline', verbose=True)
+    dr = time_iteration(model, pert_order=1, maxit=5, interp_type='spline', verbose=True, interp_orders=[100,100])
+
 
 if __name__ == '__main__':
-    unittest.main()
+    test_time_iteration_spline()
+    test_time_iteration_smolyak()

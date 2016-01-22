@@ -103,9 +103,6 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     elif interp_type == 'spline':
         from dolo.numeric.interpolation.splines import MultivariateSplines
         dr = MultivariateSplines(bounds[0, :], bounds[1, :], interp_orders)
-    elif interp_type == 'multilinear':
-        from dolo.numeric.interpolation.multilinear import MultilinearInterpolator
-        dr = MultilinearInterpolator(bounds[0, :], bounds[1, :], interp_orders)
 
     if integration == 'optimal_quantization':
         from dolo.numeric.discretization import quantization_nodes

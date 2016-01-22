@@ -14,8 +14,7 @@ smolyak
 linear (delaunay tessellation)
 ------------------------------
 
-multilinear
------------
+
 
 splines
 -------
