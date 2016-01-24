@@ -10,7 +10,7 @@ from dolo.numeric.optimize.newton import SerialDifferentiableFunction
 
 def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
              solve_expectations=False, nodes=None, weights=None,
-             forcing_shocks=None):
+             forcing_shocks=None, return_array=False):
     '''
     Simulate a model using the specified decision rule.
 
@@ -42,6 +42,9 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
         if `solve_expectations` is True use ``weights`` for integration
     forcing_shocks: ndarray
         specify an exogenous process of shocks (requires ``n_exp<=1``)
+    return_array: boolean (False)
+        if True, then all return a numpy array containing simulated data,
+        otherwise return a pandas DataFrame or Panel.
 
     Returns
     -------
@@ -140,15 +143,16 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
         if n_exp > n_kept:
             print('Discarded {}/{}'.format(n_exp - n_kept, n_exp))
 
-    # TODO: always use dataframes
+    if return_array:
+        return simul
 
     if irf or (n_exp == 1):
         simul = simul[:, 0, :]
-
         ts = pandas.DataFrame(simul, columns=varnames)
         return ts
-
-    return simul
+    else:
+        panel = pandas.Panel(simul.swapaxes(0, 1), minor_axis=varnames)
+        return panel
 
 
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None,
