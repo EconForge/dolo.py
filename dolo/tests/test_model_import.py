@@ -36,6 +36,10 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
         xx = ( numpy.tile(x0, (N,1)) )
         ee = e0[None,:].repeat(N,axis=0)
 
+    ss = s0[None,:].repeat(N,axis=0)
+    xx = x0[None,:].repeat(N,axis=0)
+    ee = e0[None,:].repeat(N,axis=0)
+
     vec_res = f(ss,xx,ee,ss,xx,p)
 
     res = f(s0, x0, e0, s0, x0, p)
@@ -44,10 +48,7 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
 
     d = 0
     for i in range(N):
-        if data_layout == 'columns':
-            d += abs(vec_res[i,:] - res).max()
-        else:
-            d += abs(vec_res[:,i] - res).max()
+        d += abs(vec_res[i,:] - res).max()
     assert(d == 0)
 
 
@@ -89,26 +90,30 @@ def test_dtcscc_model():
 
     x1 = model.functions['direct_response'](s,z, p)
 
+    print('x1')
+    print(x)
+    print(x1)
+
     assert(abs(x-x1).max()<1e-12)
 
 
-class TestModelImport(unittest.TestCase):
-
-    # def test_standard_import_rows(self):
-    #
-    #     model_evaluation(data_layout='rows')
-    #
-    # def test_import_numexpr_rows(self):
-    #
-    #     model_evaluation(compiler='numexpr', data_layout='rows')
-
-    def test_standard_import_columns(self):
-
-        model_evaluation(data_layout='columns')
-
-    def test_import_numexpr_columns(self):
-
-        model_evaluation(compiler='numexpr', data_layout='columns')
+# class TestModelImport(unittest.TestCase):
+#
+#     # def test_standard_import_rows(self):
+#     #
+#     #     model_evaluation(data_layout='rows')
+#     #
+#     # def test_import_numexpr_rows(self):
+#     #
+#     #     model_evaluation(compiler='numexpr', data_layout='rows')
+#
+#     def test_standard_import_columns(self):
+#
+#         model_evaluation()
+#
+#     def test_import_numexpr_columns(self):
+#
+#         model_evaluation()
 
 if __name__ == '__main__':
-    unittest.main()
+    test_dtcscc_model()

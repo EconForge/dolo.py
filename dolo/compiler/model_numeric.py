@@ -237,8 +237,8 @@ Model object:
                 # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
                 fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
-                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0], use_numexpr=False, definitions=defs)
-                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1], use_numexpr=False, definitions=defs)
+                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
+                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
 
                 n_output = len(comp_lhs)
 
@@ -262,8 +262,7 @@ Model object:
             arg_names = recipe['specs'][funname]['eqs']
 
             fun = compile_function_ast(eqs, symbols, arg_names,
-                                    output_names=target_spec, funname=funname,
-                                        use_numexpr=True, definitions=defs
+                                    output_names=target_spec, funname=funname, definitions=defs,
                                     )
 
             n_output = len(eqs)

@@ -1,11 +1,12 @@
 
 from __future__ import division
-from .codegen import to_source
+from dolo.compiler.codegen import to_source
 
 import sys
-is_python_3 =  sys.version_info >= (3, 0)
+is_python_3 = sys.version_info >= (3, 0)
 
-def std_date_symbol(s,date):
+
+def std_date_symbol(s, date):
     if date == 0:
         return '{}_'.format(s)
     elif date <= 0:
@@ -27,15 +28,14 @@ class StandardizeDatesSimple(NodeTransformer):
 
     def __init__(self, tvariables):
 
-        self.tvariables = tvariables # list of variables
+        self.tvariables = tvariables  # list of variables
         self.variables = [e[0] for e in tvariables]
-
 
     def visit_Name(self, node):
 
         name = node.id
         newname = std_date_symbol(name, 0)
-        if (name,0) in self.tvariables:
+        if (name, 0) in self.tvariables:
             expr = Name(newname, Load())
             return expr
         else:
@@ -65,7 +65,8 @@ class StandardizeDatesSimple(NodeTransformer):
 
         else:
 
-            return Call(func=node.func, args=[self.visit(e) for e in node.args]) #, keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+            # , keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=[])
 
 
 class StandardizeDates(NodeTransformer):
@@ -81,21 +82,20 @@ class StandardizeDates(NodeTransformer):
 
             for b in symbols[symbol_group]:
                 index = symbols[symbol_group].index(b)
-                table[(b,date)] = (an, date)
+                table[(b, date)] = (an, date)
 
         variables = [k[0] for k in table]
 
-        table_symbols = { k: (std_date_symbol(*k)) for k in table.keys() }
+        table_symbols = {k: (std_date_symbol(*k)) for k in table.keys()}
 
         self.table = table
-        self.variables = variables # list of vari
+        self.variables = variables  # list of vari
         self.table_symbols = table_symbols
-
 
     def visit_Name(self, node):
 
         name = node.id
-        key = (name,0)
+        key = (name, 0)
         if key in self.table:
             newname = self.table_symbols[key]
             expr = Name(newname, Load())
@@ -125,10 +125,13 @@ class StandardizeDates(NodeTransformer):
             if newname is not None:
                 return Name(newname, Load())
             else:
-                raise Exception("Symbol {} incorrectly subscripted with date {}.".format(name, date))
+                raise Exception(
+                    "Symbol {} incorrectly subscripted with date {}.".format(name, date))
         else:
 
-            return Call(func=node.func, args=[self.visit(e) for e in node.args]) #, keywords=node.keywords,  kwargs=node.kwargs)
+            # , keywords=node.keywords,  kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=[])
+
 
 class ReplaceName(ast.NodeTransformer):
 
@@ -144,20 +147,16 @@ class ReplaceName(ast.NodeTransformer):
             return expr
 
 
-def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous',
-     data_order='columns', use_numexpr=False, return_ast=False, print_code=False, definitions=None):
-
+def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=False, definitions=None, vectorize=True):
     '''
     expressions: list of equations as string
     '''
-
-    vectorization_type = 'ellipsis'
-    data_order = 'columns'
 
     from collections import OrderedDict
     table = OrderedDict()
 
     aa = arg_names
+
     if output_names is not None:
         aa = arg_names + [output_names]
     for a in aa:
@@ -168,56 +167,24 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
         for b in symbols[symbol_group]:
             index = symbols[symbol_group].index(b)
+            table[(b, date)] = (an, index)
 
-            table[(b,date)] = (an, index)
+    table_symbols = {k: (std_date_symbol(*k)) for k in table.keys()}
 
-    table_symbols = { k: (std_date_symbol(*k)) for k in table.keys() }
-
-    if data_order is None:
-        # standard assignment: i.e. k = s[0]
-        index = lambda x: Index(Num(x))
-    elif vectorization_type == 'ellipsis':
-        el = Ellipsis()
-        if data_order == 'columns':
-            # column broadcasting: i.e. k = s[...,0]
-            if is_python_3:
-                index = lambda x: Index(
-                        value=Tuple(
-                            elts=[el, Num(n=x)],
-                            ctx=Load()
-                        )
-                    )
-            else:
-                index = lambda x: ExtSlice(dims=[el, Index(value=Num(n=x))])
-        else:
-            # rows broadcasting: i.e. k = s[0,...]
-            if is_python_3:
-                index = lambda x: Index(
-                        value=Tuple(
-                            elts=[Num(n=x), el],
-                            ctx=Load()
-                        )
-                    )
-            else:
-                index = lambda x: ExtSlice(dims=[Index(value=Num(n=x)),el])
+    # standard assignment: i.e. k = s[0]
+    index = lambda x: Index(Num(x))
 
     # declare symbols
 
     preamble = []
 
-    for k in table: # order it
+    for k in table:  # order it
         # k : var, date
-        arg,pos = table[k]
+        arg, pos = table[k]
         std_name = table_symbols[k]
         val = Subscript(value=Name(id=arg, ctx=Load()), slice=index(pos), ctx=Load())
         line = Assign(targets=[Name(id=std_name, ctx=Store())], value=val)
-        preamble.append(line)
-
-    if use_numexpr:
-        for i in range(len(expressions)):
-        # k : var, date
-            val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Load())
-            line = Assign(targets=[Name(id='out_{}'.format(i), ctx=Store())], value=val)
+        if arg != 'out':
             preamble.append(line)
 
     body = []
@@ -226,7 +193,8 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     if definitions is not None:
         defs = {e: ast.parse(definitions[e]).body[0].value for e in definitions}
 
-    for i,expr in enumerate(expressions):
+    outs = []
+    for i, expr in enumerate(expressions):
 
         expr = ast.parse(expr).body[0].value
         if definitions is not None:
@@ -234,71 +202,68 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
         rexpr = std_dates.visit(expr)
 
-        if not use_numexpr:
-            rhs = rexpr
-        else:
-            src = to_source(rexpr)
-            rhs = Call( func=Name(id='evaluate', ctx=Load()),
-                args=[Str(s=src)], keywords=[keyword(arg='out', value=Name(id='out_{}'.format(i), ctx=Load()))], starargs=None, kwargs=None)
-
-
-        if not use_numexpr:
-            val = Subscript(value=Name(id='out', ctx=Load()), slice=index(i), ctx=Store())
-            line = Assign(targets=[val], value=rhs )
-        else:
-            line = Expr(value=rhs) #Assign(targets=[Name(id='out_{}'.format(i), ctx=Load())], value=rhs )
-
-        body.append(line)
+        rhs = rexpr
 
         if output_names is not None:
             varname = symbols[output_names[0]][i]
             date = output_names[1]
-            out_name = table_symbols[(varname,date)]
-            line = Assign(targets=[Name(id=out_name.format(i), ctx=Store())],
-                          value=Name(id='out_{}'.format(i), ctx=Store()))
-            # body.append(line)
+            out_name = table_symbols[(varname, date)]
+        else:
+            out_name = 'out_{}'.format(i)
 
+        line = Assign(targets=[Name(id=out_name, ctx=Store())], value=rhs)
+        body.append(line)
+
+        line = Assign(targets=[Subscript(value=Name(id='out', ctx=Load()),
+                                         slice=index(i), ctx=Store())], value=Name(id=out_name, ctx=Load()))
+        body.append(line)
 
     args = [e[2] for e in arg_names] + ['out']
-
-    # f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, defaults=[]),
-    #             body=preamble+body, decorator_list=[])
 
     if is_python_3:
         from ast import arg
         f = FunctionDef(name=funname, args=arguments(args=[arg(arg=a) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
-                body=preamble+body, decorator_list=[])
+                        body=preamble + body, decorator_list=[])
     else:
         f = FunctionDef(name=funname, args=arguments(args=[Name(id=a, ctx=Param()) for a in args], vararg=None, kwarg=None, kwonlyargs=[], kw_defaults=[], defaults=[]),
-                body=preamble+body, decorator_list=[])
-
+                        body=preamble + body, decorator_list=[])
 
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
-    print_code = False
     if print_code:
 
         s = "Function {}".format(mod.body[0].name)
-        print("-"*len(s))
+        print("-" * len(s))
         print(s)
-        print("-"*len(s))
+        print("-" * len(s))
 
-        print( to_source(mod) )
+        print(to_source(mod))
 
-    if return_ast:
-        return mod
-    else:
-        fun = eval_ast(mod)
+    fun = eval_ast(mod)
+    if not vectorize:
         return fun
+    else:
+        from numba import float64, void, guvectorize
+        coredims = [len(symbols[an[0]]) for an in arg_names]
+        sig = str.join(',', ['(n_{})'.format(d) for d in coredims])
+        n_out = len(expressions)
+        if n_out in coredims:
+            sig += '->(n_{})'.format(n_out)
+            ftylist = float64[:](*([float64[:]] * len(coredims)))
+            ftylist = void(*[float64[:]] * (len(coredims) + 1))
+        else:
+            sig += ',(n_{})'.format(n_out)
+            ftylist = void(*[float64[:]] * (len(coredims) + 1))
+        gufun = guvectorize([ftylist], sig)(fun)
+        return gufun
+
 
 def eval_ast(mod):
 
-    from numexpr import evaluate
-
     context = {}
 
-    context['division'] = division # THAT seems strange !
+    context['division'] = division  # THAT seems strange !
 
     import numpy
 
@@ -310,13 +275,67 @@ def eval_ast(mod):
     context['log'] = numpy.log
     context['sin'] = numpy.sin
     context['cos'] = numpy.cos
-    context['evaluate'] = evaluate
 
     context['abs'] = numpy.abs
 
     name = mod.body[0].name
     mod = ast.fix_missing_locations(mod)
-    code  = compile(mod, '<string>', 'exec')
+    # print( ast.dump(mod) )
+    code = compile(mod, '<string>', 'exec')
     exec(code, context, context)
     fun = context[name]
     return fun
+
+
+def test_compile_allocating():
+    from collections import OrderedDict
+    eq = ['(a + b*exp(p1))', 'p2*a+b']
+    symtypes = [
+        ['states', 0, 'x'],
+        ['parameters', 0, 'p']
+    ]
+    symbols = OrderedDict([('states', ['a', 'b']),
+                           ('parameters', ['p1', 'p2'])
+                           ])
+    gufun = compile_function_ast(eq, symbols, symtypes, data_order=None)
+    n_out = len(eq)
+
+    import numpy
+    N = 100000
+    vecs = [numpy.zeros((N, len(e))) for e in symbols.values()]
+    out = numpy.zeros((N, n_out))
+    gufun(*(vecs + [out]))
+
+
+def test_compile_non_allocating():
+    from collections import OrderedDict
+    eq = ['(a + b*exp(p1))', 'p2*a+b', 'a+p1']
+    symtypes = [
+        ['states', 0, 'x'],
+        ['parameters', 0, 'p']
+    ]
+    symbols = OrderedDict([('states', ['a', 'b']),
+                           ('parameters', ['p1', 'p2'])
+                           ])
+    gufun = compile_function_ast(eq, symbols, symtypes, use_numexpr=False,
+                                 data_order=None, vectorize=True)
+    n_out = len(eq)
+
+    import numpy
+    N = 100000
+    vecs = [numpy.zeros((N, len(e))) for e in symbols.values()]
+    out = numpy.zeros((N, n_out))
+    gufun(*(vecs + [out]))
+    d = {}
+    try:
+        allocated = gufun(*vecs)
+    except Exception as e:
+        d['error'] = e
+    if len(d) == 0:
+        raise Exception("Frozen dimensions may have landed in numba ! Check.")
+    # assert(abs(out-allocated).max()<1e-8)
+
+if __name__ == "__main__":
+    test_compile_allocating()
+    test_compile_non_allocating()
+    print("Done")

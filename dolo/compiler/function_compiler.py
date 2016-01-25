@@ -40,16 +40,9 @@ class standard_function:
         assert(len(set(sizes))==1)
         N = sizes[0]
 
-        # if 'out' in kwargs:
-        #     out = kwargs['out']
-        # else:
-
         out = numpy.zeros((N,self.n_output))
 
-        fun( *args , out=out )
-
-        # if ('out' not in kwargs):
-        #     return out
+        fun( *args , out )
 
         if not 'diff' in kwargs:
 
@@ -71,7 +64,7 @@ class standard_function:
                     xx = a.copy()
                     xx[:,j] += epsilon
                     pargs[i] = xx
-                    fun(*pargs, out=dout[:,:,j])
+                    fun(*pargs, dout[:,:,j])
                     dout[:,:,j] -= out
                     dout[:,:,j] /= epsilon
 
