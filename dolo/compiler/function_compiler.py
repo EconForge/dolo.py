@@ -42,7 +42,7 @@ class standard_function:
 
         out = numpy.zeros((N,self.n_output))
 
-        fun( *args , out )
+        fun( *( list(args) + [out] ) )
 
         if not 'diff' in kwargs:
 
@@ -64,7 +64,7 @@ class standard_function:
                     xx = a.copy()
                     xx[:,j] += epsilon
                     pargs[i] = xx
-                    fun(*pargs, dout[:,:,j])
+                    fun(*( list(pargs) + [dout[:,:,j]]))
                     dout[:,:,j] -= out
                     dout[:,:,j] /= epsilon
 

@@ -255,7 +255,7 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         else:
             sig += ',(n_{})'.format(n_out)
             ftylist = void(*[float64[:]] * (len(coredims) + 1))
-        gufun = guvectorize([ftylist], sig)(fun)
+        gufun = guvectorize([ftylist], sig, target='parallel', nopython=True)(fun)
         return gufun
 
 
