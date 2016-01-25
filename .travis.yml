@@ -3,10 +3,16 @@ language: python
 python:
 #    - "2.7"
     - "3.5"
+    
+sudo: false
 
+addons:
+  apt:
+    packages:
+    - gfortran
+    - liblapack-dev
+    
 install:
-  - sudo apt-get update
-  - sudo apt-get install gfortran liblapack-dev
   # You may want to periodically update this, although the conda update
   # conda line below will keep everything up-to-date.  We do this
   # conditionally because it saves us some downloading if the version is
