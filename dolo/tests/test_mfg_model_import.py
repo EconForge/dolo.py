@@ -1,44 +1,41 @@
 import unittest
 
 
-class test_mfg_import(unittest.TestCase):
+def test_model_import():
 
+    from dolo import yaml_import
+    fname = 'examples/models/rbc_mfga.yaml'
+    model = yaml_import(fname)
 
-    def test_model_import(self):
+def test_model_print():
 
-        from dolo import yaml_import
-        fname = 'examples/models/rbc_mfga.yaml'
-        model = yaml_import(fname)
+    from dolo import yaml_import
+    fname = 'examples/models/rbc_mfga.yaml'
+    model = yaml_import(fname)
 
-    def test_model_print(self):
+    print(model)
 
-        from dolo import yaml_import
-        fname = 'examples/models/rbc_mfga.yaml'
-        model = yaml_import(fname)
+def test_markov_chain():
 
-        print(model)
+    from dolo import yaml_import
+    fname = 'examples/models/rbc_mfga.yaml'
+    model = yaml_import(fname)
 
-    def test_markov_chain(self):
+    from dolo.numeric.discretization import multidimensional_discretization
+    import numpy
+    sigma = numpy.array([[0.01]])
+    rho = 0.01
+    [P,Q] = multidimensional_discretization(rho, sigma, 3)
 
-        from dolo import yaml_import
-        fname = 'examples/models/rbc_mfga.yaml'
-        model = yaml_import(fname)
+    print(model.markov_chain)
 
-        from dolo.numeric.discretization import multidimensional_discretization
-        import numpy
-        sigma = numpy.array([[0.01]])
-        rho = 0.01
-        [P,Q] = multidimensional_discretization(rho, sigma, 3)
+def test_options():
 
-        print(model.markov_chain)
+    from dolo import yaml_import
+    fname = 'examples/models/rbc_mfga.yaml'
+    model = yaml_import(fname)
 
-    def test_options(self):
-
-        from dolo import yaml_import
-        fname = 'examples/models/rbc_mfga.yaml'
-        model = yaml_import(fname)
-
-        print( model.options )
+    print( model.options )
 
 
 if __name__ == '__main__':
