@@ -8,7 +8,7 @@ sudo: false
 
 addons:
   apt:
-    sources:
+    packages:
     - gfortran
     - liblapack-dev
     
