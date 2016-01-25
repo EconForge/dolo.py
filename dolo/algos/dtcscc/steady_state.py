@@ -1,8 +1,14 @@
+import warnings
 from collections import OrderedDict
 
 import numpy
+from scipy.optimize import root
 
-def find_deterministic_equilibrium(model, constraints=None, return_jacobian=False):
+from dolo.numeric.misc import MyJacobian
+
+
+def find_deterministic_equilibrium(model, constraints=None,
+                                   return_jacobian=False):
     '''
     Finds the steady state calibration.
 
@@ -23,10 +29,9 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     Returns:
     --------
     OrderedDict:
-        calibration dictionary (i.e. endogenous variables and parameters by type)
+        calibration dictionary (i.e. endogenous variables and parameters by
+        type)
     '''
-
-    from dolo.algos.dtcscc.convert import get_fg_functions
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
@@ -34,10 +39,12 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
     p = model.calibration['parameters']
+
     if 'shocks' in model.calibration:
         e0 = model.calibration['shocks'].copy()
     else:
-        e0 = numpy.zeros( len(model.symbols['shocks']) )
+        e0 = numpy.zeros(len(model.symbols['shocks']))
+
     n_e = len(e0)
 
     z = numpy.concatenate([s0, x0, e0])
@@ -45,7 +52,10 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
     symbs = model.symbols['states'] + model.symbols['controls']
     addcons_ind = []
     addcons_val = []
-    if constraints is None: constraints = dict()
+
+    if constraints is None:
+        constraints = dict()
+
     for k in constraints:
         if k in symbs:
             i = symbs.index(k)
@@ -55,49 +65,45 @@ def find_deterministic_equilibrium(model, constraints=None, return_jacobian=Fals
             i = model.symbols['shocks'].index(k)
             e0[i] = constraints[k]
         else:
-            raise Exception("Invalid symbol '{}' for steady_state constraint".format(k))
+            raise Exception(
+                "Invalid symbol '{}' for steady_state constraint".format(k))
+
     def fobj(z):
         s = z[:len(s0)]
         x = z[len(s0):-n_e]
         e = z[-n_e:]
 
-        S = g(s,x,e,p)
-        r = f(s,x,e,s,x,p)
+        S = g(s, x, e, p)
+        r = f(s, x, e, s, x, p)
         d_e = e - e0
         d_sx = z[addcons_ind] - addcons_val
-        res = numpy.concatenate([S-s, r, d_e, d_sx ])
+        res = numpy.concatenate([S - s, r, d_e, d_sx])
         return res
 
-    from dolo.numeric.misc import MyJacobian
-    jac = MyJacobian(fobj)( z )
+    jac = MyJacobian(fobj)(z)
+
     if return_jacobian:
         return jac
 
-
     rank = numpy.linalg.matrix_rank(jac)
-    if rank < len(z):
-        import warnings
-        warnings.warn("There are {} equilibrium variables to find, but the jacobian matrix is only of rank {}. The solution is indeterminate.".format(len(z),rank))
 
-    from scipy.optimize import root
+    if rank < len(z):
+        msg = """\
+        There are {} equilibrium variables to find, but the jacobian \
+        matrix is only of rank {}. The solution is indeterminate."""
+        warnings.warn(msg.format(len(z), rank))
+
     sol = root(fobj, z, method='lm')
     steady_state = sol.x
-
-
 
     s = steady_state[:len(s0)]
     x = steady_state[len(s0):-n_e]
     e = steady_state[-n_e:]
 
-    calib = OrderedDict(
-        states = s,
-        controls = x,
-        shocks = e,
-        parameters = p.copy()
-    )
+    calib = OrderedDict(states=s, controls=x, shocks=e, parameters=p.copy())
 
     if 'auxiliary' in model.functions:
-        a = model.functions['auxiliary'](s,x,p)
+        a = model.functions['auxiliary'](s, x, p)
         calib['auxiliaries'] = a
 
     return calib
@@ -112,14 +118,14 @@ def residuals(model, calib=None):
     model: NumericModel
 
     calib: OrderedDict
-        calibration dictionary (i.e. endogenous variables and parameters by type)
+        calibration dictionary (i.e. endogenous variables and parameters by
+        type)
 
     Returns:
     --------
     OrderedDict:
         residuals vectors by equation type
     '''
-
 
     if calib is None:
         calib = model.calibration
@@ -136,8 +142,8 @@ def residuals(model, calib=None):
         f = model.functions['arbitrage']
         g = model.functions['transition']
 
-        res['transition'] = g(s,x,e,p)-s
-        res['arbitrage'] = f(s,x,e,s,x,p)
+        res['transition'] = g(s, x, e, p) - s
+        res['arbitrage'] = f(s, x, e, s, x, p)
     else:
 
         s = calib['states']
@@ -150,14 +156,14 @@ def residuals(model, calib=None):
         g = model.functions['transition']
         a = model.functions['auxiliary']
 
-        res['transition'] = g(s,x,e,p)-s
-        res['arbitrage'] = f(s,x,e,s,x,p)
-        res['auxiliary'] = a(s,x,p)-y
+        res['transition'] = g(s, x, e, p) - s
+        res['arbitrage'] = f(s, x, e, s, x, p)
+        res['auxiliary'] = a(s, x, p) - y
 
         if 'value' in model.functions:
             rew = model.functions['value']
             v = calib['values']
-            res['value'] = rew(s,x,s,x,v,p) - v
+            res['value'] = rew(s, x, s, x, v, p) - v
 
     return res
 #
@@ -218,7 +224,6 @@ def residuals(model, calib=None):
 #     return [steady_state[:len(s0)], steady_state[len(s0):]]
 #
 
-
 if __name__ == '__main__':
 
     from dolo import *
@@ -228,8 +233,7 @@ if __name__ == '__main__':
 
     model = yaml_import("examples/models/open_economy.yaml")
 
-
-    ss = find_steady_state( model )
+    ss = find_steady_state(model)
 
     print("Steady-state variables")
     print("states: {}".format(ss[0]))
@@ -239,9 +243,14 @@ if __name__ == '__main__':
 
     rank = numpy.linalg.matrix_rank(jac)
 
-
-    sol2 = find_steady_state(model, force_values=[0.3,nan] )  # -> returns steady-state, using calibrated values as starting point
-    sol3 = find_steady_state(model, force_values={'W_1':0.3} )  # -> returns steady-state, using calibrated values as starting point
+    sol2 = find_steady_state(
+        model,
+        force_values=[0.3, nan]
+    )  # -> returns steady-state, using calibrated values as starting point
+    sol3 = find_steady_state(
+        model,
+        force_values={'W_1': 0.3}
+    )  # -> returns steady-state, using calibrated values as starting point
 
     print(sol2)
     print(sol3)
