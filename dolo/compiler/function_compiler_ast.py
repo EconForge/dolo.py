@@ -21,21 +21,72 @@ from ast import Expr, Subscript, Name, Load, Index, Num, UnaryOp, UAdd, Module, 
 
 # def Name(id=id, ctx=None): return ast.arg(arg=id)
 
+class TimeShiftTransformer(ast.NodeTransformer):
+    def __init__(self, variables, shift=0):
+
+        self.variables = variables
+        self.shift = shift
+
+    def visit_Name(self, node):
+        name = node.id
+        if name in self.variables:
+            if self.shift==0:
+                return ast.parse(name).body[0].value
+            else:
+                return ast.parse('{}({})'.format(name,self.shift)).body[0].value
+        else:
+             return node
+
+    def visit_Call(self, node):
+
+        name = node.func.id
+        args = node.args[0]
+
+        if name in self.variables:
+            if isinstance(args, UnaryOp):
+                # we have s(+1)
+                if (isinstance(args.op, UAdd)):
+                    args = args.operand
+                    date = args.n
+                elif (isinstance(args.op, USub)):
+                    args = args.operand
+                    date = -args.n
+                else:
+                    raise Exception("Unrecognized subscript.")
+            else:
+                date = args.n
+            return ast.parse('{}({})'.format(name,date+self.shift)).body[0].value
+        else:
+
+            # , keywords=node.keywords,  kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=[])
+
+import copy
+def timeshift(expr, variables, shift):
+    if isinstance(expr, str):
+        aexpr = ast.parse(expr).body[0].value
+    else:
+        aexpr = copy.copy(expr)
+    resp = TimeShiftTransformer(variables, shift).visit(aexpr)
+    if isinstance(expr, str):
+        return to_source(resp)
+    else:
+        return resp
 
 class StandardizeDatesSimple(NodeTransformer):
 
     # replaces calls to variables by time subscripts
 
-    def __init__(self, tvariables):
+    def __init__(self, variables):
 
-        self.tvariables = tvariables  # list of variables
-        self.variables = [e[0] for e in tvariables]
+        self.variables = variables  # list of variables
+        # self.variables = [e[0] for e in tvariables]
 
     def visit_Name(self, node):
 
         name = node.id
         newname = std_date_symbol(name, 0)
-        if (name, 0) in self.tvariables:
+        if (name, 0) in self.variables:
             expr = Name(newname, Load())
             return expr
         else:
@@ -191,14 +242,33 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     std_dates = StandardizeDates(symbols, aa)
 
     if definitions is not None:
-        defs = {e: ast.parse(definitions[e]).body[0].value for e in definitions}
+        for k,v in definitions.items():
+            if isinstance(k, str):
+                lhs = ast.parse(k).body[0].value
+            if isinstance(v, str):
+                rhs = ast.parse(v).body[0].value
+            else:
+                rhs = v
+            lhs = std_dates.visit(lhs)
+            rhs = std_dates.visit(rhs)
+            vname = lhs.id
+            line = Assign(targets=[Name(id=vname, ctx=Store())], value=rhs)
+            preamble.append(line)
+        # defs = {k: ast.parse(definitions[e]).body[0].value for e in definitions}
+        # defs = {k: v for k,v in definitions.items()}
+    #     for k,v in defs.items():
+    #         print( StandardizeDates(k) )
+    #     exit()
+    print("DEFINITIONS")
+    print(definitions)
+
 
     outs = []
     for i, expr in enumerate(expressions):
 
         expr = ast.parse(expr).body[0].value
-        if definitions is not None:
-            expr = ReplaceName(defs).visit(expr)
+        # if definitions is not None:
+        #     expr = ReplaceName(defs).visit(expr)
 
         rexpr = std_dates.visit(expr)
 
@@ -301,7 +371,7 @@ def test_compile_allocating():
     n_out = len(eq)
 
     import numpy
-    N = 100000
+    N = 1000
     vecs = [numpy.zeros((N, len(e))) for e in symbols.values()]
     out = numpy.zeros((N, n_out))
     gufun(*(vecs + [out]))
@@ -322,7 +392,7 @@ def test_compile_non_allocating():
     n_out = len(eq)
 
     import numpy
-    N = 100000
+    N = 1000
     vecs = [numpy.zeros((N, len(e))) for e in symbols.values()]
     out = numpy.zeros((N, n_out))
     gufun(*(vecs + [out]))
