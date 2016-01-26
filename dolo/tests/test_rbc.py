@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from dolo import *
+import time
 
 def test_rbc_model():
 
@@ -8,8 +9,10 @@ def test_rbc_model():
     model = yaml_import('examples/models/rbc.yaml')
 
     dr = approximate_controls(model)
-
     drg = time_iteration(model)
+    t1 = time.time()
+    drg = time_iteration(model)
+    t2 = time.time()
 
     sim_dr = plot_decision_rule(model,dr,'k')
 

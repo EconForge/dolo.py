@@ -228,7 +228,6 @@ def det_residual(model, guess, start, final, shocks, diff=True,
 
     p = model.calibration['parameters']
 
-    from dolo.algos.dtcscc.convert import get_fg_functions
     f = model.functions['arbitrage']
     g = model.functions['transition']
 

@@ -71,7 +71,7 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
 
     # s = s0.copy()
 
-    gg = model.functions['transition']
+    g = model.functions['transition']
 
     with_aux = ('auxiliary' in model.functions)
     if with_aux:
@@ -85,7 +85,6 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
     if with_aux:
         auxiliaries = numpy.zeros( ( horizon, n_exp, len(model.symbols['auxiliaries']) ) )
         a = model.functions['auxiliary']
-        g = lambda m,s,x,M,p: gg(m,s,x,a(m,s,x,p),M,p)
 
     states[0,:,:] = s0[None,:]
 

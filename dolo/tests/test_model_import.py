@@ -52,7 +52,7 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
     assert(d == 0)
 
 
-def test_dtscc__functions():
+def test_dtcscc__functions():
 
     # test a model defined without auxiliary variables
     from dolo import yaml_import
@@ -97,23 +97,7 @@ def test_dtcscc_model():
     assert(abs(x-x1).max()<1e-12)
 
 
-# class TestModelImport(unittest.TestCase):
-#
-#     # def test_standard_import_rows(self):
-#     #
-#     #     model_evaluation(data_layout='rows')
-#     #
-#     # def test_import_numexpr_rows(self):
-#     #
-#     #     model_evaluation(compiler='numexpr', data_layout='rows')
-#
-#     def test_standard_import_columns(self):
-#
-#         model_evaluation()
-#
-#     def test_import_numexpr_columns(self):
-#
-#         model_evaluation()
-
 if __name__ == '__main__':
     test_dtcscc_model()
+    test_dtcscc__functions()
+    model_evaluation()

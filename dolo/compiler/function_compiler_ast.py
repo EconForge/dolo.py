@@ -77,16 +77,16 @@ class StandardizeDatesSimple(NodeTransformer):
 
     # replaces calls to variables by time subscripts
 
-    def __init__(self, variables):
+    def __init__(self, tvariables):
 
-        self.variables = variables  # list of variables
-        # self.variables = [e[0] for e in tvariables]
+        self.tvariables = tvariables  # list of variables
+        self.variables = [e[0] for e in tvariables]
 
     def visit_Name(self, node):
 
         name = node.id
         newname = std_date_symbol(name, 0)
-        if (name, 0) in self.variables:
+        if (name, 0) in self.tvariables:
             expr = Name(newname, Load())
             return expr
         else:
@@ -210,8 +210,8 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
     if output_names is not None:
         aa = arg_names + [output_names]
-    for a in aa:
 
+    for a in aa:
         symbol_group = a[0]
         date = a[1]
         an = a[2]
@@ -227,19 +227,25 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
     # declare symbols
 
+    aux_short_names = [e[2] for e in arg_names if e[0]=='auxiliaries']
+
+
+
     preamble = []
 
     for k in table:  # order it
         # k : var, date
         arg, pos = table[k]
-        std_name = table_symbols[k]
-        val = Subscript(value=Name(id=arg, ctx=Load()), slice=index(pos), ctx=Load())
-        line = Assign(targets=[Name(id=std_name, ctx=Store())], value=val)
-        if arg != 'out':
-            preamble.append(line)
+        if not (arg in aux_short_names):
+            std_name = table_symbols[k]
+            val = Subscript(value=Name(id=arg, ctx=Load()), slice=index(pos), ctx=Load())
+            line = Assign(targets=[Name(id=std_name, ctx=Store())], value=val)
+            if arg != 'out':
+                preamble.append(line)
 
     body = []
     std_dates = StandardizeDates(symbols, aa)
+
 
     if definitions is not None:
         for k,v in definitions.items():
@@ -254,13 +260,6 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
             vname = lhs.id
             line = Assign(targets=[Name(id=vname, ctx=Store())], value=rhs)
             preamble.append(line)
-        # defs = {k: ast.parse(definitions[e]).body[0].value for e in definitions}
-        # defs = {k: v for k,v in definitions.items()}
-    #     for k,v in defs.items():
-    #         print( StandardizeDates(k) )
-    #     exit()
-    print("DEFINITIONS")
-    print(definitions)
 
 
     outs = []
@@ -287,6 +286,8 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         line = Assign(targets=[Subscript(value=Name(id='out', ctx=Load()),
                                          slice=index(i), ctx=Store())], value=Name(id=out_name, ctx=Load()))
         body.append(line)
+
+    arg_names = [e for e in arg_names if e[0]!="auxiliaries"]
 
     args = [e[2] for e in arg_names] + ['out']
 

@@ -143,9 +143,8 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
             m = P[i_m,:][None,:]
             controls_0[i_m,:,:] = initial_guess(i_m, grid)
 
-    ff = model.functions['arbitrage']
-    gg = model.functions['transition']
-    aa = model.functions['auxiliary']
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
     if 'controls_lb' in model.functions and with_complementarities==True:
         lb_fun = model.functions['controls_lb']
@@ -164,9 +163,6 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     else:
         with_complementarities = False
 
-
-    f = lambda m,s,x,M,S,X,p: ff(m,s,x,aa(m,s,x,p),M,S,X,aa(M,S,X,p),p)
-    g = lambda m,s,x,M,p: gg(m,s,x,aa(m,s,x,p),M,p)
 
     # mdr.set_values(controls)
 

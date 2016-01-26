@@ -66,13 +66,16 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
     from .function_compiler_ast import StandardizeDatesSimple, std_date_symbol
+
     all_vars = syms + [(p,0) for p in params]
+    print(all_vars)
     sds = StandardizeDatesSimple(all_vars)
+
 
 
     # TEMP: compatibility fix when eqs is an Odict:
     eqs = [eq for eq in eqs]
-    
+
     if isinstance(eqs[0], str):
     # elif not isinstance(eqs[0], sympy.Basic):
     # assume we have ASTs

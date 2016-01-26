@@ -1,3 +1,7 @@
+import ast
+from collections import OrderedDict
+from .codegen import to_source
+from .function_compiler_ast import timeshift, StandardizeDatesSimple
 from dolo.compiler.recipes import recipes
 
 
@@ -174,36 +178,22 @@ Model object:
         model_type = self.model_type
         if 'auxiliaries' not in self.symbols:
             model_type += '_'
-
-        # prepare auxiliaries
-        import ast
-        from collections import OrderedDict
-        from .codegen import to_source
-        from .function_compiler_ast import timeshift, StandardizeDatesSimple
-        print(self.variables)
-        auxeqs = self.symbolic.equations['auxiliary']
-        auxdefs = {}
-        for time in [-1,0,1]:
-            dd = OrderedDict()
-            for eq in auxeqs:
-                lhs, rhs = eq.split('=')
-                lhs = ast.parse( str.strip(lhs) ).body[0].value
-                rhs = ast.parse( str.strip(rhs) ).body[0].value
-                tmp = timeshift(rhs, self.variables, time)
-                k = timeshift(lhs, self.variables, time)
-                k = StandardizeDatesSimple(self.variables).visit(k)
-                v = StandardizeDatesSimple(self.variables).visit(tmp)
-                print('k,v')
-                print(to_source(k))
-                print(to_source(v))
-                dd[to_source(k)] = to_source(v)
-            auxdefs[time] = dd
-
-        print("DEFS")
-        print(defs)
-        print(auxeqs)
-        print(auxdefs)
-
+        else:
+            # prepare auxiliaries
+            auxeqs = self.symbolic.equations['auxiliary']
+            auxdefs = {}
+            for time in [-1,0,1]:
+                dd = OrderedDict()
+                for eq in auxeqs:
+                    lhs, rhs = eq.split('=')
+                    lhs = ast.parse( str.strip(lhs) ).body[0].value
+                    rhs = ast.parse( str.strip(rhs) ).body[0].value
+                    tmp = timeshift(rhs, self.variables, time)
+                    k = timeshift(lhs, self.variables, time)
+                    k = StandardizeDatesSimple(self.variables).visit(k)
+                    v = StandardizeDatesSimple(self.variables).visit(tmp)
+                    dd[to_source(k)] = to_source(v)
+                auxdefs[time] = dd
 
         recipe = recipes[model_type]
         symbols = self.symbols # should match self.symbols
@@ -211,6 +201,7 @@ Model object:
         comps = []
 
         functions = {}
+        original_functions = {}
 
         for funname in recipe['specs'].keys():
 
@@ -267,6 +258,13 @@ Model object:
                 # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
                 fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
+                ddefs = OrderedDict()
+                for ag in comp_args:
+                    if ag[0] == 'auxiliaries':
+                        t = ag[1]
+                        ddefs.update(auxdefs[t])
+                ddefs.update(defs)
+
                 lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
                 upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
 
@@ -290,31 +288,25 @@ Model object:
 
             arg_names = recipe['specs'][funname]['eqs']
 
+
             ddefs = OrderedDict()
             for ag in arg_names:
                 if ag[0] == 'auxiliaries':
                     t = ag[1]
-                    # for k,v in auxdefs[t].items():
-                    #     ddefs[k]  = v
                     ddefs.update(auxdefs[t])
             ddefs.update(defs)
 
-
             fun = compile_function_ast(eqs, symbols, arg_names,
-                                    output_names=target_spec, funname=funname, definitions=ddefs, print_code=True
+                                    output_names=target_spec, funname=funname, definitions=ddefs,
                                     )
-
+            # print("So far so good !")c
             n_output = len(eqs)
 
+            original_functions[funname] = fun
             functions[funname] = standard_function(fun, n_output )
 
-        self.__original_functions__ = functions
-
-        if self.model_type == 'dtcscc':
-            from dolo.algos.dtcscc.convert import convert_all
-            self.functions = convert_all(functions)
-        else:
-            self.functions = functions
+        self.__original_functions__ = original_functions 
+        self.functions = functions
 
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")

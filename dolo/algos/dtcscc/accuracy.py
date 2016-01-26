@@ -2,7 +2,6 @@ from __future__ import division
 
 import numpy as np
 
-from dolo.algos.dtcscc.convert import get_fg_functions
 from dolo.algos.dtcscc.simulations import simulate
 from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
 from dolo.numeric.misc import mlinspace

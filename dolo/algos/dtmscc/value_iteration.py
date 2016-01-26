@@ -50,11 +50,10 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True
     vaval = model.functions['value']
 
 
-    f = lambda m,s,x,M,S,X,p: ff(m,s,x,aa(m,s,x,p),M,S,X,aa(M,S,X,p),p)
-    g = lambda m,s,x,M,p: gg(m,s,x,aa(m,s,x,p),M,p)
-
+    f = lambda m,s,x,M,S,X,p: ff(m,s,x,M,S,X,p)
+    g = lambda m,s,x,M,p: gg(m,s,x,M,p)
     def val(m,s,x,v,M,S,X,V,p):
-        return vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)
+        return vaval(m,s,x,v,M,S,X,V,p)
     # val = lambda m,s,x,v,M,S,X,V,p: vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)
 
 
