@@ -95,7 +95,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     @jit(nopython=True)
     def simulate_states_controls(s, x, Phi_t, coefs):
         for t in range(1, n_sim):
-            s[t, :] = g(s[t-1, :], x[t-1, :], epsilon[t, :], p)
+            g(s[t - 1, :], x[t - 1, :], epsilon[t, :], p, s[t, :])
 
             # fill Phi_t with new complete poly version of s[t, :]
             _complete_poly_impl_vec(s[t, :], deg, Phi_t)
