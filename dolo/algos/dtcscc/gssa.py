@@ -137,7 +137,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
             X = Phi_sim @ coefs
 
             # compute expectation
-            z += weights[i] * h(S, X, p)
+            z_sim += weights[i] * h(S, X, p)
 
         # get controls on the simulated points from direct_resposne
         new_x = d(s_sim, z_sim, p)
