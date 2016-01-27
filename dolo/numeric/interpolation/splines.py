@@ -99,7 +99,7 @@ class MultivariateCubicSplines:
     def __call__(self, s):
 
         if s.ndim == 1:
-            res = self.__call__( numpy.atleast_2d(s).T )
+            res = self.__call__( numpy.atleast_2d(s) )
             return res.ravel()
 
         return self.interpolate(s)
