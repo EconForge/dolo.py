@@ -145,6 +145,8 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
         if verbose:
             print(err)
 
+        it += 1
+
     return coefs
 
 
@@ -155,6 +157,6 @@ if __name__ == '__main__':
 
     model = yaml_import("../../../examples/models/rbc_full.yaml")
 
-    gssa(model, deg=5, verbose=True, damp=0.5)
+    gssa(model, deg=5, verbose=True, damp=0.1)
 
     # TODO: time and check the returned coefficients
