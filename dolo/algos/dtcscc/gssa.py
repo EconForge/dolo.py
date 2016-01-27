@@ -42,6 +42,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
     # extract model functions and parameters
     g = model.__original_functions__['transition']
+    g_gu = model.functions['transition']
     d = model.functions['direct_response']
     # h = model.__original_functions__['expectation']  # TODO: not working
     h = model.functions['expectation']
@@ -91,7 +92,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     # create jitted function that will simulate states and controls, using
     # the epsilon shocks from above (define here as closure over all data
     # above).
-    # @jit(nopython=True)
+    @jit(nopython=True)
     def simulate_states_controls(s, x, Phi_t, coefs):
         for t in range(1, n_sim):
             s[t, :] = g(s[t-1, :], x[t-1, :], epsilon[t, :], p)
@@ -103,19 +104,19 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
             x[t, :] = Phi_t @ coefs
 
     # @jit(nopython=True)
-    def update_expectations(s, x, z, Phi):
-        # evaluates expectations on simulated points using quadrature
-        z[:, :] = 0.0
-        for i in range(weights.shape[0]):
-            e = nodes[i, :]  # extract nodes
-            S = g(s, x, e, p)  # evaluate future states at each node
-
-            # evaluate future controls at each future state
-            _complete_poly_impl(S.T, deg, Phi.T)
-            X = Phi @ coefs
-
-            # compute expectation
-            z += weights[i] * h(S, X, p)
+    # def update_expectations(s, x, z, Phi):
+    #     # evaluates expectations on simulated points using quadrature
+    #     z[:, :] = 0.0
+    #     for i in range(weights.shape[0]):
+    #         e = nodes[i, :]  # extract nodes
+    #         S = g(s, x, e, p)  # evaluate future states at each node
+    #
+    #         # evaluate future controls at each future state
+    #         _complete_poly_impl(S.T, deg, Phi.T)
+    #         X = Phi @ coefs
+    #
+    #         # compute expectation
+    #         z += weights[i] * h(S, X, p)
 
     it = 0
     err = 10.0
@@ -125,7 +126,18 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
         simulate_states_controls(s_sim, x_sim, Phi_t, coefs)
 
         # update expectations of z
-        update_expectations(s_sim, x_sim, z_sim, Phi_sim)
+        # update_expectations(s_sim, x_sim, z_sim, Phi_sim)
+        z_sim[:, :] = 0.0
+        for i in range(weights.shape[0]):
+            e = nodes[i, :]  # extract nodes
+            S = g_gu(s_sim, x_sim, e, p)  # evaluate future states at each node
+
+            # evaluate future controls at each future state
+            _complete_poly_impl(S.T, deg, Phi_sim.T)
+            X = Phi_sim @ coefs
+
+            # compute expectation
+            z += weights[i] * h(S, X, p)
 
         # get controls on the simulated points from direct_resposne
         new_x = d(s_sim, z_sim, p)
