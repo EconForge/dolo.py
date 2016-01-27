@@ -24,6 +24,13 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
           controls
         - Evaluate expectations using quadrature
         - Use direct response to get alternative proposal for controls
+        - Regress updated controls on the simulated states to get proposal
+          coefficients. New coefficients are convex combination of previous
+          coefficients and proposal coefficients. Weights controlled by damp,
+          where damp is the weight on the old coefficients. This should be
+          fairly low to increase chances of convergence.
+        - Check difference between the simulated series of controls and the
+          direct response version of controls
 
     """
     # verify input arguments
@@ -146,8 +153,7 @@ if __name__ == '__main__':
     from dolo import *
     from dolo.algos.dtcscc.accuracy import omega
 
-    model = yaml_import(
-        "/Users/sglyon/src/Python/dolo/examples/models/rbc_full.yaml")
+    model = yaml_import("../../../examples/models/rbc_full.yaml")
 
     gssa(model, deg=5, verbose=True, damp=0.5)
 
