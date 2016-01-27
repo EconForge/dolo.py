@@ -1,6 +1,7 @@
 
 from __future__ import division
 from dolo.compiler.codegen import to_source
+from numba import njit, guvectorize
 
 import sys
 is_python_3 = sys.version_info >= (3, 0)
@@ -198,7 +199,7 @@ class ReplaceName(ast.NodeTransformer):
             return expr
 
 
-def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=False, definitions=None, vectorize=True):
+def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=False, definitions=None, vectorize=True, use_file=False):
     '''
     expressions: list of equations as string
     '''
@@ -303,12 +304,10 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     mod = ast.fix_missing_locations(mod)
 
     if print_code:
-
         s = "Function {}".format(mod.body[0].name)
         print("-" * len(s))
         print(s)
         print("-" * len(s))
-
         print(to_source(mod))
 
     if vectorize:
@@ -328,19 +327,17 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
         signature=None
         ftylist=None
 
-    use_file = True
     if use_file:
-        fun, module = eval_ast_with_file(mod, print_code=True,signature=signature,ftylist=ftylist)
-        return fun, module
+        fun = eval_ast_with_file(mod, print_code=True)
     else:
-        fun, context = eval_ast(mod)
-        if vectorize:
-            gufun = guvectorize([fty], sig, target='parallel', nopython=True)(fun)
-            return gufun, None
-        else:
-            return fun, None
+        fun = eval_ast(mod)
 
-        return gufun, context
+    jitted = njit(fun)
+    if vectorize:
+        gufun = guvectorize([fty], signature, target='parallel', nopython=True)(fun)
+        return jitted, gufun
+    else:
+        return jitted
 
 
 def eval_ast(mod):
@@ -369,7 +366,7 @@ def eval_ast(mod):
     exec(code, context, context)
     fun = context[name]
 
-    return fun, context
+    return fun
 
 
 def eval_ast_with_file(mod, print_code=False, signature=None, ftylist=None):
@@ -381,17 +378,16 @@ from __future__ import division
 
 from numpy import exp, log, sin, cos, abs
 from numpy import inf, maximum, minimum
-from numexpr import evaluate
 """
 
-    if signature is not None:
-        print(signature)
-
-        decorator = """
-from numba import float64, void, guvectorize
-@guvectorize(signature='{signature}', ftylist={ftylist}, target='parallel', nopython=True)
-""".format(signature=signature, ftylist=ftylist)
-        code += decorator
+#     if signature is not None:
+#         print(signature)
+#
+#         decorator = """
+# from numba import float64, void, guvectorize
+# @guvectorize(signature='{signature}', ftylist={ftylist}, target='parallel', nopython=True)
+# """.format(signature=signature, ftylist=ftylist)
+#         code += decorator
 
     code += to_source(mod)
 
@@ -417,7 +413,7 @@ from numba import float64, void, guvectorize
 
     fun =  module.__dict__[name]
 
-    return fun, module
+    return fun
 
 
 def test_compile_allocating():

@@ -3,7 +3,7 @@ from collections import OrderedDict
 from .codegen import to_source
 from .function_compiler_ast import timeshift, StandardizeDatesSimple
 from dolo.compiler.recipes import recipes
-
+from numba import njit
 
 class NumericModel:
 
@@ -202,7 +202,7 @@ Model object:
 
         functions = {}
         original_functions = {}
-        original_modules = {}
+        original_gufunctions = {}
 
         for funname in recipe['specs'].keys():
 
@@ -266,13 +266,18 @@ Model object:
                         ddefs.update(auxdefs[t])
                 ddefs.update(defs)
 
-                lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
-                upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
+                lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
+                upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
 
                 n_output = len(comp_lhs)
 
-                functions[fb_names[0]] = standard_function(lower_bound, n_output )
-                functions[fb_names[1]] = standard_function(upper_bound, n_output )
+                functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
+                functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
+                original_functions[fb_names[0]] = lower_bound
+                original_functions[fb_names[1]] = upper_bound
+                original_gufunctions[fb_names[0]] = gu_lower_bound
+                original_gufunctions[fb_names[1]] = gu_upper_bound
+
 
 
             # rewrite all equations as rhs - lhs
@@ -297,19 +302,20 @@ Model object:
                     ddefs.update(auxdefs[t])
             ddefs.update(defs)
 
-            fun, context = compile_function_ast(eqs, symbols, arg_names,
+            fun, gufun = compile_function_ast(eqs, symbols, arg_names,
                                     output_names=target_spec, funname=funname, definitions=ddefs,
                                     )
             # print("So far so good !")c
             n_output = len(eqs)
 
             original_functions[funname] = fun
-            original_modules[funname] = context
 
-            functions[funname] = standard_function(fun, n_output )
+            functions[funname] = standard_function(gufun, n_output )
+            original_functions[funname] = fun
+            original_gufunctions[funname] = gufun
 
-        self.__original_modules__ = original_modules
         self.__original_functions__ = original_functions
+        self.__original_gufunctions__ = original_gufunctions
         self.functions = functions
 
 import re
