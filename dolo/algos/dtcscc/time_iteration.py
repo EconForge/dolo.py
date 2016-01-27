@@ -80,6 +80,9 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         bounds = np.row_stack([a, b])
         bounds = np.array(bounds, dtype=float)
 
+        if interp_orders is None:
+            interp_orders = approx.get('orders', [5] * bounds.shape[1])
+
     else:
         vprint('Using asymptotic bounds given by first order solution.')
 
@@ -94,8 +97,8 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
             initial_dr.S_bar + devs * n_s,
         ])
 
-    if interp_orders is None:
-        interp_orders = [5] * bounds.shape[1]
+        if interp_orders is None:
+            interp_orders = [5] * bounds.shape[1]
 
     if interp_type == 'smolyak':
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
