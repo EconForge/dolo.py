@@ -1,13 +1,15 @@
+import time
+import warnings
+
 import numpy as np
 from numba import jit
 from scipy.linalg import lstsq
 
 from dolo.algos.dtcscc.simulations import simulate
 from dolo.numeric.discretization import gauss_hermite_nodes
-from dolo.numeric.interpolation.complete_poly import (complete_polynomial,
-                                                      n_complete,
-                                                      _complete_poly_impl,
-                                                      _complete_poly_impl_vec)
+from dolo.numeric.interpolation.complete_poly import (
+    _complete_poly_impl, _complete_poly_impl_vec, complete_polynomial,
+    n_complete)
 
 
 def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
@@ -39,6 +41,8 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
     if damp < 0 or damp > 1:
         raise ValueError("damp must be in [0, 1]")
+
+    t1 = time.time()
 
     # extract model functions and parameters
     g = model.__original_functions__['transition']
@@ -72,7 +76,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     init_sim = simulate(model, drp, horizon=n_sim, return_array=True,
                         forcing_shocks=epsilon)
     s_sim = init_sim[:, 0, 0:n_s]
-    x_sim = init_sim[:, 0, n_s:n_s+n_x]
+    x_sim = init_sim[:, 0, n_s:n_s + n_x]
     Phi_sim = complete_polynomial(s_sim.T, deg).T
     coefs = np.ascontiguousarray(lstsq(Phi_sim, x_sim)[0])
 
@@ -101,27 +105,26 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
             _complete_poly_impl_vec(s[t, :], deg, Phi_t)
 
             # do inner product to get new controls
-            x[t, :] = Phi_t @ coefs
-
-    # @jit(nopython=True)
-    # def update_expectations(s, x, z, Phi):
-    #     # evaluates expectations on simulated points using quadrature
-    #     z[:, :] = 0.0
-    #     for i in range(weights.shape[0]):
-    #         e = nodes[i, :]  # extract nodes
-    #         S = g(s, x, e, p)  # evaluate future states at each node
-    #
-    #         # evaluate future controls at each future state
-    #         _complete_poly_impl(S.T, deg, Phi.T)
-    #         X = Phi @ coefs
-    #
-    #         # compute expectation
-    #         z += weights[i] * h(S, X, p)
+            x[t, :] = Phi_t @coefs
 
     it = 0
     err = 10.0
+    err_0 = 10
+
+    if verbose:
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'
+        headline = headline.format('N', ' Error', 'Gain', 'Time')
+        stars = '-' * len(headline)
+        print(stars)
+        print(headline)
+        print(stars)
+
+        # format string for within loop
+        fmt_str = '|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'
 
     while err > tol and it <= maxit:
+        t_start = time.time()
+
         # simulate with new coefficients
         simulate_states_controls(s_sim, x_sim, Phi_t, coefs)
 
@@ -134,7 +137,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
             # evaluate future controls at each future state
             _complete_poly_impl(S.T, deg, Phi_sim.T)
-            X = Phi_sim @ coefs
+            X = Phi_sim @coefs
 
             # compute expectation
             z_sim += weights[i] * h(S, X, p)
@@ -152,12 +155,28 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
         # update the series of controls and coefficients
         x_sim[:, :] = new_x
-        coefs = (1-damp)*new_coefs + damp*coefs
+        coefs = (1 - damp) * new_coefs + damp * coefs
 
         if verbose:
-            print(err)
+            # update error and print if `verbose`
+            err_SA = err / err_0
+            err_0 = err
+            t_finish = time.time()
+            elapsed = t_finish - t_start
+            if verbose:
+                print(fmt_str.format(it, err, err_SA, elapsed))
 
         it += 1
+
+    if it == maxit:
+        warnings.warn(UserWarning("Maximum number of iterations reached"))
+
+    # compute final fime and do final printout if `verbose`
+    t2 = time.time()
+    if verbose:
+        print(stars)
+        print('Elapsed: {} seconds.'.format(t2 - t1))
+        print(stars)
 
     return coefs
 
