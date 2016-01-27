@@ -46,10 +46,9 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
     # extract model functions and parameters
     g = model.__original_functions__['transition']
-    g_gu = model.functions['transition']
-    d = model.functions['direct_response']
-    # h = model.__original_functions__['expectation']  # TODO: not working
-    h = model.functions['expectation']
+    g_gu = model.__original_gufunctions__['transition']
+    h_gu = model.__original_gufunctions__['expectation']
+    d_gu = model.__original_gufunctions__['direct_response']
     p = model.calibration['parameters']
     n_s = len(model.symbols["states"])
     n_x = len(model.symbols["controls"])
@@ -84,8 +83,12 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     #       `np.dot` in the simulation function in no python mode. Appearantly
     #       the array returned from lstsq is not C-contiguous
 
-    # allocate for simulated series of expectations
+    # allocate for simulated series of expectations and next period states
     z_sim = np.empty((n_sim, n_z))
+    S = np.empty_like(s_sim)
+    X = np.empty_like(x_sim)
+    H = np.empty_like(z_sim)
+    new_x = np.empty_like(x_sim)
 
     # set initial states and controls
     s_sim[0, :] = s0
@@ -133,17 +136,20 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
         z_sim[:, :] = 0.0
         for i in range(weights.shape[0]):
             e = nodes[i, :]  # extract nodes
-            S = g_gu(s_sim, x_sim, e, p)  # evaluate future states at each node
+            # evaluate future states at each node (stores in S)
+            g_gu(s_sim, x_sim, e, p, S)
 
             # evaluate future controls at each future state
             _complete_poly_impl(S.T, deg, Phi_sim.T)
-            X = Phi_sim @coefs
+            np.dot(Phi_sim, coefs, out=X)
 
-            # compute expectation
-            z_sim += weights[i] * h(S, X, p)
+            # compute expectation (stores in H)
+            h_gu(S, X, p, H)
+            z_sim += weights[i] * H
 
         # get controls on the simulated points from direct_resposne
-        new_x = d(s_sim, z_sim, p)
+        # (stores in new_x)
+        d_gu(s_sim, z_sim, p, new_x)
 
         # update basis matrix and do regression of new_x on s_sim to get
         # updated coefficients
