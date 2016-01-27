@@ -26,13 +26,11 @@ warnings.formatwarning = warning_on_one_line
 import numpy
 numpy.seterr(all='ignore')
 
-# try:
-#     from numpy import ndarray
-#     from dolo.compiler.model_numeric import NumericModel
-#
-#     ip = get_ipython()
-#
-#     # there could be some kind of auto-discovery there
-#     # ip.display_formatter.formatters['text/html'].for_type( NumericModel, lambda m: m.__str__() )
+
+# create temporary directory for compiled functions
+import tempfile, sys
+temp_dir = tempfile.mkdtemp(prefix='dolo_')
+sys.path.append(temp_dir)
+
 
 from IPython.core.display import display

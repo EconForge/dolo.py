@@ -311,23 +311,36 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
 
         print(to_source(mod))
 
-    fun = eval_ast(mod)
-    if not vectorize:
-        return fun
-    else:
-        from numba import float64, void, guvectorize
+    if vectorize:
+        from numba import float64, void
         coredims = [len(symbols[an[0]]) for an in arg_names]
-        sig = str.join(',', ['(n_{})'.format(d) for d in coredims])
+        signature = str.join(',', ['(n_{})'.format(d) for d in coredims])
         n_out = len(expressions)
         if n_out in coredims:
-            sig += '->(n_{})'.format(n_out)
-            ftylist = float64[:](*([float64[:]] * len(coredims)))
-            ftylist = void(*[float64[:]] * (len(coredims) + 1))
+            signature += '->(n_{})'.format(n_out)
+            # ftylist = float64[:](*([float64[:]] * len(coredims)))
+            fty = "void(*[float64[:]]*{})".format(len(coredims)+1)
         else:
-            sig += ',(n_{})'.format(n_out)
-            ftylist = void(*[float64[:]] * (len(coredims) + 1))
-        gufun = guvectorize([ftylist], sig, target='parallel', nopython=True)(fun)
-        return gufun
+            signature += ',(n_{})'.format(n_out)
+            fty = "void(*[float64[:]]*{})".format(len(coredims)+1)
+        ftylist = [fty]
+    else:
+        signature=None
+        ftylist=None
+
+    use_file = True
+    if use_file:
+        fun, module = eval_ast_with_file(mod, print_code=True,signature=signature,ftylist=ftylist)
+        return fun, module
+    else:
+        fun, context = eval_ast(mod)
+        if vectorize:
+            gufun = guvectorize([fty], sig, target='parallel', nopython=True)(fun)
+            return gufun, None
+        else:
+            return fun, None
+
+        return gufun, context
 
 
 def eval_ast(mod):
@@ -355,7 +368,56 @@ def eval_ast(mod):
     code = compile(mod, '<string>', 'exec')
     exec(code, context, context)
     fun = context[name]
-    return fun
+
+    return fun, context
+
+
+def eval_ast_with_file(mod, print_code=False, signature=None, ftylist=None):
+
+    name = mod.body[0].name
+
+    code = """\
+from __future__ import division
+
+from numpy import exp, log, sin, cos, abs
+from numpy import inf, maximum, minimum
+from numexpr import evaluate
+"""
+
+    if signature is not None:
+        print(signature)
+
+        decorator = """
+from numba import float64, void, guvectorize
+@guvectorize(signature='{signature}', ftylist={ftylist}, target='parallel', nopython=True)
+""".format(signature=signature, ftylist=ftylist)
+        code += decorator
+
+    code += to_source(mod)
+
+    if print_code:
+        print(code)
+
+    import sys
+    # try to create a new file
+    import time
+    import tempfile
+    import os, importlib
+    from dolo.config import temp_dir
+    temp_file = tempfile.NamedTemporaryFile(mode='w+t', prefix='fun', suffix='.py', dir=temp_dir, delete=False)
+    with temp_file:
+        temp_file.write(code)
+    modname = os.path.basename(temp_file.name).strip('.py')
+
+
+    full_name = os.path.basename(temp_file.name)
+    modname, extension = os.path.splitext(full_name)
+
+    module = importlib.import_module(modname)
+
+    fun =  module.__dict__[name]
+
+    return fun, module
 
 
 def test_compile_allocating():

@@ -588,7 +588,8 @@ class SourceGenerator(NodeVisitor):
     def visit_arguments(self, node):
         self.signature(node)
 
-
+    def visit_arg(self, node):
+        self.write(node.arg)
 
 # tests
 

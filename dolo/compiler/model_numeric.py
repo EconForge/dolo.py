@@ -202,6 +202,7 @@ Model object:
 
         functions = {}
         original_functions = {}
+        original_modules = {}
 
         for funname in recipe['specs'].keys():
 
@@ -296,16 +297,19 @@ Model object:
                     ddefs.update(auxdefs[t])
             ddefs.update(defs)
 
-            fun = compile_function_ast(eqs, symbols, arg_names,
+            fun, context = compile_function_ast(eqs, symbols, arg_names,
                                     output_names=target_spec, funname=funname, definitions=ddefs,
                                     )
             # print("So far so good !")c
             n_output = len(eqs)
 
             original_functions[funname] = fun
+            original_modules[funname] = context
+
             functions[funname] = standard_function(fun, n_output )
 
-        self.__original_functions__ = original_functions 
+        self.__original_modules__ = original_modules
+        self.__original_functions__ = original_functions
         self.functions = functions
 
 import re
