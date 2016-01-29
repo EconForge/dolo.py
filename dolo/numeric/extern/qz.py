@@ -2,15 +2,15 @@
 QZ alias generalized Schur decomposition (complex or real) for Python/Numpy.
 
 You need to import the qz() function of this module, check out its docstring,
-especially what it says about the required lapack shared library. Run this 
+especially what it says about the required lapack shared library. Run this
 module for some quick tests of the setup.
- 
+
 This is free but copyrighted software, distributed under the same license
 as Python 2.5, copyright Sven Schreiber.
 
 If you think a different license would make (more) sense, please say so
 on the Numpy mailing list (see scipy.org).
-''' 
+'''
 
 from ctypes import cdll, c_int, c_char, POINTER
 import numpy as np
@@ -267,6 +267,8 @@ import sys
 #     return evals,AA,BB,Q,Z
 #
 #
+from numba import jit
+
 def qzswitch(i, A2, B2, Q, Z):
     #print i, A2, B2, Q, Z
     Aout = A2.copy(); Bout = B2.copy(); Qout = Q.copy(); Zout = Z.copy()
