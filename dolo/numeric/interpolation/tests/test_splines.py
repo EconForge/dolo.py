@@ -69,7 +69,7 @@ def test_eval_splines_3():
 
     csp = MultivariateCubicSplines(a,b,orders)
 
-    csp.set_mvalues(mvals)
+    csp.set_values(mvals)
 
     fine_grid = mlinspace(a, b, [10, 10])
 
