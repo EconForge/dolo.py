@@ -17,10 +17,11 @@ setup(
     test_suite='dolo.tests',
 
     include_dirs = [np.get_include()],
-    
+
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
 
-    install_requires = ["pyyaml", "numba>=0.13", "numpy", "numexpr", "sympy", "pandas"],
+    install_requires = ["pyyaml", "numba>=0.13", "numpy", "numexpr", "sympy",
+                        "pandas", "interpolation"],
 
     extras_require = {
             'plots':  ["matplotlib"],
@@ -37,4 +38,3 @@ setup(
     url = 'http://albop.github.com/dolo/',
 
 )
-
