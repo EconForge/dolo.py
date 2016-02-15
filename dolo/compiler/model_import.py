@@ -1,8 +1,12 @@
 from __future__ import division
 
+import yaml
 import numpy
 
 from dolo.misc.display import read_file_or_url
+from dolo.compiler.model_numeric import NumericModel
+from dolo.compiler.model_dynare import DynareModel
+from dolo.compiler.model_symbolic import SymbolicModel
 
 def yaml_import(fname, txt=None, return_symbolic=False):
 
@@ -11,8 +15,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         txt = read_file_or_url(fname)
 
     txt = txt.replace('^', '**')
-
-    import yaml
 
     try:
         data = yaml.safe_load(txt)
@@ -157,7 +159,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     infos['name'] = model_name
     infos['type'] = model_type
 
-    from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(model_name, model_type, symbols, symbolic_equations,
                            symbolic_calibration,
                            discrete_transition=symbolic_discrete_transition,
@@ -168,10 +169,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         return smodel
 
     if model_type in ('dtcscc','dtmscc'):
-        from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:
-        from dolo.compiler.model_dynare import DynareModel
         model = DynareModel(smodel, infos=infos)
     return model
 
