@@ -1,0 +1,46 @@
+name: bewley_dtcscc
+
+symbols:
+    states: [z, m]  # cash in hand (note that savings (a) is a = m - exp(z))
+    controls: [c]  # consumption
+    auxiliaries: [a]
+    parameters: [beta, gamma, r, T, b, rho, zbar, sig_z]  # borrowing constraint a' >= -b
+    shocks: [e_z]
+
+equations:
+
+    transition:
+        - z = (1-rho)*zbar + rho*z(-1) + e_z
+        - m = (m(-1)-c(-1))*r + exp(z)
+    auxiliary:
+        - a = m - exp(z)
+    arbitrage:
+        # Euler equation                |  borrowing constraint
+        - 1 = beta*r*(c(1)/c)^(-gamma)  |  0 <= c <= m + b
+
+calibration:
+    # parameter values
+    beta:  0.95
+    gamma: 4.00
+    r:     1.02  # should be 1/beta by SS euler equation
+    T:     100
+    b:     0.0
+    rho:   0.9
+    zbar:  0
+    sig_z: 0.016
+    # steady-state values
+    c:     1.0  # normalization because SS euler equation is 1 = beta*r
+    z:     zbar
+    m:     (exp(z) - r*c) / (1-r)
+    a:     m - exp(z)
+
+covariances:
+      [[ sig_z**2]]
+
+options:
+
+    approximation_space:
+        a: [ zbar-2*sig_z, m*0.8 ]
+        b: [ zbar+2*sig_z, m*1.2 ]
+        orders: [10, 50]
+        horizon: T
