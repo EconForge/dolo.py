@@ -4,7 +4,7 @@ symbols:
     states: [z, m]  # cash in hand (note that savings (a) is a = m - exp(z))
     controls: [c]  # consumption
     auxiliaries: [a]
-    parameters: [beta, gamma, r, T, b, rho, zbar, sig_z]  # borrowing constraint a' >= -b
+    parameters: [beta, gamma, r, b, rho, zbar, sig_z]  # borrowing constraint a' >= -b
     shocks: [e_z]
 
 equations:
@@ -43,4 +43,3 @@ options:
         a: [ zbar-2*sig_z, m*0.8 ]
         b: [ zbar+2*sig_z, m*1.2 ]
         orders: [10, 50]
-        horizon: T
