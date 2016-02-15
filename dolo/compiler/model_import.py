@@ -36,7 +36,8 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         elif 'variables' in data['symbols']:
             model_type = 'dynare'
         else:
-            raise Exception("'model_type' was not defined and couldn't be guessed.")
+            msg = "'model_type' was not defined and couldn't be guessed."
+            raise Exception(msg)
         print("Model type detected as '{}'".format(model_type))
     else:
         model_type = data['model_type']
@@ -81,16 +82,14 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             if 'covariances' in data:
                 data['distribution'] = {'Normal':data['covariances']}
             else:
-                raise Exception(
-                    "Missing section (model type {}): 'distribution'.".format(model_type)
-                )
+                msg = "Missing section (model type {}): 'distribution'."
+                raise Exception(msg.format(model_type))
 
     if model_type == 'dtmscc':
         if 'discrete_transition' not in data:
             if 'markov_chain' not in data:
-                raise Exception(
-                    "Missing section (model {}): 'discrete_transition'.".format(model_type)
-                )
+                msg = "Missing section (model {}): 'discrete_transition'."
+                raise Exception(msg.format(model_type))
             else:
                 mc = data['markov_chain']
                 if isinstance(mc, list):
