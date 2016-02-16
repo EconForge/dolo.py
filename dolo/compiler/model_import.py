@@ -174,10 +174,25 @@ def yaml_import(fname, txt=None, return_symbolic=False):
     return model
 
 
+def import_aggregate(fname, problems, txt=None):
+    if txt is None:
+
+        txt = read_file_or_url(fname)
+
+    txt = txt.replace('^', '**')
+
+    try:
+        data = yaml.safe_load(txt)
+    except Exception as e:
+        raise e
+
+    agg = ModelAggregation(data, problems)
+    return agg
+
 if __name__ == "__main__":
 
-    # fname = "../../examples/models/rbc.yaml"
-    fname = "examples/models/integration_A.yaml"
+    fname = "../../examples/models/rbc.yaml"
+    # fname = "examples/models/integration_A.yaml"
 
     import os
     print(os.getcwd())

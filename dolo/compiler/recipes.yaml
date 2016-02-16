@@ -159,6 +159,16 @@ dtcscc:
 
                 - ['parameters',0,'p']
 
+aggregation:
+    model_spec: aggregation
+    symbols: ['states', 'controls', 'auxiliaries', 'parameters']
+    specs:
+        equilibrium:
+            eqs:
+                - ['states', 0, 's']
+                - ['controls', 0, 'x']
+                - ['auxiliaries', 0, 'y']
+                - ['parameters', 0, 'p']
 
 dtmscc:
 

@@ -1,7 +1,7 @@
 name: Bewley
 model_type: aggregation
 
-free_parameter: [r]
+free_parameters: [r]
 
 population:
     agent:
@@ -10,7 +10,7 @@ population:
         problem: bewley_dtcscc
 
 distribution:
-    beta:   i -> 0.945 + 0.0005*i
+    beta: i -> 0.945 + 0.0005*i
 
 equilibrium:
-    - sum([i], m[i]-c[i]) = 0 # total savings is 0
+    - sum(m - c) = 0 # total savings is 0
