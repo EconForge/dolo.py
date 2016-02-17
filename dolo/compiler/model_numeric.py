@@ -195,7 +195,7 @@ Model object:
                     dd[to_source(k)] = to_source(v)
                 auxdefs[time] = dd
 
-        self._auxdefs = auxdefs
+            self._auxdefs = auxdefs
 
         recipe = recipes[model_type]
         symbols = self.symbols # should match self.symbols
