@@ -123,9 +123,12 @@ class ModelAggregation(object):
 
     def _parse_distribution(self, v):
         ind, expr = list(map(str.strip, v.split("->")))
+        n_ind = "n_{0}".format(ind)
 
         # TODO: this is super unsafe, but it is a prototype after all ;)
-        return eval(expr, {ind: np.arange(1, self.indices[ind] + 1)})
+        context = {ind: np.arange(1, self.indices[ind] + 1),
+                   n_ind: self.indices[ind]}
+        return eval(expr, context, context)
 
     def _compile_eqm_conditions(self):
         # TODO: Lots of work to be done here.

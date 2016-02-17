@@ -6,11 +6,13 @@ free_parameters: [r]
 population:
     agent:
         index:
-            i: 100
+            i: 30
         problem: bewley_dtcscc
 
 distribution:
-    beta: i -> 0.945 + 0.0005*i
+    # must be a function of the index variable. Also has access to the
+    # total number of elements that index variable can take on
+    beta: i -> 0.945 + i/n_i * (0.98 - 0.945)
 
 equilibrium:
     - sum(m - c) = 0 # total savings is 0

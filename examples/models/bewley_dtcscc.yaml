@@ -42,4 +42,4 @@ options:
     approximation_space:
         a: [ zbar-2*sig_z, m*0.8 ]
         b: [ zbar+2*sig_z, m*1.2 ]
-        orders: [10, 50]
+        orders: [6, 30]
