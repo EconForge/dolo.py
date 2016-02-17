@@ -15,4 +15,4 @@ distribution:
     beta: i -> 0.945 + i/n_i * (0.98 - 0.945)
 
 equilibrium:
-    - sum(m - c) = 0 # total savings is 0
+    - mean(m - c) = 0 # total savings is 0

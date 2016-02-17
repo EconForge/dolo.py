@@ -199,7 +199,7 @@ class ReplaceName(ast.NodeTransformer):
             return expr
 
 
-def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=False, definitions=None, vectorize=True, use_file=False, original=False):
+def compile_function_ast(expressions, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=True, definitions=None, vectorize=True, use_file=False, original=False):
     '''
     expressions: list of equations as string
     '''
@@ -365,6 +365,7 @@ def eval_ast(mod):
 
     context['abs'] = numpy.abs
     context['sum'] = numpy.sum
+    context['mean'] = numpy.mean
 
     name = mod.body[0].name
     mod = ast.fix_missing_locations(mod)
