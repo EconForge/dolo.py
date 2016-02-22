@@ -101,6 +101,7 @@ class ModelAggregation(object):
         self._data = data
 
         # extract free parameters and populations.
+        # TODO: parse the bounds
         self.free_parameters = _try_get(data, "free_parameters")
         self.populations = [Population(k, v) for (k, v) in
                             _try_get(data, "population").items()]

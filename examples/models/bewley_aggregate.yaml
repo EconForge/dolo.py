@@ -1,7 +1,9 @@
 name: Bewley
 model_type: aggregation
 
-free_parameters: [r]
+free_parameters:
+    r:
+        bounds: [1.005, 1.02]
 
 population:
     agent:

@@ -22,7 +22,7 @@ calibration:
     # parameter values
     beta:  0.95
     gamma: 4.00
-    r:     1.02  # should be 1/beta by SS euler equation
+    r:     1.01  # should be 1/beta by SS euler equation
     T:     100
     b:     0.0
     rho:   0.9

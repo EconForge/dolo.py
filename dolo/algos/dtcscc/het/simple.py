@@ -22,9 +22,6 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
     n_s = len(m.symbols["states"])
     n_x = len(m.symbols["controls"])
 
-    # construct initial guess for decision rule
-    initial_dr = approximate_controls(m, eigmax=1.0001)
-
     # extract which parameter has heterogeneity as well as the values it should
     # take on
     het_param = list(agg.distributions.keys())[0]
@@ -36,21 +33,29 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
     sim_s = np.empty((n_het_vals, n_exp, n_s))
     sim_x = np.empty((n_het_vals, n_exp, n_x))
 
-    # extract free parameters and their calibrated values from individual prob
-    agg_vars = {k: m.calibration_dict[k] for k in agg.free_parameters}
-
-    # extract initial value of the heterogenous parameter so we can clean up
-    # when we are done
-    init_het = m.calibration_dict[het_param]
+    # extract supplied values of free parameters to start things off
+    fp = [m.calibration_dict[k] for k in agg.free_parameters]
 
     # loop over parameterizations and solve for decision rule, taking as given
     # the free parameters
-    drs[0] = initial_dr
     start_time = time()
-    err = np.array([10.0])
+    err = np.ones(len(agg.free_parameters))
     it = 0
 
-    while abs(err[0]) > tol:
+    # define objective function
+    def objective_func(free_params):
+        # update free parameters
+        agg_vars = {k: free_params[i] for i, k in
+                    enumerate(agg.free_parameters)}
+
+        # construct initial guess for decision rule
+        calib = {het_param: het_vals[0]}
+        calib.update(agg_vars)
+        m.set_calibration(**calib)
+        initial_dr = approximate_controls(m, eigmax=1.0001)
+        drs[0] = initial_dr
+
+        # iterate over all agent types and solve/simulate their problems
         for i in range(n_het_vals):
             # update model calibration
             calib = {het_param: het_vals[i]}
@@ -58,7 +63,7 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
             m.set_calibration(**calib)
 
             # solve for global solution, with starting guess the previous
-            # calibration's output (on first iteration use initial_dr)
+            # calibration's output (on first iteration use initial_dr).
             ix = i - 1 if i >= 1 else i
             drs[i] = time_iteration(m, initial_dr=drs[ix],
                                     interp_type='spline')
@@ -88,6 +93,10 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
                      m.calibration['parameters'],
                      err)
 
+        return err
+
+    while abs(err[0]) > tol:
+        objective_func(fp)
         if verbose:
             print("err is {0} on iteration {1}".format(err, it))
 
