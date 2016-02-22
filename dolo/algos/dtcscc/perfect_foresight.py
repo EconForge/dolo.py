@@ -15,33 +15,6 @@ def _shocks_to_epsilons(model, shocks, T):
     """
     n_e = len(model.calibration['shocks'])
 
-    # flag to make sure we have constructed the epsilon matrix from the
-    # `shocks` input
-    _constructed_epsilon = False
-
-    # read from calibration if not given
-    if shocks is None:
-        shocks = model.calibration["shocks"]
-
-    # convert to array if a list was given
-    if isinstance(shocks, list):
-        shocks = np.asarray(shocks)
-
-    # process array input.
-    if isinstance(shocks, np.ndarray):
-        if shocks.ndim == 1 and n_e > 1:
-            msg = "Ambiguous specification of shocks. Input was 1d, but model\
-            has {0} shocks. Use shocks as 2d array, dict, or DataFrame instead"
-            raise ValueError(msg.format(n_e))
-        shocks = shocks.reshape((-1, n_e))
-
-        # until last period, exogenous shock takes its last value
-        epsilons = np.zeros((T+1, n_e))
-        epsilons[:(shocks.shape[0]-1), :] = shocks[1:, :]
-        epsilons[(shocks.shape[0]-1):, :] = shocks[-1:, :]
-
-        _constructed_epsilon = True
-
     # if we have a DataFrame, convert it to a dict and rely on the method below
     if isinstance(shocks, pd.DataFrame):
         shocks = {k: shocks[k].tolist() for k in shocks.columns}
@@ -59,13 +32,21 @@ def _shocks_to_epsilons(model, shocks, T):
                 # otherwise set to value in calibration
                 epsilons[:, i] = model.calibration["shocks"][i]
 
-        _constructed_epsilon = True
+        return epsilons
 
-    if not _constructed_epsilon:
-        msg = "Did not understand shocks. Expected type to be one of \
-        {valid} but found {found}"
-        raise ValueError(msg.format(valid="list, array, dict, or DataFrame",
-                                    found=type(shocks)))
+    # read from calibration if not given
+    if shocks is None:
+        shocks = model.calibration["shocks"]
+
+    # now we just assume that shocks is array-like and try using the output of
+    # np.asarray(shocks)
+    shocks = np.asarray(shocks)
+    shocks = shocks.reshape((-1, n_e))
+
+    # until last period, exogenous shock takes its last value
+    epsilons = np.zeros((T+1, n_e))
+    epsilons[:(shocks.shape[0]-1), :] = shocks[1:, :]
+    epsilons[(shocks.shape[0]-1):, :] = shocks[-1:, :]
 
     return epsilons
 
@@ -84,21 +65,16 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     ----------
     model : NumericModel
         "fg" or "fga" model to be solved
-    shocks : list, ndarray, dict, or pandas.DataFrame
+    shocks : array-like, dict, or pandas.DataFrame
         A specification of the shocks to the model. Can be any of the
         following (note by "declaration order" below we mean the order
         of `model.symbols["shocks"]`):
 
-        - A list specifying a time series for each shock. If `model`
-          has one shock, the values can be number. If `model` as more
-          than one shock, the values should be lists or array-like
-          sequences that specify the time series for different shocks
-          in declaration order
-        - A 1d numpy array specifying a time series for a single shock.
-          Only valid in one shock models.
+        - A 1d numpy array-like specifying a time series for a single
+          shock, or all shocks stacked into a single array.
         - A 2d numpy array where each column specifies the time series
           for one of the shocks in declaration order. This must be an
-          `N` by number of shocks matrix.
+          `N` by number of shocks 2d array.
         - A dict where keys are strings found in
           `model.symbols["shocks"]` and values are a time series of
           values for that shock. For model shocks that do not appear in
