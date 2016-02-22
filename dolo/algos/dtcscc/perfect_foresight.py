@@ -86,8 +86,8 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
         "fg" or "fga" model to be solved
     shocks : list, ndarray, dict, or pandas.DataFrame
         A specification of the shocks to the model. Can be any of the
-        following (note by "declaration order" below we mean the order of
-        `model.symbols["shocks"]`):
+        following (note by "declaration order" below we mean the order
+        of `model.symbols["shocks"]`):
 
         - A list specifying a time series for each shock. If `model`
           has one shock, the values can be number. If `model` as more
@@ -96,23 +96,31 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
           in declaration order
         - A 1d numpy array specifying a time series for a single shock.
           Only valid in one shock models.
-        - A 2d numpy array where each column specifies the time series for
-          one of the shocks in declaration order. This must be an `N` by
-          number of shocks matrix.
-        - A dict where keys are strings found in `model.symbols["shocks"]` and
-          values are a time series of values for that shock. For model shocks
-          that do not appear in this dict, the shock is set to the calibrated
-          value. Note that this interface is the most flexible as it allows
-          the user to pass values for only a subset of the model shocks and
-          it allows the passed time series to be of different lengths.
-        - A DataFrame where columns map shock names into time series. The same
-          assumptions and behavior that are used in the dict case apply here
+        - A 2d numpy array where each column specifies the time series
+          for one of the shocks in declaration order. This must be an
+          `N` by number of shocks matrix.
+        - A dict where keys are strings found in
+          `model.symbols["shocks"]` and values are a time series of
+          values for that shock. For model shocks that do not appear in
+          this dict, the shock is set to the calibrated value. Note
+          that this interface is the most flexible as it allows the user
+          to pass values for only a subset of the model shocks and it
+          allows the passed time series to be of different lengths.
+        - A DataFrame where columns map shock names into time series.
+          The same assumptions and behavior that are used in the dict
+          case apply here
 
-        If nothing is given here, `shocks` is set equal to the calibrated
-        values found in `model.calibration["shocks"]` for all periods.
+        If nothing is given here, `shocks` is set equal to the
+        calibrated values found in `model.calibration["shocks"]` for
+        all periods.
+
+        If the length of any time-series in shocks is less than `T`
+        (see below) it is assumed that that particular shock will
+        remain at the final given value for the duration of the
+        simulaiton.
     start_states : ndarray or dict
-        a vector with the value of initial states, or a calibration dictionary
-        with the initial values of states and controls
+        a vector with the value of initial states, or a calibration
+        dictionary with the initial values of states and controls
     T : int
         horizon for the perfect foresight simulation
     maxit : int
