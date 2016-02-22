@@ -6,7 +6,7 @@ model_type: dtcscc
 symbols:
     states: [k, tau_c, tau_k]
     controls: [c]
-    auxiliary: [eta, w, R]
+    auxiliaries: [eta, w, R]
     shocks: [g, exog_tau_c, exog_tau_k]
     parameters: [beta, gamma, delta, alpha, A, tau_c, tau_k]
 

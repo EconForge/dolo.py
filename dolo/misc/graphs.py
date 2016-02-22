@@ -56,7 +56,10 @@ def plot_irfs(sims, variables=None, titles=None, layout=None, horizon=None, figs
     for i,v in enumerate(variables):
         ax = axes[i]
         for j, sim in enumerate(sims):
-            ax.plot(sim[v][:horizon], **plot_options, **line_options[j])
+            arguments = {}
+            arguments.update(plot_options)
+            arguments.update(line_options[j])
+            ax.plot(sim[v][:horizon], **arguments)
         ax.set_title(titles[i])
         ax.set_xlim(0,horizon)
         max_ = max( [sim[v].max() for sim in sims] )

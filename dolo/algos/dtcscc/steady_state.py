@@ -106,8 +106,8 @@ def find_deterministic_equilibrium(model, constraints=None,
         a = model.functions['auxiliary'](s, x, p)
         calib['auxiliaries'] = a
 
-    return calib
-
+    from dolo.compiler.misc import CalibrationDict
+    return CalibrationDict(model.symbols, calib)
 
 def residuals(model, calib=None):
     '''
