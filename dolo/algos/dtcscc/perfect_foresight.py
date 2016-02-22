@@ -1,5 +1,5 @@
-import numpy
-import pandas
+import numpy as np
+import pandas as pd
 from numpy import array, atleast_2d, linspace, zeros
 from scipy.optimize import root
 
@@ -8,11 +8,73 @@ from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import newton
 from dolo.numeric.serial_operations import serial_multiplication as smult
 
+def _shocks_to_epsilons(model, shocks, T):
+    """
+    Helper function to support input argument `shocks` being one of many
+    different data types. Will always return a `T, n_e` matrix.
+    """
+    n_e = len(model.calibration['shocks'])
+
+    # flag to make sure we have constructed the epsilon matrix from the
+    # `shocks` input
+    _constructed_epsilon = False
+
+    # read from calibration if not given
+    if shocks is None:
+        shocks = model.calibration["shocks"]
+
+    # convert to array if a list was given
+    if isinstance(shocks, list):
+        shocks = np.asarray(shocks)
+
+    # process array input.
+    if isinstance(shocks, np.ndarray):
+        if shocks.ndim == 1 and n_e > 1:
+            msg = "Ambiguous specification of shocks. Input was 1d, but model\
+            has {0} shocks. Use shocks as 2d array, dict, or DataFrame instead"
+            raise ValueError(msg.format(n_e))
+        shocks = shocks.reshape((-1, n_e))
+
+        # until last period, exogenous shock takes its last value
+        epsilons = np.zeros((T+1, n_e))
+        epsilons[:(shocks.shape[0]-1), :] = shocks[1:, :]
+        epsilons[(shocks.shape[0]-1):, :] = shocks[-1:, :]
+
+        _constructed_epsilon = True
+
+    # if we have a DataFrame, convert it to a dict and rely on the method below
+    if isinstance(shocks, pd.DataFrame):
+        shocks = {k: shocks[k].tolist() for k in shocks.columns}
+
+    # handle case where shocks might be a dict. Be careful to handle case where
+    # value arrays are not the same length
+    if isinstance(shocks, dict):
+        epsilons = np.zeros((T+1, n_e))
+        for (i, k) in enumerate(model.symbols["shocks"]):
+            if k in shocks:
+                this_shock = shocks[k]
+                epsilons[:len(this_shock)-1, i] = this_shock[1:]
+                epsilons[(len(this_shock)-1):, i] = this_shock[-1]
+            else:
+                # otherwise set to value in calibration
+                epsilons[:, i] = model.calibration["shocks"][i]
+
+        _constructed_epsilon = True
+
+    if not _constructed_epsilon:
+        msg = "Did not understand shocks. Expected type to be one of \
+        {valid} but found {found}"
+        raise ValueError(msg.format(valid="list, array, dict, or DataFrame",
+                                    found=type(shocks)))
+
+    return epsilons
+
 
 def deterministic_solve(model, shocks=None, start_states=None, T=100,
                         ignore_constraints=False, maxit=100,
                         initial_guess=None, verbose=False, tol=1e-6):
-    '''Computes a perfect foresight simulation using a stacked-time algorithm.
+    """
+    Computes a perfect foresight simulation using a stacked-time algorithm.
 
     The initial state is specified either by providing a series of exogenous
     shocks and assuming the model is initially in equilibrium with the first
@@ -22,11 +84,32 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     ----------
     model : NumericModel
         "fg" or "fga" model to be solved
-    shocks : ndarray
-        :math:`n_e\\times N` matrix containing :math:`N` realizations of the
-        shocks. :math:`N` must be smaller than :math:`T`.    The exogenous
-        process is assumed to remain constant and equal to its last value after
-        `N` periods.
+    shocks : list, ndarray, dict, or pandas.DataFrame
+        A specification of the shocks to the model. Can be any of the
+        following (note by "declaration order" below we mean the order of
+        `model.symbols["shocks"]`):
+
+        - A list specifying a time series for each shock. If `model`
+          has one shock, the values can be number. If `model` as more
+          than one shock, the values should be lists or array-like
+          sequences that specify the time series for different shocks
+          in declaration order
+        - A 1d numpy array specifying a time series for a single shock.
+          Only valid in one shock models.
+        - A 2d numpy array where each column specifies the time series for
+          one of the shocks in declaration order. This must be an `N` by
+          number of shocks matrix.
+        - A dict where keys are strings found in `model.symbols["shocks"]` and
+          values are a time series of values for that shock. For model shocks
+          that do not appear in this dict, the shock is set to the calibrated
+          value. Note that this interface is the most flexible as it allows
+          the user to pass values for only a subset of the model shocks and
+          it allows the passed time series to be of different lengths.
+        - A DataFrame where columns map shock names into time series. The same
+          assumptions and behavior that are used in the dict case apply here
+
+        If nothing is given here, `shocks` is set equal to the calibrated
+        values found in `model.calibration["shocks"]` for all periods.
     start_states : ndarray or dict
         a vector with the value of initial states, or a calibration dictionary
         with the initial values of states and controls
@@ -50,7 +133,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
         simulation should return to a steady-state corresponding to the last
         value of the exogenous shocks.
 
-    '''
+    """
 
     # TODO:
 
@@ -62,13 +145,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
 
-    if shocks is None:
-        shocks = numpy.zeros((len(model.calibration['shocks']), 1))
-
-    # until last period, exogenous shock takes its last value
-    epsilons = numpy.zeros((T+1, shocks.shape[1]))
-    epsilons[:(shocks.shape[0]-1), :] = shocks[1:, :]
-    epsilons[(shocks.shape[0]-1):, :] = shocks[-1:, :]
+    epsilons = _shocks_to_epsilons(model, shocks, T)
 
     # final initial and final steady-states consistent with exogenous shocks
     if isinstance(start_states, dict):
@@ -78,16 +155,16 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
         start_x = start_equilibrium['controls']
         final_s = start_equilibrium['states']
         final_x = start_equilibrium['controls']
-    elif isinstance(start_states, numpy.ndarray):
+    elif isinstance(start_states, np.ndarray):
         start_s = start_states
         start_x = model.calibration['controls']
         final_s = model.calibration['states']
         final_x = model.calibration['controls']
     else:
         # raise Exception("You must compute initial calibration yourself")
-        final_dict = {model.symbols['shocks'][i]: shocks[i, -1]
+        final_dict = {model.symbols['shocks'][i]: epsilons[i, -1]
                       for i in range(len(model.symbols['shocks']))}
-        start_dict = {model.symbols['shocks'][i]: shocks[i, 0]
+        start_dict = {model.symbols['shocks'][i]: epsilons[i, 0]
                       for i in range(len(model.symbols['shocks']))}
         start_calib = find_deterministic_equilibrium(model,
                                                      constraints=start_dict)
@@ -114,8 +191,8 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
 
     # TODO: for start_x, it should be possible to use first order guess
 
-    final = numpy.concatenate([final_s, final_x])
-    start = numpy.concatenate([start_s, start_x])
+    final = np.concatenate([final_s, final_x])
+    start = np.concatenate([start_s, start_x])
 
     if verbose is True:
         print("Initial states : {}".format(start_s))
@@ -124,13 +201,12 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     p = model.calibration['parameters']
 
     if initial_guess is None:
-        initial_guess = numpy.row_stack([start*(1-l) + final*l
+        initial_guess = np.row_stack([start*(1-l) + final*l
                                          for l in linspace(0.0, 1.0, T+1)])
 
     else:
-        from pandas import DataFrame
-        if isinstance(initial_guess, DataFrame):
-            initial_guess = numpy.array(initial_guess).T.copy()
+        if isinstance(initial_guess, pd.DataFrame):
+            initial_guess = np.array(initial_guess).T.copy()
         initial_guess = initial_guess[:, :n_s+n_x]
         initial_guess[0, :n_s] = start_s
         initial_guess[-1, n_s:] = final_x
@@ -140,9 +216,9 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     if model.x_bounds and not ignore_constraints:
         initial_states = initial_guess[:, :n_s]
         [lb, ub] = [u(initial_states, p) for u in model.x_bounds]
-        lower_bound = initial_guess*0 - numpy.inf
+        lower_bound = initial_guess*0 - np.inf
         lower_bound[:, n_s:] = lb
-        upper_bound = initial_guess*0 + numpy.inf
+        upper_bound = initial_guess*0 + np.inf
         upper_bound[:, n_s:] = ub
         test1 = max(lb.max(axis=0) - lb.min(axis=0))
         test2 = max(ub.max(axis=0) - ub.min(axis=0))
@@ -189,14 +265,14 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
                     model.symbols['auxiliaries'])
         # compute auxiliaries
         y = model.functions['auxiliary'](sol[:, :n_s], sol[:, n_s:], p)
-        sol = numpy.column_stack([sol, y])
+        sol = np.column_stack([sol, y])
     else:
         colnames = model.symbols['states'] + model.symbols['controls']
 
-    sol = numpy.column_stack([sol, epsilons])
+    sol = np.column_stack([sol, epsilons])
     colnames = colnames + model.symbols['shocks']
 
-    ts = pandas.DataFrame(sol, columns=colnames)
+    ts = pd.DataFrame(sol, columns=colnames)
     return ts
 
 
@@ -252,7 +328,7 @@ def det_residual(model, guess, start, final, shocks, diff=True,
     res_s = SS - S
     res_x = R
 
-    res = numpy.zeros((N, n_s+n_x))
+    res = np.zeros((N, n_s+n_x))
 
     res[1:, :n_s] = res_s
     res[:-1, n_s:] = res_x
@@ -272,7 +348,7 @@ def det_residual(model, guess, start, final, shocks, diff=True,
             res_s_x = SS_x
 
             # next block is probably very inefficient
-            jac = numpy.zeros((N, n_s+n_x, N, n_s+n_x))
+            jac = np.zeros((N, n_s+n_x, N, n_s+n_x))
             for i in range(N-1):
                 jac[i, n_s:, i, :n_s] = R_s[i, :, :]
                 jac[i, n_s:, i, n_s:] = R_x[i, :, :]
@@ -280,17 +356,17 @@ def det_residual(model, guess, start, final, shocks, diff=True,
                 jac[i, n_s:, i+1, n_s:] = R_X[i, :, :]
                 jac[i+1, :n_s, i, :n_s] = SS_s[i, :, :]
                 jac[i+1, :n_s, i, n_s:] = SS_x[i, :, :]
-                jac[i+1, :n_s, i+1, :n_s] = -numpy.eye(n_s)
+                jac[i+1, :n_s, i+1, :n_s] = -np.eye(n_s)
                 # jac[i,n_s:,i,:n_s] = R_s[i,:,:]
                 # jac[i,n_s:,i,n_s:] = R_x[i,:,:]
                 # jac[i+1,n_s:,i,:n_s] = R_S[i,:,:]
                 # jac[i+1,n_s:,i,n_s:] = R_X[i,:,:]
                 # jac[i,:n_s,i+1,:n_s] = SS_s[i,:,:]
                 # jac[i,:n_s,i+1,n_s:] = SS_x[i,:,:]
-                # jac[i+1,:n_s,i+1,:n_s] = -numpy.eye(n_s)
-            jac[0, :n_s, 0, :n_s] = - numpy.eye(n_s)
-            jac[-1, n_s:, -1, n_s:] = - numpy.eye(n_x)
-            jac[-1, n_s:, -2, n_s:] = + numpy.eye(n_x)
+                # jac[i+1,:n_s,i+1,:n_s] = -np.eye(n_s)
+            jac[0, :n_s, 0, :n_s] = - np.eye(n_s)
+            jac[-1, n_s:, -1, n_s:] = - np.eye(n_x)
+            jac[-1, n_s:, -2, n_s:] = + np.eye(n_x)
             nn = jac.shape[0]*jac.shape[1]
             res = res.ravel()
             jac = jac.reshape((nn, nn))
@@ -311,68 +387,28 @@ if __name__ == '__main__':
 
     # TODO: propose a meaningful economic example
 
-    from dolo import *
+    from dolo import yaml_import
 
-    from pylab import *
+    m = yaml_import("../../../examples/models/Figv4_1191.yaml")
+    T = 100
+    g_list = [0.2]*10+[0.4]
 
-    model = yaml_import('../../examples/models/rbc_taxes.yaml')
+    # first try using a list
+    sol1 = deterministic_solve(m, shocks=g_list)
 
-    s = model.calibration['states']
-    p = model.calibration['parameters']
+    # then try using a 1d array
+    sol2 = deterministic_solve(m, shocks=np.asarray(g_list))
 
-    e = model.calibration['shocks']
-    x = model.calibration['controls']
+    # then try using a 2d array
+    g_shock = np.array(g_list)[:, None]
+    sol3 = deterministic_solve(m, shocks=g_shock)
 
-    f = model.functions['arbitrage']
-    g = model.functions['transition']
+    # now try using a dict
+    sol4 = deterministic_solve(m, shocks={"g": g_list})
 
-    e_z = atleast_2d(linspace(0.0, 0.0, 10)).T
+    # now try using a DataFrame
+    sol5 = deterministic_solve(m, shocks=pd.DataFrame({"g": g_list}))
 
-    start_s = model.calibration['states'].copy()
-    start_s[0] = 1.5
-
-    import time
-
-    # sol1 = deterministic_solve(model, shocks=e_z, T=50, use_pandas=True,
-    #                            ignore_constraints=True, start_s=start_s)
-
-    # sol1 = deterministic_solve(model, T=50, use_pandas=True,
-    #                            ignore_constraints=True, start_s=start_s)
-
-    from dolo.algos.steady_state import find_deterministic_equilibrium
-
-    calib = find_deterministic_equilibrium(model)
-
-    t2 = time.time()
-
-    sol1 = deterministic_solve(model, start_states=start_s,  T=50,
-                               use_pandas=True, ignore_constraints=False,
-                               verbose=True)
-
-    t3 = time.time()
-
-    t1 = time.time()
-
-    sol2 = deterministic_solve(model, start_states=start_s,  T=50,
-                               use_pandas=True, ignore_constraints=True,
-                               verbose=True)
-
-    t2 = time.time()
-
-    print("Elapsed : {}, {}".format(t2-t1, t3 - t2))
-
-    from pylab import *
-
-    subplot(211)
-    plot(sol1['k'], label='k')
-    plot(sol1['z'], label='z')
-    plot(sol1['i'], label='i')
-
-    subplot(212)
-    plot(sol2['k'], label='k')
-    plot(sol2['z'], label='z')
-    plot(sol2['i'], label='i')
-    plot(sol2['i']*0 + sol2['i'].max(), linestyle='--', color='black')
-
-    legend()
-    show()
+    # check that they are all the same
+    for s in [sol2, sol3, sol4, sol5]:
+        assert max(abs(sol1-s).max()) == 0.0
