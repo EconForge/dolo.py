@@ -29,23 +29,20 @@ equations:
 
 calibration:
 
-    # parameters:
+    beta  : .95
+    gamma : 2.0
+    delta : 0.2
+    alpha : .33
+    A : 1.
+    tau_c: 0.0
+    tau_k: 0.0
+    g: 0.2
 
-        beta  : .95
-        gamma : 2.0
-        delta : 0.2
-        alpha : .33
-        A : 1.
-        tau_c: 0.
-        tau_k: 0.
-
-    # steady_state:
-
-        k: 1.48996
-        c: 0.842645
-        g: 0.2
-        eta: alpha * A * k ** (alpha - 1)
-        w: A * k ** alpha - k * eta
+    k: ((1/beta - 1 + delta)/alpha)^(1/(alpha-1))
+    c: k^alpha - delta*k - g
+    eta: alpha * A * k ** (alpha - 1)
+    w: A * k ** alpha - k * eta
+    R: eta-delta +1
 
 distribution:
 

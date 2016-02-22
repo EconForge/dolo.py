@@ -132,6 +132,9 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     epsilons = _shocks_to_epsilons(model, shocks, T)
 
     # final initial and final steady-states consistent with exogenous shocks
+    if start_states is None:
+        start_states = model.calibration
+
     if isinstance(start_states, dict):
         # at least that part is clear
         start_equilibrium = start_states
@@ -144,21 +147,6 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
         start_x = model.calibration['controls']
         final_s = model.calibration['states']
         final_x = model.calibration['controls']
-    else:
-        # raise Exception("You must compute initial calibration yourself")
-        final_dict = {model.symbols['shocks'][i]: epsilons[i, -1]
-                      for i in range(len(model.symbols['shocks']))}
-        start_dict = {model.symbols['shocks'][i]: epsilons[i, 0]
-                      for i in range(len(model.symbols['shocks']))}
-        start_calib = find_deterministic_equilibrium(model,
-                                                     constraints=start_dict)
-        final_calib = find_deterministic_equilibrium(model,
-                                                     constraints=start_dict)
-
-        start_s = start_calib['states']
-        start_x = start_calib['controls']
-        final_s = final_calib['states']
-        final_x = final_calib['controls']
 
     # if start_constraints:
     #     # we ignore start_constraints
@@ -396,3 +384,6 @@ if __name__ == '__main__':
     # check that they are all the same
     for s in [sol2, sol3, sol4, sol5]:
         assert max(abs(sol1-s).max()) == 0.0
+
+    m2 = yaml_import("../../../examples/models/rmt3_ch11.yaml")
+    sol = deterministic_solve(m, shocks={"g": [0.2]*10+[0.4]}, T=T)
