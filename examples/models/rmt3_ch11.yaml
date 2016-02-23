@@ -51,7 +51,7 @@ calibration:
     eta: alpha * A * k ** (alpha - 1)
     w: A * k ** alpha - k * eta
     R: eta-delta +1
-
-distribution:
-    Normal:
-        - [ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]
+# 
+# distribution:
+#     Normal:
+#         - [ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]

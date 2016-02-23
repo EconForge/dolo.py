@@ -79,9 +79,12 @@ def yaml_import(fname, txt=None, return_symbolic=False):
             if 'covariances' in data:
                 data['distribution'] = {'Normal':data['covariances']}
             else:
-                raise Exception(
-                    "Missing section (model type {}): 'distribution'.".format(model_type)
-                )
+                n_s = len(data['symbols']['shocks'])
+                zero_matrix = [ [0.0]*n_s ]*n_s
+                data['distribution'] = {'Normal': [zero_matrix]}
+                # raise Exception(
+                #     "Missing section (model type {}): 'distribution'.".format(model_type)
+                # )
 
     if model_type == 'dtmscc':
         if 'discrete_transition' not in data:

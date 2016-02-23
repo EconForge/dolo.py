@@ -53,3 +53,14 @@ def plot_decision_rule(model, *args, **kwargs):
         raise Exception("Model type {} not supported.".format(model.model_type))
 
     return plot_decision_rule(model, *args, **kwargs)
+
+
+def perfect_foresight(model, *args, **kwargs):
+
+    if model.model_type == 'dtcscc':
+        from dolo.algos.dtcscc.perfect_foresight import deterministic_solve
+
+    else:
+        raise Exception("Model type {} not supported.".format(model.model_type))
+
+    return deterministic_solve(model, *args, **kwargs)
