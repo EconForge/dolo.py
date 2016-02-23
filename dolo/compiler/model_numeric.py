@@ -166,6 +166,13 @@ Model object:
             from dolo.algos.dtmscc.steady_state import residuals
             return residuals(self, calib)
 
+    def eval_formula(self, expr, dataframe=None, calib=None):
+
+        from dolo.compiler.eval_formula import eval_formula
+        if calib is None:
+            calib = self.calibration
+        return eval_formula(expr, dataframe=dataframe, context=calib)
+
 
 
     def __compile_functions__(self):
