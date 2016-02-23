@@ -136,7 +136,7 @@ def check(model, silent=False):
 
     names = ['markov_states', 'states', 'controls', 'parameters']
 
-    m,s,x,p = [model.calibration[name] for name in names]
+    m,s,x,p = model.calibration['markov_states', 'states', 'controls', 'parameters']
 
 
     # check steady_state
