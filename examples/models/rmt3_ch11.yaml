@@ -1,4 +1,4 @@
-# Model corresponding to Recursive Macroeconomic Theory 3rd edition by
+# Model in chapter 11 of Recursive Macroeconomic Theory 3rd edition by
 # Ljvinquist and Sargent
 name: fiscal_growth
 model_type: dtcscc
@@ -6,9 +6,9 @@ model_type: dtcscc
 symbols:
     states: [k, tau_c, tau_k]
     controls: [c]
-    auxiliaries: [eta, w, R]
+    auxiliaries: [eta, w]
     shocks: [g, exog_tau_c, exog_tau_k]
-    parameters: [beta, gamma, delta, alpha, A, tau_c, tau_k]
+    parameters: [beta, gamma, delta, alpha, A]
 
 equations:
 
@@ -28,7 +28,6 @@ equations:
         # Equations from 11.6.8
         - eta = alpha*A*k**(alpha-1)
         - w = A*k**alpha - k*eta
-        - R = (1+tau_c)/(1+tau_c) * ((1-tau_k) * (alpha*A*k**(alpha-1) - delta) + 1.)
 
 calibration:
     # parameters
@@ -50,8 +49,3 @@ calibration:
     c: k^alpha - delta*k - g
     eta: alpha * A * k ** (alpha - 1)
     w: A * k ** alpha - k * eta
-    R: eta-delta +1
-# 
-# distribution:
-#     Normal:
-#         - [ [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0] ]
