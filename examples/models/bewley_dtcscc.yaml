@@ -4,6 +4,7 @@ symbols:
     states: [z, m]  # cash in hand (note that savings (a) is a = m - exp(z))
     controls: [c]  # consumption
     auxiliaries: [a]
+    expectations: [zz]
     parameters: [beta, gamma, r, b, rho, zbar, sig_z]  # borrowing constraint a' >= -b
     shocks: [e_z]
 
@@ -18,20 +19,27 @@ equations:
         # Euler equation                |  borrowing constraint
         - 1 = beta*r*(c(1)/c)^(-gamma)  |  0 <= c <= m + b
 
+    expectation:
+        - zz = beta*r*(c(1))^(-gamma)
+
+    direct_response:
+        - c = min( zz^(-1/gamma), m+b )
+
 calibration:
     # parameter values
     beta:  0.95
     gamma: 4.00
     r:     1.01  # should be 1/beta by SS euler equation
     T:     100
-    b:     0.0
+    b:     0.1
     rho:   0.9
     zbar:  0
     sig_z: 0.016
+    sig_z: 0.1
     # steady-state values
     c:     1.0  # normalization because SS euler equation is 1 = beta*r
     z:     zbar
-    m:     (exp(z) - r*c) / (1-r)
+    m:     1.0 # (exp(z) - r*c) / (1-r)
     a:     m - exp(z)
 
 covariances:
@@ -40,6 +48,8 @@ covariances:
 options:
 
     approximation_space:
-        a: [ zbar-2*sig_z, m*0.8 ]
-        b: [ zbar+2*sig_z, m*1.2 ]
+        a: [ zbar-2*sig_z, 0.1 ]
+        b: [ zbar+2*sig_z, 2.0 ]
+        # a: [ zbar-2*sig_z, m*0.8 ]
+        # b: [ zbar+2*sig_z, m*1.2 ]
         orders: [6, 30]

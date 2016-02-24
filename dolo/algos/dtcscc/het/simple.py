@@ -5,7 +5,7 @@ import numpy as np
 from dolo import approximate_controls, time_iteration, simulate
 
 
-def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
+def grid_search_sim(m, agg, bounds=None, verbose=True, n_exp=1000, horizon=300, tol=1e-6, maxit=10):
     if agg.model_type != "aggregation":
         raise ValueError("agg must have model type `'aggregation'`")
 
@@ -42,15 +42,19 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
     err = np.ones(len(agg.free_parameters))
     it = 0
 
+    all_drs = []
+
     # define objective function
     def objective_func(free_params):
         # update free parameters
         agg_vars = {k: free_params[i] for i, k in
-                    enumerate(agg.free_parameters)}
+                    enumerate(agg.free_parameters)}  # note: Keys order of agg.free_parameters
+                                                     # is not guaranted there
 
         # construct initial guess for decision rule
         calib = {het_param: het_vals[0]}
         calib.update(agg_vars)
+        print(calib)
         m.set_calibration(**calib)
         initial_dr = approximate_controls(m, eigmax=1.0001)
         drs[0] = initial_dr
@@ -65,8 +69,12 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
             # solve for global solution, with starting guess the previous
             # calibration's output (on first iteration use initial_dr).
             ix = i - 1 if i >= 1 else i
-            drs[i] = time_iteration(m, initial_dr=drs[ix],
-                                    interp_type='spline')
+
+            # drs[i] = time_iteration(m, initial_dr=drs[ix],
+            #                         interp_type='spline')
+            from dolo.algos.dtcscc.time_iteration import time_iteration_direct
+            drs[i] = time_iteration_direct(m, initial_dr=drs[ix])
+
 
             # simluate using this calibration of the model and the decision
             # rule we just computed. We set a new seed each time so that we
@@ -83,7 +91,7 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
             sim_x[i, :, :] = sim[-1, :, n_s:n_s+n_x]
 
             if verbose:
-                msg = "\tdone with {0}  total time {1:3.2f}"
+                msg = "\tdone with agent {0}  total time {1:3.2f}"
                 print(msg.format(i, time() - start_time))
 
         # Given a draw from the cross section of each type, we are ready to
@@ -93,23 +101,37 @@ def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6):
                      m.calibration['parameters'],
                      err)
 
-        return err
+        return err, sim_s.copy(), sim_x.copy(), drs
 
-    while abs(err[0]) > tol:
-        objective_func(fp)
-        if verbose:
-            print("err is {0} on iteration {1}".format(err, it))
+    # while abs(err[0]) > tol and it<maxit:
+    #     print("iteration {}".format(it))
+    #     res = objective_func(fp)
+    #     print(res)
+    #     if verbose:
+    #         print("err is {0} on iteration {1}".format(err, it))
+    #
+    #     # TODO: figure out how to update `agg_vars`
+    #     it += 1
 
-        # TODO: figure out how to update `agg_vars`
-        it += 1
+    # let's do a grid search instead...
+    if bounds is None:
+        raise Exception("Only grid search is supported. Specify bounds.")
+
+    k = next(iter(agg.free_parameters.keys())) # parameter name
+    bounds = agg.free_parameters[k]['bounds']
+
+    grid = np.linspace(bounds[0], bounds[1], maxit)
+    values = [objective_func([fp]) for fp in grid]
+    return [grid, values]
+
 
 
 if __name__ == '__main__':
     from dolo import *
     from dolo.compiler.model_aggregate import ModelAggregation
     import yaml
-    m = yaml_import("../../../../examples/models/bewley_dtcscc.yaml")
-    txt = open("../../../../examples/models/bewley_aggregate.yaml").read()
+    m = yaml_import("examples/models/bewley_dtcscc.yaml")
+    txt = open("examples/models/bewley_aggregate.yaml").read()
     data = yaml.safe_load(txt)
 
     agg = ModelAggregation(data, [m])
