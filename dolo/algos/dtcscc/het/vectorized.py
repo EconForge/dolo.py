@@ -97,7 +97,7 @@ def solve(model, distributions,  maxit=100, tol=1e-8, initial_dr=None, verbose=F
             z += weights[i]*h(S,X,P)
 
         # TODO: check that control is admissible
-        new_x = d(grid[:,None,:], z, P)
+        new_x = d(gg, z, P)
 
         # check whether they differ from the preceding guess
         err = (abs(new_x - xx_0).max(axis=(0,1,2)))
@@ -127,8 +127,10 @@ if __name__ == '__main__':
     data = yaml.safe_load(txt)
     agg = ModelAggregation(data, [m])
 
+    solve(m, agg.distributions, verbose=True)
     import time
     t1 = time.time()
+    m.set_calibration(r=1.0001)
     solve(m, agg.distributions, verbose=True)
     t2 = time.time()
     print("Total time elapsed : {}".format(t2-t1))

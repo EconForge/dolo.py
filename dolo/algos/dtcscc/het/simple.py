@@ -5,7 +5,7 @@ import numpy as np
 from dolo import approximate_controls, time_iteration, simulate
 
 
-def grid_search_sim(m, agg, bounds=None, verbose=True, n_exp=1000, horizon=300, tol=1e-6, maxit=10):
+def grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6, maxit=10):
     if agg.model_type != "aggregation":
         raise ValueError("agg must have model type `'aggregation'`")
 
@@ -70,10 +70,10 @@ def grid_search_sim(m, agg, bounds=None, verbose=True, n_exp=1000, horizon=300, 
             # calibration's output (on first iteration use initial_dr).
             ix = i - 1 if i >= 1 else i
 
-            # drs[i] = time_iteration(m, initial_dr=drs[ix],
-            #                         interp_type='spline')
+            drs[i] = time_iteration(m, initial_dr=drs[ix],
+                                    interp_type='spline')
             from dolo.algos.dtcscc.time_iteration import time_iteration_direct
-            drs[i] = time_iteration_direct(m, initial_dr=drs[ix])
+            # drs[i] = time_iteration_direct(m, initial_dr=drs[ix])
 
 
             # simluate using this calibration of the model and the decision
@@ -113,9 +113,6 @@ def grid_search_sim(m, agg, bounds=None, verbose=True, n_exp=1000, horizon=300, 
     #     # TODO: figure out how to update `agg_vars`
     #     it += 1
 
-    # let's do a grid search instead...
-    if bounds is None:
-        raise Exception("Only grid search is supported. Specify bounds.")
 
     k = next(iter(agg.free_parameters.keys())) # parameter name
     bounds = agg.free_parameters[k]['bounds']
@@ -135,4 +132,5 @@ if __name__ == '__main__':
     data = yaml.safe_load(txt)
 
     agg = ModelAggregation(data, [m])
-    i = 1
+
+    grid_search_sim(m, agg, verbose=True, n_exp=1000, horizon=300, tol=1e-6, maxit=10)
