@@ -3,3 +3,6 @@ conda:
 
 python:
    version: 3
+
+
+requirements_file: doc/requirements.txt
