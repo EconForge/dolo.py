@@ -33,7 +33,5 @@ dependencies:
 - xz=5.0.5=1
 - yaml=0.1.6=0
 - zlib=1.2.8=0
-- pip:
-  - sphinx-better-theme==0.13
-  - sphinx-rtd-theme==0.1.9
-
+# - pip:
+#   - sphinx-better-theme==0.13

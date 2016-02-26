@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'dolo'
-copyright = u'2012-2015, Pablo Winant'
+copyright = u'2012-2016, Pablo Winant'
 
 
 ## Code to get version number taken from Flask
@@ -120,29 +120,30 @@ pygments_style = 'sphinx'
 
 
 # -- Options for HTML output ---------------------------------------------------
-
-th = 'better'
-
-if th == 'better':
-    from better import better_theme_path
-    html_theme_path = [better_theme_path]
-    html_theme = 'better'
-elif th == 'bootstrap':
-    import sphinx_bootstrap_theme
-    # Activate the theme.
-    html_theme = 'bootstrap'
-    html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-else:
-    # The theme to use for HTML and HTML Help pages.  See the documentation for
-    # a list of builtin themes.
-    html_theme = 'sphinxdoc'
-    # Theme options are theme-specific and customize the look and feel of a theme
-    # further.  For a list of options available for each theme, see the
-    # documentation.
-    html_theme_options = {}
-
+#
+# th = 'better'
+#
+# if th == 'better':
+#     from better import better_theme_path
+#     html_theme_path = [better_theme_path]
+#     html_theme = 'better'
+# elif th == 'bootstrap':
+#     import sphinx_bootstrap_theme
+#     # Activate the theme.
+#     html_theme = 'bootstrap'
+#     html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+# else:
+#     # The theme to use for HTML and HTML Help pages.  See the documentation for
+#     # a list of builtin themes.
+#     html_theme = 'sphinxdoc'
+#     # Theme options are theme-specific and customize the look and feel of a theme
+#     # further.  For a list of options available for each theme, see the
+#     # documentation.
+#     html_theme_options = {}
     # Add any paths that contain custom themes here, relative to this directory.
     # html_theme_path = ['_themes']
+
+html_theme == 'rtd'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
