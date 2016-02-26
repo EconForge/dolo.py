@@ -42,8 +42,9 @@ class NumericModel:
 
         from dolo.compiler.triangular_solver import solve_triangular_system
         self.calibration_dict = solve_triangular_system( system )
-        from dolo.compiler.misc import calibration_to_vector
-        self.calibration = calibration_to_vector(self.symbols, self.calibration_dict)
+        from dolo.compiler.misc import CalibrationDict, calibration_to_vector
+        calib = calibration_to_vector(self.symbols, self.calibration_dict)
+        self.calibration = CalibrationDict(self.symbols, calib)
         from .symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
 
@@ -164,6 +165,13 @@ Model object:
         elif self.model_type == 'dtmscc':
             from dolo.algos.dtmscc.steady_state import residuals
             return residuals(self, calib)
+
+    def eval_formula(self, expr, dataframe=None, calib=None):
+
+        from dolo.compiler.eval_formula import eval_formula
+        if calib is None:
+            calib = self.calibration
+        return eval_formula(expr, dataframe=dataframe, context=calib)
 
 
 

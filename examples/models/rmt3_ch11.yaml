@@ -1,0 +1,51 @@
+# Model in chapter 11 of Recursive Macroeconomic Theory 3rd edition by
+# Ljvinquist and Sargent
+name: fiscal_growth
+model_type: dtcscc
+
+symbols:
+    states: [k, tau_c, tau_k]
+    controls: [c]
+    auxiliaries: [eta, w]
+    shocks: [g, exog_tau_c, exog_tau_k]
+    parameters: [beta, gamma, delta, alpha, A]
+
+equations:
+
+    arbitrage:
+        # Equation 11.6.3
+        - 1= beta*(c(+1)/c)^(-gamma)*(1+tau_c)/(1+tau_c(1))*((1-tau_k(1))*(eta(1)-delta) + 1) | 0 <= c <= inf
+
+    transition:
+        # Equation 11.6.1
+        - k=A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
+        # We have the states tau_c and tau_k just follow exactly the sequence
+        # of shocks that we supply.
+        - tau_c = exog_tau_c
+        - tau_k = exog_tau_k
+
+    auxiliary:
+        # Equations from 11.6.8
+        - eta = alpha*A*k**(alpha-1)
+        - w = A*k**alpha - k*eta
+
+calibration:
+    # parameters
+    beta: 0.95
+    gamma: 2.0
+    delta: 0.2
+    alpha: 0.33
+    A: 1.
+    tau_c: 0.0
+    tau_k: 0.0
+    exog_tau_c: 0.0
+    exog_tau_k: 0.0
+    tau_c: exog_tau_c
+    tau_k: exog_tau_k
+    g: 0.2
+
+    # steady_state
+    k: ((1/beta - 1 + delta)/alpha)^(1/(alpha-1))
+    c: k^alpha - delta*k - g
+    eta: alpha * A * k ** (alpha - 1)
+    w: A * k ** alpha - k * eta

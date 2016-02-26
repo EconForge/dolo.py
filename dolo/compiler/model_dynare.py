@@ -4,6 +4,7 @@
 from dolo.compiler.model_numeric import NumericModel
 import numpy
 
+
 class DynareModel(NumericModel):
 
     def __compile_functions__(self):

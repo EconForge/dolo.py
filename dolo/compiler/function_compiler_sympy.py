@@ -61,14 +61,15 @@ def higher_order_diff(eqs, syms, order=2):
 
     return D
 
+
 def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous',
     return_code=False, compile=False):
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
-    from .function_compiler_ast import StandardizeDatesSimple, std_date_symbol
+    from .function_compiler_ast import std_date_symbol, StandardizeDatesSimple
 
     all_vars = syms + [(p,0) for p in params]
-    print(all_vars)
+
     sds = StandardizeDatesSimple(all_vars)
 
 
@@ -178,7 +179,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     if order == 3:
         return [out, out_1, out_2, out_3]
     """
-
+    print(txt)
     if return_code:
         return txt
     else:
