@@ -1,0 +1,95 @@
+# Model in chapter 11 of Recursive Macroeconomic Theory 3rd edition by
+# Ljvinquist and Sargent
+name: fiscal_growth_international
+model_type: dtcscc
+
+symbols:
+    states: [B, k, kf, tau_c, tau_k, tau_cf, tau_kf]
+    controls: [c, cf, i_B]
+    auxiliaries: [y, yf, eta, w, etaf, wf, R]
+    shocks: [g, exog_tau_c, exog_tau_k, gf, exog_tau_cf, exog_tau_kf]
+    parameters: [beta, gamma, delta, alpha, A, mu_star]
+
+equations:
+
+    arbitrage:
+        # Equations 11.13.10 and 11.13.11
+        - 1 = beta*(c(+1)/c)^(-gamma)*(1+tau_c)/(1+tau_c(1))*((1-tau_k(1))*(eta(1)-delta) + 1) | 0 <= c <= inf
+        - 1 = beta*(cf(+1)/cf)^(-gamma)*(1+tau_cf)/(1+tau_cf(1))*((1-tau_kf(1))*(etaf(1)-delta) + 1) | 0 <= cf <= inf
+
+        # equation 11.13.9
+        - (c/cf)^(-gamma) = (1+tau_c)/(mu_star*(1+tau_cf))
+
+    transition:
+        # LOM for B.
+        - B = R(-1)*B(-1) + i_B(-1)
+
+        # 11.13.6
+        - k = (1-delta)*k(-1) + y(-1) - g - c(-1) - i_B(-1)
+
+        # 11.13.7
+        - kf = yf(-1) + (1-delta)*kf(-1) - cf(-1) - gf - B
+
+        # We have the states tau_c and tau_k just follow exactly the sequence
+        # of shocks that we supply.
+        - tau_c = exog_tau_c
+        - tau_k = exog_tau_k
+        - tau_cf = exog_tau_cf
+        - tau_kf = exog_tau_kf
+
+    auxiliary:
+        # production function
+        - y = A*k^alpha
+        - yf = A*kf^alpha
+
+        # Equations from 11.13.8
+        - eta = alpha*A*k**(alpha-1)
+        - w = y - k*eta
+        - etaf = alpha*A*kf**(alpha-1)
+        - wf = yf - kf*etaf
+
+        # equations 11.13.3 and 11.13.5 combined
+        - R = (1-tau_k)*(eta-delta)+1
+
+calibration:
+    # parameters
+    beta: 0.95
+    gamma: 2.0
+    delta: 0.2
+    alpha: 0.33
+    A: 1.0
+    mu_star: 1.2
+
+    # home policy
+    exog_tau_c: 0.0
+    exog_tau_k: 0.0
+    tau_c: exog_tau_c
+    tau_k: exog_tau_k
+    g: 0.2
+
+    # foreign policy
+    exog_tau_cf: 0.0
+    exog_tau_kf: 0.0
+    tau_cf: exog_tau_cf
+    tau_kf: exog_tau_kf
+    gf: 0.2
+
+    ## steady_state
+    # states
+    B: 0.0
+    k: (delta/(alpha*A) + (1-beta)/(beta*(1-tau_k)))**(-1/alpha)  # 11.13.12
+    kf: (delta/(alpha*A) + (1-beta)/(beta*(1-tau_kf)))**(-1/alpha)  # 11.13.13
+
+    # controls
+    c: y - delta*k - g - beta*B/(1-beta)  # 11.13.14
+    cf: y - delta*k - g + beta*B/(1-beta)  # 11.13.15
+    i_B: 0.0
+
+    # auxiliary
+    y: A*k^alpha
+    yf: A*kf^alpha
+    eta: alpha * A * k ** (alpha - 1)
+    w: y - k * eta
+    etaf: alpha * A * kf ** (alpha - 1)
+    wf: yf - kf * etaf
+    R: (1-tau_k)*(eta-delta)+1
