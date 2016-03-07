@@ -116,14 +116,38 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         'states': float('nan')
     }
 
+    # variables defined by a model equation default to using these definitions
+    initialized_from_model = {
+        'auxiliaries': 'auxiliary',
+        'values': 'value',
+        'expectations': 'expectation',
+        'direct_responses': 'direct_response'
+    }
+
     for symbol_group in symbols:
-        if symbol_group in initial_values:
-            default = initial_values[symbol_group]
-        else:
-            default = float('nan')
-        for s in symbols[symbol_group]:
-            if s not in symbolic_calibration:
-                symbolic_calibration[s] = default
+        if symbol_group not in initialized_from_model.keys():
+            if symbol_group in initial_values:
+                default = initial_values[symbol_group]
+            else:
+                default =  float('nan')
+            for s in symbols[symbol_group]:
+                if s not in symbolic_calibration:
+                    symbolic_calibration[s] = default
+
+
+    # add the calibration of variables defined in the model not in calibration
+    all_variables = sum( [symbols[group] for group in symbols if group!= 'parameters'], [])
+    from dolo.compiler.function_compiler_ast import timeshift
+    print(all_variables)
+    for eq_group in symbolic_equations.keys():
+        if eq_group in initialized_from_model.values():
+            for eq in symbolic_equations[eq_group]:
+                lhs, rhs = str.split(eq, '=')
+                lhs, rhs = [str.strip(e) for e in [lhs, rhs]]
+                rhs_ss = timeshift(rhs, all_variables, 'S')
+                if lhs not in symbolic_calibration.keys():
+                    print((lhs, rhs_ss))
+                    symbolic_calibration[lhs] = rhs_ss
 
 
     # read covariance matrix

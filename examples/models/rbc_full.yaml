@@ -57,12 +57,13 @@ calibration:
 
 
       z: zbar
-      rk: 1/beta-1+delta
-      w: (1-alpha)*z*(k/n)^(alpha)
       n: 0.33
       k: n/(rk/alpha)^(1/(1-alpha))
       i: delta*k
-      c: z*k^alpha*n^(1-alpha) - i
+
+    #   c: z*k^alpha*n^(1-alpha) - i
+      rk: 1/beta-1+delta
+    #   w: (1-alpha)*z*(k/n)^(alpha)
 
       V: log(c)/(1-beta)
 
