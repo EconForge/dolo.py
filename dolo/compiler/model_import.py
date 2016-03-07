@@ -134,20 +134,20 @@ def yaml_import(fname, txt=None, return_symbolic=False):
                 if s not in symbolic_calibration:
                     symbolic_calibration[s] = default
 
-
-    # add the calibration of variables defined in the model not in calibration
-    all_variables = sum( [symbols[group] for group in symbols if group!= 'parameters'], [])
-    from dolo.compiler.function_compiler_ast import timeshift
-    print(all_variables)
-    for eq_group in symbolic_equations.keys():
-        if eq_group in initialized_from_model.values():
-            for eq in symbolic_equations[eq_group]:
-                lhs, rhs = str.split(eq, '=')
-                lhs, rhs = [str.strip(e) for e in [lhs, rhs]]
-                rhs_ss = timeshift(rhs, all_variables, 'S')
-                if lhs not in symbolic_calibration.keys():
-                    print((lhs, rhs_ss))
-                    symbolic_calibration[lhs] = rhs_ss
+    if model_type != 'dynare':
+        # add the calibration of variables defined in the model not in calibration
+        all_variables = sum( [symbols[group] for group in symbols if group!= 'parameters'], [])
+        from dolo.compiler.function_compiler_ast import timeshift
+        print(all_variables)
+        for eq_group in symbolic_equations.keys():
+            if eq_group in initialized_from_model.values():
+                for eq in symbolic_equations[eq_group]:
+                    lhs, rhs = str.split(eq, '=')
+                    lhs, rhs = [str.strip(e) for e in [lhs, rhs]]
+                    rhs_ss = timeshift(rhs, all_variables, 'S')
+                    if lhs not in symbolic_calibration.keys():
+                        print((lhs, rhs_ss))
+                        symbolic_calibration[lhs] = rhs_ss
 
 
     # read covariance matrix
