@@ -82,6 +82,7 @@ class StandardizeDatesSimple(NodeTransformer):
 
         self.tvariables = tvariables  # list of variables
         self.variables = [e[0] for e in tvariables]
+        # self.variables = tvariables # ???
 
     def visit_Name(self, node):
 

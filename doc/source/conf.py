@@ -19,22 +19,22 @@ import sys, os
 #sys.path.insert(0, os.path.abspath('.'))
 
 
-try:
-    from mock import Mock as MagicMock
-except ImportError:
-    def install(package):
-        pip.main(['install', package])
-    install('mock')
-    from mock import Mock as MagicMock
+#try:
+#    from mock import Mock as MagicMock
+#except ImportError:
+#    def install(package):
+#        pip.main(['install', package])
+#    install('mock')
+#    from mock import Mock as MagicMock
 
 
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
+#class Mock(MagicMock):
+#    @classmethod
+#    def __getattr__(cls, name):
+#        return Mock()
 
-MOCK_MODULES = ['ipython', 'pyyaml', 'numpy', 'numpy.linalg', 'numba','numexpr','sympy','pandas','slycot','matplotlib']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+#MOCK_MODULES = ['ipython', 'pyyaml', 'numpy', 'numpy.linalg', 'numba','numexpr','sympy','pandas','slycot','matplotlib']
+#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 
 # -- General configuration -----------------------------------------------------
@@ -61,7 +61,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'dolo'
-copyright = u'2012-2015, Pablo Winant'
+copyright = u'2012-2016, Pablo Winant'
 
 
 ## Code to get version number taken from Flask
@@ -120,29 +120,32 @@ pygments_style = 'sphinx'
 
 
 # -- Options for HTML output ---------------------------------------------------
-
-th = 'better'
-
-if th == 'better':
-    from better import better_theme_path
-    html_theme_path = [better_theme_path]
-    html_theme = 'better'
-elif th == 'bootstrap':
-    import sphinx_bootstrap_theme
-    # Activate the theme.
-    html_theme = 'bootstrap'
-    html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-else:
-    # The theme to use for HTML and HTML Help pages.  See the documentation for
-    # a list of builtin themes.
-    html_theme = 'sphinxdoc'
-    # Theme options are theme-specific and customize the look and feel of a theme
-    # further.  For a list of options available for each theme, see the
-    # documentation.
-    html_theme_options = {}
-
+#
+# th = 'better'
+#
+# if th == 'better':
+#     from better import better_theme_path
+#     html_theme_path = [better_theme_path]
+#     html_theme = 'better'
+# elif th == 'bootstrap':
+#     import sphinx_bootstrap_theme
+#     # Activate the theme.
+#     html_theme = 'bootstrap'
+#     html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+# else:
+#     # The theme to use for HTML and HTML Help pages.  See the documentation for
+#     # a list of builtin themes.
+#     html_theme = 'sphinxdoc'
+#     # Theme options are theme-specific and customize the look and feel of a theme
+#     # further.  For a list of options available for each theme, see the
+#     # documentation.
+#     html_theme_options = {}
     # Add any paths that contain custom themes here, relative to this directory.
     # html_theme_path = ['_themes']
+
+import sphinx_rtd_theme
+html_theme = "sphinx_rtd_theme"
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

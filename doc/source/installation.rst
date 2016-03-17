@@ -16,7 +16,7 @@ It is also possible to install the development version directly from Github with
 
 .. code-block:: bash
 
-    `pip install dolo`
+    `pip install git+git://github.com/econforge/dolo.git`
 
 
 Step-by-step instructions on windows
@@ -58,7 +58,8 @@ After dolo is installed, try to solve a model by typing the following commands i
 .. code:: python
 
     from dolo import *                           # load the library
-    model = yaml_import("...")                   # import the model
+    model = yaml_import("https://github.com/EconForge/dolo/blob/master/examples/models/rbc.yaml")
+                                                 # import the model
     display(model)                               # display the model
     dr = time_iteration(model, verbose=True)     # solve
     sim = simulate(model, dr)                    # simulate
@@ -79,7 +80,7 @@ The only step to setup the environment consists in choosing a folder to store th
 .. figure:: .//figs//open_command_prompt.png
         :width: 80%
 
-        Open shell under windows in a given folfer
+        Open shell under windows in a given folder
 
 A browser window should popup. It is Jupyter's dashboard.
 

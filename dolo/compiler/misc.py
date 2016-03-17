@@ -35,21 +35,51 @@ def calibration_to_vector(symbols, calibration_dict):
     return calibration
 
 
-def calibration_to_dict(model, calib):
+def calibration_to_dict(symbols, calib):
 
     from collections import OrderedDict
+    if not isinstance(symbols, dict):
+        symbols = symbols.symbols
 
     d = OrderedDict()
     for group, values in calib.items():
         if group == 'covariances':
             continue
-        syms = model.symbols[group]
+        syms = symbols[group]
         for i,s in enumerate(syms):
             d[s] = values[i]
 
     return d
 
+from collections import OrderedDict
+from dolo.compiler.misc import calibration_to_dict
 
+import copy
+
+class CalibrationDict(OrderedDict):
+
+    # cb = CalibrationDict(symbols, calib)
+    # calib['states'] -> array([ 1.        ,  9.35497829])
+    # calib['states','controls'] - > [array([ 1.        ,  9.35497829]), array([ 0.23387446,  0.33      ])]
+    # calib['z'] - > 1.0
+    # calib['z','y'] -> [1.0, 0.99505814380953039]
+
+    def __init__(self, symbols, calib):
+        superclass = super()
+        calib = copy.deepcopy(calib)
+        for v in calib.values():
+            v.setflags(write=False)
+        superclass.__init__(calib)
+        self.symbols = symbols
+        self.full = calibration_to_dict(symbols, calib)
+
+    def __getitem__(self, p):
+        if isinstance(p,tuple):
+            return [self[e] for e in p]
+        if p in self.symbols.keys():
+            return super().__getitem__(p)
+        else:
+            return self.full[p]
 
 
 def allocating_function(inplace_function, size_output):
@@ -105,7 +135,7 @@ def check(model, silent=False):
 
     names = ['markov_states', 'states', 'controls', 'parameters']
 
-    m,s,x,p = [model.calibration[name] for name in names]
+    m,s,x,p = model.calibration['markov_states', 'states', 'controls', 'parameters']
 
 
     # check steady_state

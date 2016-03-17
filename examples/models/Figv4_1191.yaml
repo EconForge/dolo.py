@@ -1,0 +1,51 @@
+#  Adapted from the Dynare .mod file Figv3_1161.mod for RMT3
+
+# model_type: fga
+
+symbols:
+    states: [k]
+    controls: [c]
+    auxiliaries: [eta, w, R]
+    shocks: [g]
+    parameters: [beta, gamma, delta, alpha, A, tau_c, tau_k]
+
+equations:
+
+    arbitrage:
+        # Equation 11.6.3
+        # - c^(-gamma)= beta*(c(+1)^(-gamma))*((1+tau_c)/(1+tau_c(+1)))*((1-delta) + (1-tau_k(+1))*alpha*A*k^(alpha-1))
+        # - c^(-gamma)= beta*(c(+1)^(-gamma))*(1-delta + alpha*A*k^(alpha-1))
+        - c^(-gamma)= beta*(c(+1)^(-gamma))*((1+tau_c)/(1+tau_c))*((1-delta) + (1-tau_k)*alpha*A*k^(alpha-1))
+
+    transition:
+        # Equation 11.6.1
+        - k=A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
+
+    auxiliary:
+        # Equations from 11.6.8
+        - eta = alpha * A * k ** (alpha - 1)
+        - w = A * k ** alpha - k * eta
+        - R = ((1. - tau_k) * (alpha * A * k ** (alpha - 1) - delta) + 1.)
+
+calibration:
+
+    beta  : .95
+    gamma : 2.0
+    delta : 0.2
+    alpha : .33
+    A : 1.
+    tau_c: 0.0
+    tau_k: 0.0
+    g: 0.2
+
+    k: ((1/beta - 1 + delta)/alpha)^(1/(alpha-1))
+    c: k^alpha - delta*k - g
+    eta: alpha * A * k ** (alpha - 1)
+    w: A * k ** alpha - k * eta
+    R: eta-delta +1
+
+distribution:
+
+    Normal:
+
+        [ [ 0.0] ]
