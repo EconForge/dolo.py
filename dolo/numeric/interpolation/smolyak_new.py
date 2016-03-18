@@ -82,9 +82,10 @@ class MultiSmolyak:
                 res_s[:,i,:] = l[1]
             if deriv_X:
                 if not deriv:
-                    res_x[:,i,:] = l[1].T
+                    res_x[:,i,:] = l[1]
+                    raise Exception("wrong choice")
                 else:
-                    res_x[:,i,:] = l[2].T
+                    res_x[:,i,:] = l[2]
         if not (deriv or deriv_X):
             return res
         else:

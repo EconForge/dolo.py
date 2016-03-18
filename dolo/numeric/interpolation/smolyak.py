@@ -428,8 +428,8 @@ class SmolyakGrid(SmolyakGridRows):
            dres = numpy.rollaxis(dres,2,0)
            return [res.T,dres]
 #
-# try:
-#     from .smolyak_new import MultiSmolyak as SmolyakGrid
-# except:
-#     import warnings
-#     warnings.warn("Interpolation.py not available. Relying on old smolyak functions.")
+try:
+    from .smolyak_new import MultiSmolyak as SmolyakGrid
+except:
+    import warnings
+    warnings.warn("Interpolation.py not available. Relying on old smolyak functions.")
