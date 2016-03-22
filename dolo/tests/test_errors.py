@@ -39,8 +39,6 @@ def test_denhaan_errors():
 
         dr_global = time_iteration(model, interp_type='smolyak', smolyak_order=4, verbose=False)
 
-        from IPython.core.debugger import Tracer
-
         s0 = model.calibration['states']
         sigma = model.covariances
 
