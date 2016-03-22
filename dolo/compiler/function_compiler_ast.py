@@ -2,10 +2,18 @@
 from __future__ import division
 from dolo.compiler.codegen import to_source
 from numba import njit, guvectorize
+import copy
 
 import sys
 is_python_3 = sys.version_info >= (3, 0)
 
+
+def to_expr(s):
+    import ast
+    if isinstance(s, ast.Expr):
+        return copy.deepcopy(s)
+    else:
+        return ast.parse(s).body[0].value
 
 def std_date_symbol(s, date):
     if date == 0:
@@ -31,7 +39,7 @@ class TimeShiftTransformer(ast.NodeTransformer):
     def visit_Name(self, node):
         name = node.id
         if name in self.variables:
-            if self.shift==0:
+            if self.shift==0 or self.shift=='S':
                 return ast.parse(name).body[0].value
             else:
                 return ast.parse('{}({})'.format(name,self.shift)).body[0].value
@@ -56,7 +64,14 @@ class TimeShiftTransformer(ast.NodeTransformer):
                     raise Exception("Unrecognized subscript.")
             else:
                 date = args.n
-            return ast.parse('{}({})'.format(name,date+self.shift)).body[0].value
+            if self.shift =='S':
+                return ast.parse('{}'.format(name)).body[0].value
+            else:
+                new_date = date+self.shift
+                if new_date != 0:
+                    return ast.parse('{}({})'.format(name,new_date)).body[0].value
+                else:
+                    return ast.parse('{}'.format(name)).body[0].value
         else:
 
             # , keywords=node.keywords,  kwargs=node.kwargs)
@@ -67,7 +82,7 @@ def timeshift(expr, variables, shift):
     if isinstance(expr, str):
         aexpr = ast.parse(expr).body[0].value
     else:
-        aexpr = copy.copy(expr)
+        aexpr = copy.deepcopy(expr)
     resp = TimeShiftTransformer(variables, shift).visit(aexpr)
     if isinstance(expr, str):
         return to_source(resp)

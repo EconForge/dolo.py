@@ -75,7 +75,9 @@ def test_dtcscc_model():
     s = model.calibration['states']
     x = model.calibration['controls']
     X = x
+
     y = model.calibration['auxiliaries']
+    
     E = model.calibration['shocks']
     V = model.calibration['values']
     p = model.calibration['parameters']
