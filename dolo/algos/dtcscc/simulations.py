@@ -1,3 +1,4 @@
+from dolo.misc.dprint import dprint
 import numpy
 import pandas
 from matplotlib import pyplot
@@ -70,9 +71,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
         s0 = calib['states']
 
     # s0 = numpy.atleast_2d(s0.flatten()).T
-
     x0 = dr(s0)
-
     s_simul = numpy.zeros((horizon, n_exp, s0.shape[0]))
     x_simul = numpy.zeros((horizon, n_exp, x0.shape[0]))
 
@@ -111,6 +110,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
 
             dfobj = SerialDifferentiableFunction(fobj)
             [x, nit] = ncpsolve(dfobj, lb, ub, x)
+
 
         x_simul[i, :, :] = x
 

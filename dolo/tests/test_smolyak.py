@@ -41,9 +41,9 @@ class  TestInterpolation(unittest.TestCase):
         b = [2,3]
         bounds = numpy.row_stack([a,b])
 
-        from dolo.numeric.interpolation.smolyak import MultiSmolyak
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
 
-        sg = MultiSmolyak(a,b,3)
+        sg = SmolyakGrid(a,b,3)
 
         values = f(sg.grid)
         sg.set_values(values)
@@ -72,12 +72,12 @@ class  TestInterpolation(unittest.TestCase):
     def test_smolyak_2(self):
 
         import numpy
-        from dolo.numeric.interpolation.smolyak import MultiSmolyak
+        from dolo.numeric.interpolation.smolyak import SmolyakGrid
         d = 5
         l = 4
 
         bounds = numpy.row_stack([[-0.5]*d, [0.7]*d])
-        sg = MultiSmolyak(bounds[0,:],bounds[1,:],l)
+        sg = SmolyakGrid(bounds[0,:],bounds[1,:],l)
         f = lambda x: numpy.row_stack([
                     x[:,0] * x[:,1],
                     x[:,1] * x[:,1] - x[:,0] * x[:,0]

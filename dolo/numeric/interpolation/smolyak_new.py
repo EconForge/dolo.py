@@ -54,7 +54,7 @@ class MultiSmolyak:
     def __call__(self, s):
 
         if s.ndim==1:
-            return self.interpolate(s[:,None]).ravel()
+            return self.interpolate(s[None,:]).ravel()
         else:
             return self.interpolate(s)
 

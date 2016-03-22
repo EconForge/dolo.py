@@ -45,11 +45,11 @@ def dprint(s):
 
     print(text)
 
+if __name__ == '__main__':
+
+    a = 34
 
 
-a = 34
+    dprint('a')
 
-
-dprint('a')
-
-dprint(a)
+    dprint(a)
