@@ -9,7 +9,7 @@ def test_time_iteration_smolyak():
     import time
 
     dr = time_iteration(model, pert_order=1, maxit=500, smolyak_order=3, verbose=True)
-    dr = time_iteration(model, pert_order=1, maxit=5, smolyak_order=5, verbose=True)
+    # dr = time_iteration(model, pert_order=1, maxit=5, smolyak_order=5, verbose=True)
 
 
 def test_time_iteration_spline():

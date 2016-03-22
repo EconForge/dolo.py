@@ -2,12 +2,11 @@ from collections import OrderedDict
 import numpy
 from numpy import array, zeros
 
-
+from interpolation.splines.filter_cubic import filter_data
 
 
 def filter(smin, smax, orders, controls):
 
-    from dolo.numeric.interpolation.filter_cubic_splines import filter_data
     n_mc, N, n_x = controls.shape
     dinv = (smax-smin)/(orders-1)
     oorders = ( orders + 2 ).tolist()

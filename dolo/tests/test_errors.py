@@ -21,6 +21,7 @@ def test_omega_errors():
 
         res_1 = omega( model, dr, orders=[10,10], time_discount=0.96)
         res_2 = omega( model, dr_global)
+
         print(res_1)
         print(res_2)
 
@@ -38,6 +39,7 @@ def test_denhaan_errors():
 
         dr_global = time_iteration(model, interp_type='smolyak', smolyak_order=4, verbose=False)
 
+        s0 = model.calibration['states']
         sigma = model.covariances
 
         model.sigma = sigma
