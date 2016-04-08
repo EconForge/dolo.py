@@ -137,7 +137,7 @@ def model_to_fg(model, order=2):
 
 
 
-def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True, eigmax=1.0):
+def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True, eigmax=1.0+1e-6):
 
     assert(model.model_type=='dtcscc')
 
@@ -235,7 +235,7 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, stead
             return dr
         return [X_bar, X_s, X_ss, X_sss]
 
-def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eigmax=1.00000):
+def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eigmax=1.0+1e-6):
     """Computes a Taylor approximation of decision rules, given the supplied derivatives.
 
     The original system is assumed to be in the the form:
@@ -281,7 +281,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
 
     [g0,g1] = g_fun[:2]
     n_x = f1.shape[0]           # number of controls
-    n_s = f1.shape[1]/2 - n_x   # number of states
+    n_s = f1.shape[1]//2 - n_x   # number of states
     n_e = g1.shape[1] - n_x - n_s
     n_v = n_s + n_x
 
@@ -306,7 +306,7 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True, eig
 
 
     from dolo.numeric.extern.qz import qzordered
-    [S,T,Q,Z,eigval] = qzordered(A,B,n_s)
+    [S,T,Q,Z,eigval] = qzordered(A,B,eigmax)
 
     # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval>eigmax)

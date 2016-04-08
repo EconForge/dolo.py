@@ -37,7 +37,7 @@ class GeneralizedEigenvaluesError(Exception):
         return "Eigenvalues are not uniquely defined. "
 
 
-def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0,
+def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-6,
                          solve_steady_state=False, order=1):
     """Compute first order approximation of optimal controls
 
@@ -117,7 +117,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0,
         column_stack([f_s, f_x])
     ])
 
-    [S, T, Q, Z, eigval] = qzordered(A, B, n_s)
+    [S, T, Q, Z, eigval] = qzordered(A, B, eigmax)
     Q = Q.real  # is it really necessary ?
     Z = Z.real
 
