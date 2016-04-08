@@ -10,8 +10,6 @@ TOL_RES = 1E-8
 
 def solve_decision_rule(model,order=1,method='default',mlab=None,steady_state = None, solve_ss = False):
 
-#    Sigma = model.read_covariances()
-#    Sigma = np.array(model.covariances).astype(np.float64)
     Sigma = model.covariances
     y = model.calibration['variables']
     x = model.calibration['shocks']
@@ -23,34 +21,18 @@ def solve_decision_rule(model,order=1,method='default',mlab=None,steady_state = 
     else:
         y0 = y
 
-
-    #pc = PythonCompiler(model)
-
-    # pc = model.compiler
-    # if method == 'default':
-        # p_dynamic = pc.compute_dynamic_pfile_cached(order,False,False)
-    # elif method in ('sigma2','full'):
-        # p_dynamic = pc.compute_dynamic_pfile_cached(order,False,True)
-        #p_dynamic = pc.compute_dynamic_pfile_cached(order,True,False)
-    # else:
-        # raise Exception('Unknown method : ' + method)
-
-    f_dynamic = model.functions['f_dynamic']
-
     # Build the approximation point to take the derivatives
     yy = np.concatenate([y,y,y,x])
-    # xx = np.array(x)
-    # xx = np.atleast_2d(xx)
     parms = np.array(parms)
+
+    if order==1:
+        f_dynamic = model.functions['f_dynamic']
+    else:
+        f_dynamic = model.__get_compiled_functions__(order=order)['f_dynamic']
 
     derivatives = f_dynamic(yy,parms, order=order)
 
-    # res = derivatives[0]
-    # if abs(res).max() > TOL_RES:
-    #     print('Residuals\n')
-    #     for i,eq in enumerate(model.equations):
-    #         print('{0}\t:{1}\t:\t{2}'.format(i,res[i],eq))
-    #     raise Exception("Initial values don't satisfy static equations")
+    print(derivatives)
 
     derivatives_ss = None
 

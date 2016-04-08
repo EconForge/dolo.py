@@ -12,6 +12,7 @@ def test_dynare_model():
     n_a = len(model.variables) + len(model.symbols['shocks'])
 
     irf = simulate(dr, n_exp=0, start='risky')
+    print(irf)
     assert(irf.shape == (41,n_a))
     assert(irf.std().max()<0.00001)
 

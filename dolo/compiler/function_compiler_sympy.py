@@ -93,7 +93,8 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     txt = """def {funname}(x, p, order=1):
 
     import numpy
-    from numpy import log, exp, tan
+    from numpy import log, exp, tan, sqrt, pi
+    from scipy.special import erfc
 
 """.format(funname=funname)
 
@@ -179,7 +180,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     if order == 3:
         return [out, out_1, out_2, out_3]
     """
-    print(txt)
+
     if return_code:
         return txt
     else:

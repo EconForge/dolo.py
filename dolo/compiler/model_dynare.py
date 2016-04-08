@@ -8,6 +8,9 @@ import numpy
 class DynareModel(NumericModel):
 
     def __compile_functions__(self):
+        self.functions = self.__get_compiled_functions__()
+
+    def __get_compiled_functions__(self, order=1):
 
 
         # constructs arguments of function f(y(1),y,y(-1),e,p)
@@ -33,15 +36,18 @@ class DynareModel(NumericModel):
 
 
         f_dynamic = compile_higher_order_function(eqs, syms, params,
-                                                order=3, funname='f_dynamic')
+                                                order=order, funname='f_dynamic')
 
         e = self.calibration['shocks']
         f_static = lambda y, p: f_dynamic(numpy.concatenate([y,y,y,e]),p, order=0)
 
-        self.functions = {
+        functions = {
             'f_static': f_static,
             'f_dynamic': f_dynamic,
         }
+
+        return functions
+
 
 
 
