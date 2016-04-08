@@ -138,7 +138,6 @@ def yaml_import(fname, txt=None, return_symbolic=False):
         # add the calibration of variables defined in the model not in calibration
         all_variables = sum( [symbols[group] for group in symbols if group!= 'parameters'], [])
         from dolo.compiler.function_compiler_ast import timeshift
-        print(all_variables)
         for eq_group in symbolic_equations.keys():
             if eq_group in initialized_from_model.values():
                 for eq in symbolic_equations[eq_group]:

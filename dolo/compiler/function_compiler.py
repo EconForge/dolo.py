@@ -77,7 +77,7 @@ class standard_function:
                     coredim = non_core_dims[i]
                     n_None = K-len(coredim)
                     n_Ellipsis = arg.ndim
-                    newind = ((None,)*n_None) +(Ellipsis,)*n_Ellipsis
+                    newind = ((None,)*n_None) +(slice(None,None,None),)*n_Ellipsis
                     new_args.append(arg[newind])
 
                 new_args = tuple(new_args)

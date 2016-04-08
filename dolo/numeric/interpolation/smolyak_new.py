@@ -467,17 +467,10 @@ if __name__ == '__main__':
     grid = sg.grid
     grid2 = sg2.grid
 
-    print(grid2.shape)
-
     values = column_stack( [grid[:,0] * (1-grid[:,1])/2.0, grid[:,1], grid[:,0]] )
-    print("Values")
-    print(values.shape)
 
     sg.set_values(values)
 
-    print('sizes of the grids')
-    print(sg.u_grid.shape)
-    print(sg2.u_grid.shape)
 
     sh = values.shape
     print('values')

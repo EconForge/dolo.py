@@ -39,10 +39,8 @@ class MarkovDecisionRule:
         return self.__grid__
 
     def set_values(self, values):
-        print("filter")
         self.__values__ = values
         self.__coefs__ = filter_controls(self.smin, self.smax, self.orders, values)
-        print("done")
 
     def __call__(self, i_m, points, out=None):
 
