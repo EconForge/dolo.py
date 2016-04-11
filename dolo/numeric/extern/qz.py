@@ -5,7 +5,7 @@ from numpy import real_if_close,where
 
 def qzordered(A,B,crit=1.0+1e-6):
     "Eigenvalues bigger than crit are sorted in the top-left."
-    
+
     TOL = 1e-10
 
     def select(alpha, beta):
@@ -14,12 +14,6 @@ def qzordered(A,B,crit=1.0+1e-6):
     [S,T,alpha,beta,U,V] = ordqz(A,B,output='real',sort=select)
 
     eigval = abs(numpy.diag(S)/numpy.diag(T))
-    print("Errors and eigenvalues")
-    print(eigval)
-    print( U@S@V.T - A)
-    print( U@T@V.T - B)
-    print(numpy.concatenate([numpy.diag(e)[:,None] for e in [S,T]],axis=1))
-    print()
 
     return [S,T,U,V,eigval]
 
