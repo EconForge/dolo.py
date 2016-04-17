@@ -6,6 +6,7 @@ from dolo.config import *
 
 from dolo.compiler.model_import import yaml_import
 from dolo.misc.display import pcat
+from dolo.misc.groot import groot
+from dolo.misc.dprint  import dprint
 
 from dolo.algos.commands import *
-
