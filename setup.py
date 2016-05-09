@@ -18,7 +18,7 @@ setup(
 
     include_dirs = [np.get_include()],
 
-    scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo'],
+    scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo', 'bin/dolo-lint'],
 
     install_requires = ["pyyaml", "numba>=0.13", "numpy", "numexpr", "sympy",
                         "pandas", "interpolation"],

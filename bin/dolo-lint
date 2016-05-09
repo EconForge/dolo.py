@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+import os
+print(os.getcwd())
+
+txt = open('examples/models/rbc_fuzzy.yaml').read()
+
+# requires conda install -c conda-forge ruamel.yaml=0.11.7
+
+import ruamel.yaml as ry
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
+data = ry.load(txt,ry.RoundTripLoader)
+
+from collections import OrderedDict
+
+model_type = 'dtcscc'
+
+known_symbol_types = {
+    'dtcscc':['states','controls','auxiliaries','values','shocks','parameters']
+}
+
+def check_symbol_validity(s):
+    import ast
+    val = ast.parse(s).body[0].value
+    assert(isinstance(val, ast.Name))
+
+def check_symbols(cm_symbols):
+
+    # can raise three types of exceptions
+    # - unknown symbol
+    # - invalid symbol
+    # - already declared
+
+    # add: not declared if missing 'states', 'controls' ?
+
+
+    exceptions = []
+    assert(isinstance(cm_symbols, CommentedMap))
+
+    already_declared = {} # symbol: symbol_type, position
+
+    for key,values in cm_symbols.items():
+        # (start_line, start_column, end_line, end_column) of the key
+        if key not in known_symbol_types[model_type]:
+            l0,c0,l1,c1 = cm_symbols.lc.data[key]
+            exc = Exception("({}): Unknown symbol type '{}' for model type '{}'".format((l0,c0,l1,c1), key, model_type))
+            # print(l0,c0,l1,c1)
+            exceptions.append( exc )
+            assert( isinstance(values,CommentedSeq) )
+
+        for i,v in enumerate(values):
+            (l0,c0) = values.lc.data[i]
+            length = len(v)
+            l1 = l0
+            c1 = c0+length
+            try:
+                check_symbol_validity(v)
+            except:
+                exc = Exception("({}): Invalid symbol '{}'".format((l0,c0,l1,c1), v))
+                exceptions.append(exc)
+            if v in already_declared:
+                ll = already_declared[v]
+                exc = Exception("({}): Symbol '{}' already declared as '{}'. (pos {})".format((l0,c0,l1,c1), v, ll[0], ll[1]))
+                exceptions.append(exc)
+            else:
+                already_declared[v] = (key, (l0,c0))
+
+    return symbols, exceptions
+
+symbols = data['symbols']
+
+key = check_symbols(data['symbols'])
+
+
+# TODO:
+# - check name (already defined by smbdy else ?)
+# - description: ?
+# - calibration:
+#      - incorrect key
+#          - warning if not a known symbol ?
+#          - not a recognized identifier
+#          - defined twice
+#      - impossible to solve in closed form (depends on ...)
+#      - incorrect equation
+#           - grammatically incorrect
+#           - contains timed variables
+#      - warnings:
+#           - missing values
+# - equations: symbols already known (beware of speed issues)
+#     - unknown group of equations
+#     - incorrect syntax
+#     - undeclared variable (and not a function)
+#     - indexed parameter
+#     - incorrect complementarities
+#     - incorrect recipe: unexpected symbol type
+#     - nonzero residuals (warning, to be done without compiling)
+# - options: if present
+#     - approximation_space:
+#          - inconsistent boundaries
+#                - must equal number of states
+#     - distribution:
+#          - same size as shocks
