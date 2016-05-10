@@ -1,13 +1,12 @@
-def test_pea():
+def test_direct():
 
     from dolo import yaml_import
     from dolo.algos.dtcscc.perturbations import approximate_controls
-    from dolo.algos.dtcscc.time_iteration import time_iteration
-    from dolo.algos.dtcscc.pea import pea
+    from dolo.algos.dtcscc.time_iteration import time_iteration_direct, time_iteration
 
     model = yaml_import("examples/models/rbc_full.yaml")
 
-    dr = pea(model)
+    dr = time_iteration_direct(model)
     ddr = time_iteration(model)
 
     x0 = dr(dr.grid)
