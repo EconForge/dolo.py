@@ -1,17 +1,21 @@
 #!/usr/bin/env python
-import os
-print(os.getcwd())
 
-txt = open('examples/models/rbc_fuzzy.yaml').read()
-
-# requires conda install -c conda-forge ruamel.yaml=0.11.7
-
+import argparse
 import ruamel.yaml as ry
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
-
-data = ry.load(txt,ry.RoundTripLoader)
-
+# requires conda install -c conda-forge ruamel.yaml=0.11.7
 from collections import OrderedDict
+
+
+parser = argparse.ArgumentParser(description='Dolo command line')
+parser.add_argument('infile', type=argparse.FileType('r'))
+args = parser.parse_args()
+
+ff = args.infile
+txt = ff.read()
+
+# raise exception if it doesn't work correctly
+data = ry.load(txt,ry.RoundTripLoader)
 
 model_type = 'dtcscc'
 
@@ -43,7 +47,8 @@ def check_symbols(cm_symbols):
         # (start_line, start_column, end_line, end_column) of the key
         if key not in known_symbol_types[model_type]:
             l0,c0,l1,c1 = cm_symbols.lc.data[key]
-            exc = Exception("({}): Unknown symbol type '{}' for model type '{}'".format((l0,c0,l1,c1), key, model_type))
+            exc = Exception("Unknown symbol type '{}' for model type '{}'".format(key, model_type))
+            exc.pos = (l0,c0,l1,c1)
             # print(l0,c0,l1,c1)
             exceptions.append( exc )
             assert( isinstance(values,CommentedSeq) )
@@ -56,11 +61,13 @@ def check_symbols(cm_symbols):
             try:
                 check_symbol_validity(v)
             except:
-                exc = Exception("({}): Invalid symbol '{}'".format((l0,c0,l1,c1), v))
+                exc = Exception("Invalid symbol '{}'".format(v))
+                exc.pos = (l0,c0,l1,c1)
                 exceptions.append(exc)
             if v in already_declared:
                 ll = already_declared[v]
-                exc = Exception("({}): Symbol '{}' already declared as '{}'. (pos {})".format((l0,c0,l1,c1), v, ll[0], ll[1]))
+                exc = Exception("Symbol '{}' already declared as '{}'. (pos {})".format(v, ll[0], (ll[1][0]+1,ll[1][1])))
+                exc.pos = (l0,c0,l1,c1)
                 exceptions.append(exc)
             else:
                 already_declared[v] = (key, (l0,c0))
@@ -69,8 +76,19 @@ def check_symbols(cm_symbols):
 
 symbols = data['symbols']
 
-key = check_symbols(data['symbols'])
-
+import json
+symbols, exceptions = check_symbols(data['symbols'])
+source = ff.name
+output = []
+for k in exceptions:
+    output.append({
+        'type': 'error',
+        'source': source,
+        'range': ((k.pos[0],k.pos[1]),(k.pos[2],k.pos[3])),
+        'text': k.args[0]
+    })
+print(json.dumps(output))
+    # print('stdin:{}: {}'.format(k.pos,k.args[0]))
 
 # TODO:
 # - check name (already defined by smbdy else ?)
