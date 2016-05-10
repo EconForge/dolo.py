@@ -15,7 +15,11 @@ ff = args.infile
 txt = ff.read()
 
 # raise exception if it doesn't work correctly
-data = ry.load(txt,ry.RoundTripLoader)
+try:
+    data = ry.load(txt,ry.RoundTripLoader)
+except:
+    print('[]') # should return parse error
+    exit()
 
 model_type = 'dtcscc'
 
@@ -36,7 +40,6 @@ def check_symbols(cm_symbols):
     # - already declared
 
     # add: not declared if missing 'states', 'controls' ?
-
 
     exceptions = []
     assert(isinstance(cm_symbols, CommentedMap))
@@ -73,16 +76,117 @@ def check_symbols(cm_symbols):
                 already_declared[v] = (key, (l0,c0))
 
     return symbols, exceptions
+import ast
+def check_equations(data, symbols, model_type):
+
+    pos0 = data.lc.data['equations']
+    equations = data['equations']
+
+    exceptions = []
+    from dolo.compiler.recipes import recipes
+    recipe = recipes[model_type]
+    specs = recipe['specs']
+
+    for eq_type in specs.keys():
+        if (eq_type not in equations) and (not specs[eq_type].get('optional',True)):
+            exc = Exception("Missing equation type {}.".format(eq_type))
+            exc.pos = pos0
+            exceptions.append(exc)
+
+    already_declared = {}
+    unknown = []
+    for eq_type in equations.keys():
+        pos = equations.lc.data[eq_type]
+        if eq_type not in specs:
+            exc = Exception("Unknown equation type {}.".format(eq_type))
+            exc.pos = pos
+            exceptions.append(exc)
+            unknown.append(eq_type)
+
+        # BUG: doesn't produce an error when a block is declared twice
+        # should be raised by ruaml.yaml ?
+        elif eq_type in already_declared.keys():
+            exc = Exception("Equation type {} declared twice at ({})".format(eq_type, pos))
+            exc.pos = pos
+            exceptions.append(exc)
+        else:
+            already_declared[eq_type] = pos
+
+    for eq_type in [k for k in equations.keys() if k not in unknown]:
+        for n,eq in enumerate(equations[eq_type]):
+            pos = equations[eq_type].lc.data[n]
+            try:
+                ast.parse(eq)
+            except SyntaxError as e:
+                exc = Exception("Syntax Error.")
+                exc.pos = [pos[0], pos[1]+e.offset, pos[0], pos[1]+e.offset]
+                exceptions.append(exc)
+
+        # TEMP: incorrect ordering
+        if specs[eq_type].get('target'):
+            for n,eq in enumerate(equations[eq_type]):
+                pos = equations[eq_type].lc.data[n]
+                lhs_name = str.split(eq,'=')[0].strip()
+                target = specs[eq_type]['target'][0]
+                if lhs_name not in data['symbols'][target]:
+                    exc = Exception("Undeclared assignement target '{}'. Add it to '{}'.".format(lhs_name, target))
+                    exc.pos = [pos[0], pos[1], pos[0], pos[1]+len(lhs_name)]
+                    exceptions.append(exc)
+                # if n>len(data['symbols'][target]):
+                else:
+                    right_name = data['symbols'][target][n]
+                    if lhs_name!=right_name:
+                        exc = Exception("Left hand side should be '{}' instead of '{}'.".format(right_name, lhs_name))
+                        exc.pos = [pos[0], pos[1], pos[0], pos[1]+len(lhs_name)]
+                        exceptions.append(exc)
+        # temp
+    return exceptions
+
+def check_calibration(data):
+    ## what happens here if symbols are not clean ?
+    symbols = data['symbols']
+    pos0 = data.lc.data['calibration']
+    calibration = data['calibration']
+    exceptions = []
+    all_symbols = []
+    for v in symbols.values(): all_symbols += v
+    for s in all_symbols:
+        if s not in calibration.keys():
+            # should skip invalid symbols there
+            exc = Exception("Symbol {} has no calibrated value.".format(s))
+            exc.pos = pos0
+            exc.type = 'warning'
+            exceptions.append(exc)
+    for s in calibration.keys():
+        val = str(calibration[s])
+        try:
+            ast.parse(val)
+        except SyntaxError as e:
+            pos = calibration.lc.data[s]
+            exc = Exception("Syntax Error.")
+            exc.pos = [pos[0], pos[1]+e.offset, pos[0], pos[1]+e.offset]
+            exceptions.append(exc)
+    return exceptions
+
 
 symbols = data['symbols']
 
 import json
 symbols, exceptions = check_symbols(data['symbols'])
+
+exceptions += check_equations(data, symbols, model_type)
+exceptions += check_calibration(data)
+
+
 source = ff.name
 output = []
 for k in exceptions:
+    try:
+        err_type = k.type
+    except:
+        err_type = 'error'
     output.append({
-        'type': 'error',
+        'type': err_type,
         'source': source,
         'range': ((k.pos[0],k.pos[1]),(k.pos[2],k.pos[3])),
         'text': k.args[0]
@@ -109,6 +213,7 @@ print(json.dumps(output))
 #     - incorrect syntax
 #     - undeclared variable (and not a function)
 #     - indexed parameter
+#     - incorrect order
 #     - incorrect complementarities
 #     - incorrect recipe: unexpected symbol type
 #     - nonzero residuals (warning, to be done without compiling)

@@ -105,6 +105,7 @@ dtcscc:
                 - ['shocks',0,'e']
                 - ['parameters', 0, 'p']
 
+            optional: False
 
         auxiliary:
 
