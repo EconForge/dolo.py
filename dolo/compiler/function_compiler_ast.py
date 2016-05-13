@@ -220,6 +220,9 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     expressions: list of equations as string
     '''
 
+    # TODO: definitions should be used only if necessary
+
+
     from collections import OrderedDict
     table = OrderedDict()
 
@@ -319,6 +322,8 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
 
+    import dolo.config
+    if dolo.config.debug: print_code = True
     if print_code:
         s = "Function {}".format(mod.body[0].name)
         print("-" * len(s))

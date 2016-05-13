@@ -86,7 +86,6 @@ def solve_triangular_system(system, values=None, context=None):
         try:
 
             val = system[v]
-
             d[v] = eval(str(val), d, d)
 
         except Exception as e:  # in case d[v] is an int

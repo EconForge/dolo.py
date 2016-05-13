@@ -1,15 +1,20 @@
 name: Real Business Cycle
 
+model_type: dtcscc
+
 symbols:
 
    states:  [z, k]
    controls: [i, n]
-   auxiliaries: [y, c, rk, w]
    values: [V]
    shocks: [e_z]
-
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
+definitions:
+    y: z*k^alpha*n^(1-alpha)
+    c: y - i
+    rk:  alpha*y/k
+    w: (1-alpha)*y/n
 
 equations:
 
@@ -22,11 +27,6 @@ equations:
         - z = (1-rho)*zbar + rho*z(-1) + e_z
         - k = (1-delta)*k(-1) + i(-1)
 
-    auxiliary:
-        - y = z*k^alpha*n^(1-alpha)
-        - c = y - i
-        - rk = alpha*y/k
-        - w = (1-alpha)*y/n
 
     value:
         - V = log(c) + beta*V(1)

@@ -15,17 +15,13 @@ class NumericModel:
     def __init__(self, symbolic_model, options=None, infos=None):
 
         self.symbolic = symbolic_model
-
         self.symbols = symbolic_model.symbols
 
         self.variables = sum( [tuple(e) for k,e in  self.symbols.items() if k not in ('parameters','shocks','values')], ())
 
         self.options = options if options is not None else {}
 
-        self.infos = infos if infos is not None else {}
-
-        self.infos['data_layout'] = 'columns'
-
+        self.infos = infos
         self.name = self.infos['name']
         self.model_type = self.infos['type']
         # self.model_spec
@@ -51,8 +47,8 @@ class NumericModel:
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
 
-        distribution = evaluator.eval(self.symbolic.distribution)
-        discrete_transition = evaluator.eval(self.symbolic.discrete_transition)
+        distribution = evaluator.eval(self.symbolic.options.get('distribution']))
+        discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
 
 
         covariances = distribution

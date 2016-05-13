@@ -10,6 +10,7 @@
 
 save_plots = False
 real_type = 'double'
+debug = False
 
 import warnings
 
