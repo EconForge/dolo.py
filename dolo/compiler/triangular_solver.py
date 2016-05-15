@@ -3,15 +3,7 @@ from __future__ import division
 import copy
 
 
-def triangular_solver(incidence, context=None):
-
-    if context is None:
-
-        context = dict()
-        import math
-        context['log'] = math.log
-        context['exp'] = math.exp
-        context['nan'] = float('nan')
+def triangular_solver(incidence):
 
     n = len(incidence)
 
