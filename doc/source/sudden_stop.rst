@@ -20,7 +20,7 @@ importing necessary functions
 .. parsed-literal::
 
     Populating the interactive namespace from numpy and matplotlib
-    
+
 
 .. code:: python
 
@@ -37,7 +37,7 @@ writing the model
 .. parsed-literal::
 
     C:\Users\Pablo\Documents\GitHub\dolo\examples\models
-    
+
 
 .. code:: python
 
@@ -193,54 +193,54 @@ writing the model
     76</pre></div></td><td class="code"><div class="source"><pre><span class="c1"># This file adapts the model described in</span>
     <span class="c1"># &quot;From Sudden Stops to Fisherian Deflation, Quantitative Theory and Policy&quot;</span>
     <span class="c1"># by Anton Korinek and Enrique G. Mendoza</span>
-    
+
     <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Sudden Stop (General)</span>
-    
+
     <span class="l-Scalar-Plain">model_spec</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">mfga</span>
-    
+
     <span class="l-Scalar-Plain">symbols</span><span class="p-Indicator">:</span>
-    
+
         <span class="l-Scalar-Plain">markov_states</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">y</span><span class="p-Indicator">]</span>
         <span class="l-Scalar-Plain">states</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">l</span><span class="p-Indicator">]</span>
         <span class="l-Scalar-Plain">controls</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">b</span><span class="p-Indicator">,</span> <span class="nv">lam</span><span class="p-Indicator">]</span>
         <span class="l-Scalar-Plain">auxiliaries</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">c</span><span class="p-Indicator">]</span>
         <span class="l-Scalar-Plain">values</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">V</span><span class="p-Indicator">,</span> <span class="nv">Vc</span><span class="p-Indicator">]</span>
         <span class="l-Scalar-Plain">parameters</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">beta</span><span class="p-Indicator">,</span> <span class="nv">R</span><span class="p-Indicator">,</span> <span class="nv">sigma</span><span class="p-Indicator">,</span> <span class="nv">a</span><span class="p-Indicator">,</span> <span class="nv">mu</span><span class="p-Indicator">,</span> <span class="nv">kappa</span><span class="p-Indicator">,</span> <span class="nv">delta_y</span><span class="p-Indicator">,</span> <span class="nv">pi</span><span class="p-Indicator">,</span> <span class="nv">lam_inf</span><span class="p-Indicator">]</span>
-    
+
     <span class="l-Scalar-Plain">equations</span><span class="p-Indicator">:</span>
-    
+
         <span class="l-Scalar-Plain">transition</span><span class="p-Indicator">:</span>
-    
+
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">l = b(-1)</span>
-    
+
         <span class="l-Scalar-Plain">arbitrage</span><span class="p-Indicator">:</span>
-    
+
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">lam = b/c</span>
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">beta*(c(1)/c)^(-sigma)*R - 1    |  lam_inf &lt;= lam &lt;= inf</span>
-    
-    
+
+
         <span class="l-Scalar-Plain">auxiliary</span><span class="p-Indicator">:</span>
-    
+
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">c = 1 + y + l*R - b</span>
-    
+
         <span class="l-Scalar-Plain">value</span><span class="p-Indicator">:</span>
-    
+
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">V = c^(1.0-sigma)/(1.0-sigma) + beta*V(1)</span>
             <span class="p-Indicator">-</span> <span class="l-Scalar-Plain">Vc = c^(1.0-sigma)/(1.0-sigma)</span>
-    
-    
+
+
     <span class="l-Scalar-Plain">discrete_transition</span><span class="p-Indicator">:</span>
-    
+
         <span class="l-Scalar-Plain">MarkovChain</span><span class="p-Indicator">:</span>
-    
+
             <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">1.0-delta_y</span> <span class="p-Indicator">],</span>  <span class="c1"># bad state</span>
                <span class="p-Indicator">[</span> <span class="nv">1.0</span> <span class="p-Indicator">]]</span>          <span class="c1"># good state</span>
-    
+
             <span class="p-Indicator">-</span> <span class="p-Indicator">[[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">1-0.5</span> <span class="p-Indicator">],</span>   <span class="c1"># probabilities   [p(L|L), p(H|L)]</span>
                <span class="p-Indicator">[</span> <span class="nv">0.5</span><span class="p-Indicator">,</span> <span class="nv">0.5</span> <span class="p-Indicator">]]</span>     <span class="c1"># probabilities   [p(L|H), p(H|H)]</span>
-    
+
     <span class="l-Scalar-Plain">calibration</span><span class="p-Indicator">:</span>
-    
+
         <span class="l-Scalar-Plain">beta</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.95</span>
         <span class="l-Scalar-Plain">R</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">1.03</span>
         <span class="l-Scalar-Plain">sigma</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">2.0</span>
@@ -255,20 +255,20 @@ writing the model
         <span class="l-Scalar-Plain">b</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.0</span>
         <span class="l-Scalar-Plain">l</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.0</span>
         <span class="l-Scalar-Plain">lam</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">0.0</span>
-    
+
         <span class="l-Scalar-Plain">V</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">c^(1.0-sigma)/(1.0-sigma)/(1.0-beta)</span>
         <span class="l-Scalar-Plain">Vc</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">c^(1.0-sigma)/(1.0-sigma)</span>
-    
+
     <span class="l-Scalar-Plain">options</span><span class="p-Indicator">:</span>
-    
+
         <span class="l-Scalar-Plain">approximation_space</span><span class="p-Indicator">:</span>
-    
+
             <span class="l-Scalar-Plain">a</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">-1.0</span><span class="p-Indicator">]</span>
             <span class="l-Scalar-Plain">b</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span> <span class="nv">1.0</span><span class="p-Indicator">]</span>
             <span class="l-Scalar-Plain">orders</span><span class="p-Indicator">:</span> <span class="p-Indicator">[</span><span class="nv">10</span><span class="p-Indicator">]</span>
     </pre></div>
     </td></tr></table>
-        
+
 
 
 
@@ -290,36 +290,36 @@ By default, the calibrated value for endogenous variables are used as a
 .. parsed-literal::
 
     Model type detected as 'dtmscc'
-    
+
 
 
 
 .. parsed-literal::
 
-    
+
     Model object:
     ------------
-    
+
     - name: "Sudden Stop (General)"
     - type: "dtmscc"
     - file: "sudden_stop.yaml
-    
+
     - residuals:
-    
+
         transition
             1   : 0.0000 : l = b(-1)
-    
+
         arbitrage
             1   : 0.0000 : lam = b/c
             2   : [31m-0.0215[0m : beta*(c(1)/c)**(-sigma)*R - 1    |  lam_inf <= lam <= inf
-    
+
         auxiliary
             1   : 0.0000 : c = 1 + y + l*R - b
-    
+
         value
             1   : 0.0000 : V = c**(1.0-sigma)/(1.0-sigma) + beta*V(1)
             2   : 0.0000 : Vc = c**(1.0-sigma)/(1.0-sigma)
-    
+
 
 
 
@@ -359,40 +359,40 @@ By default, the calibrated value for endogenous variables are used as a
     ------------------------------------------------
     Elapsed: 4.91300010681 seconds.
     ------------------------------------------------
-    
+
 
 .. code:: python
 
     # produce the plots
     n_steps = 100
-    
+
     figure(figsize(10,6))
     subplot(121)
     plot_decision_rule(model, mdr, 'l', 'b', i0=0, n_steps=n_steps, label='$b_t$ (bad state)' )
     plot_decision_rule(model, mdr, 'l', 'b', i0=1, n_steps=n_steps, label='$b_t$ (good state)' )
     plot_decision_rule(model, mdr, 'l', 'l', i0=1, n_steps=n_steps, linestyle='--', color='black' )
     #plot(df['l'], df['l'], linestyle='--', color='black')
-    
+
     # to plot the borrowing limit, we produce a dataframe df which contains all series
     # (note that we don't supply a variable name to plot, only the state 'l')
-    
+
     lam_inf = model.get_calibration('lam_inf')
     df = plot_decision_rule(model, mdr, 'l', i0=0, n_steps=n_steps)
     plot(df['l'], lam_inf*df['c'], linestyle='--', color='black')
-    
+
     xlabel('$l_t$')
-    
+
     legend(loc= 'upper left')
-    
-    
+
+
     subplot(122)
     plot_decision_rule(model, mdr, 'l', 'c', i0=0, n_steps=n_steps, label='$c_t$ (bad state)' )
     plot_decision_rule(model, mdr, 'l', 'c', i0=1, n_steps=n_steps, label='$c_t$ (good state)' )
     legend(loc= 'lower right')
     xlabel('$l_t$')
-    
+
     suptitle("Decision Rules")
-    
+
 
 
 
@@ -518,13 +518,13 @@ the high aversion scenario :math:`\sigma=16`.
     ------------------------------------------------
     Elapsed: 13.4159998894 seconds.
     ------------------------------------------------
-    
+
 
 .. parsed-literal::
 
     [33mUserWarning[0m:c:\users\pablo\documents\github\dolo\dolo\numeric\optimize\newton.py:150
         Did not converge
-    
+
 
 .. code:: python
 
@@ -547,4 +547,3 @@ the high aversion scenario :math:`\sigma=16`.
 
 
 .. image:: sudden_stop_files%5Csudden_stop_16_1.png
-

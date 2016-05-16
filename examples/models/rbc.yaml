@@ -13,15 +13,15 @@ symbols:
 definitions:
     y: z*k^alpha*n^(1-alpha)
     c: y - i
-    rk:  alpha*y/k
+    rk: alpha*y/k
     w: (1-alpha)*y/n
 
 equations:
 
 
     arbitrage:
-        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
-        - chi*n^eta*c^sigma - w                       | 0 <= n <= inf
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  # | 0 <= i <= inf
+        - chi*n^eta*c^sigma - w                      # | 0 <= n <= inf
 
     transition:
         - z = (1-rho)*zbar + rho*z(-1) + e_z
@@ -57,16 +57,12 @@ calibration:
     V: log(c)/(1-beta)
 
 
-distribution:
-
-    Normal:
-
-        [ [ sig_z**2] ]
-
-
 options:
 
-    Approximation:
+    distribution:
+        [ [ sig_z**2] ]
+
+    grid:
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

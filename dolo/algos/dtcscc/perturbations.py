@@ -141,8 +141,7 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
         msg = "There are {} eigenvalues greater than {}. Expected: {}."
         print(msg.format(n_big_one, eigmax, n_x))
     if n_expected != n_big_one:
-        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval,
-                                 eigmax=eigmax)
+        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval, eigmax=eigmax)
 
     Z11 = Z[:n_s, :n_s]
     Z12 = Z[:n_s, n_s:]

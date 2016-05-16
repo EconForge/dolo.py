@@ -127,9 +127,8 @@ class standard_function:
 
 ################################
 
-
-
 import ast
+from dolo.compiler.symbolic import timeshift
 
 class CountNames(ast.NodeVisitor):
 
@@ -159,10 +158,14 @@ class CountNames(ast.NodeVisitor):
             #     self.problems.append([name, colno, 'timing_error'])
         elif name in self.known_functions:
             self.functions.add(name)
+            for arg in call.args:
+                self.visit(arg)
         elif name in self.known_constants:
             self.constants.add(name)
         else:
             self.problems.append(name)
+            for arg in call.args:
+                self.visit(arg)
 
     def visit_Name(self, cname):
         name = cname.id
@@ -218,34 +221,66 @@ def get_deps(incidence, var, visited=None):
 
     return resp
 
-from dolo.misc.dprint import dprint
-from ast import Name, Sub, Store, Assign, Subscript, Load, Index, Num
+from ast import Name, Sub, Store, Assign, Subscript, Load, Index, Num, Call
 from dolo.compiler.symbolic import eval_scalar, StandardizeDatesSimple, std_tsymbol
 from collections import OrderedDict
 from dolo.compiler.symbolic import match
-from dolo import dprint
-def compile_function_ast(equations, symbols, arg_names, output_names=None, funname='anonymous', return_ast=False, print_code=False, definitions=None):
 
-    dprint(equations)
-    dprint(arg_names)
+def compile_function_ast(equations, symbols, arg_names, output_names=None, funname='anonymous', rhs_only=False,
+            return_ast=False, print_code=False, definitions=None, vectorize=True, use_file=False):
+
     arguments = OrderedDict()
     for an in arg_names:
         if an[0] != 'parameters':
             t = an[1]
             arguments[an[2]] = [(s,t) for s in symbols[an[0]]]
-    dprint(arguments)
     # arguments = [ [ (s,t) for s in symbols[sg]] for sg,t in arg_names if sg != 'parameters']
     parameters = [(s,0) for s in symbols['parameters']]
     targets = output_names
     if targets is not None:
-        targets = [(s,targets[1]) for s in targets[0]]
-    dprint(arguments)
-    dprint(parameters)
-    dprint(targets)
-    f = make_function(equations, arguments, parameters, targets=targets)
+        targets = [(s,targets[1]) for s in symbols[targets[0]]]
+
+    mod = make_function(equations, arguments, parameters, definitions=definitions, targets=targets, rhs_only=rhs_only, funname=funname)
+
+    from dolo.compiler.codegen import to_source
+    import dolo.config
+    if dolo.config.debug:
+        print(to_source(mod))
+
+    if vectorize:
+        from numba import float64, void
+        coredims = [len(symbols[an[0]]) for an in arg_names]
+        signature = str.join(',', ['(n_{})'.format(d) for d in coredims])
+        n_out = len(equations)
+        if n_out in coredims:
+            signature += '->(n_{})'.format(n_out)
+            # ftylist = float64[:](*([float64[:]] * len(coredims)))
+            fty = "void(*[float64[:]]*{})".format(len(coredims)+1)
+        else:
+            signature += ',(n_{})'.format(n_out)
+            fty = "void(*[float64[:]]*{})".format(len(coredims)+1)
+        ftylist = [fty]
+    else:
+        signature=None
+        ftylist=None
+
+    if use_file:
+        fun = eval_ast_with_file(mod, print_code=True)
+    else:
+        fun = eval_ast(mod)
+
+    from numba import jit, guvectorize
+
+    jitted = jit(fun, nopython=True)
+    if vectorize:
+        gufun = guvectorize([fty], signature, target='parallel', nopython=True)(fun)
+        return jitted, gufun
+    else:
+        return jitted
+    return [f,None]
 
 
-def make_function(equations, arguments, parameters, targets=None, definitions={}, funname='anonymous'):
+def make_function(equations, arguments, parameters, targets=None, rhs_only=False, definitions={}, funname='anonymous'):
 
     if isinstance(arguments, list):
         arguments = OrderedDict( [('arg_{}'.format(i),k) for i, k in enumerate(arguments)])
@@ -255,13 +290,12 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
         targets = [std_tsymbol(o) for o in targets]
     else:
         targets = ['_out_{}'.format(n) for n in range(len(equations))]
-    print(targets)
 
     known_variables = [a[0] for a in sum(arguments.values(), [])]
-    known_definitions = [a[0] for a in definitions.keys()]
+    known_definitions = [a for a in definitions.keys()]
     known_parameters = [a[0] for a in parameters]
     all_variables = known_variables+known_definitions
-    print(all_variables)
+    all_symbols = all_variables + known_parameters
     known_functions = []
     known_constants = []
 
@@ -274,8 +308,7 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
         cn.visit(val)
         defs_incidence[(sym, 0)] = cn.variables
     # return defs_incidence
-    dprint(defs_incidence)
-
+    from dolo.compiler.codegen import to_source
     equations_incidence = {}
     to_be_defined = set([])
     for i, eq in enumerate(equations):
@@ -289,29 +322,29 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
         ndeps = get_deps(defs_incidence, tv)
         deps.extend(ndeps)
     deps = [d for d in unique(deps)]
-    dprint(to_be_defined)
-    dprint(deps)
 
-    sds = StandardizeDatesSimple(all_variables)
+    sds = StandardizeDatesSimple(all_symbols)
 
     new_definitions = OrderedDict()
     for k in deps:
         val = definitions[k[0]]
-        val = timeshift(val, all_variables, k[1])  # function to print
-        new_definitions[std_tsymbol(k)] = sds.visit(val)
+        nval = timeshift(val, all_variables, k[1])  # function to print
+        # dprint(val)
+        new_definitions[std_tsymbol(k)] = sds.visit(nval)
 
     new_equations = []
 
     for n,eq in enumerate(equations):
         d = match(parse("_x == _y"), eq)
-        print('d: {}'.format(d))
         if d is not False:
             lhs = d['_x']
             rhs = d['_y']
-            val = ast.BinOp(left=rhs, op=Sub(), right=lhs)
+            if rhs_only:
+                val = rhs
+            else:
+                val = ast.BinOp(left=rhs, op=Sub(), right=lhs)
         else:
             val = eq
-        sds = StandardizeDatesSimple(all_variables+known_parameters)
         new_equations.append(sds.visit(val))
 
 
@@ -338,6 +371,7 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
     for k,v in  new_definitions.items():
         line = Assign(targets=[Name(id=k, ctx=Store())], value=v)
         body.append(line)
+
     for n, neq in enumerate(new_equations):
         line = Assign(targets=[Name(id=targets[n], ctx=Store())], value=new_equations[n])
         body.append(line)
@@ -353,7 +387,6 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
 
     from dolo.compiler.function_compiler_ast import to_source
 
-    print_code = True
 
     f = FunctionDef(name=funname,
                 args=ast_arguments(args=[arg(arg=a) for a in arguments.keys()]+[arg(arg='p'),arg(arg='out')],
@@ -362,17 +395,19 @@ def make_function(equations, arguments, parameters, targets=None, definitions={}
 
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
-    import dolo.config
-    if dolo.config.debug: print_code = True
-    if print_code:
-        s = "Function {}".format(mod.body[0].name)
-        print("-" * len(s))
-        print(s)
-        print("-" * len(s))
-        print(to_source(mod))
-
-
-    return eval_ast(mod)
+    return mod
+    # return mod
+    # import dolo.config
+    # if dolo.config.debug: print_code = True
+    # if print_code:
+    #     s = "Function {}".format(mod.body[0].name)
+    #     print("-" * len(s))
+    #     print(s)
+    #     print("-" * len(s))
+    #     print(to_source(mod))
+    #
+    #
+    # return eval_ast(mod)
 
 
 def eval_ast(mod):

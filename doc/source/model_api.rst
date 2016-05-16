@@ -168,11 +168,11 @@ A covariance matrix, is a square array, with as the number of rows given by the 
 Options structure
 +++++++++++++++++
 
-The ``model.options`` structure holds an information required by a particular solution method. For instance, for global methods, ``model.options['approximation_space']`` is supposed to hold the boundaries and the number nodes at which to interpolate.
+The ``model.options`` structure holds an information required by a particular solution method. For instance, for global methods, ``model.options['grid']`` is supposed to hold the boundaries and the number nodes at which to interpolate.
 
 .. code::
 
-    display( model.options['approximation_space'] )
+    display( model.options['grid'] )
 
 ..
 Source documentation

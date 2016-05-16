@@ -183,7 +183,7 @@ def check(model, silent=False):
 
     if 'approximation_space' in model.options:
 
-        ap = model.options['approximation_space']
+        ap = model.options['grid']
         smin = ap['smin']
         smax = ap['smax']
         orders = ap['orders']

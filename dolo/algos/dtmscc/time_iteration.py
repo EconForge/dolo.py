@@ -99,7 +99,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     n_x = len(x0)
     n_s = len(model.symbols['states'])
 
-    approx = model.options['approximation_space']
+    approx = model.options['grid']
     a = approx['a']
     b = approx['b']
     if orders is None:

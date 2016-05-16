@@ -204,7 +204,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None,
         if hasattr(dr, 'a'):
             bounds = [dr.a[index], dr.b[index]]
         else:
-            approx = model.options['approximation_space']
+            approx = model.options['grid']
             bounds = [approx['a'][index], approx['b'][index]]
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)

@@ -1,18 +1,19 @@
 name: RBC
 
-model_spec: mfga
+model_type: dtmscc
 
-declarations:
-
+symbols:
    markov_states: [z]
    states:  [k]
    controls: [i, n]
-   auxiliaries: [c, rk, w]
-
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z, kmax]
 
-equations:
+definitions:
+    c: exp(z)*k^alpha*n^(1-alpha) - i
+    rk: alpha*exp(z)*(n/k)^(1-alpha)
+    w: (1-alpha)*exp(z)*(k/n)^(alpha)
 
+equations:
 
    transition:
       - k = (1-delta)*k(-1) + i(-1)
@@ -20,11 +21,6 @@ equations:
    arbitrage:
       - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))     | 0.0 <= i <= inf
       - chi*n^eta*c^sigma - w                         | 0.0 <= n <= inf
-
-   auxiliary:
-      - c = exp(z)*k^alpha*n^(1-alpha) - i
-      - rk = alpha*exp(z)*(n/k)^(1-alpha)
-      - w = (1-alpha)*exp(z)*(k/n)^(alpha)
 
 calibration:
 
@@ -51,21 +47,16 @@ calibration:
     i: delta*k
     c: z*k^alpha*n^(1-alpha) - i
 
-
-markov_chain:
-
-    AR1:  #  automatic discretization using Rouwenhorst
-
-         rho: 0.9
-         sigma:
-              [ [sig_z] ]
-         N: 5
-
-
-
 options:
 
-    approximation_space:
+    discrete_transition:
+
+        AR1:  #  automatic discretization using Rouwenhorst
+           rho: 0.9
+           sigma: [ [sig_z] ]
+           N: 5
+
+    grid:
 
         a: [5.0]
         b: [30.0]

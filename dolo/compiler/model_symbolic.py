@@ -5,14 +5,14 @@ from .recipes import recipes
 class SymbolicModel:
 
     def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration,
-                 discrete_transition=None, distribution=None, options=None, definitions=None):
+                    options=None, definitions=None):
 
         self.name = model_name
         self.model_type = model_type
 
         # reorder symbols
         from collections import OrderedDict
-        canonical_order = ['markov_states', 'states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
+        canonical_order = ['markov_states', 'states', 'controls', 'values', 'shocks', 'parameters']
         osyms = OrderedDict()
         for vg in canonical_order:
             if vg in symbols:

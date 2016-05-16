@@ -3,7 +3,7 @@
 
 import ast
 
-from ast import UnaryOp, UAdd, USub, Name, Load
+from ast import UnaryOp, UAdd, USub, Name, Load, Call
 from ast import NodeTransformer
 
 
@@ -117,8 +117,8 @@ import copy
 
 def timeshift(expr, variables, shift):
 
-
-    return TimeShiftTransformer(variables, shift).visit(expr)
+    eexpr = copy.deepcopy(expr)
+    return TimeShiftTransformer(variables, shift).visit(eexpr)
 
 
 class Compare:

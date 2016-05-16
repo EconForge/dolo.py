@@ -51,21 +51,6 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
         d += abs(vec_res[i,:] - res).max()
     assert(d == 0)
 
-
-def test_dtcscc__functions():
-
-    # test a model defined without auxiliary variables
-    from dolo import yaml_import
-    model = yaml_import('examples/models/rbc_fg.yaml')
-
-    s = model.calibration['states']
-    x = model.calibration['controls']
-    e = model.calibration['shocks']
-    p = model.calibration['parameters']
-
-    r = model.functions['arbitrage'](s,x,e,s,x,p)
-
-
 def test_dtcscc_model():
 
     # test a model defined with auxiliary variables
@@ -77,7 +62,7 @@ def test_dtcscc_model():
     X = x
 
     y = model.calibration['auxiliaries']
-    
+
     E = model.calibration['shocks']
     V = model.calibration['values']
     p = model.calibration['parameters']

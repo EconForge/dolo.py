@@ -4,13 +4,13 @@ import unittest
 def test_model_import():
 
     from dolo import yaml_import
-    fname = 'examples/models/rbc_mfga.yaml'
+    fname = 'examples/models/rbc_dtmscc.yaml'
     model = yaml_import(fname)
 
 def test_model_print():
 
     from dolo import yaml_import
-    fname = 'examples/models/rbc_mfga.yaml'
+    fname = 'examples/models/rbc_dtmscc.yaml'
     model = yaml_import(fname)
 
     print(model)
@@ -18,7 +18,7 @@ def test_model_print():
 def test_markov_chain():
 
     from dolo import yaml_import
-    fname = 'examples/models/rbc_mfga.yaml'
+    fname = 'examples/models/rbc_dtmscc.yaml'
     model = yaml_import(fname)
 
     from dolo.numeric.discretization import multidimensional_discretization
@@ -32,7 +32,7 @@ def test_markov_chain():
 def test_options():
 
     from dolo import yaml_import
-    fname = 'examples/models/rbc_mfga.yaml'
+    fname = 'examples/models/rbc_dtmscc.yaml'
     model = yaml_import(fname)
 
     print( model.options )

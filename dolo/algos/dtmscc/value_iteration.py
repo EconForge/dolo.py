@@ -16,7 +16,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True
     n_v = len(v0)
     n_s = len(model.symbols['states'])
 
-    approx = model.options['approximation_space']
+    approx = model.options['grid']
     a = approx['a']
     b = approx['b']
 

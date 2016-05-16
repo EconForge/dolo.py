@@ -1,4 +1,4 @@
-model_spec: fga
+model_type: dtcscc
 
 name: Neoclassical model of capital accumulation
 
@@ -8,12 +8,13 @@ symbols:
 
   controls: [i]
 
-  auxiliaries:  [c, r_I]
-
   shocks: [epsilon]
 
   parameters: [beta, gamma, delta, theta, rho]
 
+definitions:
+  c: A*k^theta - i
+  r_I: A*theta*k^(theta-1) + (1-delta)
 
 equations:
 
@@ -21,12 +22,8 @@ equations:
         - k = (1-delta)*k(-1) + i(-1)
         - A = 1 + epsilon + rho*A(-1)
 
-    auxiliary:
-        - c = A*k^theta - i
-        - r_I = A*theta*k^(theta-1) + (1-delta)
-
     arbitrage:
-        - beta*( (c(1)/c)^(-gamma)*r_I(1) ) = 1
+        - 1 - beta*( (c(1)/c)^(-gamma)*r_I(1) )
 
 ############################
 calibration:
@@ -51,6 +48,7 @@ calibration:
     theta: 0.3
     rho: 0.0
 
-distribution:
-    Normal:
-        [[ 0.00001 ]]
+options:
+  distribution:
+      Normal:
+          [[ 0.00001 ]]

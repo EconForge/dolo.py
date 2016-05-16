@@ -1,18 +1,14 @@
-model_spec: fgh
+model_type: dtcscc
 
-declarations:
+symbols:
 
   states: [A]
-
   controls: [S, H, P]
-
   expectations: [EP, EPe]
-
   shocks: [e]
-
   parameters: [k, delta, r, h, mu, elastD, elastS]
 
-  
+
 equations:
 
   arbitrage:
@@ -30,10 +26,8 @@ equations:
     - EP  = P(1)
     - EPe = P(1)*e(1)
 
-    
-calibration:
 
-  parameters:
+calibration:
 
     k      :  0.06
     delta  :  0.02
@@ -42,11 +36,8 @@ calibration:
     h      : 1/(1+r)
     mu     : 1/elastS
     elastD : -0.2
-    
-  steady_state:
 
     A : 1
     S : 0
     H : 1
     P : 1
-    

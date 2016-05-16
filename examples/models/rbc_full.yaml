@@ -1,22 +1,21 @@
 name: RBC
 
-model_spec: fga
+model_type: dtcscc
 
 symbols:
-
    states:  [z, k]
    controls: [n, i]
-   auxiliaries: [c, rk, w]
    expectations: [m]
    values: [V]
    shocks: [e_z]
-
-
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
+definitions:
+   c: z*k^alpha*n^(1-alpha) - i
+   rk: alpha*z*(n/k)^(1-alpha)
+   w: (1-alpha)*z*(k/n)^(alpha)
 
 equations:
-
 
    arbitrage:
       - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
@@ -26,10 +25,6 @@ equations:
       - z = (1-rho)*zbar + rho*z(-1) + e_z
       - k = (1-delta)*k(-1) + i(-1)
 
-   auxiliary:
-      - c = z*k^alpha*n^(1-alpha) - i
-      - rk = alpha*z*(n/k)^(1-alpha)
-      - w = (1-alpha)*z*(k/n)^(alpha)
 
    expectation:
       - m = beta/c(1)^sigma*(1-delta+rk(1))
@@ -68,14 +63,14 @@ calibration:
       V: log(c)/(1-beta)
 
 
-covariances:
-
-      [ [ sig_z**2] ]
 
 
 options:
 
-    approximation_space:
+    distribution:
+      [ [ sig_z**2] ]
+
+    grid:
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

@@ -11,9 +11,14 @@ symbols:
     markov_states: [y]
     states: [l]
     controls: [b, lam]
-    auxiliaries: [c]
     values: [V, Vc]
     parameters: [beta, R, sigma, a, mu, kappa, delta_y, pi, lam_inf]
+
+
+
+definitions:
+    c: 1 + y + l*R - b
+
 
 equations:
 
@@ -27,9 +32,6 @@ equations:
         - 1 - beta*(c(1)/c)^(-sigma)*R    |  lam_inf <= lam <= inf
 
 
-    auxiliary:
-
-        - c = 1 + y + l*R - b
 
     value:
 
@@ -37,15 +39,7 @@ equations:
         - Vc = c^(1.0-sigma)/(1.0-sigma)
 
 
-discrete_transition:
 
-    MarkovChain:
-
-        - [[ 1.0-delta_y ],  # bad state
-           [ 1.0 ]]          # good state
-
-        - [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
-           [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
 
 calibration:
 
@@ -69,7 +63,16 @@ calibration:
 
 options:
 
-    approximation_space:
+
+    discrete_transition: #MarkovChain:
+
+        - [[ 1.0-delta_y ],  # bad state
+           [ 1.0 ]]          # good state
+
+        - [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
+           [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
+
+    grid:
 
         a: [-1.0]
         b: [ 1.0]

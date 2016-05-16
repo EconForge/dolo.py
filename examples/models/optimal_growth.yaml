@@ -1,15 +1,12 @@
-model_spec: fgh
+name: Optimal Growth
+model_spec: dtcscc
 
-declarations:
+symbols:
 
     states:  [A, w]
-
     controls: [c, Welf]
-
     expectations: [eh, eW]
-
     shocks: [e_A]
-
     parameters: [beta, gamma, rho_A, rho_r, ybar, rbar, theta, dumb]
 
 
@@ -30,17 +27,16 @@ equations:
 
 calibration:
 
-  parameters:
-      beta: 0.96
-      gamma: 4.0
-      rho_A: 0.9
-      rho_r: 0.5
-      rbar: 1.0
-      ybar: 1.0
-      theta: 0.3
-      dumb: 1
 
-  steady_state:
+    beta: 0.96
+    gamma: 4.0
+    rho_A: 0.9
+    rho_r: 0.5
+    rbar: 1.0
+    ybar: 1.0
+    theta: 0.3
+    dumb: 1
+
     A: 1
     w: ((1/beta/theta)^(1/(theta-1)))^theta + 1
     c: w - (1/beta/theta)^(1/(theta-1))
@@ -48,5 +44,5 @@ calibration:
     Welf: c^(1-gamma)/(1-gamma)/(1-beta)
     eW: Welf
 
-  covariances: |
-    [ [ 0.01 ] ]
+options:
+  distribution: [ [ 0.01 ] ]

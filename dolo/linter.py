@@ -89,10 +89,12 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 # requires conda install -c conda-forge ruamel.yaml=0.11.7
 from collections import OrderedDict
 
+from dolo.compiler.recipes import recipes
+
 known_symbol_types = {
-    'dtcscc':['states','controls','auxiliaries','values','shocks','parameters'],
-    'dtmscc':['markov_states','states','controls','auxiliaries','values','shocks','parameters']
-}
+    'dtcscc':recipes['dtcscc']['symbols'],
+    'dtmscc':recipes['dtmscc']['symbols']
+    }
 
 class ModelException(Exception):
     type='error'

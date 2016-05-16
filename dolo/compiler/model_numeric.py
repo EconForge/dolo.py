@@ -46,16 +46,18 @@ class NumericModel:
 
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
+        #
+        # distribution = evaluator.eval(self.symbolic.options.get('distribution'))
+        # discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
 
-        distribution = evaluator.eval(self.symbolic.options.get('distribution'))
-        discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
+        distribution = self.options.get('distribution')
+        discrete_transition = self.options.get('discrete_transition')
 
-
-        covariances = distribution
+        # covariances = distribution
         if distribution is None:
             self.covariances = None
         else:
-            self.covariances = numpy.atleast_2d(numpy.array(covariances, dtype=float))
+            self.covariances = numpy.atleast_2d(numpy.array(distribution, dtype=float))
 
         markov_chain = discrete_transition
         if markov_chain is None:
@@ -175,32 +177,10 @@ Model object:
 
         from dolo.compiler.function_compiler import compile_function_ast
         from dolo.compiler.function_compiler import standard_function
-        from dolo import dprint
+
         defs = self.symbolic.definitions
 
-        dprint(self.symbolic.definitions)
-        dprint(self.symbolic.equations)
-
-
-        # works for fg models only
         model_type = self.model_type
-
-            #
-            # # prepare auxiliaries
-            # auxeqs = self.symbolic.equations['auxiliary']
-            # auxdefs = {}
-            # for time in [-1,0,1]:
-            #     dd = OrderedDict()
-            #     for eq in auxeqs:
-            #         lhs, rhs = eq.split('=')
-            #         lhs = ast.parse( str.strip(lhs) ).body[0].value
-            #         rhs = ast.parse( str.strip(rhs) ).body[0].value
-            #         tmp = timeshift(rhs, self.variables, time)
-            #         k = timeshift(lhs, self.variables, time)
-            #         k = StandardizeDatesSimple(self.variables).visit(k)
-            #         v = StandardizeDatesSimple(self.variables).visit(tmp)
-            #         dd[to_source(k)] = to_source(v)
-            #     auxdefs[time] = dd
 
         recipe = recipes[model_type]
         symbols = self.symbols # should match self.symbols
@@ -211,30 +191,19 @@ Model object:
         original_functions = {}
         original_gufunctions = {}
 
-        for funname in recipe['specs'].keys():
+        # for funname in recipe['specs'].keys():
+        for funname in self.symbolic.equations:
 
             spec = recipe['specs'][funname]
 
-
-
             if spec.get('target'):
-
-                # keep only right-hand side
-                # TODO: restore recursive definitions
                 eqs = self.symbolic.equations[funname]
-                eqs = [eq.split('=')[1] for eq in eqs]
-                eqs = [str.strip(eq) for eq in eqs]
+                target = spec['target']
+                rhs_only = True
 
-                target_spec = spec.get('target')
-                n_output = len(self.symbols[target_spec[0]])
-                # target_short_name = spec.get('target')[2]
-                if spec.get('recursive') is False:
-                    target_spec = None
-                else:
-                    target_spec[2] = 'out'
             else:
-                target_spec = None
-
+                target = None
+                rhs_only = False
 
             if spec.get('complementarities'):
 
@@ -257,71 +226,48 @@ Model object:
 
                     eqs.append(eq)
 
-                comp_lhs, comp_rhs = zip(*comps)
-                # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
-                fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
+                    comp_lhs, comp_rhs = zip(*comps)
+                    # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
+                    fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
-                # ddefs = OrderedDict()
-                # for ag in comp_args:
-                #     if ag[0] == 'auxiliaries':
-                #         t = ag[1]
-                #         ddefs.update(auxdefs[t])
-                # ddefs.update(defs)
+                    lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
+                    upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
 
-                # lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
-                # upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
-                #
-                # n_output = len(comp_lhs)
-                #
-                # functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
-                # functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
-                # original_functions[fb_names[0]] = lower_bound
-                # original_functions[fb_names[1]] = upper_bound
-                # original_gufunctions[fb_names[0]] = gu_lower_bound
-                # original_gufunctions[fb_names[1]] = gu_upper_bound
+                    n_output = len(comp_lhs)
 
+                    functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
+                    functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
+                    original_functions[fb_names[0]] = lower_bound
+                    original_functions[fb_names[1]] = upper_bound
+                    original_gufunctions[fb_names[0]] = gu_lower_bound
+                    original_gufunctions[fb_names[1]] = gu_upper_bound
 
-
-            # rewrite all equations as rhs - lhs
-            def filter_equal(eq):
-                if '=' in eq:
-                    lhs, rhs = str.split(eq,'=')
-                    eq = '{} - ( {} )'.format(rhs, lhs)
-                    eq = str.strip(eq)
-                    return eq
-                else:
-                    return eq
-
-            eqs = [filter_equal(eq) for eq in eqs]
 
             arg_names = recipe['specs'][funname]['eqs']
 
-
-            # ddefs = OrderedDict()
-            # for ag in arg_names:
-            #     if ag[0] == 'auxiliaries':
-            #         t = ag[1]
-            #         ddefs.update(auxdefs[t])
-            # ddefs.update(defs)
-
-            print(('#'*20+'\n')*5)
-            dprint(eqs)
-            dprint(symbols)
-            dprint(arg_names)
-            dprint(target_spec)
-            dprint(defs)
-            exit()
-            fun, gufun = compile_function_ast(eqs, symbols, arg_names,
-                                    output_names=target_spec, funname=funname, definitions=defs,
-                                    )
-            # print("So far so good !")c
+            fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target, rhs_only=rhs_only, funname=funname, definitions=defs,                                   )
             n_output = len(eqs)
-
             original_functions[funname] = fun
-
             functions[funname] = standard_function(gufun, n_output )
             original_functions[funname] = fun
             original_gufunctions[funname] = gufun
+
+        # temporary hack to keep auxiliaries
+        auxiliaries = [k for k in defs.keys()]
+        symbols['auxiliaries'] = auxiliaries
+        eqs = ['{} = {}'.format(k,k) for k in auxiliaries]
+        if model_type == 'dtcscc':
+            arg_names = [('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
+        else:
+            arg_names = [('markov_states',0,'s'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
+        target = ('auxiliaries',0,'y')
+        rhs_only = True
+        funname = 'auxiliary'
+        fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target, rhs_only=rhs_only, funname=funname, definitions=defs,                                   )
+        n_output = len(eqs)
+        functions[funname] = standard_function(gufun, n_output )
+        original_functions[funname] = fun
+        original_gufunctions[funname] = gufun
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
