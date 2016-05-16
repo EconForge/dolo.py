@@ -3,6 +3,124 @@
 
 import ast
 
+from ast import UnaryOp, UAdd, USub, Name, Load
+from ast import NodeTransformer
+
+
+def std_tsymbol(tsymbol):
+    s, date = tsymbol
+    if date == 0:
+        return '_{}_'.format(s)
+    elif date <= 0:
+        return '_{}_m{}_'.format(s, str(-date))
+    elif date >= 0:
+        return '_{}__{}_'.format(s, str(date))
+
+class StandardizeDatesSimple(NodeTransformer):
+
+    # replaces calls to variables by time subscripts
+
+    def __init__(self, variables):
+
+        self.variables = variables
+        # self.variables = tvariables # ???
+
+    def visit_Name(self, node):
+
+        name = node.id
+        if name in self.variables:
+            return Name(id=std_tsymbol((name,0)),ctx=Load())
+        else:
+            return node
+
+    def visit_Call(self, node):
+
+        name = node.func.id
+        args = node.args[0]
+
+        if name in self.variables:
+            if isinstance(args, UnaryOp):
+                # we have s(+1)
+                if (isinstance(args.op, UAdd)):
+                    args = args.operand
+                    date = args.n
+                elif (isinstance(args.op, USub)):
+                    args = args.operand
+                    date = -args.n
+                else:
+                    raise Exception("Unrecognized subscript.")
+            else:
+                date = args.n
+            newname = std_tsymbol((name, date))
+            if newname is not None:
+                return Name(newname, Load())
+
+        else:
+
+            # , keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=[])
+
+
+
+class TimeShiftTransformer(ast.NodeTransformer):
+    def __init__(self, variables, shift=0):
+
+        self.variables = variables
+        self.shift = shift
+
+    def visit_Name(self, node):
+        name = node.id
+        if name in self.variables:
+            if self.shift==0 or self.shift=='S':
+                return ast.parse(name).body[0].value
+            else:
+                return ast.parse('{}({})'.format(name,self.shift)).body[0].value
+        else:
+             return node
+
+    def visit_Call(self, node):
+
+        name = node.func.id
+        args = node.args[0]
+
+        if name in self.variables:
+            if isinstance(args, UnaryOp):
+                # we have s(+1)
+                if (isinstance(args.op, UAdd)):
+                    args = args.operand
+                    date = args.n
+                elif (isinstance(args.op, USub)):
+                    args = args.operand
+                    date = -args.n
+                else:
+                    raise Exception("Unrecognized subscript.")
+            else:
+                date = args.n
+            if self.shift =='S':
+                return ast.parse('{}'.format(name)).body[0].value
+            else:
+                new_date = date+self.shift
+                if new_date != 0:
+                    return ast.parse('{}({})'.format(name,new_date)).body[0].value
+                else:
+                    return ast.parse('{}'.format(name)).body[0].value
+        else:
+
+            # , keywords=node.keywords,  kwargs=node.kwargs)
+            return Call(func=node.func, args=[self.visit(e) for e in node.args], keywords=[])
+
+
+
+
+import copy
+
+
+def timeshift(expr, variables, shift):
+
+
+    return TimeShiftTransformer(variables, shift).visit(expr)
+
+
 class Compare:
 
     def __init__(self):

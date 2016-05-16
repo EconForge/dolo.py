@@ -47,7 +47,7 @@ class NumericModel:
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
 
-        distribution = evaluator.eval(self.symbolic.options.get('distribution']))
+        distribution = evaluator.eval(self.symbolic.options.get('distribution'))
         discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
 
 
@@ -173,31 +173,34 @@ Model object:
 
     def __compile_functions__(self):
 
-        from dolo.compiler.function_compiler_ast import compile_function_ast
+        from dolo.compiler.function_compiler import compile_function_ast
         from dolo.compiler.function_compiler import standard_function
-
+        from dolo import dprint
         defs = self.symbolic.definitions
+
+        dprint(self.symbolic.definitions)
+        dprint(self.symbolic.equations)
+
 
         # works for fg models only
         model_type = self.model_type
-        if 'auxiliaries' not in self.symbols:
-            model_type += '_'
-        else:
-            # prepare auxiliaries
-            auxeqs = self.symbolic.equations['auxiliary']
-            auxdefs = {}
-            for time in [-1,0,1]:
-                dd = OrderedDict()
-                for eq in auxeqs:
-                    lhs, rhs = eq.split('=')
-                    lhs = ast.parse( str.strip(lhs) ).body[0].value
-                    rhs = ast.parse( str.strip(rhs) ).body[0].value
-                    tmp = timeshift(rhs, self.variables, time)
-                    k = timeshift(lhs, self.variables, time)
-                    k = StandardizeDatesSimple(self.variables).visit(k)
-                    v = StandardizeDatesSimple(self.variables).visit(tmp)
-                    dd[to_source(k)] = to_source(v)
-                auxdefs[time] = dd
+
+            #
+            # # prepare auxiliaries
+            # auxeqs = self.symbolic.equations['auxiliary']
+            # auxdefs = {}
+            # for time in [-1,0,1]:
+            #     dd = OrderedDict()
+            #     for eq in auxeqs:
+            #         lhs, rhs = eq.split('=')
+            #         lhs = ast.parse( str.strip(lhs) ).body[0].value
+            #         rhs = ast.parse( str.strip(rhs) ).body[0].value
+            #         tmp = timeshift(rhs, self.variables, time)
+            #         k = timeshift(lhs, self.variables, time)
+            #         k = StandardizeDatesSimple(self.variables).visit(k)
+            #         v = StandardizeDatesSimple(self.variables).visit(tmp)
+            #         dd[to_source(k)] = to_source(v)
+            #     auxdefs[time] = dd
 
         recipe = recipes[model_type]
         symbols = self.symbols # should match self.symbols
@@ -212,11 +215,6 @@ Model object:
 
             spec = recipe['specs'][funname]
 
-            if funname not in self.symbolic.equations:
-                if not spec.get('optional'):
-                    raise Exception("The model doesn't contain equations of type '{}'.".format(funname))
-                else:
-                    continue
 
 
             if spec.get('target'):
@@ -263,24 +261,24 @@ Model object:
                 # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
                 fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
 
-                ddefs = OrderedDict()
-                for ag in comp_args:
-                    if ag[0] == 'auxiliaries':
-                        t = ag[1]
-                        ddefs.update(auxdefs[t])
-                ddefs.update(defs)
+                # ddefs = OrderedDict()
+                # for ag in comp_args:
+                #     if ag[0] == 'auxiliaries':
+                #         t = ag[1]
+                #         ddefs.update(auxdefs[t])
+                # ddefs.update(defs)
 
-                lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
-                upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
-
-                n_output = len(comp_lhs)
-
-                functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
-                functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
-                original_functions[fb_names[0]] = lower_bound
-                original_functions[fb_names[1]] = upper_bound
-                original_gufunctions[fb_names[0]] = gu_lower_bound
-                original_gufunctions[fb_names[1]] = gu_upper_bound
+                # lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
+                # upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
+                #
+                # n_output = len(comp_lhs)
+                #
+                # functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
+                # functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
+                # original_functions[fb_names[0]] = lower_bound
+                # original_functions[fb_names[1]] = upper_bound
+                # original_gufunctions[fb_names[0]] = gu_lower_bound
+                # original_gufunctions[fb_names[1]] = gu_upper_bound
 
 
 
@@ -299,15 +297,22 @@ Model object:
             arg_names = recipe['specs'][funname]['eqs']
 
 
-            ddefs = OrderedDict()
-            for ag in arg_names:
-                if ag[0] == 'auxiliaries':
-                    t = ag[1]
-                    ddefs.update(auxdefs[t])
-            ddefs.update(defs)
+            # ddefs = OrderedDict()
+            # for ag in arg_names:
+            #     if ag[0] == 'auxiliaries':
+            #         t = ag[1]
+            #         ddefs.update(auxdefs[t])
+            # ddefs.update(defs)
 
+            print(('#'*20+'\n')*5)
+            dprint(eqs)
+            dprint(symbols)
+            dprint(arg_names)
+            dprint(target_spec)
+            dprint(defs)
+            exit()
             fun, gufun = compile_function_ast(eqs, symbols, arg_names,
-                                    output_names=target_spec, funname=funname, definitions=ddefs,
+                                    output_names=target_spec, funname=funname, definitions=defs,
                                     )
             # print("So far so good !")c
             n_output = len(eqs)

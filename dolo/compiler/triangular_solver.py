@@ -59,7 +59,7 @@ def solve_triangular_system(system, values=None, context=None):
 
     ll = get_incidence(system)
 
-    sol_order = triangular_solver(ll, context=context)
+    sol_order = triangular_solver(ll)
 
     d = copy.copy(values) if values else {}
 

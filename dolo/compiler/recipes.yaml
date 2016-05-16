@@ -1,4 +1,4 @@
-dtcscc_:
+dtcscc:
 
     model_spec: dtcscc
 
@@ -64,9 +64,9 @@ dtcscc_:
                 - ['parameters',0,'p']
 
 
-dtcscc:
+dtcscc_:
 
-    model_spec: dtcscc
+    model_spec: dtcscc_
 
     symbols: ['states', 'controls', 'auxiliaries', 'values', 'shocks', 'parameters']
 
