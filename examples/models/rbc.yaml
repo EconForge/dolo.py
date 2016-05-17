@@ -59,7 +59,7 @@ calibration:
 
 options:
 
-    distribution:
+    distribution: 
         [ [ sig_z**2] ]
 
     grid:

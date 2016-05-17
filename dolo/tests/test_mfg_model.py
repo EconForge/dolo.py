@@ -1,6 +1,8 @@
 def test_mfg_model():
 
     from dolo import yaml_import
+    import dolo.config
+    dolo.config.debug = True
 
     # from dolo.algos.commands import time_iteration, simulate, evaluate_policy
     from dolo.algos.dtmscc.time_iteration import time_iteration

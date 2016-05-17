@@ -1,5 +1,7 @@
 import unittest
 import numpy
+import dolo.config
+dolo.config.debug=True
 
 def test_web_import():
 
@@ -13,7 +15,7 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
     from dolo import yaml_import
 
     #model = yaml_import('examples/models/rbc_fg.yaml', compiler=compiler, order=data_layout)
-    model = yaml_import('examples/models/rbc_fg.yaml')
+    model = yaml_import('examples/models/rbc.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']

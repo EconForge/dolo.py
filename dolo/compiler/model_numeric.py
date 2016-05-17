@@ -15,7 +15,12 @@ class NumericModel:
     def __init__(self, symbolic_model, options=None, infos=None):
 
         self.symbolic = symbolic_model
+
         self.symbols = symbolic_model.symbols
+
+        # compat
+        if self.symbolic.definitions:
+            self.symbols['auxiliaries'] = [e for e in self.symbolic.definitions.keys()]
 
         self.variables = sum( [tuple(e) for k,e in  self.symbols.items() if k not in ('parameters','shocks','values')], ())
 
@@ -40,6 +45,7 @@ class NumericModel:
         self.calibration_dict = solve_triangular_system( system )
         from dolo.compiler.misc import CalibrationDict, calibration_to_vector
         calib = calibration_to_vector(self.symbols, self.calibration_dict)
+
         self.calibration = CalibrationDict(self.symbols, calib)
         from .symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
@@ -259,11 +265,12 @@ Model object:
         if model_type == 'dtcscc':
             arg_names = [('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
         else:
-            arg_names = [('markov_states',0,'s'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
+            arg_names = [('markov_states',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
         target = ('auxiliaries',0,'y')
         rhs_only = True
         funname = 'auxiliary'
-        fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target, rhs_only=rhs_only, funname=funname, definitions=defs,                                   )
+        fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target,
+            rhs_only=rhs_only, funname=funname, definitions=defs)
         n_output = len(eqs)
         functions[funname] = standard_function(gufun, n_output )
         original_functions[funname] = fun

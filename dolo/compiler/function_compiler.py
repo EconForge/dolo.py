@@ -286,18 +286,22 @@ def make_function(equations, arguments, parameters, targets=None, rhs_only=False
         arguments = OrderedDict( [('arg_{}'.format(i),k) for i, k in enumerate(arguments)])
 
     ## replace = by ==
+    known_variables = [a[0] for a in sum(arguments.values(), [])]
+    known_definitions = [a for a in definitions.keys()]
+    known_parameters = [a[0] for a in parameters]
+    all_variables = known_variables + known_definitions
+    known_functions = []
+    known_constants = []
+
     if targets is not None:
+        all_variables.extend([o[0] for o in targets])
         targets = [std_tsymbol(o) for o in targets]
     else:
         targets = ['_out_{}'.format(n) for n in range(len(equations))]
 
-    known_variables = [a[0] for a in sum(arguments.values(), [])]
-    known_definitions = [a for a in definitions.keys()]
-    known_parameters = [a[0] for a in parameters]
-    all_variables = known_variables+known_definitions
     all_symbols = all_variables + known_parameters
-    known_functions = []
-    known_constants = []
+
+    print(all_variables)
 
     equations = [parse(eq) for eq in equations]
     definitions = {k: parse(v) for k, v in definitions.items()}

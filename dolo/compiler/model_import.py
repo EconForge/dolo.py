@@ -36,9 +36,19 @@ def yaml_import(fname, txt=None, return_symbolic=False, check=True, check_only=F
 
     return fast_import(txt, return_symbolic=return_symbolic)
 
+def autodetect_type(data):
+    if 'variables' in data['symbols']: return 'dynare'
+    elif 'markov_states' in data['symbols']: return 'dtmscc'
+    else: return 'dtcscc'
+
 def fast_import(txt, return_symbolic=False):
 
     import yaml
+    from dolo.compiler.language import minilang, constructor
+    for k,c in minilang.items():
+        yaml.add_constructor('!{}'.format(k), lambda loader,node: constructor(loader, node,c))
+
+
     txt = txt.replace('^','**')
     txt = txt.replace(' = ',' == ')
 
@@ -46,9 +56,17 @@ def fast_import(txt, return_symbolic=False):
     data = ordered_load(txt)
 
     name = data['name']
-    model_type = data['model_type']
+
+    model_type = data.get('model_type')
+    auto_type = autodetect_type(data)
+
+    if model_type is None:
+        model_type = auto_type
+        print("Missing `model_type` field. Set to `{}`".format(auto_type))
+    else: assert(model_type==auto_type)
+
     symbols = data['symbols']
-    definitions = data.get('definitions',[])
+    definitions = data.get('definitions',{})
     equations = data['equations']
     options = data['options']
     calibration = data['calibration']
@@ -65,17 +83,22 @@ def fast_import(txt, return_symbolic=False):
     initial_values = {
         'shocks': 0,
         'markov_states': 0,
+        'expectations': 0,
+        'values': 0,
         'controls': float('nan'),
         'states': float('nan')
     }
 
     # variables defined by a model equation default to using these definitions
     initialized_from_model = {
-        'auxiliaries': 'auxiliary',
         'values': 'value',
         'expectations': 'expectation',
         'direct_responses': 'direct_response'
     }
+
+    for k,v in definitions.items():
+        if k not in calibration:
+            calibration[k] = v
 
     for symbol_group in symbols:
         if symbol_group not in initialized_from_model.keys():
@@ -88,10 +111,11 @@ def fast_import(txt, return_symbolic=False):
                     calibration[s] = default
 
 
-
     from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(name, model_type, symbols, equations,
                            calibration, options=options, definitions=definitions)
+
+    print(smodel.calibration_dict)
 
     if return_symbolic:
         return smodel
