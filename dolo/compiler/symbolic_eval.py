@@ -34,14 +34,17 @@ def MarkovChain(a,b):
 
 supported_functions = [AR1, TensorMarkov, MarkovChain, Normal, Approximation]
 
+# from dolo.compiler.language import minilang
+
 class NumericEval:
 
-    def __init__(self, d):
+    def __init__(self, d, minilang={}):
 
         self.d = d # dictionary of substitutions
         for k,v in d.items():
             assert(isinstance(k, str))
 
+        self.minilang = minilang
         self.__supported_functions___ = supported_functions
         self.__supported_functions_names___ = [fun.__name__ for fun in self.__supported_functions___]
 
@@ -50,6 +53,11 @@ class NumericEval:
         return self.eval(s)
 
     def eval(self, struct):
+
+        tt = tuple(self.minilang.values())
+
+        if isinstance(struct, tt):
+            return self.eval_dict(struct)
 
         t = struct.__class__.__name__
         method_name = 'eval_' + t.lower()

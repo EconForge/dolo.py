@@ -73,7 +73,9 @@ grid
 
 from dolo.compiler.symbolic_eval import NumericEval
 
-d = dict(x=20, y=30)
+d = dict(x=20, y=30, sig_z=0.001)
 
-ne = NumericEval(d)
-ne.eval(data)
+ne = NumericEval(d, minilang=minilang)
+
+resp = ne.eval(data)
+print(resp)
