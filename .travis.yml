@@ -33,7 +33,8 @@ install:
   - deps='pip nose ipython jsonschema pyyaml numba numpy scipy pandas numexpr sympy matplotlib runipy mistune'
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION $deps
   - source activate test-environment
-  - pip install slycot
+  - conda install -c conda-forge ruamel.yaml=0.11.11
+  - conda install -c cwrowley slycot=0.2.0
   - python setup.py install
 
 
