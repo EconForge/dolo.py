@@ -155,6 +155,7 @@ def check_symbols(data):
 
 import ast
 def check_equations(data):
+
     symbols = data['symbols']
     model_type = data['model_type']
     pos0 = data.lc.data['equations']
@@ -194,6 +195,8 @@ def check_equations(data):
     for eq_type in [k for k in equations.keys() if k not in unknown]:
 
         for n,eq in enumerate(equations[eq_type]):
+            eq = eq.replace('<=', '<').replace('==', '=').replace('=','==').replace('<','<=')
+            # print(eq)
             pos = equations[eq_type].lc.data[n]
             try:
                 ast.parse(eq)
@@ -206,6 +209,7 @@ def check_equations(data):
         # TEMP: incorrect ordering
         if specs[eq_type].get('target'):
             for n,eq in enumerate(equations[eq_type]):
+                eq = eq.replace('<=', '<').replace('==', '=').replace('=','==').replace('<','<=')
                 pos = equations[eq_type].lc.data[n]
                 lhs_name = str.split(eq,'=')[0].strip()
                 target = specs[eq_type]['target'][0]
@@ -233,10 +237,11 @@ def check_definitions(data):
 
     exceptions = []
     known_symbols = sum(data['symbols'].values(), [])
+
     allowed_symbols = {v:(0,) for v in known_symbols}  # TEMP
-    # allowed_symbols = {v:None for v in known_symbols}
     for p in data['symbols']['parameters']:
         allowed_symbols[p] = (0,)
+
 
     new_definitions = OrderedDict()
     for k,v in definitions.items():
@@ -266,8 +271,7 @@ def check_definitions(data):
 
             # print(allowed_symbols)
             from dolo.compiler.symbolic import check_expression
-
-            check = check_expression(expr, allowed_symbols, [])
+            check = check_expression(expr, allowed_symbols)
             # print(check['problems'])
             for pb in check['problems']:
                 name, t, offset, err_type = [pb[0], pb[1], pb[2], pb[3]]
@@ -389,7 +393,11 @@ def lint(txt, source='<string>', format='human'):
     try:
         exceptions = check_all(data)
     except Exception as e:
-        exceptions = []
+        # raise(e)
+        exc = ModelException("Linter Error: Uncaught Exception")
+        exc.pos = [0,0,0,0]
+        exc.type = 'error'
+        exceptions = [exc]
 
     output = []
     for k in exceptions:

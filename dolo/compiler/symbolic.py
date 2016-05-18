@@ -227,9 +227,10 @@ def eval_scalar(tree):
 
 class ExpressionChecker(ast.NodeVisitor):
 
-    def __init__(self, spec_variables, known_functions):
+    def __init__(self, spec_variables, known_functions, known_constants):
         self.spec_variables = spec_variables
         self.known_functions = known_functions
+        self.known_constants = known_constants
         self.functions = []
         self.variables = []
         self.problems = []
@@ -268,11 +269,15 @@ class ExpressionChecker(ast.NodeVisitor):
                 self.variables.append((name, n, colno))
             else:
                 self.problems.append([name,n,colno,'incorrect_timing',allowed_timing])
-        else:
+        elif name not in self.known_constants:
             self.problems.append([name,0,colno,'unknown_variable'])
 
-def check_expression(expr, spec_variables, known_functions):
-    ch = ExpressionChecker(spec_variables, known_functions)
+def check_expression(expr, spec_variables, known_functions=[]):
+
+    from dolo.compiler.language import functions, constants
+    func = list(functions.keys()) + known_functions
+
+    ch = ExpressionChecker(spec_variables, func, constants)
     ch.visit(expr)
     return dict(
         functions = ch.functions,

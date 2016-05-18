@@ -1,5 +1,5 @@
 name: Optimal Growth
-model_spec: dtcscc
+model_type: dtcscc
 
 symbols:
 
@@ -18,8 +18,8 @@ equations:
         - w = (w(-1)-c(-1))^(theta)*(  1 + rho_A*(A(-1)-1) + e_A   )  + 1
 
     arbitrage:
-        - 1 - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)      |   0 <= c <= w
-        - c^(1-gamma)/(1-gamma) + beta*eW = Welf              |   -inf <=  Welf <= inf
+        - 1 - beta*eh*(w-c)^(theta-1)*theta / c^(-gamma)  |   0 <= c <= w
+        - c^(1-gamma)/(1-gamma) + beta*eW == Welf          |   -inf <=  Welf <= inf
 
     expectation:
         - eh = c(1)^(-gamma)*A(1)

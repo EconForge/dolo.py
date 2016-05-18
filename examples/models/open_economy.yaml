@@ -1,21 +1,19 @@
 name: Open economy
 
-model_spec: fga
+model_type: dtcscc
 
 description: Two endowment economies with one riskless bond
 
 symbols:
 
   states: [W_1, W_2]
-
   controls: [p_f, db_f]
-
-  auxiliaries:  [c_1, c_2]
-
   shocks: [epsilon_1, epsilon_2]
-
   parameters: [beta, gamma, ybar_1, ybar_2, kappa, dumb]
 
+definitions:
+  c_1: W_1 - db_f*p_f
+  c_2: W_2 + db_f*p_f
 
 equations:
 
@@ -24,9 +22,6 @@ equations:
         - W_1 = ybar_1 + epsilon_1 + dumb*W_1(-1) + db_f(-1)
         - W_2 = ybar_2 + epsilon_2 + dumb*W_2(-1) - db_f(-1)
 
-    auxiliary:
-        - c_1 = W_1 - db_f*p_f
-        - c_2 = W_2 + db_f*p_f
 
     arbitrage:
         - beta*( c_1^(-kappa)*(c_1(1)/c_1)^(-gamma) + c_2^(-kappa)*(c_2(1)/c_2)^(-gamma) )/2 = p_f
@@ -34,33 +29,31 @@ equations:
 
 ############################
 calibration:
-        # steady_state
-        p_f: beta
-        db_f: 0
-        W_1: 1
-        W_2: 1
-        c_1: W_1
-        c_2: W_2
+    # steady_state
+    p_f: beta
+    db_f: 0
+    W_1: 1
+    W_2: 1
+    c_1: W_1
+    c_2: W_2
 
 
-        # parameters:
-        beta: 0.96
-        gamma: 4.0
-        ybar_1: 1.0
-        ybar_2: 1.0
-        kappa: 0.00
-        dumb: 0
+    # parameters:
+    beta: 0.96
+    gamma: 4.0
+    ybar_1: 1.0
+    ybar_2: 1.0
+    kappa: 0.00
+    dumb: 0
 
-
-distribution:
-
-    Normal:
-
-        [[ 0.005,    0,      ],
-         [     0,      0.005 ]]
 
 options:
-    approximation_space:
+
+    distribution: !Normal
+        sigma: [[ 0.005, 0 ],
+                [ 0, 0.005 ]]
+
+    grid: !Cartesian
         a: [0.7, 0.7]
         b: [1.3, 1.3]
         orders: [5, 5]
