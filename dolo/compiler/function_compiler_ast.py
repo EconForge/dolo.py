@@ -243,13 +243,10 @@ def compile_function_ast(expressions, symbols, arg_names, output_names=None, fun
     table_symbols = {k: (std_date_symbol(*k)) for k in table.keys()}
 
     # standard assignment: i.e. k = s[0]
-    index = lambda x: Index(Num(x))
+    def index(x): Index(Num(x))
 
     # declare symbols
-
-    aux_short_names = [e[2] for e in arg_names if e[0]=='auxiliaries']
-
-
+    aux_short_names = [e[2] for e in arg_names if e[0] == 'auxiliaries']
 
     preamble = []
 

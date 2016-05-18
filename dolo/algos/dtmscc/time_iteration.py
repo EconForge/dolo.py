@@ -100,10 +100,9 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     n_s = len(model.symbols['states'])
 
     approx = model.options['grid']
-    a = approx['a']
-    b = approx['b']
-    if orders is None:
-        orders = approx['orders']
+    a = approx.a
+    b = approx.b
+    orders = approx.orders
 
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
@@ -121,7 +120,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 #        print("Using initial guess (2)")
 #        controls_0 = initial_guess['controls']
 #        ap_space = initial_guess['approximation_space']
-#        if False in (approx['orders']==orders):
+#        if False in (approx.orders==orders):
 #            print("Interpolating initial guess")
 #            old_dr = MarkovDecisionRule(controls_0.shape[0], ap_space['smin'], ap_space['smax'], ap_space['orders'])
 #            old_dr.set_values(controls_0)

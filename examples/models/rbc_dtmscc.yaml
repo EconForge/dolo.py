@@ -49,14 +49,12 @@ calibration:
 
 options:
 
-    discrete_transition:
+    discrete_transition: !AR1
+       rho: 0.9
+       sigma: [ [sig_z] ]
+       N: 5
 
-        AR1:  #  automatic discretization using Rouwenhorst
-           rho: 0.9
-           sigma: [ [sig_z] ]
-           N: 5
-
-    grid:
+    grid: !Cartesian
 
         a: [5.0]
         b: [30.0]

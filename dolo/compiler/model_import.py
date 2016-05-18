@@ -44,16 +44,19 @@ def autodetect_type(data):
 def fast_import(txt, return_symbolic=False):
 
     import yaml
-    from dolo.compiler.language import minilang, constructor
-    for k,c in minilang.items():
-        yaml.add_constructor('!{}'.format(k), lambda loader,node: constructor(loader, node,c))
+    from dolo.compiler.language import minilang
 
+    for C in minilang:
+        k = C.__name__
+        print("Registering {}".format(k))
+        yaml.add_constructor('!{}'.format(k), C.constructor)
 
-    txt = txt.replace('^','**')
-    txt = txt.replace(' = ',' == ')
+    txt = txt.replace('^', '**')
+    txt = txt.replace(' = ', ' == ')
 
     # data = yaml.load(txt, loader=ordered_load)
-    data = ordered_load(txt)
+    # data = ordered_load(txt)
+    data = yaml.load(txt)
 
     name = data['name']
 
@@ -63,13 +66,14 @@ def fast_import(txt, return_symbolic=False):
     if model_type is None:
         model_type = auto_type
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
-    else: assert(model_type==auto_type)
+    else:
+        assert(model_type == auto_type)
 
     symbols = data['symbols']
-    definitions = data.get('definitions',{})
+    definitions = data.get('definitions', {})
     equations = data['equations']
-    options = data['options']
     calibration = data['calibration']
+    options = data.get('options',{})
 
     fname = '<string>'
     infos = dict()

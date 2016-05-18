@@ -69,8 +69,8 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
 
     if bounds is None:
         approx = model.options['grid']
-        a = approx['a']
-        b = approx['b']
+        a = approx.a
+        b = approx.b
         bounds = np.row_stack([a, b])
     else:
         a, b = np.row_stack(bounds)

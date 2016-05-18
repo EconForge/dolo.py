@@ -2,51 +2,18 @@ import numpy as np
 
 from dolo.numeric.discretization import tensor_markov
 
-TensorMarkov = tensor_markov
-
-def Normal(a):
-    return a
-
-def Approximation(**kwargs):
-    return {'approximation_space': kwargs}
-
-def rouwenhorst(rho=None, sigma=None, N=None):
-    from dolo.numeric.discretization import rouwenhorst
-    return rouwenhorst(rho,sigma,N)
-
-def AR1(rho, sigma, *pargs, **kwargs):
-    rho_array = np.array(rho, dtype=float)
-    sigma_array = np.atleast_2d( np.array(sigma, dtype=float) )
-    try:
-        assert(rho_array.ndim<=1)
-    except:
-        raise Exception("When discretizing a Vector AR1 process, the autocorrelation coefficient must be as scalar. Found: {}".format(rho_array))
-    try:
-        assert(sigma_array.shape[0] == sigma_array.shape[1])
-    except:
-        raise Exception("The covariance matrix for a Vector AR1 process must be square. Found: {}".format())
-    from dolo.numeric.discretization import multidimensional_discretization
-    [P,Q] = multidimensional_discretization(rho_array, sigma_array, *pargs, **kwargs)
-    return P,Q
-
-def MarkovChain(a,b):
-    return [a,b]
-
-supported_functions = [AR1, TensorMarkov, MarkovChain, Normal, Approximation]
-
 # from dolo.compiler.language import minilang
+from dolo.compiler.language import minilang
 
 class NumericEval:
 
-    def __init__(self, d, minilang={}):
+    def __init__(self, d, minilang=minilang):
 
         self.d = d # dictionary of substitutions
         for k,v in d.items():
             assert(isinstance(k, str))
 
         self.minilang = minilang
-        self.__supported_functions___ = supported_functions
-        self.__supported_functions_names___ = [fun.__name__ for fun in self.__supported_functions___]
 
     def __call__(self, s):
 
@@ -54,17 +21,20 @@ class NumericEval:
 
     def eval(self, struct):
 
-        tt = tuple(self.minilang.values())
+        tt = tuple(self.minilang)
 
         if isinstance(struct, tt):
-            return self.eval_dict(struct)
+            return struct.eval(self.d)
 
         t = struct.__class__.__name__
+
         method_name = 'eval_' + t.lower()
         try:
             fun = getattr(self, method_name)
-        except Exception as e:
+
+        except Exception:
             raise Exception("Unknown type {}".format(method_name))
+
         return fun(struct)
 
     def eval_float(self, s):
@@ -86,25 +56,7 @@ class NumericEval:
 
     def eval_dict(self, d):
 
-        if len(d) == 1:
-            k = list(d.keys())[0]
-            if k in self.__supported_functions_names___:
-                i = self.__supported_functions_names___.index(k)
-                fun = self.__supported_functions___[i]
-
-                args = d[k]
-                if isinstance(args, dict):
-                    eargs = self.eval(args)
-                    res = fun(**eargs)
-                elif isinstance(args, (list,tuple)):
-                    eargs = self.eval(args)
-                    res = fun(*eargs)
-                else:
-                    res = args
-                return res
-
-
-        return {k: self.eval(e) for k,e in d.items()}
+        return {k: self.eval(e) for k, e in d.items()}
 
     def eval_ordereddict(self, s):
 

@@ -1,13 +1,18 @@
 #  Adapted from the Dynare .mod file Figv3_1161.mod for RMT3
 
-# model_type: fga
+name: Figv3_1161
+model_type: dtcscc
 
 symbols:
     states: [k]
     controls: [c]
-    auxiliaries: [eta, w, R]
     shocks: [g]
     parameters: [beta, gamma, delta, alpha, A, tau_c, tau_k]
+
+definitions:
+    eta: alpha * A * k ** (alpha - 1)
+    w:   A * k ** alpha - k * eta
+    R:  ((1. - tau_k) * (alpha * A * k ** (alpha - 1) - delta) + 1.)
 
 equations:
 
@@ -21,11 +26,6 @@ equations:
         # Equation 11.6.1
         - k=A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
 
-    auxiliary:
-        # Equations from 11.6.8
-        - eta = alpha * A * k ** (alpha - 1)
-        - w = A * k ** alpha - k * eta
-        - R = ((1. - tau_k) * (alpha * A * k ** (alpha - 1) - delta) + 1.)
 
 calibration:
 
@@ -44,8 +44,6 @@ calibration:
     w: A * k ** alpha - k * eta
     R: eta-delta +1
 
-distribution:
+distribution: !Normal
 
-    Normal:
-
-        [ [ 0.0] ]
+    sigma: [ [ 0.0] ]

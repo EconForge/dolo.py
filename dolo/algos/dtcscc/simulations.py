@@ -205,7 +205,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None,
             bounds = [dr.a[index], dr.b[index]]
         else:
             approx = model.options['grid']
-            bounds = [approx['a'][index], approx['b'][index]]
+            bounds = [approx.a[index], approx.b[index]]
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
     if s0 is None:

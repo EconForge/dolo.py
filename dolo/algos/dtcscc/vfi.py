@@ -45,9 +45,9 @@ def evaluate_policy(model, dr, tol=1e-8, maxit=2000, verbose=False, hook=None,
     it = 0
 
     approx = model.options['grid']
-    a = approx['a']
-    b = approx['b']
-    orders = approx['orders']
+    a = approx.a
+    b = approx.b
+    orders = approx.orders
 
     drv = MultivariateSplines(a, b, orders)
     grid = drv.grid

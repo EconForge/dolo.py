@@ -1,3 +1,7 @@
+name: RBC (dynare)
+
+model_type: dynare
+
 
 symbols:
 
@@ -37,8 +41,8 @@ calibration:
       c: z*k^alpha*n^(1-alpha) - i
 
 
-distribution:
+options:
+    
+    distribution: !Normal
 
-    Normal:
-
-        [ [ 0.0015 ] ]
+        sigma[ [ 0.0015 ] ]

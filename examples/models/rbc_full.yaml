@@ -67,10 +67,10 @@ calibration:
 
 options:
 
-    distribution:
-      [ [ sig_z**2] ]
+    distribution: !Normal
+        sigma: [ [ sig_z**2] ]
 
-    grid:
+    grid: !Cartesian
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

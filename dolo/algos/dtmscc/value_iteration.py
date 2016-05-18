@@ -7,7 +7,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True
     [P, Q] = model.markov_chain
 
     n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1] # number of markov variables
+    n_mv = P.shape[1]   # number of markov variables
 
     x0 = model.calibration['controls']
     v0 = model.calibration['values']
@@ -17,13 +17,9 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, orders=None, verbose=True
     n_s = len(model.symbols['states'])
 
     approx = model.options['grid']
-    a = approx['a']
-    b = approx['b']
-
-    if orders is None:
-        orders = approx['orders']
-    else:
-        orders = numpy.array(orders,dtype=int)
+    a = approx.a
+    b = approx.b
+    orders = approx.orders
 
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule
     mdrv = MarkovDecisionRule(n_ms, a, b, orders) # values

@@ -74,14 +74,14 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         vprint('Using bounds specified by model')
 
         approx = model.options['grid']
-        a = approx['a']
-        b = approx['b']
+        a = approx.a
+        b = approx.b
 
         bounds = np.row_stack([a, b])
         bounds = np.array(bounds, dtype=float)
 
         if interp_orders is None:
-            interp_orders = approx.get('orders', [5] * bounds.shape[1])
+            interp_orders = approx.orders
 
     else:
         vprint('Using asymptotic bounds given by first order solution.')
@@ -299,9 +299,9 @@ def time_iteration_direct(model, maxit=100, tol=1e-8, initial_dr=None, verbose=F
     nodes, weights = gauss_hermite_nodes([5], model.covariances)
 
     ap = model.options['grid']
-    a = ap['a']
-    b = ap['b']
-    orders = ap['orders']
+    a = ap.a
+    b = ap.b
+    orders = ap.orders
     grid = mlinspace(a,b,orders)
 
     dr = MultivariateCubicSplines(a,b,orders)

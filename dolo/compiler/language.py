@@ -15,7 +15,7 @@ constants = {
 
 # objects
 
-
+from dolo.compiler import objects
 
 class LanguageElement(dict):
 
@@ -24,58 +24,100 @@ class LanguageElement(dict):
         value = loader.construct_mapping(node)
         return cls(**value)
 
+    def check(self):
+        import inspect
+        sig = inspect.signature(self.baseclass)
+        sig.bind_partial(self)
+
+    def eval(self, d={}):
+        from dolo.compiler.symbolic_eval import NumericEval
+        ne = NumericEval(d)
+        args = ne.eval_dict(self)
+        print('eval :{}'.format(args))
+        print(self.baseclass)
+        obj = self.baseclass(**args)
+        return obj
+
+    def __repr__(self):
+        s = super().__repr__()
+        n = self.baseclass.__name__
+        return "{}(**{})".format(n, s)
+
+    def __str__(self):
+        n = self.baseclass.__name__
+        c = str.join(", ", ["{}={}".format(k, v) for k, v in self.items()])
+        return "{}({})".format(n, c)
+
 
 class Normal(LanguageElement):
-    pass
+
+    baseclass = objects.Normal
 
 class Cartesian(LanguageElement):
-    pass
+
+    baseclass = objects.Cartesian
 
 class AR1(LanguageElement):
-    pass
 
-minilang = {
-    'Normal': Normal,
-    'Cartesian': Cartesian,
-    'AR1': AR1
-}
+    baseclass = objects.AR1
 
-# if __name__ == '__main__':
+class MarkovChain(LanguageElement):
 
-# import ruamel.yaml as yaml
-import yaml
+    baseclass = objects.MarkovChain
 
-for k,C in minilang.items():
-    yaml.add_constructor('!{}'.format(k), C.constructor)
-# yaml.add_constructor('!Cartesian', constructor_cartesian)
+minilang = [
+    Normal,
+    Cartesian,
+    AR1,
+    MarkovChain
+]
 
-
-txt = """
-grid: !Cartesian
-   a: [x,10]
-   b: [y,20]
-   orders: [50,50]
-
-distribution: !Normal
-    sigma: [[sig_z]]
-    mu: [0.0]
-"""
-data = yaml.load(txt)
+# import yaml
+# for C in minilang:
+#     k = C.__name__
+#     yaml.add_constructor('!{}'.format(k), C.constructor)
 
 
-dis = data['distribution']
-dis
+if __name__ == '__main__':
 
 
-grid = data['grid']
+    txt = """
+    grid: !Cartesian
+       a: [x,10]
+       b: [y,20]
+       orders: [50,50]
 
-grid
+    distribution: !Normal
+        sigma: [[sig_z]]
+        mu: [0.0]
+    """
 
-from dolo.compiler.symbolic_eval import NumericEval
 
-d = dict(x=20, y=30, sig_z=0.001)
+    data = yaml.load(txt)
 
-ne = NumericEval(d, minilang=minilang)
 
-resp = ne.eval(data)
-print(resp)
+    dis = data['distribution']
+    str(dis)
+
+
+    dis.__repr__()
+    grid = data['grid']
+
+
+    d = dict(x=20, y=30, sig_z=0.001)
+
+    from dolo.compiler.symbolic_eval import NumericEval
+
+    ne = NumericEval(d, minilang=minilang)
+
+    ne.eval(d)
+
+    cart = grid.eval(d)
+    dd = dis.eval(d)
+
+    ne.eval(data['grid'])
+
+    ndata = ne.eval(data)
+
+    data['grid']
+    ndata['grid']

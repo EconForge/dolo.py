@@ -17,4 +17,4 @@ def test_direct():
 
 if __name__ =='__main__':
 
-    test_pea()
+    test_direct()

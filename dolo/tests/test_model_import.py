@@ -88,5 +88,4 @@ def test_dtcscc_model():
 
 if __name__ == '__main__':
     test_dtcscc_model()
-    test_dtcscc__functions()
     model_evaluation()

@@ -5,6 +5,7 @@ from .function_compiler_ast import timeshift, StandardizeDatesSimple
 from dolo.compiler.recipes import recipes
 from numba import njit
 
+
 class NumericModel:
 
     calibration = None
@@ -63,12 +64,14 @@ class NumericModel:
         if distribution is None:
             self.covariances = None
         else:
-            self.covariances = numpy.atleast_2d(numpy.array(distribution, dtype=float))
+            self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
 
         markov_chain = discrete_transition
+        print(markov_chain)
         if markov_chain is None:
             self.markov_chain = None
         else:
+            markov_chain = [markov_chain.P, markov_chain.Q]
             self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
     def get_calibration(self, pname, *args):
@@ -84,7 +87,7 @@ class NumericModel:
         group = [g for g in self.symbols.keys() if pname in self.symbols[g]]
         try:
             group = group[0]
-        except:
+        except Exception:
             raise Exception('Unknown symbol {}.'.format(pname))
         i = self.symbols[group].index(pname)
         v = self.calibration[group][i]
@@ -123,6 +126,8 @@ Model object:
 
         # for eqgroup, eqlist in self.symbolic.equations.items():
         for eqgroup in res.keys():
+            if eqgroup == 'auxiliary':
+                continue
             eqlist = self.symbolic.equations[eqgroup]
             ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
