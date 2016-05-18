@@ -32,6 +32,8 @@ class MultiSmolyak:
         b = numpy.array(b, dtype='float64')
         d = len(a)
         l = int(l)
+        self.a = a
+        self.b = b
         self.d = d
         self.__sg__ = SmolyakGrid(d, l, lb=a, ub=b)
         self.grid = self.__sg__.grid

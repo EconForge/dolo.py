@@ -65,7 +65,7 @@ class NumericModel:
             self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
 
         markov_chain = discrete_transition
-        
+
         if markov_chain is None:
             self.markov_chain = None
         else:
@@ -126,7 +126,10 @@ Model object:
         for eqgroup in res.keys():
             if eqgroup == 'auxiliary':
                 continue
-            eqlist = self.symbolic.equations[eqgroup]
+            if eqgroup == 'dynare':
+                eqlist = self.symbolic.equations
+            else:
+                eqlist = self.symbolic.equations[eqgroup]
             ss += u"    {}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
@@ -138,16 +141,10 @@ Model object:
                 if abs(val) > 1e-8:
                     vals = colored(vals, 'red')
 
-                # eq = eq.replace('|', u"\u27C2")
-
                 ss += u"        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
 
             ss += "\n"
         s += ss
-
-        # import pprint
-        # s += '- residuals:\n'
-        # s += pprint.pformat(compute_residuals(self),indent=2, depth=1)
 
         return s
 
@@ -168,10 +165,11 @@ Model object:
 
         if self.model_type == 'dtcscc':
             from dolo.algos.dtcscc.steady_state import residuals
-            return residuals(self, calib)
         elif self.model_type == 'dtmscc':
             from dolo.algos.dtmscc.steady_state import residuals
-            return residuals(self, calib)
+        elif self.model_type == 'dynare':
+            from dolo.algos.dynare.steady_state import residuals
+        return residuals(self, calib)
 
     def eval_formula(self, expr, dataframe=None, calib=None):
 
