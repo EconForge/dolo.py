@@ -175,3 +175,22 @@ dtmscc:
                 - ['controls',0,'x']
                 #- ['auxiliaries',0,'y']
                 - ['parameters', 0, 'p']
+
+
+dynare:
+
+    model_spec: dynare
+
+    symbols: ['variables', 'shocks', 'parameters']
+
+    specs:
+
+        dynare:
+
+            eqs:
+
+                - ['variables',1,'y_p1']
+                - ['variables',0,'y']
+                - ['variables',-1,'y_m1']
+                - ['shocks', 0, 'e']
+                - ['parameters',0,'p']

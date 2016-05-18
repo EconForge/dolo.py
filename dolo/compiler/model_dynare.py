@@ -12,7 +12,6 @@ class DynareModel(NumericModel):
 
     def __get_compiled_functions__(self, order=1):
 
-
         # constructs arguments of function f(y(1),y,y(-1),e,p)
 
         vv = self.symbols['variables']
@@ -33,7 +32,6 @@ class DynareModel(NumericModel):
             eqs.append(s)
 
         from dolo.compiler.function_compiler_sympy import compile_higher_order_function
-
 
         f_dynamic = compile_higher_order_function(eqs, syms, params,
                                                 order=order, funname='f_dynamic')

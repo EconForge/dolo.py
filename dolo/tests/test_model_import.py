@@ -1,7 +1,6 @@
 import unittest
 import numpy
-import dolo.config
-dolo.config.debug=True
+
 
 def test_web_import():
 

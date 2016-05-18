@@ -1,4 +1,3 @@
-
 import numpy
 
 from dolo.misc.display import read_file_or_url
@@ -27,7 +26,8 @@ def yaml_import(fname, txt=None, return_symbolic=False, check=True, check_only=F
     if check:
         from dolo.linter import lint
         output = lint(txt)
-        print(output)
+        if len(output)>0:
+            print(output)
 
     if check_only:
         return output
@@ -48,14 +48,10 @@ def fast_import(txt, return_symbolic=False):
 
     for C in minilang:
         k = C.__name__
-        print("Registering {}".format(k))
         yaml.add_constructor('!{}'.format(k), C.constructor)
 
     txt = txt.replace('^', '**')
-    txt = txt.replace(' = ', ' == ')
 
-    # data = yaml.load(txt, loader=ordered_load)
-    # data = ordered_load(txt)
     data = yaml.load(txt)
 
     name = data['name']
@@ -68,19 +64,17 @@ def fast_import(txt, return_symbolic=False):
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
     else:
         assert(model_type == auto_type)
-
     symbols = data['symbols']
     definitions = data.get('definitions', {})
     equations = data['equations']
     calibration = data['calibration']
-    options = data.get('options',{})
+    options = data.get('options', {})
 
     fname = '<string>'
     infos = dict()
     infos['filename'] = fname
     infos['name'] = name
     infos['type'] = model_type
-
 
     # all symbols are initialized to nan
     # except shocks and markov_states which are initialized to 0
@@ -100,7 +94,7 @@ def fast_import(txt, return_symbolic=False):
         'direct_responses': 'direct_response'
     }
 
-    for k,v in definitions.items():
+    for k, v in definitions.items():
         if k not in calibration:
             calibration[k] = v
 
@@ -114,17 +108,14 @@ def fast_import(txt, return_symbolic=False):
                 if s not in calibration:
                     calibration[s] = default
 
-
     from dolo.compiler.model_symbolic import SymbolicModel
     smodel = SymbolicModel(name, model_type, symbols, equations,
                            calibration, options=options, definitions=definitions)
 
-    print(smodel.calibration_dict)
-
     if return_symbolic:
         return smodel
 
-    if model_type in ('dtcscc','dtmscc'):
+    if model_type in ('dtcscc', 'dtmscc'):
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:

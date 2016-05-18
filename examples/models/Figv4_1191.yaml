@@ -20,11 +20,11 @@ equations:
         # Equation 11.6.3
         # - c^(-gamma)= beta*(c(+1)^(-gamma))*((1+tau_c)/(1+tau_c(+1)))*((1-delta) + (1-tau_k(+1))*alpha*A*k^(alpha-1))
         # - c^(-gamma)= beta*(c(+1)^(-gamma))*(1-delta + alpha*A*k^(alpha-1))
-        - c^(-gamma)= beta*(c(+1)^(-gamma))*((1+tau_c)/(1+tau_c))*((1-delta) + (1-tau_k)*alpha*A*k^(alpha-1))
+        - c^(-gamma) = beta*(c(+1)^(-gamma))*((1+tau_c)/(1+tau_c))*((1-delta) + (1-tau_k)*alpha*A*k^(alpha-1))
 
     transition:
         # Equation 11.6.1
-        - k=A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
+        - k = A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
 
 
 calibration:

@@ -93,7 +93,8 @@ from dolo.compiler.recipes import recipes
 
 known_symbol_types = {
     'dtcscc':recipes['dtcscc']['symbols'],
-    'dtmscc':recipes['dtmscc']['symbols']
+    'dtmscc':recipes['dtmscc']['symbols'],
+    'dynare':recipes['dynare']['symbols']
     }
 
 class ModelException(Exception):
@@ -172,6 +173,7 @@ def check_equations(data):
 
     already_declared = {}
     unknown = []
+
     for eq_type in equations.keys():
         pos = equations.lc.data[eq_type]
         if eq_type not in specs:
@@ -359,7 +361,7 @@ def check_infos(data):
     exceptions = []
     if 'model_type' in data:
         model_type = data['model_type']
-        if model_type not in ['dtmscc', 'dtcscc']:
+        if model_type not in ['dtmscc', 'dtcscc','dynare']:
             exc = ModelException('Uknown model type: {}.'.format(str(model_type)))
             exc.pos = data.lc.data['model_type']
             exc.type='error'
@@ -387,7 +389,6 @@ def lint(txt, source='<string>', format='human'):
     try:
         exceptions = check_all(data)
     except Exception as e:
-        raise e
         exceptions = []
 
     output = []

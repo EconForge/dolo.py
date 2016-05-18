@@ -12,3 +12,6 @@ def test_fga_higher_order_perturbations():
     assert(dr1.order==1)
     assert(dr1.X_s.ndim==2)
     assert(dr3.X_ss.ndim==3)
+
+if __name__ == '__main__':
+    test_fga_higher_order_perturbations()

@@ -12,7 +12,7 @@ class SymbolicModel:
 
         # reorder symbols
         from collections import OrderedDict
-        canonical_order = ['markov_states', 'states', 'controls', 'values', 'shocks', 'parameters']
+        canonical_order = ['variables', 'markov_states', 'states', 'controls', 'values', 'shocks', 'parameters']
         osyms = OrderedDict()
         for vg in canonical_order:
             if vg in symbols:

@@ -32,8 +32,6 @@ def solve_decision_rule(model,order=1,method='default',mlab=None,steady_state = 
 
     derivatives = f_dynamic(yy,parms, order=order)
 
-    print(derivatives)
-
     derivatives_ss = None
 
     if (method == 'sigma2'):

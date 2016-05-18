@@ -31,7 +31,6 @@ class NumericModel:
         self.name = self.infos['name']
         self.model_type = self.infos['type']
         # self.model_spec
-
         self.__update_from_symbolic__()
         self.__compile_functions__()
 
@@ -50,7 +49,6 @@ class NumericModel:
         self.calibration = CalibrationDict(self.symbols, calib)
         from .symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
-
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
         #
@@ -67,7 +65,7 @@ class NumericModel:
             self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
 
         markov_chain = discrete_transition
-        print(markov_chain)
+        
         if markov_chain is None:
             self.markov_chain = None
         else:

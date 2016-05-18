@@ -6,28 +6,28 @@ model_type: dtcscc
 symbols:
     states: [k, tau_c, tau_k]
     controls: [c]
-    auxiliaries: [eta, w]
     shocks: [g, exog_tau_c, exog_tau_k]
     parameters: [beta, gamma, delta, alpha, A]
+
+definitions:
+    # Equations from 11.6.8
+    eta: alpha*A*k**(alpha-1)
+    w: A*k**alpha - k*eta
 
 equations:
 
     arbitrage:
         # Equation 11.6.3
-        - 1= beta*(c(+1)/c)^(-gamma)*(1+tau_c)/(1+tau_c(1))*((1-tau_k(1))*(eta(1)-delta) + 1) | 0 <= c <= inf
+        - 1 = beta*(c(+1)/c)^(-gamma)*(1+tau_c)/(1+tau_c(1))*((1-tau_k(1))*(eta(1)-delta) + 1) | 0 <= c <= inf
 
     transition:
         # Equation 11.6.1
-        - k=A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
+        - k = A*k(-1)^alpha+(1-delta)*k(-1)-c(-1)-g
         # We have the states tau_c and tau_k just follow exactly the sequence
         # of shocks that we supply.
         - tau_c = exog_tau_c
         - tau_k = exog_tau_k
 
-    auxiliary:
-        # Equations from 11.6.8
-        - eta = alpha*A*k**(alpha-1)
-        - w = A*k**alpha - k*eta
 
 calibration:
     # parameters

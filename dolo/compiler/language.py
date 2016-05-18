@@ -33,8 +33,6 @@ class LanguageElement(dict):
         from dolo.compiler.symbolic_eval import NumericEval
         ne = NumericEval(d)
         args = ne.eval_dict(self)
-        print('eval :{}'.format(args))
-        print(self.baseclass)
         obj = self.baseclass(**args)
         return obj
 

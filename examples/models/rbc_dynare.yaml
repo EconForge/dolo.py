@@ -42,7 +42,7 @@ calibration:
 
 
 options:
-    
+
     distribution: !Normal
 
-        sigma[ [ 0.0015 ] ]
+        sigma: [ [ 0.0015 ] ]

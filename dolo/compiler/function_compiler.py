@@ -282,6 +282,9 @@ def compile_function_ast(equations, symbols, arg_names, output_names=None, funna
 
 def make_function(equations, arguments, parameters, targets=None, rhs_only=False, definitions={}, funname='anonymous'):
 
+    compat = lambda s: s.replace("^", "**").replace('==','=').replace('=','==')
+    equations = [compat(eq) for eq in equations]
+
     if isinstance(arguments, list):
         arguments = OrderedDict( [('arg_{}'.format(i),k) for i, k in enumerate(arguments)])
 
@@ -300,8 +303,6 @@ def make_function(equations, arguments, parameters, targets=None, rhs_only=False
         targets = ['_out_{}'.format(n) for n in range(len(equations))]
 
     all_symbols = all_variables + known_parameters
-
-    print(all_variables)
 
     equations = [parse(eq) for eq in equations]
     definitions = {k: parse(v) for k, v in definitions.items()}
@@ -400,18 +401,7 @@ def make_function(equations, arguments, parameters, targets=None, rhs_only=False
     mod = Module(body=[f])
     mod = ast.fix_missing_locations(mod)
     return mod
-    # return mod
-    # import dolo.config
-    # if dolo.config.debug: print_code = True
-    # if print_code:
-    #     s = "Function {}".format(mod.body[0].name)
-    #     print("-" * len(s))
-    #     print(s)
-    #     print("-" * len(s))
-    #     print(to_source(mod))
-    #
-    #
-    # return eval_ast(mod)
+
 
 
 def eval_ast(mod):

@@ -8,7 +8,6 @@ from dolo.compiler.function_compiler_sympy import ast_to_sympy
 from dolo.numeric.decision_rules_states import CDR
 from dolo.compiler.function_compiler_ast import (StandardizeDatesSimple,
                                                  std_date_symbol)
-from dolo.compiler.function_compiler_ast import std_date_symbol
 
 def timeshift(expr, variables, date):
     from sympy import Symbol
@@ -47,13 +46,8 @@ def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
     else:
         return expr_std
 
-
 def model_to_fg(model, order=2):
-
-    if hasattr(model, '__higher_order_functions__') and model.__highest_order__  >= order:
-        f = model.__higher_order_functions__['f']
-        g = model.__higher_order_functions__['g']
-        return [f, g]
+    # compile f, g function at higher order
 
     all_variables = sum([model.symbols[e] for e in model.symbols if e != 'parameters'], [])
     all_dvariables = ([(d, 0) for d in all_variables] +
@@ -61,58 +55,37 @@ def model_to_fg(model, order=2):
                       [(d, -1) for d in all_variables])
     psyms = [(e,0) for e in model.symbols['parameters']]
 
+    sds = StandardizeDatesSimple(all_dvariables)
+
     if hasattr(model.symbolic, 'definitions'):
         definitions = model.symbolic.definitions
     else:
         definitions = {}
 
-    ddef = dict()
+    d = dict()
+
     for k in definitions:
         v = parse_equation(definitions[k], all_dvariables + psyms, to_sympy=True)
-        ddef[sympy.Symbol(k)] = v
+        kk = std_date_symbol(k, 0)
+        d[sympy.Symbol(kk)] = v
 
-    # all_sym_variables = [std_date_symbol(s,0) for s in all_variables]
+    for k in list(d.keys()):
+        d[timeshift(k, all_variables, 1)] = timeshift(d[k], all_variables, 1)
+        d[timeshift(k, all_variables, -1)] = timeshift(d[k], all_variables, -1)
 
-    params = model.symbols['parameters']
 
     f_eqs = model.symbolic.equations['arbitrage']
     f_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True) for eq in f_eqs]
-    f_eqs = [eq.subs(ddef) for eq in f_eqs]  # TODO : replace it everywhere else
-
-    y_eqs = model.symbolic.equations['auxiliary']
-    syms = [(e, 0) for e in model.symbols['states']] + \
-           [(e, 0) for e in model.symbols['controls']] + \
-           [(e, 0) for e in model.symbols['auxiliaries']]
-
-    # Solve recursively
-    y_eqs = [parse_equation(eq, all_dvariables+psyms, to_sympy=True, substract_lhs=False) for eq in y_eqs]
-    d = {}
-    for eq in y_eqs:
-        d[eq[0]] = eq[1].subs(d)
-
-    # Construct dictionary
-    for k in list(d.keys()):
-        d[timeshift(k,all_variables,1)] = timeshift(d[k],all_variables,1)
-        d[timeshift(k,all_variables,-1)] = timeshift(d[k],all_variables,-1)
     f_eqs = [eq.subs(d) for eq in f_eqs]
 
     g_eqs = model.symbolic.equations['transition']
     g_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True, substract_lhs=False) for eq in g_eqs]
-
     #solve_recursively
     from collections import OrderedDict
     dd = OrderedDict()
     for eq in g_eqs:
         dd[eq[0]] = eq[1].subs(dd).subs(d)
     g_eqs = dd.values()
-
-
-    syms = [(e,-1) for e in model.symbols['states']] + \
-           [(e,-1) for e in model.symbols['controls']] + \
-           [(e,-1) for e in model.symbols['auxiliaries']] + \
-           [(e,0) for e in model.symbols['shocks']] + \
-           [(e,0) for e in model.symbols['states']]
-
 
     f_syms = [(e,0) for e in model.symbols['states']] + \
                 [(e,0) for e in model.symbols['controls']] + \
@@ -123,18 +96,19 @@ def model_to_fg(model, order=2):
                 [(e,-1) for e in model.symbols['controls']] + \
                 [(e,0) for e in model.symbols['shocks']]
 
+    params = model.symbols['parameters']
+
     f = compile_higher_order_function(f_eqs, f_syms, params, order=order,
         funname='f', return_code=False, compile=False)
+
+
     g = compile_higher_order_function(g_eqs, g_syms, params, order=order,
         funname='g', return_code=False, compile=False)
-
     # cache result
     model.__higher_order_functions__ = dict(f=f, g=g)
     model.__highest_order__ = order
 
     return [f, g]
-
-
 
 
 def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True, eigmax=1.0+1e-6):
