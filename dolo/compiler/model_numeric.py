@@ -249,15 +249,11 @@ file: "{filename}\n'''.format(**self.infos)
         d = copy.deepcopy(model.symbolic.options['grid'])
         gtype = dis_opts.get('type')
         if gtype:
-            if gtype.lower() == 'cartesian':
-                from dolo.compiler.language import Cartesian
-                d = Cartesian(**d)
-            elif gtype.lower() == 'smolyak':
-                raise Exception("Not implemented")
-    #             from dolo.compiler.objects import SmolyakGrid as NewType
-            else: raise Exception("Unknown grid type.")
             from dolo.compiler.language import minilang
-            cls = [e for e in minilang if e.__name__.lower()==gtype.lower()][0]
+            try:
+                cls = [e for e in minilang if e.__name__.lower()==gtype.lower()][0]
+            except:
+                raise Exception("Unknown grid type {}.".format(gtype))
             d = cls(**d)
     #     return cc
         d.update(**dis_opts)

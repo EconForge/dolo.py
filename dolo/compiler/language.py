@@ -51,9 +51,6 @@ class Normal(LanguageElement):
 
     baseclass = objects.Normal
 
-class Cartesian(LanguageElement):
-
-    baseclass = objects.Cartesian
 
 class AR1(LanguageElement):
 
@@ -63,11 +60,30 @@ class MarkovChain(LanguageElement):
 
     baseclass = objects.MarkovChain
 
+class CartesianGrid(LanguageElement):
+
+    baseclass = objects.CartesianGrid
+
+class SmolyakGrid(LanguageElement):
+
+    baseclass = objects.SmolyakGrid
+
+
+# aliases
+class Smolyak(SmolyakGrid):
+    pass
+
+class Cartesian(CartesianGrid):
+    pass
+
 minilang = [
     Normal,
-    Cartesian,
     AR1,
-    MarkovChain
+    MarkovChain,
+    Smolyak,
+    Cartesian,
+    CartesianGrid,
+    SmolyakGrid
 ]
 
 # import yaml

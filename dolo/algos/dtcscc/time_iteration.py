@@ -6,6 +6,9 @@ from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
                                           serial_newton)
+from dolo.numeric.interpolation import create_interpolator
+
+
 
 
 def time_iteration(model, verbose=False, initial_dr=None,
@@ -47,11 +50,10 @@ def time_iteration(model, verbose=False, initial_dr=None,
     parms = model.calibration['parameters']
     sigma = model.covariances
 
+
     approx = model.get_grid(**grid)
-    a = approx.a
-    b = approx.b
-    interp_orders = approx.orders
     interp_type = approx.interpolation
+    dr = create_interpolator(approx, approx.interpolation)
 
     if initial_dr is None:
         if pert_order == 1:
@@ -59,15 +61,6 @@ def time_iteration(model, verbose=False, initial_dr=None,
 
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
-
-
-    if interp_type == 'smolyak':
-        from dolo.numeric.interpolation.smolyak import SmolyakGrid
-        dr = SmolyakGrid(a, b, interp_orders)
-
-    elif interp_type in ('spline', 'cspline'):
-        from dolo.numeric.interpolation.splines import MultivariateSplines
-        dr = MultivariateSplines(a, b, interp_orders)
 
     if integration == 'optimal_quantization':
         from dolo.numeric.discretization import quantization_nodes
@@ -243,7 +236,7 @@ from dolo.numeric.interpolation.splines import MultivariateCubicSplines
 from dolo.numeric.misc import mlinspace
 from dolo.algos.dtcscc.perturbations import approximate_controls
 
-def time_iteration_direct(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False):
+def time_iteration_direct(model, maxit=100, grid={}, tol=1e-8, initial_dr=None, verbose=False):
 
     t1 = time.time()
 
@@ -258,15 +251,13 @@ def time_iteration_direct(model, maxit=100, tol=1e-8, initial_dr=None, verbose=F
     else:
         drp = approximate_controls(model)
 
+
     nodes, weights = gauss_hermite_nodes([5], model.covariances)
 
-    ap = model.options['grid']
-    a = ap.a
-    b = ap.b
-    orders = ap.orders
-    grid = mlinspace(a,b,orders)
-
-    dr = MultivariateCubicSplines(a,b,orders)
+    approx = model.get_grid(**grid)
+    grid = approx.grid
+    interp_type = approx.interpolation
+    dr = create_interpolator(approx, approx.interpolation)
 
     N = grid.shape[0]
     z = np.zeros((N,len(model.symbols['expectations'])))

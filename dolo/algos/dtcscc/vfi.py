@@ -5,6 +5,7 @@ import numpy
 
 from dolo.numeric.discretization import gauss_hermite_nodes
 from dolo.numeric.interpolation.splines import MultivariateSplines
+from dolo.numeric.interpolation import create_interpolator
 
 
 def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hook=None,
@@ -33,7 +34,6 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
 
     vfun = model.functions["value"]
     gfun = model.functions['transition']
-    afun = model.functions['auxiliary']
 
     parms = model.calibration['parameters']
 
@@ -45,18 +45,15 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
     it = 0
 
     approx = model.get_grid(**grid)
-    a = approx.a
-    b = approx.b
-    orders = approx.orders
+    interp_type = approx.interpolation
 
-    drv = MultivariateSplines(a, b, orders)
+    drv = create_interpolator(approx, approx.interpolation)
+
     grid = drv.grid
 
     N = drv.grid.shape[0]
 
     controls = dr(grid)
-
-    auxiliaries = afun(grid, controls, parms)
 
     guess_0 = model.calibration['values']
     guess_0 = guess_0[None, :].repeat(N, axis=0)
@@ -89,7 +86,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
         drv.set_values(guess_0)
 
         # update the geuss of value functions
-        guess = update_value(gfun, afun, vfun, grid, controls, dr, drv,
+        guess = update_value(gfun, vfun, grid, controls, dr, drv,
                              epsilons, weights, parms, n_vals)
 
         # compute error
@@ -119,7 +116,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
     return drv
 
 
-def update_value(g, a, v, s, x, dr, drv, epsilons, weights, parms, n_vals):
+def update_value(g, v, s, x, dr, drv, epsilons, weights, parms, n_vals):
 
     N = s.shape[0]
     n_s = s.shape[1]
