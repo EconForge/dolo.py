@@ -8,9 +8,9 @@ from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
                                           serial_newton)
 
 
-def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
+def time_iteration(model, verbose=False, initial_dr=None,
                    pert_order=1, with_complementarities=True,
-                   interp_type='smolyak', smolyak_order=3, interp_orders=None,
+                   grid={},
                    maxit=500, tol=1e-8, inner_maxit=10,
                    integration='gauss-hermite', integration_orders=None,
                    T=200, n_s=3, hook=None):
@@ -23,9 +23,6 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     ----------
     model : NumericModel
         "fg" or "fga" model to be solved
-    bounds : ndarray
-        boundaries for approximations. First row contains minimum values.
-        Second row contains maximum values.
     verbose : boolean
         if True, display iterations
     initial_dr : decision rule
@@ -35,13 +32,7 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         ``pert_order`` is used as initial guess
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
-    interp_type : {`smolyak`, `spline`}
-        type of interpolation to use for future controls
-    smolyak_orders : int
-        parameter ``l`` for Smolyak interpolation
-    interp_orders : 1d array-like
-        list of integers specifying the number of nodes in each dimension if
-        ``interp_type="spline" ``
+    grid: grid options
 
     Returns
     -------
@@ -56,6 +47,12 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
     parms = model.calibration['parameters']
     sigma = model.covariances
 
+    approx = model.get_grid(**grid)
+    a = approx.a
+    b = approx.b
+    interp_orders = approx.orders
+    interp_type = approx.interpolation
+
     if initial_dr is None:
         if pert_order == 1:
             initial_dr = approximate_controls(model)
@@ -63,49 +60,14 @@ def time_iteration(model,  bounds=None, verbose=False, initial_dr=None,
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
 
-        if interp_type == 'perturbations':
-            return initial_dr
-
-    if bounds is not None:
-        pass
-
-    elif model.options and 'grid' in model.options:
-
-        vprint('Using bounds specified by model')
-
-        approx = model.options['grid']
-        a = approx.a
-        b = approx.b
-
-        bounds = np.row_stack([a, b])
-        bounds = np.array(bounds, dtype=float)
-
-        if interp_orders is None:
-            interp_orders = approx.orders
-
-    else:
-        vprint('Using asymptotic bounds given by first order solution.')
-
-        from dolo.numeric.timeseries import asymptotic_variance
-        # this will work only if initial_dr is a Taylor expansion
-        Q = asymptotic_variance(initial_dr.A.real, initial_dr.B.real,
-                                initial_dr.sigma, T=T)
-
-        devs = np.sqrt(np.diag(Q))
-        bounds = np.row_stack([
-            initial_dr.S_bar - devs * n_s,
-            initial_dr.S_bar + devs * n_s,
-        ])
-
-        if interp_orders is None:
-            interp_orders = [5] * bounds.shape[1]
 
     if interp_type == 'smolyak':
         from dolo.numeric.interpolation.smolyak import SmolyakGrid
-        dr = SmolyakGrid(bounds[0, :], bounds[1, :], smolyak_order)
-    elif interp_type == 'spline':
+        dr = SmolyakGrid(a, b, interp_orders)
+
+    elif interp_type in ('spline', 'cspline'):
         from dolo.numeric.interpolation.splines import MultivariateSplines
-        dr = MultivariateSplines(bounds[0, :], bounds[1, :], interp_orders)
+        dr = MultivariateSplines(a, b, interp_orders)
 
     if integration == 'optimal_quantization':
         from dolo.numeric.discretization import quantization_nodes

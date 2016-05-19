@@ -16,4 +16,4 @@ class TestGlobal(unittest.TestCase):
 
         t1 = time.time()
 
-        dr = time_iteration(model, pert_order=1, maxit=5, interp_type='spline', verbose=True)
+        dr = time_iteration(model, pert_order=1, maxit=5, verbose=True)

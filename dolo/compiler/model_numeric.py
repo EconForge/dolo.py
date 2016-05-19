@@ -43,10 +43,11 @@ class NumericModel:
 
         from dolo.compiler.triangular_solver import solve_triangular_system
         self.calibration_dict = solve_triangular_system( system )
+
         from dolo.compiler.misc import CalibrationDict, calibration_to_vector
         calib = calibration_to_vector(self.symbols, self.calibration_dict)
-
         self.calibration = CalibrationDict(self.symbols, calib)
+
         from .symbolic_eval import NumericEval
         evaluator = NumericEval(self.calibration_dict)
         # read symbolic structure
@@ -58,7 +59,9 @@ class NumericModel:
         distribution = self.options.get('distribution')
         discrete_transition = self.options.get('discrete_transition')
 
-        # covariances = distribution
+        self.distribution = distribution
+        self.discrete_transition = discrete_transition
+
         if distribution is None:
             self.covariances = None
         else:
@@ -234,7 +237,32 @@ file: "{filename}\n'''.format(**self.infos)
             calib = self.calibration
         return eval_formula(expr, dataframe=dataframe, context=calib)
 
+    def get_distribution(model, **opts):
+        import copy
+        d = copy.deepcopy(model.symbolic.options['distribution'])
+        d.update(opts)
+        if 'type' in d: d.pop('type')
+        return d.eval(model.calibration.flat)
 
+    def get_grid(model, **dis_opts):
+        import copy
+        d = copy.deepcopy(model.symbolic.options['grid'])
+        gtype = dis_opts.get('type')
+        if gtype:
+            if gtype.lower() == 'cartesian':
+                from dolo.compiler.language import Cartesian
+                d = Cartesian(**d)
+            elif gtype.lower() == 'smolyak':
+                raise Exception("Not implemented")
+    #             from dolo.compiler.objects import SmolyakGrid as NewType
+            else: raise Exception("Unknown grid type.")
+            from dolo.compiler.language import minilang
+            cls = [e for e in minilang if e.__name__.lower()==gtype.lower()][0]
+            d = cls(**d)
+    #     return cc
+        d.update(**dis_opts)
+        if 'type' in d: d.pop('type')
+        return d.eval(d=model.calibration.flat)
 
     def __compile_functions__(self):
 

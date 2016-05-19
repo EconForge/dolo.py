@@ -80,7 +80,7 @@ def residuals(f, g, s, x, dr, P, Q, parms):
 
 
 def time_iteration(model, initial_guess=None, with_complementarities=True,
-                        verbose=True, orders=None, output_type='dr',
+                        verbose=True, grid={}, output_type='dr',
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
     assert(model.model_type == 'dtmscc')
@@ -99,10 +99,11 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     n_x = len(x0)
     n_s = len(model.symbols['states'])
 
-    approx = model.options['grid']
+    approx = model.get_grid(**grid)
     a = approx.a
     b = approx.b
     orders = approx.orders
+    interp_type = approx.interpolation # unused
 
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
@@ -110,27 +111,6 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     grid = mdr.grid
     N = grid.shape[0]
-
-
-
-#    if isinstance(initial_guess, numpy.ndarray):
-#        print("Using initial guess (1)")
-#        controls = initial_guess
-#    elif isinstance(initial_guess, dict):
-#        print("Using initial guess (2)")
-#        controls_0 = initial_guess['controls']
-#        ap_space = initial_guess['approximation_space']
-#        if False in (approx.orders==orders):
-#            print("Interpolating initial guess")
-#            old_dr = MarkovDecisionRule(controls_0.shape[0], ap_space['smin'], ap_space['smax'], ap_space['orders'])
-#            old_dr.set_values(controls_0)
-#            controls_0 = numpy.zeros( (n_ms, N, n_x) )
-#            for i in range(n_ms):
-#                e = old_dr(i,grid)
-#                controls_0[i,:,:] = e
-#    else:
-#        controls_0 = numpy.zeros((n_ms, N, n_x))
-
 
 
     controls_0 = numpy.zeros((n_ms, N, n_x))

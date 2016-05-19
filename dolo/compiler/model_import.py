@@ -5,6 +5,7 @@ import yaml
 from collections import OrderedDict
 
 def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
+    
     class OrderedLoader(Loader):
         pass
     def construct_mapping(loader, node):
@@ -17,11 +18,9 @@ def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
 
 # usage example:
 
-def yaml_import(fname, txt=None, return_symbolic=False, check=True, check_only=False):
+def yaml_import(fname, return_symbolic=False, check=True, check_only=False):
 
-
-    if txt is None:
-        txt = read_file_or_url(fname)
+    txt = read_file_or_url(fname)
 
     if check:
         from dolo.linter import lint
@@ -34,14 +33,16 @@ def yaml_import(fname, txt=None, return_symbolic=False, check=True, check_only=F
 
     txt = txt.replace('^', '**')
 
-    return fast_import(txt, return_symbolic=return_symbolic)
+    return fast_import(txt, return_symbolic=return_symbolic, filename=fname)
+
 
 def autodetect_type(data):
     if 'variables' in data['symbols']: return 'dynare'
     elif 'markov_states' in data['symbols']: return 'dtmscc'
     else: return 'dtcscc'
 
-def fast_import(txt, return_symbolic=False):
+
+def fast_import(txt, return_symbolic=False, filename='<string>'):
 
     import yaml
     from dolo.compiler.language import minilang
@@ -67,12 +68,11 @@ def fast_import(txt, return_symbolic=False):
     symbols = data['symbols']
     definitions = data.get('definitions', {})
     equations = data['equations']
-    calibration = data['calibration']
+    calibration = data.get('calibration', {})
     options = data.get('options', {})
 
-    fname = '<string>'
     infos = dict()
-    infos['filename'] = fname
+    infos['filename'] = filename
     infos['name'] = name
     infos['type'] = model_type
 

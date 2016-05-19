@@ -5,17 +5,30 @@ from dolo.compiler.expressions import ExprVisitor
 
 reg_rad = re.compile("([^_]+)")
 reg_sep = re.compile("(&|_)")
+reg_bar = re.compile("(.*)bar")
 
 gl = ['alpha', 'beta', 'gamma', 'delta', 'eta','epsilon', 'iota', 'kappa',
 'lambda', 'mu', 'nu', 'rho','pi', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
 'Gamma', 'Delta', 'Lambda', 'Sigma','Theta','Upsilon','Omega','Xi' , 'Pi' ,'Phi','Psi' ]
 greek_letters = dict([ (x,'\\' + x ) for x in gl ])
 
+
 def greekify(expr):
-    if expr in greek_letters:
-        return greek_letters[expr]
+    m = reg_bar.match(expr)
+    if m:
+        expr = m.group(1)
+        overline = True
     else:
-        return expr
+        overline = False
+    if expr in greek_letters:
+        res = greek_letters[expr]
+    else:
+        res = expr
+    if overline:
+        res = "\overline{{{}}}".format(res)
+    return res
+# greekify('zbar')
+
 
 def split_name_into_parts(a):
     s = a.replace('__','&')

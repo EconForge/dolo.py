@@ -1,4 +1,3 @@
-
 def test_omega_errors():
 
         from dolo import yaml_import
@@ -9,7 +8,7 @@ def test_omega_errors():
         from dolo.algos.dtcscc.perturbations import approximate_controls
 
         dr = approximate_controls(model)
-        dr_global = time_iteration(model, smolyak_order=3, verbose=False, pert_order=1)
+        dr_global = time_iteration(model, verbose=False, pert_order=1)
 
         sigma = model.covariances
 
@@ -17,10 +16,10 @@ def test_omega_errors():
 
         s_0 = dr.S_bar
 
-        from dolo.algos.dtcscc.accuracy import  omega
+        from dolo.algos.dtcscc.accuracy import omega
 
-        res_1 = omega( model, dr, orders=[10,10], time_discount=0.96)
-        res_2 = omega( model, dr_global)
+        res_1 = omega(model, dr, grid=dict(orders=[10, 10]), time_discount=0.96)
+        res_2 = omega(model, dr_global)
 
         print(res_1)
         print(res_2)
@@ -37,7 +36,7 @@ def test_denhaan_errors():
 
         dr = approximate_controls(model)
 
-        dr_global = time_iteration(model, interp_type='smolyak', smolyak_order=4, verbose=False)
+        dr_global = time_iteration(model, verbose=False)
 
         s0 = model.calibration['states']
         sigma = model.covariances

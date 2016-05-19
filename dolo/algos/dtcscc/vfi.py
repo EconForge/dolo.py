@@ -7,7 +7,7 @@ from dolo.numeric.discretization import gauss_hermite_nodes
 from dolo.numeric.interpolation.splines import MultivariateSplines
 
 
-def evaluate_policy(model, dr, tol=1e-8, maxit=2000, verbose=False, hook=None,
+def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hook=None,
                     integration_orders=None):
     """Compute value function corresponding to policy ``dr``
 
@@ -44,7 +44,7 @@ def evaluate_policy(model, dr, tol=1e-8, maxit=2000, verbose=False, hook=None,
 
     it = 0
 
-    approx = model.options['grid']
+    approx = model.get_grid(**grid)
     a = approx.a
     b = approx.b
     orders = approx.orders

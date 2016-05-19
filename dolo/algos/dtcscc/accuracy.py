@@ -49,7 +49,7 @@ class DenHaanErrors(dict):
         return s
 
 
-def omega(model, dr, n_exp=10000, orders=None, bounds=None,
+def omega(model, dr, n_exp=10000, grid={}, bounds=None,
           n_draws=100, seed=0, horizon=50, s0=None,
           solve_expectations=False, time_discount=None):
 
@@ -67,16 +67,12 @@ def omega(model, dr, n_exp=10000, orders=None, bounds=None,
     epsilons = np.random.multivariate_normal(mean, sigma, n_draws)
     weights = np.ones(epsilons.shape[0])/n_draws
 
-    if bounds is None:
-        approx = model.options['grid']
-        a = approx.a
-        b = approx.b
-        bounds = np.row_stack([a, b])
-    else:
-        a, b = np.row_stack(bounds)
+    approx = model.get_grid(**grid)
+    a = approx.a
+    b = approx.b
+    orders = approx.orders
+    bounds = np.row_stack([a, b])
 
-    if orders is None:
-        orders = [100]*len(a)
 
     domain = RectangularDomain(a, b, orders)
 

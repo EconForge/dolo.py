@@ -24,14 +24,13 @@ def calibration_to_vector(symbols, calibration_dict):
 
     from dolo.compiler.triangular_solver import solve_triangular_system
     from numpy import nan
-    
+
     sol = solve_triangular_system(calibration_dict)
 
     calibration  = OrderedDict()
     for group in symbols:
-        calibration[group] = numpy.array(
-                                [sol.get(s,nan) for s in symbols[group]],
-                             dtype=float)
+        t = numpy.array([sol.get(s, nan) for s in symbols[group]], dtype=float)
+        calibration[group] = t
 
     return calibration
 
@@ -47,7 +46,7 @@ def calibration_to_dict(symbols, calib):
         if group == 'covariances':
             continue
         syms = symbols[group]
-        for i,s in enumerate(syms):
+        for i, s in enumerate(syms):
             d[s] = values[i]
 
     return d
@@ -72,7 +71,8 @@ class CalibrationDict(OrderedDict):
             v.setflags(write=False)
         superclass.__init__(calib)
         self.symbols = symbols
-        self.full = calibration_to_dict(symbols, calib)
+        self.flat = calibration_to_dict(symbols, calib)
+        self.grouped = calib
 
     def __getitem__(self, p):
         if isinstance(p,tuple):

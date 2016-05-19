@@ -8,6 +8,7 @@ class Cartesian:
         self.a = np.array(a, dtype=float)
         self.b = np.array(b, dtype=float)
         self.orders = np.array(orders, dtype=int)
+        self.interpolation = interpolation
 
 
 class Normal:
@@ -28,10 +29,11 @@ class Normal:
         assert(self.sigma.shape[0] == self.d)
         assert(self.orders.shape[0] == self.d)
 
-    def discretize(self):
-
+    def discretize(self, orders=None):
+        if orders is None:
+            orders = self.orders
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
-        [x, w] = gauss_hermite_nodes(self.orders, self.sigma, mu=self.mu)
+        [x, w] = gauss_hermite_nodes(orders, self.sigma, mu=self.mu)
         return [x, w]
 
 
