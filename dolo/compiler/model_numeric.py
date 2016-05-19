@@ -112,14 +112,13 @@ class NumericModel:
         from dolo.misc.termcolor import colored
 
         s = u'''
-Model object:
-------------
+Model:
+------
+name: "{name}"
+type: "{type}"
+file: "{filename}\n'''.format(**self.infos)
 
-- name: "{name}"
-- type: "{type}"
-- file: "{filename}\n'''.format(**self.infos)
-
-        ss = '\n- residuals:\n\n'
+        ss = '\nEquations:\n----------\n\n'
         res = self.residuals()
 
         # for eqgroup, eqlist in self.symbolic.equations.items():
@@ -130,19 +129,15 @@ Model object:
                 eqlist = self.symbolic.equations
             else:
                 eqlist = self.symbolic.equations[eqgroup]
-            ss += u"    {}\n".format(eqgroup)
+            ss += u"{}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
                 if abs(val) < 1e-8:
                     val = 0
-
                 vals = '{:.4f}'.format(val)
-
                 if abs(val) > 1e-8:
                     vals = colored(vals, 'red')
-
-                ss += u"        {eqn:3} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
-
+                ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
             ss += "\n"
         s += ss
 
@@ -150,6 +145,67 @@ Model object:
 
     def __repr__(self):
         return self.__str__()
+
+    def _repr_html_(self):
+
+        from dolo.compiler.latex import eq2tex
+
+        # general informations
+        infos = self.infos
+        table_infos = """
+     <table>
+         <td><b>Model</b></td>
+     <tr>
+        <td>name</td>
+        <td>{name}</td>
+      </tr>
+    <tr>
+        <td>type</td>
+        <td>{type}</td>
+      </tr>
+      <tr>
+        <td>filename</td>
+        <td>{filename}</td>
+      </tr>
+    </table>""".format(name=infos['name'], type=infos['type'], filename=infos['filename'].replace("<","&lt").replace(">","&gt"))
+
+
+        # Equations and residuals
+        resids = self.residuals()
+        if self.model_type == 'dynare':
+            equations = {"dynare": self.symbolic.equations}
+        else:
+            equations = self.symbolic.equations
+        variables = sum([e for k,e in self.symbols.items() if k != 'parameters'], [])
+        table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
+
+        for eq_type in equations:
+
+            eq_lines = []
+            for i in range(len(equations[eq_type])):
+                eq = equations[eq_type][i]
+                if eq_type in ('expectation','direct_response'):
+                    vals = ''
+                else:
+                    val = resids[eq_type][i]
+                    if abs(val) > 1e-8:
+                        vals = '<span style="color: red;">{:.4f}</span>'.format(val)
+                    else:
+                        vals = '{:.3f}'.format(val)
+                if '|' in eq:
+                    # keep only lhs for now
+                    eq, comp = str.split(eq,'|')
+                lat = eq2tex(variables, eq)
+                lat =  '${}$'.format(lat)
+                line = [lat, vals]
+                h = eq_type if i==0 else ''
+                fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(h, *line)
+        #         print(fmt_line)
+                eq_lines.append(fmt_line)
+            table += str.join("\n", eq_lines)
+        table = "<table>{}</table>".format(table)
+
+        return table_infos + table
 
     @property
     def x_bounds(self):

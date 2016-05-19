@@ -71,7 +71,6 @@ def name_to_latex(name, date=None):
     return resp
 
 
-name_to_latex('a__11')
 
 class LatexVisitor(ExprVisitor):
 
@@ -227,11 +226,10 @@ def expr2tex(variables, s):
 def eq2tex(variables, s):
 
     expr = s.replace('==', '=').replace('=','==')
-    print(expr)
-    for e in str.split(expr,'=='):
-        print(e)
-    lhs, rhs = [expr2tex(variables,str.strip(e)) for e in str.split(expr,'==')]
-    return "{} = {}".format(lhs, rhs)
+    if '==' in expr:
+        lhs, rhs = [expr2tex(variables,str.strip(e)) for e in str.split(expr,'==')]
+        return "{} = {}".format(lhs, rhs)
+    else: return expr2tex(variables,expr)
 
 # ast.dump(ast.parse("a == b"))
 

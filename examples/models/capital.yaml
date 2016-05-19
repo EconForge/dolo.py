@@ -13,6 +13,7 @@ symbols:
   parameters: [beta, gamma, delta, theta, rho]
 
 definitions:
+
   c: A*k^theta - i
   r_I: A*theta*k^(theta-1) + (1-delta)
 
@@ -49,6 +50,5 @@ calibration:
     rho: 0.0
 
 options:
-  distribution:
-      Normal:
-          [[ 0.00001 ]]
+  distribution: !Normal
+    sigma: [[ 0.00001 ]]
