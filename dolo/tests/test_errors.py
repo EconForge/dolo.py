@@ -10,9 +10,7 @@ def test_omega_errors():
         dr = approximate_controls(model)
         dr_global = time_iteration(model, verbose=False, pert_order=1)
 
-        sigma = model.covariances
-
-        model.sigma = sigma
+        sigma = model.get_distribution().sigma
 
         s_0 = dr.S_bar
 
@@ -39,9 +37,7 @@ def test_denhaan_errors():
         dr_global = time_iteration(model, verbose=False)
 
         s0 = model.calibration['states']
-        sigma = model.covariances
-
-        model.sigma = sigma
+        sigma = model.get_distribution().sigma
 
         from dolo.algos.dtcscc.accuracy import denhaanerrors
 
@@ -56,9 +52,9 @@ def test_denhaan_errors():
         assert( max(denerr_2['max_errors']) < 10-7) # errors with solyak colocations at order 4 are very small
         # assert( max(denerr_1['mean_errors']) < 10-7)
 
-
-
-
+if __name__ == '__main__':
+    test_omega_errors()
+    test_denhaan_errors()
 
 
 

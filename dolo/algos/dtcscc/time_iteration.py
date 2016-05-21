@@ -13,9 +13,8 @@ from dolo.numeric.interpolation import create_interpolator
 
 def time_iteration(model, verbose=False, initial_dr=None,
                    pert_order=1, with_complementarities=True,
-                   grid={},
+                   grid={}, distribution={},
                    maxit=500, tol=1e-8, inner_maxit=10,
-                   integration='gauss-hermite', integration_orders=None,
                    T=200, n_s=3, hook=None):
     '''
     Finds a global solution for ``model`` using backward time-iteration.
@@ -48,12 +47,15 @@ def time_iteration(model, verbose=False, initial_dr=None,
             print(t)
 
     parms = model.calibration['parameters']
-    sigma = model.covariances
 
 
     approx = model.get_grid(**grid)
     interp_type = approx.interpolation
     dr = create_interpolator(approx, approx.interpolation)
+
+    distrib = model.get_distribution(**distribution)
+    sigma = distrib.sigma
+    epsilons, weights = distrib.discretize()
 
     if initial_dr is None:
         if pert_order == 1:
@@ -61,16 +63,6 @@ def time_iteration(model, verbose=False, initial_dr=None,
 
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
-
-    if integration == 'optimal_quantization':
-        from dolo.numeric.discretization import quantization_nodes
-        # number of shocks
-        [epsilons, weights] = quantization_nodes(N_e, sigma)
-    elif integration == 'gauss-hermite':
-        from dolo.numeric.discretization import gauss_hermite_nodes
-        if not integration_orders:
-            integration_orders = [3] * sigma.shape[0]
-        [epsilons, weights] = gauss_hermite_nodes(integration_orders, sigma)
 
     vprint('Starting time iteration')
 
@@ -236,7 +228,7 @@ from dolo.numeric.interpolation.splines import MultivariateCubicSplines
 from dolo.numeric.misc import mlinspace
 from dolo.algos.dtcscc.perturbations import approximate_controls
 
-def time_iteration_direct(model, maxit=100, grid={}, tol=1e-8, initial_dr=None, verbose=False):
+def time_iteration_direct(model, maxit=100, grid={}, distribution={}, tol=1e-8, initial_dr=None, verbose=False):
 
     t1 = time.time()
 
@@ -249,15 +241,15 @@ def time_iteration_direct(model, maxit=100, grid={}, tol=1e-8, initial_dr=None, 
     if initial_dr is None:
         drp = approximate_controls(model)
     else:
-        drp = approximate_controls(model)
-
-
-    nodes, weights = gauss_hermite_nodes([5], model.covariances)
+        drp = initial_dr
 
     approx = model.get_grid(**grid)
     grid = approx.grid
     interp_type = approx.interpolation
     dr = create_interpolator(approx, approx.interpolation)
+
+    distrib = model.get_distribution(**distribution)
+    nodes, weights = distrib.discretize()
 
     N = grid.shape[0]
     z = np.zeros((N,len(model.symbols['expectations'])))

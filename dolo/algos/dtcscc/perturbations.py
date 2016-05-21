@@ -91,10 +91,8 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
     x = calib['controls']
     e = calib['shocks']
 
-    if model.covariances is not None:
-        sigma = model.covariances
-    else:
-        sigma = zeros((len(e), len(e)))
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
 
     l = g(s, x, e, p, diff=True)
     [junk, g_s, g_x, g_e] = l[:4]  # [el[0,...] for el in l[:4]]

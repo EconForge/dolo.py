@@ -457,7 +457,8 @@ model so all we have it the variance of :math:`e_z`.
 
 .. code:: python
 
-    sigma2_ez = model.covariances
+    distrib = model.get_distribution()
+    sigma2_ez = distrib.sigma
     sigma2_ez
 
 

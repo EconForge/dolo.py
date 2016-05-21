@@ -10,7 +10,8 @@ TOL_RES = 1E-8
 
 def solve_decision_rule(model,order=1,method='default',mlab=None,steady_state = None, solve_ss = False):
 
-    Sigma = model.covariances
+
+    Sigma = model.get_distribution().sigma
     y = model.calibration['variables']
     x = model.calibration['shocks']
     parms = model.calibration['parameters']

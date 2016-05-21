@@ -64,7 +64,9 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
 
     parms = numpy.array(calib['parameters'])
 
-    sigma = model.covariances
+
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
 
     if s0 is None:
         s0 = calib['states']
@@ -249,7 +251,7 @@ def test_simulations():
     dr = approximate_controls(model)
 
     parms = model.calibration['parameters']
-    sigma = model.covariances
+    sigma = model.get_calibration().sigma
 
     s0 = dr.S_bar
 

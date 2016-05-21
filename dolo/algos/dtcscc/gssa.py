@@ -64,8 +64,8 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
         drp = initial_dr
 
     # set up quadrature weights and nodes
-    sigma = model.covariances
-    nodes, weights = gauss_hermite_nodes([5], model.covariances)
+    distrib = model.get_distribution()
+    nodes, weights = distrib.discretize()
 
     # draw sequence of innovations
     np.random.seed(seed)

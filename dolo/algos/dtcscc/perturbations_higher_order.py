@@ -124,7 +124,8 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, stead
     controls = model.symbols['controls']
 
     parms = model.calibration['parameters']
-    sigma = model.covariances
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
 
     if steady_state is None:
         calibration = model.calibration

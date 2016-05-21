@@ -1,22 +1,5 @@
 from __future__ import division
 
-def compute_residuals(model, dr, grid):
-
-    ff = model.functions['arbitrage']
-    gg = model.functions['transition']
-    aa = model.functions['auxiliary']
-
-    f = lambda m,s,x,M,S,X,p: ff(m,s,x,aa(m,s,x,p),M,S,X,aa(M,S,X,p),p)
-    g = lambda m,s,x,M,p: gg(m,s,x,aa(m,s,x,p),M,p)
-
-    P,Q = model.markov_chain
-    parms = model.calibration['parameters']
-
-    controls = dr(grid)
-    res = residuals(f, g, i_mc, grid, controls, mdr, P, Q, parms)
-
-    return res
-
 def residuals(f, g, i_ms, s, x, dr, P, Q, parms):
 
     N = s.shape[0]

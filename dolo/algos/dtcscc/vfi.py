@@ -8,7 +8,7 @@ from dolo.numeric.interpolation.splines import MultivariateSplines
 from dolo.numeric.interpolation import create_interpolator
 
 
-def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hook=None,
+def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, verbose=False, hook=None,
                     integration_orders=None):
     """Compute value function corresponding to policy ``dr``
 
@@ -47,6 +47,9 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
     approx = model.get_grid(**grid)
     interp_type = approx.interpolation
 
+    distrib = model.get_distribution(**distribution)
+    sigma = distrib.sigma
+
     drv = create_interpolator(approx, approx.interpolation)
 
     grid = drv.grid
@@ -58,7 +61,6 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, maxit=2000, verbose=False, hoo
     guess_0 = model.calibration['values']
     guess_0 = guess_0[None, :].repeat(N, axis=0)
 
-    sigma = model.covariances
 
     if not integration_orders:
         integration_orders = [3] * sigma.shape[0]

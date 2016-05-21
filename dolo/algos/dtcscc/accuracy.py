@@ -58,7 +58,9 @@ def omega(model, dr, n_exp=10000, grid={}, bounds=None,
     f = model.functions['arbitrage']
     g = model.functions['transition']
 
-    sigma = model.covariances
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
+
     parms = model.calibration['parameters']
 
     mean = np.zeros(sigma.shape[0])
@@ -72,7 +74,6 @@ def omega(model, dr, n_exp=10000, grid={}, bounds=None,
     b = approx.b
     orders = approx.orders
     bounds = np.row_stack([a, b])
-
 
     domain = RectangularDomain(a, b, orders)
 
@@ -127,7 +128,8 @@ def denhaanerrors(model, dr, s0=None, horizon=100, n_sims=10, seed=0,
     n_x = len(model.symbols['controls'])
     n_s = len(model.symbols['states'])
 
-    sigma = model.covariances
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
     mean = sigma[0, :]*0
 
     if integration_orders is None:

@@ -24,7 +24,7 @@ except Exception as e:
 app = QtGui.QApplication(sys.argv)
 app.setOrganizationName('Dolo')
 app.setOrganizationName('Pablo')
-       
+
 [EqWidgetUi,EqWidgetBase] = loadUiType("equation_widget.ui")
 
 class MainWindow(QtGui.QMainWindow):
@@ -37,10 +37,10 @@ class MainWindow(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
 
         # Set up the user interface from Designer.
-        
+
         f = QFile("modfile_editor.ui")
         f.open(QFile.ReadOnly)
-		
+
         if engine == 'pyside':
             loader = QUiLoader()
             myWidget = loader.load(f, self)
@@ -77,7 +77,7 @@ class MainWindow(QtGui.QMainWindow):
     def open(self):
         filename = QtGui.QFileDialog.getOpenFileName()
         filename = str(filename[0])
-        with file(filename) as f: 
+        with file(filename) as f:
             txt = f.read()
         try:
             model = dolo.dynare_import(filename)
@@ -110,8 +110,9 @@ class MainWindow(QtGui.QMainWindow):
                 vv = model.init_values[v]
                 initval_text += '{0} = {1};\n'.format(v,vv)
             self.ui.plainTextEdit_2.setPlainText(initval_text)
-            
-            if model.covariances:
+
+            sigma = model.get_distribition().sigma
+            if sigma:
                 cov_text = ''
                 for i,si in enumerate(model.shocks):
                     for j,sj in enumerate(model.shocks):
@@ -126,16 +127,16 @@ class MainWindow(QtGui.QMainWindow):
                         else:
                             cov_text += 'var {0} = {1};\n'.format(si,vt)
                 self.ui.plainTextEdit_3.setPlainText(cov_text)
-                
 
-            
+
+
 
         except Exception as e:
             print 'Import failed.'
             print e
 
 
-    @Slot()            
+    @Slot()
     def add_widget(self):
         ew = CustomWidget()
         ew.father = self
@@ -150,8 +151,8 @@ class MainWindow(QtGui.QMainWindow):
 
     i = 0
     widgets = []
-    
-    @Slot(int)        
+
+    @Slot(int)
     def delete_widget(self,n):
         widget = self.widgets[n]
         self.ui.verticalLayout_3.removeWidget(widget)
@@ -230,7 +231,7 @@ Number of shocks :     {n_shocks}'''.format(**info)
 #            txt += '\nImpossible to solve the model (yet).'
 #            print e
         self.ui.textEdit.setText(txt)
-        
+
 
     def declared_symbols(self):
         vars = [dolo.Variable(e) for e in str.split(str(self.ui.lineEdit_var.text()),' ' ) ]
@@ -240,11 +241,11 @@ Number of shocks :     {n_shocks}'''.format(**info)
         for s in vars + varexos + parms:
             context[s.name] = s
         return context
-        
+
 import sympy
 
 class CustomWidget(QtGui.QWidget):
-    
+
     def setup(self,n):
 
         self.n = n
@@ -274,19 +275,19 @@ class CustomWidget(QtGui.QWidget):
         tt = str( self.father.ui.lineEdit_shocks.text() )
         self.father.ui.lineEdit_shocks.setText(( tt + ' ' + t).strip(' '))
         self.check()
-        
+
     @Slot()
     def def_variable(self):
         t = self.undefined
         tt = str( self.father.ui.lineEdit_var.text() )
         self.father.ui.lineEdit_var.setText( ( tt + ' ' + t) .strip(' ') )
         self.check()
-                
-    @Slot()        
+
+    @Slot()
     def specialSignal(self):
         self.emit(QtCore.SIGNAL('hi(int)'),self.n)
 
-    @Slot()        
+    @Slot()
     def check(self):
         txt = self.get_text()
         d = self.father.declared_symbols()
@@ -313,10 +314,10 @@ class CustomWidget(QtGui.QWidget):
             self.ui.label.setText(msg)
             self.ui.frame.setVisible(True)
 
-        
+
     def set_number(self,n):
         self.n = n
-        
+
     def get_text(self):
         txt = self.ui.lineEdit.text()
         if txt == '':
@@ -336,7 +337,7 @@ class OptionsDialog(ui_class, ui_base):
 
     def __init__(self,father):
         super(OptionsDialog,self).__init__()
-        self.setupUi(self)    
+        self.setupUi(self)
         self.father = father
         self.connect(self.pushButton,QtCore.SIGNAL('clicked()'),self,QtCore.SLOT('open_lib_dir()'))
 
@@ -348,12 +349,12 @@ class OptionsDialog(ui_class, ui_base):
                 ld = '/usr/lib/lapack'
         self.set_lib_dir(ld)
 
-        
+
     @Slot()
     def open_lib_dir(self):
         lib_dir = QtGui.QFileDialog.getExistingDirectory()
         print lib_dir
-        self.set_lib_dir( str(lib_dir) ) 
+        self.set_lib_dir( str(lib_dir) )
 
     def set_lib_dir(self,lib_dir):
         import ctypes, sys
@@ -386,7 +387,7 @@ class OptionsDialog(ui_class, ui_base):
         except Exception as e:
             self.label_3.setText('Not Found / Load Failed')
             print e
-        
+
 
 
 
