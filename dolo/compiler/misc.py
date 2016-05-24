@@ -80,7 +80,7 @@ class CalibrationDict(OrderedDict):
         if p in self.symbols.keys():
             return super().__getitem__(p)
         else:
-            return self.full[p]
+            return self.flat[p]
 
 
 def allocating_function(inplace_function, size_output):

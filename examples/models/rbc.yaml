@@ -42,6 +42,8 @@ calibration:
     sig_z: 0.016
     zbar: 1
     chi : w/c^sigma/n^eta
+    c_i: 1.5
+    c_y: 0.5
 
     # endogenous variables
     n: 0.33
@@ -60,7 +62,7 @@ options:
     distribution: !Normal
         sigma: [ [ sig_z**2] ]
 
-    grid: !CartesianGrid
+    grid: !Cartesian
         a: [ 1-2*sig_z, k*0.9 ]
         b: [ 1+2*sig_z, k*1.1 ]
         orders: [10, 50]

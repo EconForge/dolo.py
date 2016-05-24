@@ -239,14 +239,20 @@ file: "{filename}\n'''.format(**self.infos)
 
     def get_distribution(model, **opts):
         import copy
-        d = copy.deepcopy(model.symbolic.options['distribution'])
+        gg = model.symbolic.options.get('distribution')
+        if gg is None:
+            raise Exception("Model has no distribution.")
+        d = copy.deepcopy(gg)
         d.update(opts)
         if 'type' in d: d.pop('type')
         return d.eval(model.calibration.flat)
 
     def get_grid(model, **dis_opts):
         import copy
-        d = copy.deepcopy(model.symbolic.options['grid'])
+        gg = model.symbolic.options.get('grid')
+        if gg is None:
+            raise Exception("Model has no grid.")
+        d = copy.deepcopy(gg)
         gtype = dis_opts.get('type')
         if gtype:
             from dolo.compiler.language import minilang

@@ -5,27 +5,32 @@ from dolo.compiler.expressions import ExprVisitor
 
 reg_rad = re.compile("([^_]+)")
 reg_sep = re.compile("(&|_)")
-reg_bar = re.compile("(.*)bar")
+reg_bar = re.compile("(.*)(bar|star)")
 
 gl = ['alpha', 'beta', 'gamma', 'delta', 'eta','epsilon', 'iota', 'kappa',
 'lambda', 'mu', 'nu', 'rho','pi', 'sigma', 'tau','theta','upsilon','omega','phi','psi','zeta', 'xi', 'chi',
 'Gamma', 'Delta', 'Lambda', 'Sigma','Theta','Upsilon','Omega','Xi' , 'Pi' ,'Phi','Psi' ]
+gl_special = {
+    'lam': '\\lambda'
+}
 greek_letters = dict([ (x,'\\' + x ) for x in gl ])
-
+greek_letters.update(gl_special)
 
 def greekify(expr):
     m = reg_bar.match(expr)
     if m:
         expr = m.group(1)
-        overline = True
+        suffix = m.group(2)
     else:
-        overline = False
+        suffix = None
     if expr in greek_letters:
         res = greek_letters[expr]
     else:
         res = expr
-    if overline:
+    if suffix=='bar':
         res = "\overline{{{}}}".format(res)
+    elif suffix == 'star':
+        res = "{}^{{\star}}".format(res)
     return res
 # greekify('zbar')
 
@@ -64,7 +69,7 @@ def name_to_latex(name, date=None):
             times = 't+' + str(date)
         elif date <0:
             times = 't-' + str(-date)
-        indices = [times] + indices
+        indices = indices + [times]
     # else:
         # raise(Exception('Time variable {0} has unknown date : {1}.'.format(name,date)))
 

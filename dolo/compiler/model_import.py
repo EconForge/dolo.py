@@ -5,7 +5,7 @@ import yaml
 from collections import OrderedDict
 
 def ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
-    
+
     class OrderedLoader(Loader):
         pass
     def construct_mapping(loader, node):
@@ -42,7 +42,7 @@ def autodetect_type(data):
     else: return 'dtcscc'
 
 
-def fast_import(txt, return_symbolic=False, filename='<string>'):
+def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=False):
 
     import yaml
     from dolo.compiler.language import minilang
@@ -54,6 +54,8 @@ def fast_import(txt, return_symbolic=False, filename='<string>'):
     txt = txt.replace('^', '**')
 
     data = yaml.load(txt)
+    if parse_only:
+        return data
 
     name = data['name']
 

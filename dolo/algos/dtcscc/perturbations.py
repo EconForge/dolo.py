@@ -132,14 +132,17 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
         # print(np.column_stack([diag_S, diag_T]))
         raise GeneralizedEigenvaluesError(diag_S, diag_T)
 
+    # count fwd-looking variables # TODO: use symbolic analysis instead
+    n_fwd = sum((np.abs(f_X)>1e-8).sum(axis=0)!=0)
+
     # Check Blanchard=Kahn conditions
     n_big_one = sum(eigval > eigmax)
-    n_expected = n_x
+    n_expected = n_fwd
     if verbose:
         msg = "There are {} eigenvalues greater than {}. Expected: {}."
         print(msg.format(n_big_one, eigmax, n_x))
     if n_expected != n_big_one:
-        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval, eigmax=eigmax)
+        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval, eigmax=eigmax, diags=[diag_S, diag_T])
 
     Z11 = Z[:n_s, :n_s]
     Z12 = Z[:n_s, n_s:]

@@ -133,37 +133,15 @@ def residuals(model, calib=None):
     from collections import OrderedDict
     res = OrderedDict()
 
-    if 'auxiliaries' not in model.symbols:
+    s = calib['states']
+    x = calib['controls']
+    e = calib['shocks']
+    p = calib['parameters']
+    f = model.functions['arbitrage']
+    g = model.functions['transition']
 
-        s = calib['states']
-        x = calib['controls']
-        e = calib['shocks']
-        p = calib['parameters']
-        f = model.functions['arbitrage']
-        g = model.functions['transition']
-
-        res['transition'] = g(s, x, e, p) - s
-        res['arbitrage'] = f(s, x, e, s, x, p)
-    else:
-
-        s = calib['states']
-        x = calib['controls']
-        y = calib['auxiliaries']
-        e = calib['shocks']
-        p = calib['parameters']
-
-        f = model.functions['arbitrage']
-        g = model.functions['transition']
-        a = model.functions['auxiliary']
-
-        res['transition'] = g(s, x, e, p) - s
-        res['arbitrage'] = f(s, x, e, s, x, p)
-        res['auxiliary'] = a(s, x, p) - y
-
-        if 'value' in model.functions:
-            rew = model.functions['value']
-            v = calib['values']
-            res['value'] = rew(s, x, s, x, v, p) - v
+    res['transition'] = g(s, x, e, p) - s
+    res['arbitrage'] = f(s, x, e, s, x, p)
 
     return res
 #
