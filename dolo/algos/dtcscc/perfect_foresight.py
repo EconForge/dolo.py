@@ -64,7 +64,7 @@ def deterministic_solve(model, shocks=None, start_states=None, T=100,
     Parameters
     ----------
     model : NumericModel
-        "fg" or "fga" model to be solved
+        "dtcscc" model to be solved
     shocks : array-like, dict, or pandas.DataFrame
         A specification of the shocks to the model. Can be any of the
         following (note by "declaration order" below we mean the order

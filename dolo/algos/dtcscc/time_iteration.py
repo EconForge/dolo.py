@@ -15,7 +15,7 @@ def time_iteration(model, verbose=False, initial_dr=None,
                    pert_order=1, with_complementarities=True,
                    grid={}, distribution={},
                    maxit=500, tol=1e-8, inner_maxit=10,
-                   T=200, n_s=3, hook=None):
+                   hook=None):
     '''
     Finds a global solution for ``model`` using backward time-iteration.
 
@@ -24,7 +24,7 @@ def time_iteration(model, verbose=False, initial_dr=None,
     Parameters
     ----------
     model : NumericModel
-        "fg" or "fga" model to be solved
+        "dtcscc" model to be solved
     verbose : boolean
         if True, display iterations
     initial_dr : decision rule
@@ -35,6 +35,10 @@ def time_iteration(model, verbose=False, initial_dr=None,
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
     grid: grid options
+    distribution: distribution options
+    maxit: maximum number of iterations
+    inner_maxit: maximum number of iteration for inner solver
+    tol: tolerance criterium for successive approximations
 
     Returns
     -------

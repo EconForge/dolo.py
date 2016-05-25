@@ -3,7 +3,7 @@ import numpy as np
 from dolo.numeric.discretization import tensor_markov
 
 # from dolo.compiler.language import minilang
-from dolo.compiler.language import minilang
+from dolo.compiler.language import minilang, functions
 
 class NumericEval:
 
@@ -12,6 +12,8 @@ class NumericEval:
         self.d = d # dictionary of substitutions
         for k,v in d.items():
             assert(isinstance(k, str))
+        for k,v in functions.items():
+            d[k] = v
 
         self.minilang = minilang
 

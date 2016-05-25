@@ -20,7 +20,7 @@ def find_deterministic_equilibrium(model, constraints=None,
     Parameters
     ----------
     model: NumericModel
-        an `(f,g)` compliant model
+        a `dtcscc` model
     constraints: dict
         a dictionaries with forced values.
         Use it to set shocks to non-zero values or to add additional

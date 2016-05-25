@@ -38,6 +38,8 @@ def evaluate_policy(model, *args, **kwargs):
 
     if model.model_type == 'dtmscc':
         from dolo.algos.dtmscc.value_iteration import evaluate_policy
+    elif model.model_type == 'dtcscc':
+        from dolo.algos.dtcscc.vfi import evaluate_policy        
     else:
         raise Exception("Model type {} not supported.".format(model.model_type))
 

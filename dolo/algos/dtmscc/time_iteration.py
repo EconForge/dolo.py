@@ -83,6 +83,32 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
                         verbose=True, grid={}, output_type='dr',
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
+    '''
+    Finds a global solution for ``model`` using backward time-iteration.
+
+    This algorithm iterates on the residuals of the arbitrage equations
+
+    Parameters
+    ----------
+    model : NumericModel
+        "dtmscc" model to be solved
+    verbose : boolean
+        if True, display iterations
+    initial_dr : decision rule
+        initial guess for the decision rule
+    with_complementarities : boolean (True)
+        if False, complementarity conditions are ignored
+    grid: grid options
+    maxit: maximum number of iterations
+    inner_maxit: maximum number of iteration for inner solver
+    tol: tolerance criterium for successive approximations
+
+    Returns
+    -------
+    decision rule :
+        approximated solution
+    '''
+
     assert(model.model_type == 'dtmscc')
 
     def vprint(t):

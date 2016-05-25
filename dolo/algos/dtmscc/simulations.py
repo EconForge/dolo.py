@@ -43,6 +43,36 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
     return res
 
 def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_indices=None, return_array=False):
+    '''
+    Simulate a model using the specified decision rule.
+
+    Parameters
+    ---------
+    model: NumericModel
+        a "dtmscc" model
+
+    dr: decision rule
+    i_0: index of initial markov state
+    s0: ndarray
+        initial state where all simulations start
+    n_exp: int
+        number of simulations. Use 0 for impulse-response functions
+    horizon: int
+        horizon for the simulations
+    seed: int
+        used to initialize the random number generator. Use it to replicate
+        exact same results among simulations
+    return_array: boolean (False)
+        if True, then all return a numpy array containing simulated data,
+        otherwise return a pandas DataFrame or Panel.
+
+    Returns
+    -------
+    ndarray or pandas.Dataframe:
+         - if `n_exp<=1` returns a DataFrame object
+         - if `n_exp>1` returns a ``horizon x n_exp x n_v`` array where ``n_v``
+           is the number of variables.
+    '''
 
     if n_exp<1:
         is_irf = True

@@ -17,7 +17,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
     Parameters
     ---------
     model: NumericModel
-        an "fg" or "fga" model
+        a "dtcscc" model
 
     dr: decision rule
 
@@ -165,7 +165,7 @@ def plot_decision_rule(model, dr, state, grid={}, plot_controls=None, bounds=Non
     -----------
 
     model:
-        "fg" or "fga" model
+        "dtcscc" model
 
     dr:
         decision rule

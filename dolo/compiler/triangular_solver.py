@@ -70,6 +70,7 @@ def solve_triangular_system(system, values=None, context=None):
     d['log'] = math.log
     d['sin'] = math.sin
     d['cos'] = math.cos
+    d['sqrt'] = math.sqrt
 
     for i in sol_order:
 

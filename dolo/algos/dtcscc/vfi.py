@@ -16,7 +16,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, v
     -----------
 
     model:
-        "fg" or "fga" model. Must contain a 'value' function.
+        "dtcscc" model. Must contain a 'value' function.
 
     dr:
         decision rule to evaluate

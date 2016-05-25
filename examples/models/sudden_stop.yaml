@@ -15,31 +15,21 @@ symbols:
     parameters: [beta, R, sigma, a, mu, kappa, delta_y, pi, lam_inf]
 
 
-
 definitions:
     c: 1 + y + l*R - b
-
 
 equations:
 
     transition:
-
         - l = b(-1)
 
     arbitrage:
-
         - lam = b/c
         - 1 - beta*(c(1)/c)^(-sigma)*R    |  lam_inf <= lam <= inf
 
-
-
     value:
-
         - V = c^(1.0-sigma)/(1.0-sigma) + beta*V(1)
         - Vc = c^(1.0-sigma)/(1.0-sigma)
-
-
-
 
 calibration:
 
