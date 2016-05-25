@@ -58,6 +58,17 @@ class AR1(MarkovChain):
         self.Q = Q
         self.extend([P, Q])
 
+class MarkovProduct(MarkovChain):
+
+    def __init__(self, M1=None, M2=None):
+
+        from dolo.numeric.discretization import tensor_markov
+        [P, Q] = tensor_markov( (M1.P,M1.Q), (M2.P, M2.Q) )
+        self.P = P
+        self.Q = Q
+        self.extend([P,Q])
+
+
 class CartesianGrid:
 
     def __init__(self, a=None, b=None, orders=None, mu=None, interpolation='cspline'):

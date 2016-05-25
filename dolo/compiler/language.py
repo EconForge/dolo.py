@@ -48,25 +48,23 @@ class LanguageElement(dict):
 
 
 class Normal(LanguageElement):
-
     baseclass = objects.Normal
 
-
 class AR1(LanguageElement):
-
     baseclass = objects.AR1
 
 class MarkovChain(LanguageElement):
-
     baseclass = objects.MarkovChain
 
-class CartesianGrid(LanguageElement):
+class MarkovProduct(LanguageElement):
+    baseclass = objects.MarkovProduct
 
+class CartesianGrid(LanguageElement):
     baseclass = objects.CartesianGrid
 
 class SmolyakGrid(LanguageElement):
-
     baseclass = objects.SmolyakGrid
+
 
 
 # aliases
@@ -80,6 +78,7 @@ minilang = [
     Normal,
     AR1,
     MarkovChain,
+    MarkovProduct,
     Smolyak,
     Cartesian,
     CartesianGrid,
