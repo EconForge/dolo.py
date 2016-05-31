@@ -69,6 +69,8 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
 
     # draw sequence of innovations
     np.random.seed(seed)
+    distrib = model.get_distribution()
+    sigma = distrib.sigma
     epsilon = numpy.random.multivariate_normal(np.zeros(n_eps), sigma, n_sim)
 
     # simulate initial decision rule and do initial regression for coefs
