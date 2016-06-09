@@ -5,7 +5,7 @@ model_type: dtcscc
 symbols:
 
    states:  [z, k]
-   controls: [i, n]
+   controls: [i, n, tt1, tt2, tt3]
    values: [V]
    shocks: [e_z]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
@@ -21,6 +21,9 @@ equations:
     arbitrage:
         - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  # | 0 <= i <= inf
         - chi*n^eta*c^sigma - w                      # | 0 <= n <= inf
+        - tt1 = 0
+        - tt2 = 0
+        - tt3 = 0
 
     transition:
         - z = (1-rho)*zbar + rho*z(-1) + e_z
@@ -55,6 +58,9 @@ calibration:
     z: zbar
     rk: 1/beta-1+delta
     V: log(c)/(1-beta)
+    tt1: 0
+    tt2: 0
+    tt3: 0
 
 
 options:
