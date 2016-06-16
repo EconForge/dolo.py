@@ -203,8 +203,9 @@ def plot_decision_rule(model, dr, state, plot_controls=None, grid={}, bounds=Non
     index = states_names.index(str(state))
 
     if bounds is None:
-        approx = model.get_grid(**grid)
-        bounds = [approx.a[index], approx.b[index]]
+        bounds = [dr.smin[index], dr.smax[index]]
+        #approx = model.get_grid(**grid)
+        #bounds = [approx.a[index], approx.b[index]]
         return bounds
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
