@@ -202,7 +202,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, grid={}, bounds=Non
     controls_names = model.symbols['controls']
     index = states_names.index(str(state))
 
-    if bounds is None:
+    if 'bounds' is None:
         bounds = [dr.smin[index], dr.smax[index]]
         #approx = model.get_grid(**grid)
         #bounds = [approx.a[index], approx.b[index]]
