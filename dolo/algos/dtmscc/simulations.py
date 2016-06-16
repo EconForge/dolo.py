@@ -184,8 +184,9 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
     controls_names = model.symbols['controls']
     index = states_names.index(str(state))
 
-    if bounds is None:
+    if 'bounds' is None:
         bounds = [dr.smin[index], dr.smax[index]]
+        return bounds
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
 
