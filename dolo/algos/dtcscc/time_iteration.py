@@ -9,8 +9,6 @@ from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
 from dolo.numeric.interpolation import create_interpolator
 
 
-
-
 def time_iteration(model, verbose=False, initial_dr=None,
                    pert_order=1, with_complementarities=True,
                    grid={}, distribution={},
