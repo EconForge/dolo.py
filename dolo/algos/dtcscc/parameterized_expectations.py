@@ -7,6 +7,34 @@ from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.numeric.interpolation import create_interpolator
 
 def parameterized_expectations_direct(model, verbose=False, initial_dr=None, pert_order=1, grid={}, distribution={}, maxit=100, tol=1e-8):
+    '''
+    Finds a global solution for ``model`` using parameterized expectations function. Requires the model to be written with controls as a direct function of the model objects.
+
+    The algorithm iterates on the expectations function in the arbitrage equation. It follows the discussion in section 9.9 of Miranda and Fackler (2002).
+
+    Parameters
+    ----------
+    model : NumericModel
+        "dtcscc" model to be solved
+    verbose : boolean
+        if True, display iterations
+    initial_dr : decision rule
+        initial guess for the decision rule
+    pert_order : {1}
+        if no initial guess is supplied, the perturbation solution at order
+        ``pert_order`` is used as initial guess
+    grid: grid options
+    distribution: distribution options
+    maxit: maximum number of iterations
+    tol: tolerance criterium for successive approximations
+
+    Returns
+    -------
+    decision rule :
+        approximated solution
+    '''
+
+
 
     t1 = time.time()
 
@@ -73,9 +101,10 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         new_x = d(grid, z, parms)
         new_h = h(grid, new_x, parms)
 
-        # check whether they differ from the preceding guess
-        # err = (abs(new_x - x_0).max())
-        err = (abs(new_h - h_0).max())
+        # check whether weighted average of errors in the decision rule and the expectations function differ from the preceding guess
+        err1 = (abs(new_x - x_0).max())
+        err2 = (abs(new_h - h_0).max())
+        err  = 0.5*(err1 + err2)
 
         x_0 = new_x
         h_0 = new_h
@@ -102,6 +131,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         print('Elapsed: {} seconds.'.format(t2 - t1))
         print(stars)
 
-    dr.set_values(x_0)   # Interpolation for the decision rule 
+    # Interpolation for the decision rule    
+    dr.set_values(x_0)
 
     return dr
