@@ -185,7 +185,13 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
     index = states_names.index(str(state))
 
     if bounds is None:
-        bounds = [dr.smin[index], dr.smax[index]]
+        try:
+            bounds = [dr.smin[index], dr.smax[index]]
+        except:
+            approx = model.get_grid(**grid)
+            bounds = [approx.a[index], approx.b[index]]
+        if bounds is None:
+            raise Exception("No bounds provided for simulation or by model.")
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
 
