@@ -74,6 +74,17 @@ dtcscc:
                 - ['expectations', 0, 'z']
                 - ['parameters',0,'p']
 
+        arbitrage_exp:
+
+            optional: True
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                #- ['auxiliaries',0,'y']
+                - ['parameters', 0, 'p']
+
+
 
 dtmscc:
 
@@ -166,7 +177,7 @@ dtmscc:
                 - ['expectations', 0, 'z']
                 - ['parameters',0,'p']
 
-        arbitrage_2:
+        arbitrage_exp:
 
             optional: True
 
