@@ -81,6 +81,7 @@ dtcscc:
             eqs:
                 - ['states',0,'s']
                 - ['controls',0,'x']
+                - ['expectations', 0, 'z']
                 #- ['auxiliaries',0,'y']
                 - ['parameters', 0, 'p']
 
@@ -182,8 +183,10 @@ dtmscc:
             optional: True
 
             eqs:
+                - ['markov_states',0,'m']
                 - ['states',0,'s']
                 - ['controls',0,'x']
+                - ['expectations', 0, 'z']
                 #- ['auxiliaries',0,'y']
                 - ['parameters', 0, 'p']
 
