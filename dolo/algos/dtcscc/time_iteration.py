@@ -328,11 +328,13 @@ def time_iteration_direct(model, verbose=False, initial_dr=None,
         # TODO: check that control is admissible
         new_x = d(grid, z, parms)
 
+        # update error
+        err = (abs(new_x - x_0).max())
+
         # Update control vector
         x_0[:] = new_x
 
-        # update error and print if `verbose`
-        err = (abs(new_x - x_0).max())
+        # print error information if `verbose`
         err_SA = err/err_0
         err_0 = err
         t_finish = time.time()
