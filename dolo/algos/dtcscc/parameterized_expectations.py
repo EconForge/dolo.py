@@ -1,16 +1,20 @@
 import time
 import numpy as np
-from dolo.numeric.discretization import gauss_hermite_nodes
-from dolo.numeric.interpolation.splines import MultivariateCubicSplines
-from dolo.numeric.misc import mlinspace
 from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.numeric.interpolation import create_interpolator
 
-def parameterized_expectations_direct(model, verbose=False, initial_dr=None, pert_order=1, grid={}, distribution={}, maxit=100, tol=1e-8):
-    '''
-    Finds a global solution for ``model`` using parameterized expectations function. Requires the model to be written with controls as a direct function of the model objects.
 
-    The algorithm iterates on the expectations function in the arbitrage equation. It follows the discussion in section 9.9 of Miranda and Fackler (2002).
+def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
+                                      pert_order=1, grid={}, distribution={},
+                                      maxit=100, tol=1e-8):
+    '''
+    Finds a global solution for ``model`` using parameterized expectations
+    function. Requires the model to be written with controls as a direct
+    function of the model objects.
+
+    The algorithm iterates on the expectations function in the arbitrage
+    equation. It follows the discussion in section 9.9 of Miranda and
+    Fackler (2002).
 
     Parameters
     ----------
@@ -34,10 +38,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         approximated solution
     '''
 
-
-
     t1 = time.time()
-
     g = model.functions['transition']
     d = model.functions['direct_response']
     h = model.functions['expectation']
@@ -50,22 +51,21 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
 
-    approx      = model.get_grid(**grid)
-    grid        = approx.grid
+    approx = model.get_grid(**grid)
+    grid = approx.grid
     interp_type = approx.interpolation
-    dr          = create_interpolator(approx, approx.interpolation)
-    expect      = create_interpolator(approx, approx.interpolation)
+    dr = create_interpolator(approx, interp_type)
+    expect = create_interpolator(approx, interp_type)
 
     distrib = model.get_distribution(**distribution)
     nodes, weights = distrib.discretize()
 
     N = grid.shape[0]
-    z = np.zeros((N,len(model.symbols['expectations'])))
+    z = np.zeros((N, len(model.symbols['expectations'])))
 
-    xinit = initial_dr(grid)
-    xinit = xinit.real  # just in case ...
-    x_0 = xinit
-    h_0 = h(grid,x_0,parms)
+    x_0 = initial_dr(grid)
+    x_0 = x_0.real  # just in case ...
+    h_0 = h(grid, x_0, parms)
 
     it = 0
     err = 10
@@ -82,7 +82,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         # format string for within loop
         fmt_str = '|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'
 
-    while err>tol and it<=maxit:
+    while err > tol and it <= maxit:
 
         it += 1
         t_start = time.time()
@@ -92,33 +92,27 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
 
         z[...] = 0
         for i in range(weights.shape[0]):
-            e = nodes[i,:]
+            e = nodes[i, :]
             S = g(grid, x_0, e, parms)
-            # evaluate future controls
+            # evaluate expectation over the future state
             z += weights[i]*expect(S)
 
         # TODO: check that control is admissible
         new_x = d(grid, z, parms)
         new_h = h(grid, new_x, parms)
 
-        # check whether weighted average of errors in the decision rule and the expectations function differ from the preceding guess
-        err1 = (abs(new_x - x_0).max())
-        err2 = (abs(new_h - h_0).max())
-        err  = 0.5*(err1 + err2)
-
+        # Update guess for decision rule and expectations function
         x_0 = new_x
         h_0 = new_h
 
+        # update error and print if `verbose`
+        err = (abs(new_h - h_0).max())
+        err_SA = err/err_0
+        err_0 = err
+        t_finish = time.time()
+        elapsed = t_finish - t_start
         if verbose:
-
-            # update error and print if `verbose`
-            err_SA = err/err_0
-            err_0 = err
-            t_finish = time.time()
-            elapsed = t_finish - t_start
-            if verbose:
-                print(fmt_str.format(it, err, err_SA, elapsed))
-
+            print(fmt_str.format(it, err, err_SA, elapsed))
 
     if it == maxit:
         import warnings

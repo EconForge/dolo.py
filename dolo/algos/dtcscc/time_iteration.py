@@ -7,11 +7,9 @@ from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
 from dolo.numeric.interpolation import create_interpolator
 
 
-def time_iteration(model, verbose=False, initial_dr=None,
-                   pert_order=1, with_complementarities=True,
-                   grid={}, distribution={},
-                   maxit=500, tol=1e-8, inner_maxit=10,
-                   hook=None):
+def time_iteration(model, verbose=False, initial_dr=None, pert_order=1,
+                   with_complementarities=True, grid={}, distribution={},
+                   maxit=500, tol=1e-8, inner_maxit=10, hook=None):
     '''
     Finds a global solution for ``model`` using backward time-iteration.
 
@@ -51,13 +49,11 @@ def time_iteration(model, verbose=False, initial_dr=None,
 
     parms = model.calibration['parameters']
 
-
     approx = model.get_grid(**grid)
     interp_type = approx.interpolation
-    dr = create_interpolator(approx, approx.interpolation)
+    dr = create_interpolator(approx, interp_type)
 
     distrib = model.get_distribution(**distribution)
-    sigma = distrib.sigma
     nodes, weights = distrib.discretize()
 
     if initial_dr is None:
@@ -73,8 +69,8 @@ def time_iteration(model, verbose=False, initial_dr=None,
 
     grid = dr.grid
 
-    xinit = initial_dr(grid)
-    xinit  = xinit.real  # just in case...
+    x_0 = initial_dr(grid)
+    x_0 = x_0.real  # just in case...
 
     # define objective function (residuals of arbitrage equations)
     def fun(x):
@@ -84,7 +80,6 @@ def time_iteration(model, verbose=False, initial_dr=None,
     t1 = time.time()
     err = 1
     err_0 = 1
-    x0 = xinit
     it = 0
 
     verbit = True if verbose == 'full' else False
@@ -115,20 +110,20 @@ def time_iteration(model, verbose=False, initial_dr=None,
         it += 1
 
         # update interpolation coefficients (NOTE: filters through `fun`)
-        dr.set_values(x0)
+        dr.set_values(x_0)
 
         # Derivative of objective function
         sdfun = SerialDifferentiableFunction(fun)
 
         # Apply solver with current decision rule for controls
         if with_complementarities:
-            [x, nit] = ncpsolve(sdfun, lb, ub, x0, verbose=verbit,
+            [x, nit] = ncpsolve(sdfun, lb, ub, x_0, verbose=verbit,
                                 maxit=inner_maxit)
         else:
-            [x, nit] = serial_newton(sdfun, x0, verbose=verbit)
+            [x, nit] = serial_newton(sdfun, x_0, verbose=verbit)
 
         # update error and print if `verbose`
-        err = abs(x-x0).max()
+        err = abs(x-x_0).max()
         err_SA = err/err_0
         err_0 = err
         t_finish = time.time()
@@ -137,16 +132,16 @@ def time_iteration(model, verbose=False, initial_dr=None,
             print(fmt_str.format(it, err, err_SA, elapsed, nit))
 
         # Update control vector
-        x0[:] = x  # x0 = x0 + (x-x0)
+        x_0[:] = x  # x0 = x0 + (x-x0)
 
         # call user supplied hook, if any
         if hook:
             hook(dr, it, err)
 
         # warn and bail if we get inf
-        if False in np.isfinite(x0):
+        if False in np.isfinite(x_0):
             print('iteration {} failed : non finite value')
-            return [x0, x]
+            return [x_0, x]
 
     if it == maxit:
         import warnings
@@ -227,15 +222,17 @@ from dolo.numeric.interpolation.splines import MultivariateCubicSplines
 from dolo.numeric.misc import mlinspace
 from dolo.algos.dtcscc.perturbations import approximate_controls
 
-def time_iteration_direct(model, verbose=False,
-                initial_dr=None,
-                pert_order=1,
-                grid={}, distribution={},
-                maxit=500, tol=1e-8):
-    '''
-    Finds a global solution for ``model`` using backward time-iteration. Requires the model to be written with controls as a direct function of the model objects.
 
-    This algorithm iterates on the (directly expressed) decision rule, which is a re-expression of the arbitrage equation.
+def time_iteration_direct(model, verbose=False, initial_dr=None,
+                          pert_order=1, grid={}, distribution={}, maxit=500,
+                          tol=1e-8):
+    '''
+    Finds a global solution for ``model`` using backward time-iteration.
+    Requires the model to be written with controls as a direct function of the
+    model objects.
+
+    This algorithm iterates on the (directly expressed) decision rule, which is
+    a re-expression of the arbitrage equation.
 
     Parameters
     ----------
@@ -271,7 +268,7 @@ def time_iteration_direct(model, verbose=False,
 
     approx = model.get_grid(**grid)
     interp_type = approx.interpolation
-    dr = create_interpolator(approx, approx.interpolation)
+    dr = create_interpolator(approx, interp_type)
 
     distrib = model.get_distribution(**distribution)
     nodes, weights = distrib.discretize()
@@ -288,16 +285,15 @@ def time_iteration_direct(model, verbose=False,
     grid = approx.grid
 
     N = grid.shape[0]
-    z = np.zeros((N,len(model.symbols['expectations'])))
+    z = np.zeros((N, len(model.symbols['expectations'])))
 
-    xinit = initial_dr(grid)
-    xinit  = xinit.real  # just in case...
+    x_0 = initial_dr(grid)
+    x_0 = x_0.real  # just in case...
 
     ##
     t1 = time.time()
     err = 10
     err_0 = 10
-    x_0 = initial_dr(grid)
     it = 0
 
     if verbose:
@@ -311,7 +307,7 @@ def time_iteration_direct(model, verbose=False,
         # format string for within loop
         fmt_str = '|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'
 
-    while err>tol and it<=maxit:
+    while err > tol and it <= maxit:
         # update counters
         t_start = time.time()
         it += 1
@@ -322,11 +318,11 @@ def time_iteration_direct(model, verbose=False,
         # Compute expectations function
         z[...] = 0
         for i in range(weights.shape[0]):
-            e = nodes[i,:]
+            e = nodes[i, :]
             S = g(grid, x_0, e, parms)
             # evaluate future controls
             X = dr(S)
-            z += weights[i]*h(S,X,parms)
+            z += weights[i]*h(S, X, parms)
 
         # Update control
         # TODO: check that control is admissible
