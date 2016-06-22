@@ -131,7 +131,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None, per
         print('Elapsed: {} seconds.'.format(t2 - t1))
         print(stars)
 
-    # Interpolation for the decision rule    
+    # Interpolation for the decision rule
     dr.set_values(x_0)
 
     return dr
