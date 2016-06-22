@@ -128,12 +128,12 @@ def time_iteration(model, verbose=False, initial_dr=None,
             [x, nit] = serial_newton(sdfun, x0, verbose=verbit)
 
         # update error and print if `verbose`
+        err = abs(x-x0).max()
+        err_SA = err/err_0
+        err_0 = err
+        t_finish = time.time()
+        elapsed = t_finish - t_start
         if verbose:
-            err = abs(x-x0).max()
-            err_SA = err/err_0
-            err_0 = err
-            t_finish = time.time()
-            elapsed = t_finish - t_start
             print(fmt_str.format(it, err, err_SA, elapsed, nit))
 
         # Update control vector
@@ -332,20 +332,17 @@ def time_iteration_direct(model, verbose=False,
         # TODO: check that control is admissible
         new_x = d(grid, z, parms)
 
-        # check whether controls differ from preceding guess
-        err = (abs(new_x - x_0).max())
-
         # Update control vector
         x_0[:] = new_x
 
         # update error and print if `verbose`
+        err = (abs(new_x - x_0).max())
+        err_SA = err/err_0
+        err_0 = err
+        t_finish = time.time()
+        elapsed = t_finish - t_start
         if verbose:
-            err_SA = err/err_0
-            err_0 = err
-            t_finish = time.time()
-            elapsed = t_finish - t_start
-            if verbose:
-                print(fmt_str.format(it, err, err_SA, elapsed))
+            print(fmt_str.format(it, err, err_SA, elapsed))
 
     if it == maxit:
         import warnings
