@@ -289,11 +289,11 @@ file: "{filename}\n'''.format(**self.infos)
 
             spec = recipe['specs'][funname]
 
+            eqs = self.symbolic.equations[funname]
+
             if spec.get('target'):
-                eqs = self.symbolic.equations[funname]
                 target = spec['target']
                 rhs_only = True
-
             else:
                 target = None
                 rhs_only = False
