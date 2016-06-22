@@ -276,9 +276,6 @@ def time_iteration_direct(model, verbose=False,
     distrib = model.get_distribution(**distribution)
     nodes, weights = distrib.discretize()
 
-    N = grid.shape[0]
-    z = np.zeros((N,len(model.symbols['expectations'])))
-
     if initial_dr is None:
         if pert_order == 1:
             initial_dr = approximate_controls(model)
@@ -289,6 +286,9 @@ def time_iteration_direct(model, verbose=False,
     vprint('Starting direct response time iteration')
 
     grid = approx.grid
+
+    N = grid.shape[0]
+    z = np.zeros((N,len(model.symbols['expectations'])))
 
     xinit = initial_dr(grid)
     xinit  = xinit.real  # just in case...
