@@ -1,14 +1,17 @@
 import time
 import numpy as np
 from dolo.algos.dtcscc.perturbations import approximate_controls
+from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
                                           serial_newton)
 from dolo.numeric.interpolation import create_interpolator
 
 
 def parameterized_expectations(model, verbose=False, initial_dr=None,
-                               pert_order=1, grid={}, distribution={},
-                               maxit=100, tol=1e-8):
+                               pert_order=1, with_complementarities=True,
+                               grid={}, distribution={},
+                               maxit=100, tol=1e-8, inner_maxit=10,
+                               direct=False):
     '''
     Finds a global solution for ``model`` using parameterized expectations
     function. Requires the model to be written with controls as a direct
@@ -33,6 +36,8 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     distribution: distribution options
     maxit: maximum number of iterations
     tol: tolerance criterium for successive approximations
+    inner_maxit: maximum number of iteration for inner solver
+    direct: if True, solve with direct method. If false, solve indirectly
 
     Returns
     -------
@@ -43,8 +48,9 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     t1 = time.time()
 
     g = model.functions['transition']
-    f = model.functions['arbitrage_exp']  # f(s, x, z, p, out)
     h = model.functions['expectation']
+    d = model.functions['direct_response']
+    f = model.functions['arbitrage_exp']  # f(s, x, z, p, out)
     parms = model.calibration['parameters']
 
     if initial_dr is None:
@@ -76,6 +82,15 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
 
     verbit = True if verbose == 'full' else False
 
+    if with_complementarities is True:
+        lbfun = model.functions['controls_lb']
+        ubfun = model.functions['controls_ub']
+        lb = lbfun(grid, parms)
+        ub = ubfun(grid, parms)
+    else:
+        lb = None
+        ub = None
+
     if verbose:
         headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'
         headline = headline.format('N', ' Error', 'Gain', 'Time')
@@ -102,14 +117,24 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
             S = g(grid, x_0, e, parms)
             z += weights[i]*expect(S)
 
-        # Solve arbitrage equations for the control
-        def fun(x): return f(grid, x, z, parms)
+        if direct is True:
+            # Use control as direct function of arbitrage equation
+            new_x = d(grid, z, parms)
+            if with_complementarities is True:
+                new_x = np.minimum(new_x, ub)
+                new_x = np.maximum(new_x, lb)
+        else:
+            # Find control by solving arbitrage equation
+            def fun(x): return f(grid, x, z, parms)
+            sdfun = SerialDifferentiableFunction(fun)
 
-        sdfun = SerialDifferentiableFunction(fun)
-        [new_x, nit] = serial_newton(sdfun, x_0, verbose=verbit)
+            if with_complementarities is True:
+                [new_x, nit] = ncpsolve(sdfun, lb, ub, x_0, verbose=verbit,
+                                        maxit=inner_maxit)
+            else:
+                [new_x, nit] = serial_newton(sdfun, x_0, verbose=verbit)
 
         new_h = h(grid, new_x, parms)
-        # TODO: check that control is admissible
 
         # update error
         err = (abs(new_h - h_0).max())
@@ -125,8 +150,6 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
         elapsed = t_finish - t_start
         if verbose:
             print(fmt_str.format(it, err, err_SA, elapsed))
-
-
 
     if it == maxit:
         import warnings
