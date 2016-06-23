@@ -18,8 +18,12 @@ definitions:
 equations:
 
    arbitrage:
-      - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
-      - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))   | 0 <= i <= inf
+      - chi*n^eta*c^sigma - w                         | 0 <= n <= inf
+      - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))     | 0 <= i <= inf
+
+   arbitrage_exp:
+      - chi*n^eta*c^sigma - w                         # | 0 <= n <= inf
+      - c^(-sigma) - m                                # | 0 <= i <=inf
 
    transition:
       - z = (1-rho)*zbar + rho*z(-1) + e_z
