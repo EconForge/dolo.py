@@ -1,0 +1,589 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.compiler.model_numeric &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.compiler.model_numeric</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.compiler.model_numeric</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">.codegen</span> <span class="k">import</span> <span class="n">to_source</span>
+<span class="kn">from</span> <span class="nn">.function_compiler_ast</span> <span class="k">import</span> <span class="n">timeshift</span><span class="p">,</span> <span class="n">StandardizeDatesSimple</span>
+<span class="kn">from</span> <span class="nn">dolo.compiler.recipes</span> <span class="k">import</span> <span class="n">recipes</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">njit</span>
+
+
+<div class="viewcode-block" id="NumericModel"><a class="viewcode-back" href="../../../model_api.html#dolo.compiler.model_numeric.NumericModel">[docs]</a><span class="k">class</span> <span class="nc">NumericModel</span><span class="p">:</span>
+
+    <span class="n">calibration</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">calibration_dict</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">covariances</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">markov_chain</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbolic_model</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span> <span class="o">=</span> <span class="n">symbolic_model</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span> <span class="o">=</span> <span class="n">symbolic_model</span><span class="o">.</span><span class="n">symbols</span>
+
+        <span class="c1"># compat</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">definitions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;auxiliaries&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">definitions</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span>  <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span><span class="s1">&#39;shocks&#39;</span><span class="p">,</span><span class="s1">&#39;values&#39;</span><span class="p">)],</span> <span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">infos</span> <span class="o">=</span> <span class="n">infos</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">infos</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">infos</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
+        <span class="c1"># self.model_spec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__update_from_symbolic__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__compile_functions__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__update_from_symbolic__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span>
+        <span class="c1"># updates calibration according to the symbolic definitions</span>
+
+        <span class="n">system</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">calibration_dict</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.compiler.triangular_solver</span> <span class="k">import</span> <span class="n">solve_triangular_system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration_dict</span> <span class="o">=</span> <span class="n">solve_triangular_system</span><span class="p">(</span> <span class="n">system</span> <span class="p">)</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.compiler.misc</span> <span class="k">import</span> <span class="n">CalibrationDict</span><span class="p">,</span> <span class="n">calibration_to_vector</span>
+        <span class="n">calib</span> <span class="o">=</span> <span class="n">calibration_to_vector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span> <span class="o">=</span> <span class="n">CalibrationDict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span> <span class="n">calib</span><span class="p">)</span>
+
+        <span class="kn">from</span> <span class="nn">.symbolic_eval</span> <span class="k">import</span> <span class="n">NumericEval</span>
+        <span class="n">evaluator</span> <span class="o">=</span> <span class="n">NumericEval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calibration_dict</span><span class="p">)</span>
+        <span class="c1"># read symbolic structure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">options</span><span class="p">)</span>
+        <span class="c1">#</span>
+        <span class="c1"># distribution = evaluator.eval(self.symbolic.options.get(&#39;distribution&#39;))</span>
+        <span class="c1"># discrete_transition = evaluator.eval(self.symbolic.options.get(&#39;discrete_transition&#39;))</span>
+
+        <span class="n">distribution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;distribution&#39;</span><span class="p">)</span>
+        <span class="n">discrete_transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;discrete_transition&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">distribution</span> <span class="o">=</span> <span class="n">distribution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">discrete_transition</span> <span class="o">=</span> <span class="n">discrete_transition</span>
+
+        <span class="k">if</span> <span class="n">distribution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covariances</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covariances</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">distribution</span><span class="o">.</span><span class="n">sigma</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+
+        <span class="n">markov_chain</span> <span class="o">=</span> <span class="n">discrete_transition</span>
+
+        <span class="k">if</span> <span class="n">markov_chain</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">markov_chain</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">markov_chain</span> <span class="o">=</span> <span class="p">[</span><span class="n">markov_chain</span><span class="o">.</span><span class="n">P</span><span class="p">,</span> <span class="n">markov_chain</span><span class="o">.</span><span class="n">Q</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">markov_chain</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">atleast_2d</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">tab</span> <span class="ow">in</span> <span class="n">markov_chain</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pname</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pname</span> <span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span> <span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pname</span> <span class="p">]</span> <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">pnames</span> <span class="o">=</span> <span class="p">(</span><span class="n">pname</span><span class="p">,)</span> <span class="o">+</span> <span class="n">args</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_calibration</span><span class="p">(</span><span class="n">pnames</span><span class="p">)</span>
+
+        <span class="n">group</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">g</span><span class="p">]]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Unknown symbol </span><span class="si">{}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pname</span><span class="p">))</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">pname</span><span class="p">)</span>
+        <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="n">group</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">v</span>
+
+
+    <span class="k">def</span> <span class="nf">set_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="c1"># raise exception if unknown symbol ?</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">==</span><span class="mi">2</span><span class="p">:</span>
+            <span class="n">pname</span><span class="p">,</span> <span class="n">pvalue</span> <span class="o">=</span> <span class="n">args</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pname</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_calibration</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">pname</span><span class="p">:</span><span class="n">pvalue</span><span class="p">})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># else ignore pname and pvalue</span>
+            <span class="n">calib</span> <span class="o">=</span>  <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">calibration_dict</span>
+            <span class="n">calib</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__update_from_symbolic__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.misc.termcolor</span> <span class="k">import</span> <span class="n">colored</span>
+
+        <span class="n">s</span> <span class="o">=</span> <span class="s1">u&#39;&#39;&#39;</span>
+<span class="s1">Model:</span>
+<span class="s1">------</span>
+<span class="s1">name: &quot;</span><span class="si">{name}</span><span class="s1">&quot;</span>
+<span class="s1">type: &quot;</span><span class="si">{type}</span><span class="s1">&quot;</span>
+<span class="s1">file: &quot;</span><span class="si">{filename}</span><span class="se">\n</span><span class="s1">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">infos</span><span class="p">)</span>
+
+        <span class="n">ss</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Equations:</span><span class="se">\n</span><span class="s1">----------</span><span class="se">\n\n</span><span class="s1">&#39;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">residuals</span><span class="p">()</span>
+
+        <span class="c1"># for eqgroup, eqlist in self.symbolic.equations.items():</span>
+        <span class="k">for</span> <span class="n">eqgroup</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">eqgroup</span> <span class="o">==</span> <span class="s1">&#39;auxiliary&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">eqgroup</span> <span class="o">==</span> <span class="s1">&#39;dynare&#39;</span><span class="p">:</span>
+                <span class="n">eqlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">eqlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span><span class="p">[</span><span class="n">eqgroup</span><span class="p">]</span>
+            <span class="n">ss</span> <span class="o">+=</span> <span class="s2">u&quot;</span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">eqgroup</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">eq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eqlist</span><span class="p">):</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">eqgroup</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{:.4f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span>
+                    <span class="n">vals</span> <span class="o">=</span> <span class="n">colored</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">)</span>
+                <span class="n">ss</span> <span class="o">+=</span> <span class="s2">u&quot; </span><span class="si">{eqn:2}</span><span class="s2"> : </span><span class="si">{vals}</span><span class="s2"> : </span><span class="si">{eqs}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">eqn</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">vals</span><span class="o">=</span><span class="n">vals</span><span class="p">,</span> <span class="n">eqs</span><span class="o">=</span><span class="n">eq</span><span class="p">)</span>
+            <span class="n">ss</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="n">ss</span>
+
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__str__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_repr_html_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.compiler.latex</span> <span class="k">import</span> <span class="n">eq2tex</span>
+
+        <span class="c1"># general informations</span>
+        <span class="n">infos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">infos</span>
+        <span class="n">table_infos</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">     &lt;table&gt;</span>
+<span class="s2">         &lt;td&gt;&lt;b&gt;Model&lt;/b&gt;&lt;/td&gt;</span>
+<span class="s2">     &lt;tr&gt;</span>
+<span class="s2">        &lt;td&gt;name&lt;/td&gt;</span>
+<span class="s2">        &lt;td&gt;</span><span class="si">{name}</span><span class="s2">&lt;/td&gt;</span>
+<span class="s2">      &lt;/tr&gt;</span>
+<span class="s2">    &lt;tr&gt;</span>
+<span class="s2">        &lt;td&gt;type&lt;/td&gt;</span>
+<span class="s2">        &lt;td&gt;</span><span class="si">{type}</span><span class="s2">&lt;/td&gt;</span>
+<span class="s2">      &lt;/tr&gt;</span>
+<span class="s2">      &lt;tr&gt;</span>
+<span class="s2">        &lt;td&gt;filename&lt;/td&gt;</span>
+<span class="s2">        &lt;td&gt;</span><span class="si">{filename}</span><span class="s2">&lt;/td&gt;</span>
+<span class="s2">      &lt;/tr&gt;</span>
+<span class="s2">    &lt;/table&gt;&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">infos</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="nb">type</span><span class="o">=</span><span class="n">infos</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">filename</span><span class="o">=</span><span class="n">infos</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&lt;&quot;</span><span class="p">,</span><span class="s2">&quot;&amp;lt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&gt;&quot;</span><span class="p">,</span><span class="s2">&quot;&amp;gt&quot;</span><span class="p">))</span>
+
+
+        <span class="c1"># Equations and residuals</span>
+        <span class="n">resids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">residuals</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dynare&#39;</span><span class="p">:</span>
+            <span class="n">equations</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dynare&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">equations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">e</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s1">&#39;parameters&#39;</span><span class="p">],</span> <span class="p">[])</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;b&gt;Type&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;b&gt;Equation&lt;/b&gt;&lt;/td&gt;&lt;td&gt;&lt;b&gt;Residual&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+        <span class="k">for</span> <span class="n">eq_type</span> <span class="ow">in</span> <span class="n">equations</span><span class="p">:</span>
+
+            <span class="n">eq_lines</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">equations</span><span class="p">[</span><span class="n">eq_type</span><span class="p">])):</span>
+                <span class="n">eq</span> <span class="o">=</span> <span class="n">equations</span><span class="p">[</span><span class="n">eq_type</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">eq_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;expectation&#39;</span><span class="p">,</span><span class="s1">&#39;direct_response&#39;</span><span class="p">):</span>
+                    <span class="n">vals</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">resids</span><span class="p">[</span><span class="n">eq_type</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">8</span><span class="p">:</span>
+                        <span class="n">vals</span> <span class="o">=</span> <span class="s1">&#39;&lt;span style=&quot;color: red;&quot;&gt;</span><span class="si">{:.4f}</span><span class="s1">&lt;/span&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">vals</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;|&#39;</span> <span class="ow">in</span> <span class="n">eq</span><span class="p">:</span>
+                    <span class="c1"># keep only lhs for now</span>
+                    <span class="n">eq</span><span class="p">,</span> <span class="n">comp</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="s1">&#39;|&#39;</span><span class="p">)</span>
+                <span class="n">lat</span> <span class="o">=</span> <span class="n">eq2tex</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">eq</span><span class="p">)</span>
+                <span class="n">lat</span> <span class="o">=</span>  <span class="s1">&#39;$</span><span class="si">{}</span><span class="s1">$&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="p">[</span><span class="n">lat</span><span class="p">,</span> <span class="n">vals</span><span class="p">]</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">eq_type</span> <span class="k">if</span> <span class="n">i</span><span class="o">==</span><span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+                <span class="n">fmt_line</span> <span class="o">=</span> <span class="s1">&#39;&lt;tr&gt;&lt;td&gt;</span><span class="si">{}</span><span class="s1">&lt;/td&gt;&lt;td&gt;</span><span class="si">{}</span><span class="s1">&lt;/td&gt;&lt;td&gt;</span><span class="si">{}</span><span class="s1">&lt;/td&gt;&lt;/tr&gt;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="o">*</span><span class="n">line</span><span class="p">)</span>
+        <span class="c1">#         print(fmt_line)</span>
+                <span class="n">eq_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fmt_line</span><span class="p">)</span>
+            <span class="n">table</span> <span class="o">+=</span> <span class="nb">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">eq_lines</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;&lt;table&gt;</span><span class="si">{}</span><span class="s2">&lt;/table&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">table_infos</span> <span class="o">+</span> <span class="n">table</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">x_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="s1">&#39;controls_ub&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+            <span class="n">fun_lb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;controls_lb&#39;</span><span class="p">]</span>
+            <span class="n">fun_ub</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;controls_ub&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">fun_lb</span><span class="p">,</span> <span class="n">fun_ub</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calib</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dtcscc&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">dolo.algos.dtcscc.steady_state</span> <span class="k">import</span> <span class="n">residuals</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dtmscc&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">dolo.algos.dtmscc.steady_state</span> <span class="k">import</span> <span class="n">residuals</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dynare&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">dolo.algos.dynare.steady_state</span> <span class="k">import</span> <span class="n">residuals</span>
+        <span class="k">return</span> <span class="n">residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calib</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">eval_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">dataframe</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">calib</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.compiler.eval_formula</span> <span class="k">import</span> <span class="n">eval_formula</span>
+        <span class="k">if</span> <span class="n">calib</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">calib</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calibration</span>
+        <span class="k">return</span> <span class="n">eval_formula</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">dataframe</span><span class="o">=</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">calib</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_distribution</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+        <span class="n">gg</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;distribution&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Model has no distribution.&quot;</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">gg</span><span class="p">)</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_grid</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">dis_opts</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">copy</span>
+        <span class="n">gg</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;grid&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Model has no grid.&quot;</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">gg</span><span class="p">)</span>
+        <span class="n">gtype</span> <span class="o">=</span> <span class="n">dis_opts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gtype</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">dolo.compiler.language</span> <span class="k">import</span> <span class="n">minilang</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">cls</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">minilang</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">__name__</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">==</span><span class="n">gtype</span><span class="o">.</span><span class="n">lower</span><span class="p">()][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unknown grid type </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gtype</span><span class="p">))</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">cls</span><span class="p">(</span><span class="o">**</span><span class="n">d</span><span class="p">)</span>
+    <span class="c1">#     return cc</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">dis_opts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span> <span class="n">d</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">d</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="o">.</span><span class="n">flat</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__compile_functions__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="kn">from</span> <span class="nn">dolo.compiler.function_compiler</span> <span class="k">import</span> <span class="n">compile_function_ast</span>
+        <span class="kn">from</span> <span class="nn">dolo.compiler.function_compiler</span> <span class="k">import</span> <span class="n">standard_function</span>
+
+        <span class="n">defs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">definitions</span>
+
+        <span class="n">model_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_type</span>
+
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">recipes</span><span class="p">[</span><span class="n">model_type</span><span class="p">]</span>
+        <span class="n">symbols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span> <span class="c1"># should match self.symbols</span>
+
+        <span class="n">comps</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">functions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">original_functions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">original_gufunctions</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># for funname in recipe[&#39;specs&#39;].keys():</span>
+        <span class="k">for</span> <span class="n">funname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span><span class="p">:</span>
+
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">recipe</span><span class="p">[</span><span class="s1">&#39;specs&#39;</span><span class="p">][</span><span class="n">funname</span><span class="p">]</span>
+
+            <span class="n">eqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">):</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span>
+                <span class="n">rhs_only</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="n">rhs_only</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;complementarities&#39;</span><span class="p">):</span>
+
+                <span class="c1"># TODO: Rewrite and simplify</span>
+                <span class="n">comp_spec</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;complementarities&#39;</span><span class="p">)</span>
+                <span class="n">comp_order</span> <span class="o">=</span> <span class="n">comp_spec</span><span class="p">[</span><span class="s1">&#39;middle&#39;</span><span class="p">]</span>
+                <span class="n">comp_args</span> <span class="o">=</span> <span class="n">comp_spec</span><span class="p">[</span><span class="s1">&#39;left-right&#39;</span><span class="p">]</span>
+
+                <span class="n">comps</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">eqs</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">eq</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbolic</span><span class="o">.</span><span class="n">equations</span><span class="p">[</span><span class="n">funname</span><span class="p">]):</span>
+
+                    <span class="k">if</span> <span class="s1">&#39;|&#39;</span> <span class="ow">in</span> <span class="n">eq</span><span class="p">:</span>
+                        <span class="n">control</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">comp_order</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">eq</span><span class="p">,</span> <span class="n">comp</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span><span class="s1">&#39;|&#39;</span><span class="p">)</span>
+                        <span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span> <span class="o">=</span> <span class="n">decode_complementarity</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">control</span><span class="p">)</span>
+                        <span class="n">comps</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">comps</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s1">&#39;-inf&#39;</span><span class="p">,</span> <span class="s1">&#39;inf&#39;</span><span class="p">])</span>
+
+                    <span class="n">eqs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span>
+
+                    <span class="n">comp_lhs</span><span class="p">,</span> <span class="n">comp_rhs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">comps</span><span class="p">)</span>
+                    <span class="c1"># fb_names = [&#39;{}_lb&#39;.format(funname), &#39;{}_ub&#39;.format(funname)]</span>
+                    <span class="n">fb_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;controls_lb&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">funname</span><span class="p">),</span> <span class="s1">&#39;controls_ub&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">funname</span><span class="p">)]</span>
+
+                    <span class="n">lower_bound</span><span class="p">,</span> <span class="n">gu_lower_bound</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">comp_lhs</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">comp_args</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">definitions</span><span class="o">=</span><span class="n">defs</span><span class="p">)</span>
+                    <span class="n">upper_bound</span><span class="p">,</span> <span class="n">gu_upper_bound</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">comp_rhs</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">comp_args</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">definitions</span><span class="o">=</span><span class="n">defs</span><span class="p">)</span>
+
+                    <span class="n">n_output</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">comp_lhs</span><span class="p">)</span>
+
+                    <span class="n">functions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">standard_function</span><span class="p">(</span><span class="n">gu_lower_bound</span><span class="p">,</span> <span class="n">n_output</span> <span class="p">)</span>
+                    <span class="n">functions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">standard_function</span><span class="p">(</span><span class="n">gu_upper_bound</span><span class="p">,</span> <span class="n">n_output</span> <span class="p">)</span>
+                    <span class="n">original_functions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">lower_bound</span>
+                    <span class="n">original_functions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">upper_bound</span>
+                    <span class="n">original_gufunctions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">gu_lower_bound</span>
+                    <span class="n">original_gufunctions</span><span class="p">[</span><span class="n">fb_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">gu_upper_bound</span>
+
+
+            <span class="n">arg_names</span> <span class="o">=</span> <span class="n">recipe</span><span class="p">[</span><span class="s1">&#39;specs&#39;</span><span class="p">][</span><span class="n">funname</span><span class="p">][</span><span class="s1">&#39;eqs&#39;</span><span class="p">]</span>
+
+            <span class="n">fun</span><span class="p">,</span> <span class="n">gufun</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">arg_names</span><span class="p">,</span> <span class="n">output_names</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">rhs_only</span><span class="o">=</span><span class="n">rhs_only</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="n">funname</span><span class="p">,</span> <span class="n">definitions</span><span class="o">=</span><span class="n">defs</span><span class="p">,</span>                                   <span class="p">)</span>
+            <span class="n">n_output</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)</span>
+            <span class="n">original_functions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
+            <span class="n">functions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">standard_function</span><span class="p">(</span><span class="n">gufun</span><span class="p">,</span> <span class="n">n_output</span> <span class="p">)</span>
+            <span class="n">original_functions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
+            <span class="n">original_gufunctions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">gufun</span>
+
+        <span class="c1"># temporary hack to keep auxiliaries</span>
+        <span class="n">auxiliaries</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">defs</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
+        <span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;auxiliaries&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">auxiliaries</span>
+        <span class="n">eqs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> = </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">auxiliaries</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dtcscc&#39;</span><span class="p">:</span>
+            <span class="n">arg_names</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;states&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;s&#39;</span><span class="p">),(</span><span class="s1">&#39;controls&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">),(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">arg_names</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;markov_states&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;m&#39;</span><span class="p">),(</span><span class="s1">&#39;states&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;s&#39;</span><span class="p">),(</span><span class="s1">&#39;controls&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">),(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;p&#39;</span><span class="p">)]</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;auxiliaries&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">)</span>
+        <span class="n">rhs_only</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">funname</span> <span class="o">=</span> <span class="s1">&#39;auxiliary&#39;</span>
+        <span class="n">fun</span><span class="p">,</span> <span class="n">gufun</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">arg_names</span><span class="p">,</span> <span class="n">output_names</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="n">rhs_only</span><span class="o">=</span><span class="n">rhs_only</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="n">funname</span><span class="p">,</span> <span class="n">definitions</span><span class="o">=</span><span class="n">defs</span><span class="p">)</span>
+        <span class="n">n_output</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)</span>
+        <span class="n">functions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">standard_function</span><span class="p">(</span><span class="n">gufun</span><span class="p">,</span> <span class="n">n_output</span> <span class="p">)</span>
+        <span class="n">original_functions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">fun</span>
+        <span class="n">original_gufunctions</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span> <span class="o">=</span> <span class="n">gufun</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__original_functions__</span> <span class="o">=</span> <span class="n">original_functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__original_gufunctions__</span> <span class="o">=</span> <span class="n">original_gufunctions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">functions</span> <span class="o">=</span> <span class="n">functions</span></div>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">&quot;(.*)&lt;=(.*)&lt;=(.*)&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">decode_complementarity</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">control</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    # comp can be either:</span>
+<span class="sd">    - None</span>
+<span class="sd">    - &quot;a&lt;=expr&quot; where a is a controls</span>
+<span class="sd">    - &quot;expr&lt;=a&quot; where a is a control</span>
+<span class="sd">    - &quot;expr1&lt;=a&lt;=expr2&quot;</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unable to parse complementarity condition &#39;</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">))</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">res</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">control</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Complementarity condition &#39;</span><span class="si">{}</span><span class="s2">&#39; incorrect. Expected </span><span class="si">{}</span><span class="s2"> instead of </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">control</span><span class="p">,</span> <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">res</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

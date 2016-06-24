@@ -2,25 +2,26 @@ import numpy
 
 def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None):
 
-    """Compute value function corresponding to policy ``dr``
+    '''
+    Compute value function corresponding to a given decision rule
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
 
-    model:
-        "dtcscc" model. Must contain a 'value' function.
+    model : NumericModel
+        ``dtcscc`` model. Must contain a ``value`` function.
 
-    mdr:
+    mdr :
         decision rule to evaluate
 
-    Returns:
-    --------
+    Returns
+    -------
 
-    decision rule:
+    decision rule :
         value function (a function of the space similar to a decision rule
         object)
 
-    """
+    '''
 
     assert(model.model_type == 'dtmscc')
 

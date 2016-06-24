@@ -1,0 +1,666 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>The dolo language &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="index.html"/>
+        <link rel="next" title="Model API" href="model_api.html"/>
+        <link rel="prev" title="Getting started" href="installation.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Getting started</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">The dolo language</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#yaml-format">YAML format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-types">Model types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sections">Sections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#declaration-section">Declaration section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#declaration-of-equations">Declaration of equations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#calibration-section">Calibration section</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#shock-specification">Shock specification</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#distribution">Distribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#markov-chains">Markov chains</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>The dolo language</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="the-dolo-language">
+<h1>The dolo language<a class="headerlink" href="#the-dolo-language" title="Permalink to this headline">¶</a></h1>
+<p>The easiest way to code a model in dolo consists in using specialized Yaml files also referred to as dolo model files.</p>
+<div class="section" id="yaml-format">
+<h2>YAML format<a class="headerlink" href="#yaml-format" title="Permalink to this headline">¶</a></h2>
+<p>YAML stands for Yet Another Markup Language. It is a serialization language that
+allows complex data structures in a human-readable way.
+Atomic elements are floats, integers and strings.
+An ordered list can be defined by separating elements with commas and enclosing them with squere brackets:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Equivalently, it can be done on several line, by prepending <cite>-</cite> to each line</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="s1">&#39;element&#39;</span>
+<span class="o">-</span> <span class="n">element</span>         <span class="c1"># quotes are optional there is no ambiguity</span>
+<span class="o">-</span> <span class="n">third</span> <span class="n">element</span>   <span class="c1"># this is interpreted as ``&#39;third element&#39;``</span>
+</pre></div>
+</div>
+<p>Associative arrays map keys to (simple strings to arbitrary values) as in the following example:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">age</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">peter</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Mappings can also be defined on severaly lines, and as in Python, structures can be nested by using indentation (use spaces no tabs):</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">age</span><span class="p">:</span> <span class="mi">18</span>
+<span class="n">name</span><span class="p">:</span> <span class="n">peter</span>
+<span class="n">occupations</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">school</span>
+  <span class="o">-</span> <span class="n">guitar</span>
+<span class="n">friends</span><span class="p">:</span>
+  <span class="n">paula</span><span class="p">:</span> <span class="p">{</span><span class="n">age</span><span class="p">:</span> <span class="mi">18</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The correspondance between the yaml definition and the resulting Python object
+is very transparent. YAML mappings and lists are converted to Python  dictionaries and lists respectiveley.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>In dolo, we use the additional convention that a dictionary key is interpreted as a Python objects if:</p>
+<blockquote>
+<div><ul class="simple">
+<li>it begins with an uppercase</li>
+<li>it is at least two characters long</li>
+<li>its the only key in its dictionary.</li>
+</ul>
+</div></blockquote>
+<p>For instance,</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">AR1</span><span class="p">:</span>
+    <span class="n">rho</span><span class="p">:</span> <span class="mf">0.9</span>
+    <span class="n">sigma</span><span class="p">:</span> <span class="mf">0.1</span>
+<span class="o">-</span> <span class="n">TakeAList</span><span class="p">:</span>
+    <span class="o">-</span> <span class="mi">0</span>
+    <span class="o">-</span> <span class="mi">1</span>
+<span class="o">-</span> <span class="n">notanobject</span><span class="p">:</span>
+    <span class="n">a</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">b</span><span class="p">:</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>will be interpreted in Python as:</p>
+<div class="code python last highlight-python3"><div class="highlight"><pre><span></span><span class="nb">list</span><span class="p">(</span>
+    <span class="n">AR1</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+    <span class="n">TakeAList</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">{</span><span class="s1">&#39;notanobject&#39;</span><span class="p">:</span>
+        <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">2</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Any model file must be syntactically correct in the Yaml sense, before the
+content is analysed further. More information about the YAML syntax can be found
+on the <a class="reference external" href="http://www.yaml.org/">YAML website</a>, especially from the <a class="reference external" href="http://www.yaml.org/">language specification</a>.</p>
+</div>
+<div class="section" id="model-types">
+<h2>Model types<a class="headerlink" href="#model-types" title="Permalink to this headline">¶</a></h2>
+<p>Note, that dolo currently allows to define three types of models:</p>
+<ul class="simple">
+<li><cite>dynare models</cite> for which a set of first order conditions are perturbated around a steady-state</li>
+<li><cite>continous states - continous controls</cite> (CSCC models) that can be solve on a compact state-space, possibly with occasionally binding constraints</li>
+<li><cite>mixed states - continuous controls</cite> (MSCC models) : a variant of the former category where some of the states follow an exogenous discrete markov process</li>
+</ul>
+<p>Those models, differ by the type of equations they require, but the general principles are the same for all of them. Here we abstract from the differences and present only the common principles. Section [] presents these various models more in detail.
+..
+.. The compiler part of dolo takes a model written in a YAML format, and converts it to a Python object, that is compliant with a simple API. Hence, models can be written either using YAML files, or directly using Python syntax.</p>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Here is an example model contained in the file <code class="docutils literal"><span class="pre">examples\global_models\example.yaml</span></code></p>
+<div class="highlight-yaml"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69</pre></div></td><td class="code"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Real Business Cycle</span>
+
+<span class="l l-Scalar l-Scalar-Plain">model_type</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">dtcscc</span>
+
+<span class="l l-Scalar l-Scalar-Plain">symbols</span><span class="p p-Indicator">:</span>
+
+   <span class="l l-Scalar l-Scalar-Plain">states</span><span class="p p-Indicator">:</span>  <span class="p p-Indicator">[</span><span class="nv">z</span><span class="p p-Indicator">,</span> <span class="nv">k</span><span class="p p-Indicator">]</span>
+   <span class="l l-Scalar l-Scalar-Plain">controls</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">i</span><span class="p p-Indicator">,</span> <span class="nv">n</span><span class="p p-Indicator">]</span>
+   <span class="l l-Scalar l-Scalar-Plain">values</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">V</span><span class="p p-Indicator">]</span>
+   <span class="l l-Scalar l-Scalar-Plain">shocks</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">e_z</span><span class="p p-Indicator">]</span>
+   <span class="l l-Scalar l-Scalar-Plain">parameters</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">beta</span><span class="p p-Indicator">,</span> <span class="nv">sigma</span><span class="p p-Indicator">,</span> <span class="nv">eta</span><span class="p p-Indicator">,</span> <span class="nv">chi</span><span class="p p-Indicator">,</span> <span class="nv">delta</span><span class="p p-Indicator">,</span> <span class="nv">alpha</span><span class="p p-Indicator">,</span> <span class="nv">rho</span><span class="p p-Indicator">,</span> <span class="nv">zbar</span><span class="p p-Indicator">,</span> <span class="nv">sig_z</span> <span class="p p-Indicator">]</span>
+
+<span class="l l-Scalar l-Scalar-Plain">definitions</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">y</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">z*k^alpha*n^(1-alpha)</span>
+    <span class="l l-Scalar l-Scalar-Plain">c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">y - i</span>
+    <span class="l l-Scalar l-Scalar-Plain">rk</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">alpha*y/k</span>
+    <span class="l l-Scalar l-Scalar-Plain">w</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">(1-alpha)*y/n</span>
+
+<span class="l l-Scalar l-Scalar-Plain">equations</span><span class="p p-Indicator">:</span>
+
+    <span class="l l-Scalar l-Scalar-Plain">arbitrage</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 &lt;= i &lt;= inf</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">chi*n^eta*c^sigma - w                      | 0 &lt;= n &lt;= inf</span>
+
+
+    <span class="l l-Scalar l-Scalar-Plain">transition</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">z = (1-rho)*zbar + rho*z(-1) + e_z</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">k = (1-delta)*k(-1) + i(-1)</span>
+
+    <span class="l l-Scalar l-Scalar-Plain">value</span><span class="p p-Indicator">:</span>
+        <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">V = log(c) + beta*V(1)</span>
+
+<span class="l l-Scalar l-Scalar-Plain">calibration</span><span class="p p-Indicator">:</span>
+
+    <span class="c1"># parameters</span>
+    <span class="l l-Scalar l-Scalar-Plain">beta</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.99</span>
+    <span class="l l-Scalar l-Scalar-Plain">phi</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="l l-Scalar l-Scalar-Plain">delta</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.025</span>
+    <span class="l l-Scalar l-Scalar-Plain">alpha</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.33</span>
+    <span class="l l-Scalar l-Scalar-Plain">rho</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>
+    <span class="l l-Scalar l-Scalar-Plain">sigma</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="l l-Scalar l-Scalar-Plain">eta</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="l l-Scalar l-Scalar-Plain">sig_z</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.016</span>
+    <span class="l l-Scalar l-Scalar-Plain">zbar</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="l l-Scalar l-Scalar-Plain">chi</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">w/c^sigma/n^eta</span>
+    <span class="l l-Scalar l-Scalar-Plain">c_i</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1.5</span>
+    <span class="l l-Scalar l-Scalar-Plain">c_y</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.5</span>
+
+    <span class="c1"># endogenous variables</span>
+    <span class="l l-Scalar l-Scalar-Plain">n</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.33</span>
+    <span class="l l-Scalar l-Scalar-Plain">k</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">n/(rk/alpha)^(1/(1-alpha))</span>
+    <span class="l l-Scalar l-Scalar-Plain">w</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">(1-alpha)*z*(k/n)^(alpha)</span>
+    <span class="l l-Scalar l-Scalar-Plain">i</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">delta*k</span>
+    <span class="l l-Scalar l-Scalar-Plain">y</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">z*k^alpha*n^(1-alpha)</span>
+    <span class="l l-Scalar l-Scalar-Plain">c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">y - i</span>
+    <span class="l l-Scalar l-Scalar-Plain">z</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">zbar</span>
+    <span class="l l-Scalar l-Scalar-Plain">rk</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1/beta-1+delta</span>
+    <span class="l l-Scalar l-Scalar-Plain">V</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">log(c)/(1-beta)</span>
+
+
+<span class="l l-Scalar l-Scalar-Plain">options</span><span class="p p-Indicator">:</span>
+
+    <span class="l l-Scalar l-Scalar-Plain">distribution</span><span class="p p-Indicator">:</span> <span class="kt">!Normal</span>
+        <span class="l l-Scalar l-Scalar-Plain">sigma</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="p p-Indicator">[</span> <span class="nv">sig_z**2</span><span class="p p-Indicator">]</span> <span class="p p-Indicator">]</span>
+
+    <span class="l l-Scalar l-Scalar-Plain">grid</span><span class="p p-Indicator">:</span> <span class="kt">!Cartesian</span>
+        <span class="l l-Scalar l-Scalar-Plain">a</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">1-2*sig_z</span><span class="p p-Indicator">,</span> <span class="nv">k*0.9</span> <span class="p p-Indicator">]</span>
+        <span class="l l-Scalar l-Scalar-Plain">b</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span> <span class="nv">1+2*sig_z</span><span class="p p-Indicator">,</span> <span class="nv">k*1.1</span> <span class="p p-Indicator">]</span>
+        <span class="l l-Scalar l-Scalar-Plain">orders</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">10</span><span class="p p-Indicator">,</span> <span class="nv">50</span><span class="p p-Indicator">]</span>
+</pre></div>
+</td></tr></table></div>
+<p>This model can be loaded using the command:</p>
+<div class="code python highlight-python3"><div class="highlight"><pre><span></span>model = yaml_import(`examples\global_models\example.yaml`)
+</pre></div>
+</div>
+<p>The function <cite>yaml_import</cite> (cross) will raise errors until the model satisfies basic compliance tests. [more of it below]. In the following subsections, we describe the various syntaxic rules prevailing while writing yaml files.</p>
+</div>
+<div class="section" id="sections">
+<h2>Sections<a class="headerlink" href="#sections" title="Permalink to this headline">¶</a></h2>
+<p>A dolo model consists in the following 4 or 5 parts:</p>
+<ul class="simple">
+<li>a <cite>symbols</cite> section where all symbols used in the model must be defined</li>
+<li>an <cite>equations</cite> containing the list of equations</li>
+<li>a <cite>calibration</cite> section providing numeric values for the symbols</li>
+<li>an <cite>options</cite> section containing additional informations</li>
+<li>a <cite>covariances</cite> or <cite>markov_chain</cite> section where exogenous shocks are defined</li>
+</ul>
+<p>These section have context dependent rules. We now review each of them in detail:</p>
+<div class="section" id="declaration-section">
+<h3>Declaration section<a class="headerlink" href="#declaration-section" title="Permalink to this headline">¶</a></h3>
+<p>This section is introduced by the <cite>symbols</cite> keyword. All symbols appearing in the model must be defined there.</p>
+<p>Symbols must be valid Python identifiers (alphanumeric not beginning with a number) and are case sensitive. Greek letters (save for <cite>lambda</cite> which is a keyword) are recognized. Subscripts and superscripts can be denoted by <cite>_</cite> and <cite>__</cite> respectively. For instance <cite>beta_i_1__d</cite> will be pretty printed as <span class="math">\(beta_{i,1}^d\)</span>.</p>
+<p>Symbols are sorted by type as in the following example:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">symbols</span><span class="p">:</span>
+  <span class="n">variables</span><span class="p">:</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span>
+  <span class="n">shocks</span><span class="p">:</span> <span class="p">[</span><span class="n">e</span><span class="p">]</span>
+  <span class="n">parameters</span><span class="p">:</span> <span class="p">[</span><span class="n">rho</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Note that each type of symbol is associated with a symbol list (as <cite>[a,b]</cite>).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">A common mistake consists in forgetting the commas, and use spaces only. This doesn&#8217;t work since two symbols are recognized as one.</p>
+</div>
+<p>The expected types depend on the model that is being written:</p>
+<ul class="simple">
+<li>For Dynare models, all endogenous variables must be listed as <cite>variables</cite> with the exogenous shocks being listed as <cite>shocks</cite> (as in the example above).</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <cite>variables</cite>, <cite>shocks</cite> and <cite>parameters</cite> keywords correspond to the <cite>var</cite>, <cite>varexo</cite> and <cite>param</cite> keywords in Dynare respectively.</p>
+</div>
+<ul class="simple">
+<li>Global models require the definition of the parameters, and to provide a list</li>
+</ul>
+<p>of <cite>states</cite> and <cite>controls</cite>. Mixed states model also require <cite>markov_states</cite> that follow a discrete markov chain, while continuous states model need to identify the i.i.d <cite>shocks</cite> that hit the model. If the corresponding equations are given (see next subsection) optional symbols can also be defined. Among them: <cite>values</cite>, <cite>expectations</cite>.</p>
+</div>
+<div class="section" id="declaration-of-equations">
+<h3>Declaration of equations<a class="headerlink" href="#declaration-of-equations" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>equations</cite> section contains blocks of equations sorted by type.</p>
+<p>Epxressions follow (roughly) the Dynare conventions. Common arithmetic operators (<cite>+,-,*,/,^</cite>) are allowed with conventional priorities as well as usual functions (<cite>sqrt, log, exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh</cite>). The definitions of these functions match the definitions from the <cite>numpy</cite> package. All symbols appearing in an expression must either be declared in the <cite>symbols</cite> section or be one of the predefined functions.
+Any symbol <cite>s</cite> that is not a parameter is assumed to be considered at date <cite>t</cite>. Values at date <cite>t+1</cite> and <cite>t-1</cite> are denoted by <cite>s(1)</cite> and <cite>s(-1)</cite> respectively.</p>
+<p>All equations are implicitly enclosed by the expectation operator <span class="math">\(E_t\left[\cdots \right]\)</span>. Consequently, the law of motion for the capital</p>
+<div class="math">
+\[k_{t+1} = (1-\delta) k_{t} +  i_{t} + \epsilon_t\]</div>
+<p>is written as:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">delta</span><span class="p">)</span><span class="o">*</span><span class="n">k</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">i</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>while the Euler equation</p>
+<div class="math">
+\[E_t \left[ 1=\beta \left( \frac{c_{t+1}}{c_t} + (1-\delta)+r_{t+1} \right) \right]\]</div>
+<p>is translated by:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="mi">1</span> <span class="o">=</span> <span class="n">beta</span><span class="o">*</span><span class="p">(</span><span class="n">c</span><span class="o">/</span><span class="n">c</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">^</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">delta</span><span class="o">+</span><span class="n">rk</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In Python, the exponent operator is denoted by <cite>**</cite> while the caret operator <cite>^</cite> represents bitwise XOR. In dolo models, we ignore this distinction and interpret both as an exponent.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The default evaluator in dolo preserves the evaluation order. Thus       <code class="docutils literal"><span class="pre">(c(1)/c)^(-gamma)</span></code> is not evaluated in the same way (and is numerically more stable) than <code class="docutils literal"><span class="pre">c(1)^(-gamma)/c^(-gamma)</span></code>. Currently, this is not true for symbolically computed derivatives, as expressions are automatically simplified, implying that execution order is not guaranteed. This impacts only higher order perturbations.</p>
+</div>
+<p>An equation can consist of one expression, or two expressions separated by <cite>=</cite>.
+There are two types of equation blocks:</p>
+<ul>
+<li><p class="first">condition blocks</p>
+<blockquote>
+<div><p>In these blocks, each equation <code class="docutils literal"><span class="pre">lhs</span> <span class="pre">=</span> <span class="pre">rhs</span></code> define the scalar value <code class="docutils literal"><span class="pre">(rhs)-(lhs)`</span></code>. A list of of such equations, i.e a block, defines a multivariate function of the appearing symbols.
+Certain condition blocks, can be associated with complementarity conditions separated by <code class="docutils literal"><span class="pre">|</span></code> as in <code class="docutils literal"><span class="pre">rhs-lhs</span> <span class="pre">|</span> <span class="pre">0</span> <span class="pre">&lt;</span> <span class="pre">x</span> <span class="pre">&lt;</span> <span class="pre">1</span></code>. In this case it is advised to omit the equal sign in order to make it easier to interpret the complementarity. Also, when complementarity conditions are used, the ordering of variables appearing in the complementarities must match the declaration order (more in section Y).</p>
+</div></blockquote>
+</li>
+<li><p class="first">definition blocks</p>
+<blockquote>
+<div><p>Definition blocks differ from condition blocks in that they define a group of variables (<code class="docutils literal"><span class="pre">states</span></code> or <code class="docutils literal"><span class="pre">auxiliaries</span></code>) as a function of the right hand side.</p>
+</div></blockquote>
+</li>
+</ul>
+<p>The types of variables appearing on the right hand side depend on the block type. The variables enumerated on the left hand-side must appear in the declaration order.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>In the RBC example, the <code class="docutils literal"><span class="pre">auxiliary</span></code> block defines variables (<code class="docutils literal"><span class="pre">y,c,rk,w</span></code>) that can be directly deduced from the states and the controls:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">auxiliary</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">y</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">k</span><span class="o">^</span><span class="n">alpha</span><span class="o">*</span><span class="n">n</span><span class="o">^</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">c</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">i</span>
+    <span class="o">-</span> <span class="n">rk</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="n">k</span>
+    <span class="o">-</span> <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="n">w</span>
+</pre></div>
+</div>
+<p>Note that the declaration order matches the order in which variables appear on the left hand side. Also, these variables are defined recursively: <code class="docutils literal"><span class="pre">c</span></code>, <code class="docutils literal"><span class="pre">rk</span></code> and <code class="docutils literal"><span class="pre">w</span></code> depend on the value for <code class="docutils literal"><span class="pre">y</span></code>. In contrast to the calibration block, the definition order matters. Assuming that variables where listed as (<code class="docutils literal"><span class="pre">c,y,rk,w</span></code>) the following block would provide incorrect result since <code class="docutils literal"><span class="pre">y</span></code> is not known when <code class="docutils literal"><span class="pre">c</span></code> is evaluated.</p>
+<div class="code yaml last highlight-python3"><div class="highlight"><pre><span></span><span class="n">auxiliary</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">c</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">i</span>
+    <span class="o">-</span> <span class="n">y</span> <span class="o">=</span> <span class="n">z</span><span class="o">*</span><span class="n">k</span><span class="o">^</span><span class="n">alpha</span><span class="o">*</span><span class="n">n</span><span class="o">^</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="o">-</span> <span class="n">rk</span> <span class="o">=</span> <span class="n">alpha</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="n">k</span>
+    <span class="o">-</span> <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">)</span><span class="o">*</span><span class="n">y</span><span class="o">/</span><span class="n">w</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="calibration-section">
+<h3>Calibration section<a class="headerlink" href="#calibration-section" title="Permalink to this headline">¶</a></h3>
+<p>The role of the calibration section consists in providing values for the parameters and the variables. The calibration of all parameters appearing in the equation is of course strictly necessary while the the calibration of other types of variables is useful to define the steady-state or an initial guess to the steady-state.</p>
+<p>The calibrated values are also substituted in other sections, including the <cite>shocks</cite> and <cite>options</cite> section. This is particularly useful to make the covariance matrix depend on model parameters, or to adapt the state-space to the model&#8217;s calibration.</p>
+<p>The calibration is given by an associative dictionary mapping symbols to define with values. The values can be either a scalar or an expression. All symbols are treated in the same way, and values can depend upon each other as long as there is a way to resolve them recursively.</p>
+<p>In particular, it is possible to define a parameter in order to target a special value of an endogenous variable at the steady-state. This is done in the RBC example where steady-state labour is targeted with <code class="docutils literal"><span class="pre">n:</span> <span class="pre">0.33</span></code> and the parameter <code class="docutils literal"><span class="pre">phi</span></code> calibrated so that the optimal labour supply equation holds at the steady-state (<code class="docutils literal"><span class="pre">chi:</span> <span class="pre">w/c^sigma/n^eta</span></code>).</p>
+<p>All symbols that are defined in the <cite>symbols</cite> section but do not appear in the calibration section are initialized with the value <cite>nan</cite> without issuing any warning.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">No clear policy has been established yet about how to deal with undeclared symbols in the calibration section. Avoid them.</p>
+</div>
+</div>
+<div class="section" id="shock-specification">
+<h3>Shock specification<a class="headerlink" href="#shock-specification" title="Permalink to this headline">¶</a></h3>
+<p>The way shocks are specified depends on the type of model. They are constructed using a the rules for mini-languages defined in section [ref].</p>
+<div class="section" id="distribution">
+<h4>Distribution<a class="headerlink" href="#distribution" title="Permalink to this headline">¶</a></h4>
+<p>For Dynare and continuous-states models, one has to specifiy a multivariate distribution of the i.i.d. process for the vector of <code class="docutils literal"><span class="pre">shocks</span></code> (otherwise shocks are assumed to be constantly 0). This is done in the distribution section. A gaussian distrubution (only one supported so far), is specified by supplying the covariance matrix as a list of list as in the following example.</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">distribution</span><span class="p">:</span>
+
+    <span class="n">Normal</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="n">sigma_1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma_2</span><span class="p">]</span>
+        <span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="markov-chains">
+<h4>Markov chains<a class="headerlink" href="#markov-chains" title="Permalink to this headline">¶</a></h4>
+<p>When the model is driven by an exogenous discrete markov chain, that is for DTMSCC models, shocks are defined in the <code class="docutils literal"><span class="pre">discrete_transition</span></code> section. The objects allowed in this section are: <cite>MarkovChain, AR1, MarkovTensor</cite></p>
+<blockquote>
+<div><p>markov chain can be constructed in several ways:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">by listing directly a list of states, and a transition matrix as in :</p>
+<blockquote>
+<div><div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">discrete_transition</span><span class="p">:</span>
+    <span class="n">MarkovChain</span><span class="p">:</span>   <span class="c1"># a markov chain is defined by providing:</span>
+        <span class="o">-</span> <span class="p">[</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.02</span><span class="p">]</span>           <span class="c1"># a list of markov states</span>
+            <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.02</span><span class="p">]</span>
+            <span class="p">[</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]]</span>
+        <span class="o">-</span> <span class="p">[</span> <span class="p">[</span> <span class="mf">0.98</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">],</span>   <span class="c1"># a transition matrix</span>
+            <span class="p">[</span> <span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">],</span>
+            <span class="p">[</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">]</span> <span class="p">]</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+<blockquote>
+<div><ul>
+<li><p class="first">by using primitives to construct a discretized process from an AR1:</p>
+<blockquote>
+<div><div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">discrete_transition</span><span class="p">:</span>
+    <span class="n">AR1</span><span class="p">:</span>
+        <span class="n">rho</span><span class="p">:</span> <span class="mf">0.9</span>
+        <span class="n">sigma</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">]</span>
+                <span class="p">[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="n">N</span><span class="p">:</span> <span class="mi">3</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">rouwenhorst</span>   <span class="c1"># the alternative is tauchen</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p class="first">by combining two processes together:</p>
+<blockquote>
+<div><div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">discrete_transition</span><span class="p">:</span>
+    <span class="n">MarkovTensor</span><span class="p">:</span>
+        <span class="o">-</span> <span class="n">AR1</span><span class="p">:</span>
+            <span class="n">rho</span><span class="p">:</span> <span class="mf">0.9</span>
+            <span class="n">sigma</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">]</span>
+                    <span class="p">[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]</span>
+                <span class="p">]</span>
+            <span class="n">N</span><span class="p">:</span> <span class="mi">3</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">rouwenhorst</span>   <span class="c1"># the alternative is tauchen</span>
+        <span class="o">-</span> <span class="n">AR1</span><span class="p">:</span>
+            <span class="n">rho</span><span class="p">:</span> <span class="mf">0.9</span>
+            <span class="n">sigma</span><span class="p">:</span> <span class="mf">0.01</span>
+            <span class="n">N</span><span class="p">:</span> <span class="mi">2</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">rouwenhorst</span>   <span class="c1"># the alternative is tauchen</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="options">
+<h3>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
+<p>The <cite>options</cite> section contains all informations necessary to solve the model. It can also contain arbitrary additional informations. The section follows the mini-language convention, with all calibrated values replaced by scalars and all keywords allowed.</p>
+<p>Global solutions require the definition of an approximation space. The lower, upper bounds and approximation orders (number of nodes in each dimension) are defined as in the following example:</p>
+<div class="code yaml highlight-python3"><div class="highlight"><pre><span></span><span class="n">options</span><span class="p">:</span>
+    <span class="n">Approximation</span><span class="p">:</span>
+        <span class="n">a</span><span class="p">:</span> <span class="p">[</span> <span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">asig_z</span><span class="p">,</span> <span class="n">k</span><span class="o">*</span><span class="mf">0.9</span> <span class="p">]</span>
+        <span class="n">b</span><span class="p">:</span> <span class="p">[</span> <span class="mi">1</span><span class="o">+</span><span class="mi">2</span><span class="o">*</span><span class="n">asig_z</span><span class="p">,</span> <span class="n">k</span><span class="o">*</span><span class="mf">1.1</span> <span class="p">]</span>
+        <span class="n">orders</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">]</span>
+    <span class="n">arbitrary_information</span>
+</pre></div>
+</div>
+<p>This reads as follows: the upper and lower bounds for the productivity process are 1 minus and plus two times its asymptotic standard deviation. The boundaries for the capital level are defined by a 10% bracket around its steady-state value (or the one defined in the calibration section). 10 points are used to discretize the state-space for the productivity process and 50 are used for the capital level.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="model_api.html" class="btn btn-neutral float-right" title="Model API" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral" title="Getting started" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

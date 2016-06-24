@@ -12,37 +12,46 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
                                grid={}, distribution={},
                                maxit=100, tol=1e-8, inner_maxit=10,
                                direct=False):
+
     '''
-    Finds a global solution for ``model`` using parameterized expectations
-    function. Requires the model to be written with controls as a direct
-    function of the model objects.
+    Find global solution for ``model`` via parameterized expectations.
+    Controls must be expressed as a direct function of equilibrium objects.
+    Algorithm iterates over the expectations function in the arbitrage equation.
 
-    The algorithm iterates on the expectations function in the arbitrage
-    equation. It follows the discussion in section 9.9 of Miranda and
-    Fackler (2002).
-
-    Parameters
+    Parameters:
     ----------
+
     model : NumericModel
-        "dtcscc" model to be solved
+        ``dtcscc`` model to be solved
+
     verbose : boolean
         if True, display iterations
+
     initial_dr : decision rule
         initial guess for the decision rule
+
     pert_order : {1}
         if no initial guess is supplied, the perturbation solution at order
         ``pert_order`` is used as initial guess
-    grid: grid options
-    distribution: distribution options
-    maxit: maximum number of iterations
-    tol: tolerance criterium for successive approximations
-    inner_maxit: maximum number of iteration for inner solver
-    direct: if True, solve with direct method. If false, solve indirectly
+
+    grid : grid options
+
+    distribution : distribution options
+
+    maxit : maximum number of iterations
+
+    tol : tolerance criterium for successive approximations
+
+    inner_maxit : maximum number of iteration for inner solver
+
+    direct : if True, solve with direct method. If false, solve indirectly
 
     Returns
     -------
+
     decision rule :
         approximated solution
+
     '''
 
     t1 = time.time()

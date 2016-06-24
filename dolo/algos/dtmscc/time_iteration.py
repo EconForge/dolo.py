@@ -90,18 +90,30 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     Parameters
     ----------
+
     model : NumericModel
         "dtmscc" model to be solved
+
     verbose : boolean
         if True, display iterations
+
     initial_dr : decision rule
         initial guess for the decision rule
+
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
-    grid: grid options
-    maxit: maximum number of iterations
-    inner_maxit: maximum number of iteration for inner solver
-    tol: tolerance criterium for successive approximations
+
+    grid :
+        grid options
+
+    maxit :
+        maximum number of iterations
+
+    inner_maxit :
+        maximum number of iteration for inner solver
+
+    tol :
+        tolerance criterium for successive approximations
 
     Returns
     -------

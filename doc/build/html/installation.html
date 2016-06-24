@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting started &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="index.html"/>
+        <link rel="next" title="The dolo language" href="modeling_language.html"/>
+        <link rel="prev" title="Introduction: What is dolo ?" href="introduction.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-by-step-instructions-on-windows">Step-by-step instructions on windows</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-dolo">Running dolo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-work-environement">Setting up a work environement</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>A scientific Python environement is required to run <code class="docutils literal"><span class="pre">dolo</span></code>, for instance Anaconda Python.</p>
+<p>In order to install the last stable version of <code class="docutils literal"><span class="pre">dolo</span></code> and its dependencies, open a command-line and run:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="sb">`</span>pip install dolo<span class="sb">`</span>
+</pre></div>
+</div>
+<p>It is also possible to install the development version directly from Github with:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="sb">`</span>pip install git+git://github.com/econforge/dolo.git<span class="sb">`</span>
+</pre></div>
+</div>
+<div class="section" id="step-by-step-instructions-on-windows">
+<h3>Step-by-step instructions on windows<a class="headerlink" href="#step-by-step-instructions-on-windows" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li>Download the <a class="reference external" href="http://continuum.io/downloads">Anaconda installer</a> (choose the 64 bits/python 2.7 version)</li>
+</ul>
+<ul class="simple">
+<li>Install it for the current user only, so that you will be able to install to update Python packages easily.</li>
+</ul>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="_images/anaconda_install_2.png"><img alt="_images/anaconda_install_2.png" src="_images/anaconda_install_2.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Anaconda&#8217;s installer</span></p>
+</div>
+<ul class="simple">
+<li>Open a powershell console, and type <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">dolo</span></code> then Enter. When connected to the net, this command pulls and install the last stable version</li>
+</ul>
+<div class="figure" id="id2">
+<a class="reference internal image-reference" href="_images/install_dolo_2.png"><img alt="_images/install_dolo_2.png" src="_images/install_dolo_2.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Dolo install command</span></p>
+</div>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="running-dolo">
+<h2>Running dolo<a class="headerlink" href="#running-dolo" title="Permalink to this headline">¶</a></h2>
+<p>After dolo is installed, try to solve a model by typing the following commands in an IPython shell:</p>
+<div class="code python highlight-python3"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dolo</span> <span class="k">import</span> <span class="o">*</span>                           <span class="c1"># load the library</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">&quot;https://github.com/EconForge/dolo/blob/master/examples/models/rbc.yaml&quot;</span><span class="p">)</span>
+                                             <span class="c1"># import the model</span>
+<span class="n">display</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>                               <span class="c1"># display the model</span>
+<span class="n">dr</span> <span class="o">=</span> <span class="n">time_iteration</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>     <span class="c1"># solve</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">simulate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">dr</span><span class="p">)</span>                    <span class="c1"># simulate</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="setting-up-a-work-environement">
+<h2>Setting up a work environement<a class="headerlink" href="#setting-up-a-work-environement" title="Permalink to this headline">¶</a></h2>
+<p>Anylising dolo models, is usually done by editing a model file with an (<code class="docutils literal"><span class="pre">.yaml</span></code>) extension, then running and formating the calculations inside a Jupyter notebook. There are many other worflows, but Jupyter notebooks are becoming a de facto standard in opensource computational research, so that we strongly advise to try them first. Some chapters of this documentation are actually written as notebook, can be downloaded and run interactively.</p>
+<p>The only step to setup the environment consists in choosing a folder to store the model and the notebooks. Then open a terminal in this folder and launch the notebook server using:</p>
+<div class="code highlight-python3"><div class="highlight"><pre><span></span>`ipython notebook`
+</pre></div>
+</div>
+<div class="figure" id="id3">
+<a class="reference internal image-reference" href="_images/open_command_prompt.png"><img alt="_images/open_command_prompt.png" src="_images/open_command_prompt.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Open shell under windows in a given folder</span></p>
+</div>
+<p>A browser window should popup. It is Jupyter&#8217;s dashboard.</p>
+<div class="figure" id="id4">
+<a class="reference internal image-reference" href="_images/jupyter_dashboard.png"><img alt="_images/jupyter_dashboard.png" src="_images/jupyter_dashboard.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Jupyter&#8217;s dashboard</span></p>
+</div>
+<p>It lists the files in that folder. Clicking on a model file (with a <code class="docutils literal"><span class="pre">.yaml</span></code> extension), opens it in a new tab.</p>
+<div class="figure" id="id5">
+<a class="reference internal image-reference" href="_images/text_editor.png"><img alt="_images/text_editor.png" src="_images/text_editor.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Jupyter&#8217;s text editor</span></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Despite the fact that the files are edited in the browser through a local webserver, the files are still regular files on the harddrive. In particular, it is possible to edit them directly, using a good text editor (vim, emacs, atom...)</p>
+</div>
+<p>To create a new notebook click on &#8221;..&#8221; and choose IPython. This creates a new tab, containing the notebook ready to be edited and run. It consists in a succession of cells that can be run in any order by pressing Shift+Enter after one of them has been selected. More information [TODO: link]</p>
+<div class="figure" id="id6">
+<a class="reference internal image-reference" href="_images/notebook.png"><img alt="_images/notebook.png" src="_images/notebook.png" style="width: 80%;" /></a>
+<p class="caption"><span class="caption-text">Jupyter notebook</span></p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modeling_language.html" class="btn btn-neutral float-right" title="The dolo language" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="introduction.html" class="btn btn-neutral" title="Introduction: What is dolo ?" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

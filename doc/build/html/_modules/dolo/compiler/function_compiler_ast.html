@@ -1,0 +1,686 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.compiler.function_compiler_ast &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.compiler.function_compiler_ast</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.compiler.function_compiler_ast</h1><div class="highlight"><pre>
+<span></span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">dolo.compiler.codegen</span> <span class="k">import</span> <span class="n">to_source</span>
+<span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">njit</span><span class="p">,</span> <span class="n">guvectorize</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">is_python_3</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">to_expr</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">ast</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Expr</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+<span class="k">def</span> <span class="nf">std_date_symbol</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">date</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">date</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_m</span><span class="si">{}</span><span class="s1">_&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="o">-</span><span class="n">date</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">date</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">__</span><span class="si">{}</span><span class="s1">_&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">date</span><span class="p">))</span>
+
+
+<span class="kn">import</span> <span class="nn">ast</span>
+
+<span class="kn">from</span> <span class="nn">ast</span> <span class="k">import</span> <span class="n">Expr</span><span class="p">,</span> <span class="n">Subscript</span><span class="p">,</span> <span class="n">Name</span><span class="p">,</span> <span class="n">Load</span><span class="p">,</span> <span class="n">Index</span><span class="p">,</span> <span class="n">Num</span><span class="p">,</span> <span class="n">UnaryOp</span><span class="p">,</span> <span class="n">UAdd</span><span class="p">,</span> <span class="n">Module</span><span class="p">,</span> <span class="n">Assign</span><span class="p">,</span> <span class="n">Store</span><span class="p">,</span> <span class="n">Call</span><span class="p">,</span> <span class="n">Module</span><span class="p">,</span> <span class="n">FunctionDef</span><span class="p">,</span> <span class="n">arguments</span><span class="p">,</span> <span class="n">Param</span><span class="p">,</span> <span class="n">ExtSlice</span><span class="p">,</span> <span class="n">Slice</span><span class="p">,</span> <span class="bp">Ellipsis</span><span class="p">,</span> <span class="n">Call</span><span class="p">,</span> <span class="n">Str</span><span class="p">,</span> <span class="n">keyword</span><span class="p">,</span> <span class="n">NodeTransformer</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">USub</span>
+
+<span class="c1"># def Name(id=id, ctx=None): return ast.arg(arg=id)</span>
+
+<span class="k">class</span> <span class="nc">TimeShiftTransformer</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeTransformer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">shift</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">=</span> <span class="n">shift</span>
+
+    <span class="k">def</span> <span class="nf">visit_Name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="o">==</span><span class="s1">&#39;S&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">(</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">))</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+             <span class="k">return</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="nf">visit_Call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">UnaryOp</span><span class="p">):</span>
+                <span class="c1"># we have s(+1)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">UAdd</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">USub</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="o">-</span><span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unrecognized subscript.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">==</span><span class="s1">&#39;S&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_date</span> <span class="o">=</span> <span class="n">date</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">shift</span>
+                <span class="k">if</span> <span class="n">new_date</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">(</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">new_date</span><span class="p">))</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c1"># , keywords=node.keywords,  kwargs=node.kwargs)</span>
+            <span class="k">return</span> <span class="n">Call</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">],</span> <span class="n">keywords</span><span class="o">=</span><span class="p">[])</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="k">def</span> <span class="nf">timeshift</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">aexpr</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">aexpr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">TimeShiftTransformer</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">shift</span><span class="p">)</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">aexpr</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">to_source</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">resp</span>
+
+<span class="k">class</span> <span class="nc">StandardizeDatesSimple</span><span class="p">(</span><span class="n">NodeTransformer</span><span class="p">):</span>
+
+    <span class="c1"># replaces calls to variables by time subscripts</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tvariables</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">tvariables</span> <span class="o">=</span> <span class="n">tvariables</span>  <span class="c1"># list of variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">tvariables</span><span class="p">]</span>
+        <span class="c1"># self.variables = tvariables # ???</span>
+
+    <span class="k">def</span> <span class="nf">visit_Name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">newname</span> <span class="o">=</span> <span class="n">std_date_symbol</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tvariables</span><span class="p">:</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">Name</span><span class="p">(</span><span class="n">newname</span><span class="p">,</span> <span class="n">Load</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">expr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="nf">visit_Call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">UnaryOp</span><span class="p">):</span>
+                <span class="c1"># we have s(+1)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">UAdd</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">USub</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="o">-</span><span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unrecognized subscript.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+            <span class="n">newname</span> <span class="o">=</span> <span class="n">std_date_symbol</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">date</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">newname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Name</span><span class="p">(</span><span class="n">newname</span><span class="p">,</span> <span class="n">Load</span><span class="p">())</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c1"># , keywords=node.keywords, starargs=node.starargs, kwargs=node.kwargs)</span>
+            <span class="k">return</span> <span class="n">Call</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">],</span> <span class="n">keywords</span><span class="o">=</span><span class="p">[])</span>
+
+
+<span class="k">class</span> <span class="nc">StandardizeDates</span><span class="p">(</span><span class="n">NodeTransformer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">arg_names</span><span class="p">):</span>
+
+        <span class="n">table</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">:</span>
+            <span class="n">t</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+            <span class="n">symbol_group</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">an</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">[</span><span class="n">symbol_group</span><span class="p">]:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">[</span><span class="n">symbol_group</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+                <span class="n">table</span><span class="p">[(</span><span class="n">b</span><span class="p">,</span> <span class="n">date</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">an</span><span class="p">,</span> <span class="n">date</span><span class="p">)</span>
+
+        <span class="n">variables</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">table</span><span class="p">]</span>
+
+        <span class="n">table_symbols</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">std_date_symbol</span><span class="p">(</span><span class="o">*</span><span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="n">variables</span>  <span class="c1"># list of vari</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table_symbols</span> <span class="o">=</span> <span class="n">table_symbols</span>
+
+    <span class="k">def</span> <span class="nf">visit_Name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">:</span>
+            <span class="n">newname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_symbols</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">expr</span> <span class="o">=</span> <span class="n">Name</span><span class="p">(</span><span class="n">newname</span><span class="p">,</span> <span class="n">Load</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">expr</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">node</span>
+
+    <span class="k">def</span> <span class="nf">visit_Call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+
+        <span class="n">name</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">UnaryOp</span><span class="p">):</span>
+                <span class="c1"># we have s(+1)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">UAdd</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="n">USub</span><span class="p">)):</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">operand</span>
+                    <span class="n">date</span> <span class="o">=</span> <span class="o">-</span><span class="n">args</span><span class="o">.</span><span class="n">n</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Unrecognized subscript.&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">date</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">n</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">date</span><span class="p">)</span>
+            <span class="n">newname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table_symbols</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">newname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Name</span><span class="p">(</span><span class="n">newname</span><span class="p">,</span> <span class="n">Load</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Symbol </span><span class="si">{}</span><span class="s2"> incorrectly subscripted with date </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">date</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="c1"># , keywords=node.keywords,  kwargs=node.kwargs)</span>
+            <span class="k">return</span> <span class="n">Call</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">args</span><span class="p">],</span> <span class="n">keywords</span><span class="o">=</span><span class="p">[])</span>
+
+
+<span class="k">class</span> <span class="nc">ReplaceName</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeTransformer</span><span class="p">):</span>
+
+    <span class="c1"># replaces names according to definitions</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">defs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">definitions</span> <span class="o">=</span> <span class="n">defs</span>
+
+    <span class="k">def</span> <span class="nf">visit_Name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">expr</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">definitions</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">definitions</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">expr</span>
+
+
+<div class="viewcode-block" id="compile_function_ast"><a class="viewcode-back" href="../../../function_factory.html#dolo.compiler.function_compiler_ast.compile_function_ast">[docs]</a><span class="k">def</span> <span class="nf">compile_function_ast</span><span class="p">(</span><span class="n">expressions</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">arg_names</span><span class="p">,</span> <span class="n">output_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="s1">&#39;anonymous&#39;</span><span class="p">,</span> <span class="n">return_ast</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">print_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">definitions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vectorize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    expressions: list of equations as string</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># TODO: definitions should be used only if necessary</span>
+
+
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+    <span class="n">table</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="n">aa</span> <span class="o">=</span> <span class="n">arg_names</span>
+
+    <span class="k">if</span> <span class="n">output_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">aa</span> <span class="o">=</span> <span class="n">arg_names</span> <span class="o">+</span> <span class="p">[</span><span class="n">output_names</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">aa</span><span class="p">:</span>
+        <span class="n">symbol_group</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">an</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">symbols</span><span class="p">[</span><span class="n">symbol_group</span><span class="p">]:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">[</span><span class="n">symbol_group</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="n">table</span><span class="p">[(</span><span class="n">b</span><span class="p">,</span> <span class="n">date</span><span class="p">)]</span> <span class="o">=</span> <span class="p">(</span><span class="n">an</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+
+    <span class="n">table_symbols</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">std_date_symbol</span><span class="p">(</span><span class="o">*</span><span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+
+    <span class="c1"># standard assignment: i.e. k = s[0]</span>
+    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="n">x</span><span class="p">):</span> <span class="n">Index</span><span class="p">(</span><span class="n">Num</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="c1"># declare symbols</span>
+    <span class="n">aux_short_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">arg_names</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;auxiliaries&#39;</span><span class="p">]</span>
+
+    <span class="n">preamble</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">table</span><span class="p">:</span>  <span class="c1"># order it</span>
+        <span class="c1"># k : var, date</span>
+        <span class="n">arg</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">arg</span> <span class="ow">in</span> <span class="n">aux_short_names</span><span class="p">):</span>
+            <span class="n">std_name</span> <span class="o">=</span> <span class="n">table_symbols</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">Subscript</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">arg</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Load</span><span class="p">()),</span> <span class="nb">slice</span><span class="o">=</span><span class="n">index</span><span class="p">(</span><span class="n">pos</span><span class="p">),</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Load</span><span class="p">())</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">Assign</span><span class="p">(</span><span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">std_name</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Store</span><span class="p">())],</span> <span class="n">value</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">arg</span> <span class="o">!=</span> <span class="s1">&#39;out&#39;</span><span class="p">:</span>
+                <span class="n">preamble</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+    <span class="n">body</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">std_dates</span> <span class="o">=</span> <span class="n">StandardizeDates</span><span class="p">(</span><span class="n">symbols</span><span class="p">,</span> <span class="n">aa</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">definitions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">definitions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">lhs</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">rhs</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rhs</span> <span class="o">=</span> <span class="n">v</span>
+            <span class="n">lhs</span> <span class="o">=</span> <span class="n">std_dates</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">lhs</span><span class="p">)</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">std_dates</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">rhs</span><span class="p">)</span>
+            <span class="n">vname</span> <span class="o">=</span> <span class="n">lhs</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">Assign</span><span class="p">(</span><span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">vname</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Store</span><span class="p">())],</span> <span class="n">value</span><span class="o">=</span><span class="n">rhs</span><span class="p">)</span>
+            <span class="n">preamble</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+
+    <span class="n">outs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">expr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">expressions</span><span class="p">):</span>
+
+        <span class="n">expr</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="c1"># if definitions is not None:</span>
+        <span class="c1">#     expr = ReplaceName(defs).visit(expr)</span>
+
+        <span class="n">rexpr</span> <span class="o">=</span> <span class="n">std_dates</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+
+        <span class="n">rhs</span> <span class="o">=</span> <span class="n">rexpr</span>
+
+        <span class="k">if</span> <span class="n">output_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">varname</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">[</span><span class="n">output_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">output_names</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">out_name</span> <span class="o">=</span> <span class="n">table_symbols</span><span class="p">[(</span><span class="n">varname</span><span class="p">,</span> <span class="n">date</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out_name</span> <span class="o">=</span> <span class="s1">&#39;out_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="n">Assign</span><span class="p">(</span><span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">out_name</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Store</span><span class="p">())],</span> <span class="n">value</span><span class="o">=</span><span class="n">rhs</span><span class="p">)</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+        <span class="n">line</span> <span class="o">=</span> <span class="n">Assign</span><span class="p">(</span><span class="n">targets</span><span class="o">=</span><span class="p">[</span><span class="n">Subscript</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;out&#39;</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Load</span><span class="p">()),</span>
+                                         <span class="nb">slice</span><span class="o">=</span><span class="n">index</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Store</span><span class="p">())],</span> <span class="n">value</span><span class="o">=</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">out_name</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Load</span><span class="p">()))</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+    <span class="n">arg_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">arg_names</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">!=</span><span class="s2">&quot;auxiliaries&quot;</span><span class="p">]</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">is_python_3</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">ast</span> <span class="k">import</span> <span class="n">arg</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">FunctionDef</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">funname</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">arguments</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">arg</span><span class="p">(</span><span class="n">arg</span><span class="o">=</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span> <span class="n">vararg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwonlyargs</span><span class="o">=</span><span class="p">[],</span> <span class="n">kw_defaults</span><span class="o">=</span><span class="p">[],</span> <span class="n">defaults</span><span class="o">=</span><span class="p">[]),</span>
+                        <span class="n">body</span><span class="o">=</span><span class="n">preamble</span> <span class="o">+</span> <span class="n">body</span><span class="p">,</span> <span class="n">decorator_list</span><span class="o">=</span><span class="p">[])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">FunctionDef</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">funname</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">arguments</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">Name</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">ctx</span><span class="o">=</span><span class="n">Param</span><span class="p">())</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span> <span class="n">vararg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwonlyargs</span><span class="o">=</span><span class="p">[],</span> <span class="n">kw_defaults</span><span class="o">=</span><span class="p">[],</span> <span class="n">defaults</span><span class="o">=</span><span class="p">[]),</span>
+                        <span class="n">body</span><span class="o">=</span><span class="n">preamble</span> <span class="o">+</span> <span class="n">body</span><span class="p">,</span> <span class="n">decorator_list</span><span class="o">=</span><span class="p">[])</span>
+
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">Module</span><span class="p">(</span><span class="n">body</span><span class="o">=</span><span class="p">[</span><span class="n">f</span><span class="p">])</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">fix_missing_locations</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">dolo.config</span>
+    <span class="k">if</span> <span class="n">dolo</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span> <span class="n">print_code</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">print_code</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;Function </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">to_source</span><span class="p">(</span><span class="n">mod</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">vectorize</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">numba</span> <span class="k">import</span> <span class="n">float64</span><span class="p">,</span> <span class="n">void</span>
+        <span class="n">coredims</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">symbols</span><span class="p">[</span><span class="n">an</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span> <span class="k">for</span> <span class="n">an</span> <span class="ow">in</span> <span class="n">arg_names</span><span class="p">]</span>
+        <span class="n">signature</span> <span class="o">=</span> <span class="nb">str</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;(n_</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">coredims</span><span class="p">])</span>
+        <span class="n">n_out</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">expressions</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n_out</span> <span class="ow">in</span> <span class="n">coredims</span><span class="p">:</span>
+            <span class="n">signature</span> <span class="o">+=</span> <span class="s1">&#39;-&gt;(n_</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n_out</span><span class="p">)</span>
+            <span class="c1"># ftylist = float64[:](*([float64[:]] * len(coredims)))</span>
+            <span class="n">fty</span> <span class="o">=</span> <span class="s2">&quot;void(*[float64[:]]*</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coredims</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">signature</span> <span class="o">+=</span> <span class="s1">&#39;,(n_</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n_out</span><span class="p">)</span>
+            <span class="n">fty</span> <span class="o">=</span> <span class="s2">&quot;void(*[float64[:]]*</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coredims</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ftylist</span> <span class="o">=</span> <span class="p">[</span><span class="n">fty</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">signature</span><span class="o">=</span><span class="kc">None</span>
+        <span class="n">ftylist</span><span class="o">=</span><span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">use_file</span><span class="p">:</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="n">eval_ast_with_file</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">print_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="n">eval_ast</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+    <span class="n">jitted</span> <span class="o">=</span> <span class="n">njit</span><span class="p">(</span><span class="n">fun</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vectorize</span><span class="p">:</span>
+        <span class="n">gufun</span> <span class="o">=</span> <span class="n">guvectorize</span><span class="p">([</span><span class="n">fty</span><span class="p">],</span> <span class="n">signature</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;parallel&#39;</span><span class="p">,</span> <span class="n">nopython</span><span class="o">=</span><span class="kc">True</span><span class="p">)(</span><span class="n">fun</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jitted</span><span class="p">,</span> <span class="n">gufun</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jitted</span></div>
+
+
+<span class="k">def</span> <span class="nf">eval_ast</span><span class="p">(</span><span class="n">mod</span><span class="p">):</span>
+
+    <span class="n">context</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;division&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">division</span>  <span class="c1"># THAT seems strange !</span>
+
+    <span class="kn">import</span> <span class="nn">numpy</span>
+
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;inf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span>
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;maximum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">maximum</span>
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;minimum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">minimum</span>
+
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;exp&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span>
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;log&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">log</span>
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;sin&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">sin</span>
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;cos&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">cos</span>
+
+    <span class="n">context</span><span class="p">[</span><span class="s1">&#39;abs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">abs</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">fix_missing_locations</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+    <span class="c1"># print( ast.dump(mod) )</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s1">&#39;&lt;string&gt;&#39;</span><span class="p">,</span> <span class="s1">&#39;exec&#39;</span><span class="p">)</span>
+    <span class="n">exec</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+    <span class="n">fun</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">fun</span>
+
+
+<span class="k">def</span> <span class="nf">eval_ast_with_file</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">print_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ftylist</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">from __future__ import division</span>
+
+<span class="s2">from numpy import exp, log, sin, cos, abs</span>
+<span class="s2">from numpy import inf, maximum, minimum</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="c1">#     if signature is not None:</span>
+<span class="c1">#         print(signature)</span>
+<span class="c1">#</span>
+<span class="c1">#         decorator = &quot;&quot;&quot;</span>
+<span class="c1"># from numba import float64, void, guvectorize</span>
+<span class="c1"># @guvectorize(signature=&#39;{signature}&#39;, ftylist={ftylist}, target=&#39;parallel&#39;, nopython=True)</span>
+<span class="c1"># &quot;&quot;&quot;.format(signature=signature, ftylist=ftylist)</span>
+<span class="c1">#         code += decorator</span>
+
+    <span class="n">code</span> <span class="o">+=</span> <span class="n">to_source</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">print_code</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">sys</span>
+    <span class="c1"># try to create a new file</span>
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="kn">import</span> <span class="nn">tempfile</span>
+    <span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">importlib</span>
+    <span class="kn">from</span> <span class="nn">dolo.config</span> <span class="k">import</span> <span class="n">temp_dir</span>
+    <span class="n">temp_file</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+t&#39;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;fun&#39;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;.py&#39;</span><span class="p">,</span> <span class="nb">dir</span><span class="o">=</span><span class="n">temp_dir</span><span class="p">,</span> <span class="n">delete</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">temp_file</span><span class="p">:</span>
+        <span class="n">temp_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+    <span class="n">modname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">temp_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;.py&#39;</span><span class="p">)</span>
+
+
+    <span class="n">full_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">temp_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">modname</span><span class="p">,</span> <span class="n">extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">full_name</span><span class="p">)</span>
+
+    <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">modname</span><span class="p">)</span>
+
+    <span class="n">fun</span> <span class="o">=</span>  <span class="n">module</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">fun</span>
+
+
+<span class="k">def</span> <span class="nf">test_compile_allocating</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+    <span class="n">eq</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;(a + b*exp(p1))&#39;</span><span class="p">,</span> <span class="s1">&#39;p2*a+b&#39;</span><span class="p">]</span>
+    <span class="n">symtypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s1">&#39;states&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">]),</span>
+                           <span class="p">(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;p1&#39;</span><span class="p">,</span> <span class="s1">&#39;p2&#39;</span><span class="p">])</span>
+                           <span class="p">])</span>
+    <span class="n">gufun</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">symtypes</span><span class="p">,</span> <span class="n">data_order</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">n_out</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">numpy</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">vecs</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">symbols</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">n_out</span><span class="p">))</span>
+    <span class="n">gufun</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">vecs</span> <span class="o">+</span> <span class="p">[</span><span class="n">out</span><span class="p">]))</span>
+
+
+<span class="k">def</span> <span class="nf">test_compile_non_allocating</span><span class="p">():</span>
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+    <span class="n">eq</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;(a + b*exp(p1))&#39;</span><span class="p">,</span> <span class="s1">&#39;p2*a+b&#39;</span><span class="p">,</span> <span class="s1">&#39;a+p1&#39;</span><span class="p">]</span>
+    <span class="n">symtypes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;x&#39;</span><span class="p">],</span>
+        <span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;p&#39;</span><span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s1">&#39;states&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">]),</span>
+                           <span class="p">(</span><span class="s1">&#39;parameters&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;p1&#39;</span><span class="p">,</span> <span class="s1">&#39;p2&#39;</span><span class="p">])</span>
+                           <span class="p">])</span>
+    <span class="n">gufun</span> <span class="o">=</span> <span class="n">compile_function_ast</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">symbols</span><span class="p">,</span> <span class="n">symtypes</span><span class="p">,</span> <span class="n">use_numexpr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                 <span class="n">data_order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vectorize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">n_out</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">numpy</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">vecs</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">symbols</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">n_out</span><span class="p">))</span>
+    <span class="n">gufun</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">vecs</span> <span class="o">+</span> <span class="p">[</span><span class="n">out</span><span class="p">]))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">allocated</span> <span class="o">=</span> <span class="n">gufun</span><span class="p">(</span><span class="o">*</span><span class="n">vecs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Frozen dimensions may have landed in numba ! Check.&quot;</span><span class="p">)</span>
+    <span class="c1"># assert(abs(out-allocated).max()&lt;1e-8)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">test_compile_allocating</span><span class="p">()</span>
+    <span class="n">test_compile_non_allocating</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

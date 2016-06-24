@@ -1,6 +1,22 @@
 
 
 def residuals(model, calib=None):
+    '''
+    Computes the residuals for ``model`` associated with a calibration.
+
+    Parameters
+    ----------
+    model : NumericModel
+
+    calib : OrderedDict
+        calibration dictionary (i.e. endogenous variables and parameters by
+        type)
+
+    Returns
+    -------
+    OrderedDict :
+        residuals vectors by equation type
+    '''
 
     if calib is None:
         calib = model.calibration

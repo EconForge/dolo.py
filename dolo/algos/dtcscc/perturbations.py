@@ -35,34 +35,35 @@ class GeneralizedEigenvaluesSelectionError(GeneralizedEigenvaluesError):
 
 def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
                          solve_steady_state=False, order=1):
-    """Compute first order approximation of optimal controls
+    '''
+    Compute first order approximation of optimal controls
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
 
-    model: NumericModel
+    model : NumericModel
         Model to be solved
 
-    verbose: boolean
+    verbose : boolean
         If True: displays number of contracting eigenvalues
 
-    steady_state: ndarray
+    steady_state : ndarray
         Use supplied steady-state value to compute the approximation.
         The routine doesn't check whether it is really a solution or not.
 
-    solve_steady_state: boolean
+    solve_steady_state : boolean
         Use nonlinear solver to find the steady-state
 
-    orders: {1}
+    orders : {1}
         Approximation order. (Currently, only first order is supported).
 
-    Returns:
-    --------
+    Returns
+    -------
 
-    TaylorExpansion:
+    TaylorExpansion :
         Decision Rule for the optimal controls around the steady-state.
 
-    """
+    '''
 
     if order > 1:
         raise Exception("Not implemented.")

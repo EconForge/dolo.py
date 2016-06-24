@@ -19,16 +19,17 @@ def find_deterministic_equilibrium(model, constraints=None,
 
     Parameters
     ----------
-    model: NumericModel
-        a `dtcscc` model
-    constraints: dict
-        a dictionaries with forced values.
+    model : NumericModel
+        A `dtcscc` model
+
+    constraints : dict
+        A dictionaries with forced values.
         Use it to set shocks to non-zero values or to add additional
         constraints in order to avoid unit roots.
 
     Returns:
     --------
-    OrderedDict:
+    OrderedDict :
         calibration dictionary (i.e. endogenous variables and parameters by
         type)
     '''
@@ -115,15 +116,15 @@ def residuals(model, calib=None):
 
     Parameters
     ----------
-    model: NumericModel
+    model : NumericModel
 
-    calib: OrderedDict
-        calibration dictionary (i.e. endogenous variables and parameters by
+    calib : OrderedDict
+        Calibration dictionary (i.e. endogenous variables and parameters by
         type)
 
     Returns:
     --------
-    OrderedDict:
+    OrderedDict :
         residuals vectors by equation type
     '''
 

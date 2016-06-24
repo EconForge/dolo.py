@@ -1,0 +1,1006 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.algos.dynare.perturbations &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.algos.dynare.perturbations</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.algos.dynare.perturbations</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">dolo.numeric.matrix_equations</span> <span class="k">import</span> <span class="n">second_order_solver</span><span class="p">,</span> <span class="n">solve_sylvester</span>
+<span class="kn">from</span> <span class="nn">dolo.numeric.tensor</span> <span class="k">import</span> <span class="n">sdot</span><span class="p">,</span><span class="n">mdot</span>
+
+
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">TOL</span> <span class="o">=</span> <span class="mi">1</span><span class="n">E</span><span class="o">-</span><span class="mi">10</span>
+<span class="n">TOL_RES</span> <span class="o">=</span> <span class="mi">1</span><span class="n">E</span><span class="o">-</span><span class="mi">8</span>
+
+<div class="viewcode-block" id="solve_decision_rule"><a class="viewcode-back" href="../../../../dynare_perturbations.html#dolo.algos.dynare.perturbations.solve_decision_rule">[docs]</a><span class="k">def</span> <span class="nf">solve_decision_rule</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span><span class="n">mlab</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">steady_state</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">solve_ss</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+
+
+    <span class="n">Sigma</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_distribution</span><span class="p">()</span><span class="o">.</span><span class="n">sigma</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;variables&#39;</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]</span>
+    <span class="n">parms</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+
+
+    <span class="k">if</span> <span class="n">steady_state</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">steady_state</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="n">y</span>
+
+    <span class="c1"># Build the approximation point to take the derivatives</span>
+    <span class="n">yy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">y</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">x</span><span class="p">])</span>
+    <span class="n">parms</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">parms</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span><span class="o">==</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">f_dynamic</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;f_dynamic&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">f_dynamic</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">__get_compiled_functions__</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)[</span><span class="s1">&#39;f_dynamic&#39;</span><span class="p">]</span>
+
+    <span class="n">derivatives</span> <span class="o">=</span> <span class="n">f_dynamic</span><span class="p">(</span><span class="n">yy</span><span class="p">,</span><span class="n">parms</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+    <span class="n">derivatives_ss</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;sigma2&#39;</span><span class="p">):</span>
+        <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">shocks</span><span class="p">)</span>
+        <span class="n">n_v</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
+        <span class="n">nt</span> <span class="o">=</span> <span class="n">n_v</span><span class="o">*</span><span class="mi">3</span> <span class="o">+</span><span class="n">n_s</span>
+        <span class="n">nn</span> <span class="o">=</span> <span class="n">nt</span><span class="o">+</span><span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+            <span class="n">ft_1</span> <span class="o">=</span> <span class="n">f_1</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">ft_2</span> <span class="o">=</span> <span class="n">f_2</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">,:</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">f_ss</span> <span class="o">=</span> <span class="n">f_2</span><span class="p">[:,</span><span class="n">nt</span><span class="p">,</span><span class="n">nt</span><span class="p">]</span> <span class="c1"># derivatives with sigma^2</span>
+            <span class="n">derivatives</span> <span class="o">=</span> <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">ft_1</span><span class="p">,</span><span class="n">ft_2</span><span class="p">]</span>
+            <span class="n">derivatives_ss</span> <span class="o">=</span> <span class="p">[</span><span class="n">f_ss</span><span class="p">]</span>
+
+
+        <span class="k">elif</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">,</span><span class="n">f_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+            <span class="n">ft_1</span> <span class="o">=</span> <span class="n">f_1</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">ft_2</span> <span class="o">=</span> <span class="n">f_2</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">,:</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">ft_3</span> <span class="o">=</span> <span class="n">f_3</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">,:</span><span class="n">nt</span><span class="p">,:</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">f_ss</span> <span class="o">=</span> <span class="n">f_2</span><span class="p">[:,</span><span class="n">nt</span><span class="p">,</span><span class="n">nt</span><span class="p">]</span> <span class="c1"># derivatives with sigma^2</span>
+            <span class="n">f_1ss</span> <span class="o">=</span> <span class="n">f_3</span><span class="p">[:,:</span><span class="n">nt</span><span class="p">,</span><span class="n">nt</span><span class="p">,</span><span class="n">nt</span><span class="p">]</span>
+            <span class="n">derivatives</span> <span class="o">=</span> <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">ft_1</span><span class="p">,</span><span class="n">ft_2</span><span class="p">,</span><span class="n">ft_3</span><span class="p">]</span>
+            <span class="n">derivatives_ss</span> <span class="o">=</span> <span class="p">[</span><span class="n">f_ss</span><span class="p">,</span><span class="n">f_1ss</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;sigma2&#39;</span><span class="p">,</span><span class="s1">&#39;default&#39;</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">perturb_solver</span><span class="p">(</span><span class="n">derivatives</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">derivatives_ss</span><span class="o">=</span><span class="n">derivatives_ss</span><span class="p">,</span><span class="n">mlab</span><span class="o">=</span><span class="n">mlab</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">:</span>
+        <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">shocks</span><span class="p">)</span>
+        <span class="n">n_v</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
+        <span class="n">n_p</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">new_solver_with_p</span><span class="p">(</span><span class="n">derivatives</span><span class="p">,(</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_p</span><span class="p">),</span><span class="n">max_order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;ys&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">y</span> <span class="p">)</span>
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Sigma&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Sigma</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.numeric.decision_rules</span> <span class="k">import</span> <span class="n">DynareDecisionRule</span> <span class="k">as</span> <span class="n">DDR</span>
+    <span class="n">ddr</span> <span class="o">=</span> <span class="n">DDR</span><span class="p">(</span> <span class="n">d</span> <span class="p">,</span> <span class="n">model</span> <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ddr</span></div>
+    <span class="c1"># from dolo.numeric.decision_rules import TaylorExpansion</span>
+    <span class="c1"># return TaylorExpansion(d)</span>
+
+
+<div class="viewcode-block" id="perturb_solver"><a class="viewcode-back" href="../../../../dynare_perturbations.html#dolo.algos.dynare.perturbations.perturb_solver">[docs]</a><span class="k">def</span> <span class="nf">perturb_solver</span><span class="p">(</span><span class="n">derivatives</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">derivatives_ss</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mlab</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="k">elif</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="k">elif</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">,</span><span class="n">f_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Perturbations not implemented at order </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">max_order</span><span class="p">))</span>
+    <span class="n">derivs</span> <span class="o">=</span> <span class="n">derivatives</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">derivs</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c1"># number of variables</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">3</span><span class="o">*</span><span class="n">n</span>
+    <span class="p">[</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="n">s</span><span class="p">]</span>
+
+
+    <span class="n">f1_A</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,:</span><span class="n">n</span><span class="p">]</span>
+    <span class="n">f1_B</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">f1_C</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">):(</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">f1_D</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,(</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">):]</span>
+
+    <span class="c1">## first order</span>
+    <span class="p">[</span><span class="n">ev</span><span class="p">,</span><span class="n">g_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">second_order_solver</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">f1_B</span><span class="p">,</span><span class="n">f1_C</span><span class="p">)</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_x</span><span class="p">))</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">f1_B</span><span class="p">,</span><span class="n">g_x</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_C</span>
+
+    <span class="n">mm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span> <span class="n">g_x</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_B</span>
+
+    <span class="n">g_u</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span> <span class="n">mm</span> <span class="p">,</span> <span class="n">f1_D</span> <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ev&#39;</span><span class="p">:</span><span class="n">ev</span><span class="p">,</span> <span class="s1">&#39;g_a&#39;</span><span class="p">:</span> <span class="n">g_x</span><span class="p">,</span> <span class="s1">&#39;g_e&#39;</span><span class="p">:</span> <span class="n">g_u</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="c1"># we need it for higher order</span>
+    <span class="n">V_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_x</span><span class="p">),</span><span class="n">g_x</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_v</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">s</span><span class="p">,</span><span class="n">n</span><span class="p">))]</span> <span class="p">)</span>
+    <span class="n">V_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_u</span><span class="p">),</span><span class="n">g_u</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">)]</span> <span class="p">)</span>
+
+    <span class="c1"># Translation</span>
+
+    <span class="n">f_1</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">f_2</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">f_d</span> <span class="o">=</span> <span class="n">f1_A</span>
+    <span class="n">f_a</span> <span class="o">=</span> <span class="n">f1_B</span>
+    <span class="n">g_a</span> <span class="o">=</span> <span class="n">g_x</span>
+    <span class="n">g_e</span> <span class="o">=</span> <span class="n">g_u</span>
+    <span class="n">n_a</span> <span class="o">=</span> <span class="n">n_v</span>
+    <span class="n">n_e</span> <span class="o">=</span> <span class="n">n_s</span>
+
+    <span class="c1"># Once for all !</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">f_a</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">g_a</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">f_d</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">g_a</span>
+    <span class="n">A_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+
+
+    <span class="c1">##################</span>
+    <span class="c1"># Automatic code #</span>
+    <span class="c1">##################</span>
+
+    <span class="c1">#----------Computing order 2</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;)</span>
+
+    <span class="n">K_aa</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">])</span>
+    <span class="n">L_aa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">n_v</span><span class="p">,</span> <span class="n">n_v</span><span class="p">,</span> <span class="n">n_v</span><span class="p">)</span> <span class="p">)</span>
+
+    <span class="c1">#We need to solve the infamous sylvester equation</span>
+    <span class="c1">#A = f_a + sdot(f_d,g_a)</span>
+    <span class="c1">#B = f_d</span>
+    <span class="c1">#C = g_a</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">K_aa</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aa</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mlab</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+        <span class="n">g_aa</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n_d</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">n_v</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">CC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">C</span><span class="p">)</span>
+        <span class="n">DD</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span> <span class="n">n_v</span><span class="p">,</span> <span class="n">n_v</span><span class="o">**</span><span class="n">n_d</span> <span class="p">)</span>
+        <span class="p">[</span><span class="n">err</span><span class="p">,</span><span class="n">E</span><span class="p">]</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">gensylv</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">DD</span><span class="p">,</span><span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">g_aa</span> <span class="o">=</span> <span class="o">-</span> <span class="n">E</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">))</span> <span class="c1"># check that - is correct</span>
+
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aa</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">])</span>
+        <span class="k">assert</span><span class="p">(</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">])</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_aa</span><span class="p">))</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aa</span>
+        <span class="n">V_aa</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_ae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_ae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ae</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ae</span>
+    <span class="n">g_ae</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ae</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ae</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ae</span>
+        <span class="n">V_ae</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_ee</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_ee</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ee</span>
+    <span class="n">g_ee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ee</span>
+        <span class="n">V_ee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1"># manual</span>
+    <span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">)</span>
+    <span class="n">M_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">g_a</span><span class="o">+</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_B</span> <span class="p">)</span>
+    <span class="n">K_ss</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">[:,:</span><span class="n">n_v</span><span class="p">,:</span><span class="n">n_v</span><span class="p">],[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f1_A</span><span class="p">,</span> <span class="n">g_ee</span> <span class="p">)</span>
+    <span class="n">rhs</span> <span class="o">=</span>  <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">K_ss</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span> <span class="p">)</span> <span class="c1">#- mdot(h_2,[V_s,V_s])</span>
+    <span class="k">if</span> <span class="n">derivatives_ss</span><span class="p">:</span>
+        <span class="n">f_ss</span> <span class="o">=</span> <span class="n">derivatives_ss</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rhs</span> <span class="o">-=</span> <span class="n">f_ss</span>
+    <span class="n">g_ss</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">M_inv</span><span class="p">,</span><span class="n">rhs</span><span class="p">)</span>
+    <span class="n">ghs2</span> <span class="o">=</span> <span class="n">g_ss</span><span class="o">/</span><span class="mi">2</span>
+
+
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;ev&#39;</span><span class="p">:</span> <span class="n">ev</span><span class="p">,</span>
+            <span class="s1">&#39;g_a&#39;</span><span class="p">:</span> <span class="n">g_a</span><span class="p">,</span>
+            <span class="s1">&#39;g_e&#39;</span><span class="p">:</span> <span class="n">g_e</span><span class="p">,</span>
+            <span class="s1">&#39;g_aa&#39;</span><span class="p">:</span> <span class="n">g_aa</span><span class="p">,</span>
+            <span class="s1">&#39;g_ae&#39;</span><span class="p">:</span> <span class="n">g_ae</span><span class="p">,</span>
+            <span class="s1">&#39;g_ee&#39;</span><span class="p">:</span> <span class="n">g_ee</span><span class="p">,</span>
+            <span class="s1">&#39;g_ss&#39;</span><span class="p">:</span> <span class="n">g_ss</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">d</span>
+    <span class="c1"># /manual</span>
+
+    <span class="c1">#----------Computing order 3</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;, &#39;a&#39;)</span>
+    <span class="n">K_aaa</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_aa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">])</span>
+    <span class="n">L_aaa</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_aa</span><span class="p">])</span>
+
+    <span class="c1">#K_aaa =  2*( mdot(f_2,[V_aa,V_a]) ) + mdot(f_2,[V_a,V_aa]) + mdot(f_3,[V_a,V_a,V_a])</span>
+    <span class="c1">#L_aaa =  2*( mdot(g_aa,[g_aa,g_a]) ) + mdot(g_aa,[g_a,g_aa])</span>
+    <span class="c1">#K_aaa =  ( mdot(f_2,[V_aa,V_a]) + mdot(f_2,[V_a,V_aa]) )*3.0/2.0 + mdot(f_3,[V_a,V_a,V_a])</span>
+    <span class="c1">#L_aaa =  ( mdot(g_aa,[g_aa,g_a]) + mdot(g_aa,[g_a,g_aa]) )*3.0/2.0</span>
+
+
+    <span class="c1">#K_aaa = (K_aaa + K_aaa.swapaxes(3,2) + K_aaa.swapaxes(1,2) + K_aaa.swapaxes(1,2).swapaxes(2,3) + K_aaa.swapaxes(1,3) + K_aaa.swapaxes(1,3).swapaxes(2,3) )/6</span>
+    <span class="c1">#L_aaa = (L_aaa + L_aaa.swapaxes(3,2) + L_aaa.swapaxes(1,2) + L_aaa.swapaxes(1,2).swapaxes(2,3) + L_aaa.swapaxes(1,3) + L_aaa.swapaxes(1,3).swapaxes(2,3) )/6</span>
+
+
+    <span class="c1">#We need to solve the infamous sylvester equation</span>
+    <span class="c1">#A = f_a + sdot(f_d,g_a)</span>
+    <span class="c1">#B = f_d</span>
+    <span class="c1">#C = g_a</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">K_aaa</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aaa</span><span class="p">)</span>
+
+
+
+    <span class="k">if</span> <span class="n">mlab</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">g_aaa</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+    <span class="c1"># this is much much faster</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">n_d</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">n_v</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">CC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">kron</span><span class="p">(</span><span class="n">C</span><span class="p">,</span><span class="n">C</span><span class="p">),</span><span class="n">C</span><span class="p">)</span>
+        <span class="n">DD</span> <span class="o">=</span> <span class="n">D</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span> <span class="n">n_v</span><span class="p">,</span> <span class="n">n_v</span><span class="o">**</span><span class="n">n_d</span> <span class="p">)</span>
+        <span class="p">[</span><span class="n">err</span><span class="p">,</span><span class="n">E</span><span class="p">]</span> <span class="o">=</span> <span class="n">mlab</span><span class="o">.</span><span class="n">gensylv</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">DD</span><span class="p">,</span><span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">g_aaa</span> <span class="o">=</span> <span class="n">E</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">))</span>
+
+    <span class="c1">#res = sdot(A,g_aaa) + sdot(B, mdot(g_aaa,[C,C,C])) - D</span>
+    <span class="c1">#print &#39;res : &#39; + str( abs(res).max() )</span>
+
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aaa</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aaa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aaa</span>
+        <span class="n">V_aaa</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1"># we transform g_aaa into a symmetric multilinear form</span>
+    <span class="n">g_aaa</span> <span class="o">=</span> <span class="p">(</span><span class="n">g_aaa</span> <span class="o">+</span> <span class="n">g_aaa</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_aaa</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_aaa</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_aaa</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_aaa</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">)</span><span class="o">/</span><span class="mi">6</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_aae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_aa</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ae</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_aae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ae</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aae</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aae</span>
+    <span class="n">g_aae</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aae</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aae</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aae</span>
+        <span class="n">V_aae</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_aee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ae</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_aee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ae</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aee</span>
+    <span class="n">g_aee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aee</span>
+        <span class="n">V_aee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_eee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_eee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_eee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_eee</span>
+    <span class="n">g_eee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_eee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_eee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_eee</span>
+        <span class="n">V_eee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+
+    <span class="c1">####################################</span>
+    <span class="c1">## Compute sigma^2 correction term #</span>
+    <span class="c1">####################################</span>
+
+    <span class="c1"># ( a s s )</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">f_a</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">g_a</span><span class="p">)</span>
+    <span class="n">I_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_e</span><span class="p">)</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">g_e</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+    <span class="n">V_s</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_ae</span><span class="p">,</span> <span class="p">[</span><span class="n">g_a</span><span class="p">,</span> <span class="n">I_e</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+    <span class="n">V_as</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ss</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_ss</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">g_ee</span><span class="p">,</span><span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ss</span>
+    <span class="n">V_ss</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">K_ass_1</span> <span class="o">=</span>  <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_as</span><span class="p">,</span><span class="n">V_s</span><span class="p">]</span> <span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_s</span><span class="p">,</span><span class="n">V_s</span><span class="p">])</span>
+    <span class="n">K_ass_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">K_ass_1</span><span class="p">,</span><span class="n">Sigma</span><span class="p">)</span>
+
+    <span class="n">K_ass_2</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f_2</span><span class="p">,</span> <span class="p">[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ss</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="n">K_ass</span> <span class="o">=</span> <span class="n">K_ass_1</span> <span class="o">+</span> <span class="n">K_ass_2</span>
+
+    <span class="n">L_ass</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_aa</span><span class="p">,</span> <span class="p">[</span><span class="n">g_a</span><span class="p">,</span> <span class="n">g_ss</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aee</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span> <span class="n">I_e</span><span class="p">,</span> <span class="n">I_e</span><span class="p">]),</span> <span class="n">Sigma</span><span class="p">)</span>
+
+    <span class="n">D</span> <span class="o">=</span> <span class="n">K_ass</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ass</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">derivatives_ss</span><span class="p">:</span>
+        <span class="n">f_1ss</span> <span class="o">=</span> <span class="n">derivatives_ss</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">D</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f_1ss</span><span class="p">,</span> <span class="p">[</span><span class="n">V_a</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f1_A</span><span class="p">,</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_aa</span><span class="p">,</span> <span class="p">[</span> <span class="n">g_a</span> <span class="p">,</span> <span class="n">g_ss</span> <span class="p">])</span>  <span class="p">)</span>
+
+    <span class="n">g_ass</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">)</span>
+
+
+    <span class="c1"># ( e s s )</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">f_a</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">g_a</span><span class="p">)</span>
+    <span class="n">A_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    <span class="n">I_e</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_e</span><span class="p">)</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">g_e</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+    <span class="n">V_s</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_ae</span><span class="p">,</span> <span class="p">[</span><span class="n">g_e</span><span class="p">,</span> <span class="n">I_e</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+    <span class="n">V_es</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">Y</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ss</span><span class="p">)</span> <span class="o">+</span> <span class="n">g_ss</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">g_ee</span><span class="p">,</span><span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ss</span>
+    <span class="n">V_ss</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">))</span>
+
+    <span class="n">K_ess_1</span> <span class="o">=</span>  <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_es</span><span class="p">,</span><span class="n">V_s</span><span class="p">]</span> <span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_s</span><span class="p">,</span><span class="n">V_s</span><span class="p">])</span>
+    <span class="n">K_ess_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span><span class="n">K_ess_1</span><span class="p">,</span><span class="n">Sigma</span><span class="p">)</span>
+
+    <span class="n">K_ess_2</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f_2</span><span class="p">,</span> <span class="p">[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_ss</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="n">K_ess</span> <span class="o">=</span> <span class="n">K_ess_1</span> <span class="o">+</span> <span class="n">K_ess_2</span>
+
+    <span class="n">L_ess</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_aa</span><span class="p">,</span> <span class="p">[</span><span class="n">g_e</span><span class="p">,</span> <span class="n">g_ss</span><span class="p">])</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aee</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span> <span class="n">I_e</span><span class="p">,</span> <span class="n">I_e</span><span class="p">]),</span> <span class="n">Sigma</span><span class="p">)</span>
+    <span class="n">L_ess</span> <span class="o">+=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_ass</span><span class="p">,</span> <span class="p">[</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="n">D</span> <span class="o">=</span> <span class="n">K_ess</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ess</span><span class="p">)</span>
+
+    <span class="n">g_ess</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">A_inv</span><span class="p">,</span> <span class="o">-</span><span class="n">D</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ev&#39;</span><span class="p">:</span><span class="n">ev</span><span class="p">,</span><span class="s1">&#39;g_a&#39;</span><span class="p">:</span><span class="n">g_a</span><span class="p">,</span><span class="s1">&#39;g_e&#39;</span><span class="p">:</span><span class="n">g_e</span><span class="p">,</span> <span class="s1">&#39;g_aa&#39;</span><span class="p">:</span><span class="n">g_aa</span><span class="p">,</span> <span class="s1">&#39;g_ae&#39;</span><span class="p">:</span><span class="n">g_ae</span><span class="p">,</span> <span class="s1">&#39;g_ee&#39;</span><span class="p">:</span><span class="n">g_ee</span><span class="p">,</span>
+    <span class="s1">&#39;g_aaa&#39;</span><span class="p">:</span><span class="n">g_aaa</span><span class="p">,</span> <span class="s1">&#39;g_aae&#39;</span><span class="p">:</span><span class="n">g_aae</span><span class="p">,</span> <span class="s1">&#39;g_aee&#39;</span><span class="p">:</span><span class="n">g_aee</span><span class="p">,</span> <span class="s1">&#39;g_eee&#39;</span><span class="p">:</span><span class="n">g_eee</span><span class="p">,</span> <span class="s1">&#39;g_ss&#39;</span><span class="p">:</span><span class="n">g_ss</span><span class="p">,</span> <span class="s1">&#39;g_ass&#39;</span><span class="p">:</span><span class="n">g_ass</span><span class="p">,</span><span class="s1">&#39;g_ess&#39;</span><span class="p">:</span><span class="n">g_ess</span><span class="p">}</span>
+        <span class="k">return</span>  <span class="n">d</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">new_solver_with_p</span><span class="p">(</span><span class="n">derivatives</span><span class="p">,</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">max_order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="k">elif</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="k">elif</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="p">[</span><span class="n">f_0</span><span class="p">,</span><span class="n">f_1</span><span class="p">,</span><span class="n">f_2</span><span class="p">,</span><span class="n">f_3</span><span class="p">]</span> <span class="o">=</span> <span class="n">derivatives</span>
+    <span class="n">derivs</span> <span class="o">=</span> <span class="n">derivatives</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">derivs</span>
+    <span class="c1">#n = f[0].shape[0] # number of variables</span>
+    <span class="c1">#s = f[1].shape[1] - 3*n</span>
+    <span class="p">[</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_p</span><span class="p">]</span> <span class="o">=</span> <span class="n">sizes</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">n_v</span>
+
+    <span class="n">f1_A</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,:</span><span class="n">n</span><span class="p">]</span>
+    <span class="n">f1_B</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span><span class="n">n</span><span class="p">:(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">f1_C</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,(</span><span class="mi">2</span><span class="o">*</span><span class="n">n</span><span class="p">):(</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">f1_D</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,(</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">):((</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">)</span><span class="o">+</span><span class="n">n_s</span><span class="p">)]</span>
+    <span class="n">f1_E</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,((</span><span class="mi">3</span><span class="o">*</span><span class="n">n</span><span class="p">)</span><span class="o">+</span><span class="n">n_s</span><span class="p">):]</span>
+
+    <span class="c1">## first order</span>
+    <span class="p">[</span><span class="n">ev</span><span class="p">,</span><span class="n">g_x</span><span class="p">]</span> <span class="o">=</span> <span class="n">second_order_solver</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">f1_B</span><span class="p">,</span><span class="n">f1_C</span><span class="p">)</span>
+
+    <span class="n">mm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span> <span class="n">g_x</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_B</span>
+
+    <span class="n">g_u</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span> <span class="n">mm</span> <span class="p">,</span> <span class="n">f1_D</span> <span class="p">)</span>
+    <span class="n">g_p</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span> <span class="n">mm</span> <span class="p">,</span> <span class="n">f1_E</span> <span class="p">)</span>
+
+    <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;ev&#39;</span><span class="p">:</span><span class="n">ev</span><span class="p">,</span>
+        <span class="s1">&#39;g_a&#39;</span><span class="p">:</span><span class="n">g_x</span><span class="p">,</span>
+        <span class="s1">&#39;g_e&#39;</span><span class="p">:</span><span class="n">g_u</span><span class="p">,</span>
+        <span class="s1">&#39;g_p&#39;</span><span class="p">:</span><span class="n">g_p</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="c1"># we need it for higher order</span>
+
+    <span class="n">V_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_x</span><span class="p">),</span><span class="n">g_x</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_v</span><span class="p">),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_v</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_p</span><span class="p">,</span><span class="n">n_v</span><span class="p">))]</span> <span class="p">)</span>
+    <span class="n">V_u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_u</span><span class="p">),</span><span class="n">g_u</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_p</span><span class="p">,</span><span class="n">n_s</span><span class="p">))]</span> <span class="p">)</span>
+    <span class="n">V_p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_x</span><span class="p">,</span><span class="n">g_p</span><span class="p">),</span><span class="n">g_p</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_p</span><span class="p">)),</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_p</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_p</span><span class="p">)]</span> <span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="n">V_x</span><span class="p">,</span><span class="n">V_u</span><span class="p">]]</span>
+
+    <span class="c1"># Translation</span>
+    <span class="n">n_a</span> <span class="o">=</span> <span class="n">n_v</span>
+    <span class="n">n_e</span> <span class="o">=</span> <span class="n">n_s</span>
+    <span class="n">n_p</span> <span class="o">=</span> <span class="n">g_p</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">f_1</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">f_2</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">f_d</span> <span class="o">=</span> <span class="n">f1_A</span>
+    <span class="n">f_a</span> <span class="o">=</span> <span class="n">f1_B</span>
+    <span class="n">f_h</span> <span class="o">=</span> <span class="n">f1_C</span>
+    <span class="n">f_u</span> <span class="o">=</span> <span class="n">f1_D</span>
+    <span class="n">V_a</span> <span class="o">=</span> <span class="n">V_x</span>
+    <span class="n">V_e</span> <span class="o">=</span> <span class="n">V_u</span>
+    <span class="n">g_a</span> <span class="o">=</span> <span class="n">g_x</span>
+    <span class="n">g_e</span> <span class="o">=</span> <span class="n">g_u</span>
+
+    <span class="c1"># Once for all !</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">f_a</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">g_a</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">f_d</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">g_a</span>
+    <span class="n">A_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+
+    <span class="c1">#----------Computing order 2</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;)</span>
+
+    <span class="n">K_aa</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">])</span>
+    <span class="n">L_aa</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_v</span><span class="p">,</span> <span class="n">n_a</span><span class="p">,</span> <span class="n">n_a</span><span class="p">))</span>
+
+    <span class="c1">#We need to solve the infamous sylvester equation</span>
+    <span class="c1">#A = f_a + sdot(f_d,g_a)</span>
+    <span class="c1">#B = f_d</span>
+    <span class="c1">#C = g_a</span>
+    <span class="n">D</span> <span class="o">=</span>  <span class="n">K_aa</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aa</span><span class="p">)</span>
+    <span class="n">g_aa</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aa</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aa</span>
+        <span class="n">V_aa</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_ae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_ae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ae</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ae</span>
+    <span class="n">g_ae</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ae</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ae</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ae</span>
+        <span class="n">V_ae</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_ap</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_ap</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ap</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ap</span>
+    <span class="n">g_ap</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ap</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ap</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ap</span>
+        <span class="n">V_ap</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_ee</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_ee</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ee</span>
+    <span class="n">g_ee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ee</span>
+        <span class="n">V_ee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_ep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_ep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ep</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ep</span>
+    <span class="n">g_ep</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ep</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ep</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ep</span>
+        <span class="n">V_ep</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;p&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_pp</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_pp</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_pp</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_pp</span>
+    <span class="n">g_pp</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_pp</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_pp</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_pp</span>
+        <span class="n">V_pp</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+
+    <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+        <span class="s1">&#39;g_aa&#39;</span><span class="p">:</span><span class="n">g_aa</span><span class="p">,</span>
+        <span class="s1">&#39;g_ae&#39;</span><span class="p">:</span><span class="n">g_ae</span><span class="p">,</span>
+        <span class="s1">&#39;g_ee&#39;</span><span class="p">:</span><span class="n">g_ee</span><span class="p">,</span>
+        <span class="s1">&#39;g_ap&#39;</span><span class="p">:</span><span class="n">g_ap</span><span class="p">,</span>
+        <span class="s1">&#39;g_ep&#39;</span><span class="p">:</span><span class="n">g_ep</span><span class="p">,</span>
+        <span class="s1">&#39;g_pp&#39;</span><span class="p">:</span><span class="n">g_pp</span>
+     <span class="p">})</span>
+    <span class="k">if</span> <span class="n">max_order</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">d</span>
+
+    <span class="c1">#----------Computing order 3</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;, &#39;a&#39;)</span>
+
+    <span class="n">K_aaa</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_aa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">])</span>
+    <span class="n">L_aaa</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_aa</span><span class="p">])</span>
+
+    <span class="c1">#We need to solve the infamous sylvester equation</span>
+    <span class="c1">#A = f_a + sdot(f_d,g_a)</span>
+    <span class="c1">#B = f_d</span>
+    <span class="c1">#C = g_a</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">K_aaa</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aaa</span><span class="p">)</span>
+    <span class="n">g_aaa</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aaa</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aaa</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aaa</span>
+        <span class="n">V_aaa</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_aae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_aa</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ae</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_aae</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ae</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aae</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aae</span>
+    <span class="n">g_aae</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aae</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aae</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aae</span>
+        <span class="n">V_aae</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;a&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_aap</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_aa</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ap</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_aap</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_aa</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ap</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aap</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aap</span>
+    <span class="n">g_aap</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aap</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aap</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aap</span>
+        <span class="n">V_aap</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_aee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ae</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_aee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ae</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aee</span>
+    <span class="n">g_aee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aee</span>
+        <span class="n">V_aee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;e&#39;, &#39;p&#39;)</span>
+    <span class="n">ll</span> <span class="o">=</span> <span class="p">[</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ae</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="p">,</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ap</span><span class="p">,</span><span class="n">V_e</span><span class="p">]),</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ep</span><span class="p">])</span> <span class="p">,</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>     <span class="p">]</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="p">[</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ae</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="p">,</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ap</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="p">,</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ep</span><span class="p">])</span> <span class="p">,</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>     <span class="p">]</span>
+
+    <span class="n">K_aep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ae</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ap</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_ep</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_aep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ae</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ap</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_ep</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_aep</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_aep</span>
+    <span class="n">g_aep</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_aep</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_aep</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_aep</span>
+        <span class="n">V_aep</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;a&#39;, &#39;p&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_app</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ap</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_a</span><span class="p">,</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_app</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ap</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_app</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_app</span>
+    <span class="n">g_app</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_app</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_app</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_app</span>
+        <span class="n">V_app</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;e&#39;, &#39;e&#39;)</span>
+
+    <span class="n">K_eee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">])</span>
+    <span class="n">L_eee</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_ee</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_eee</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_eee</span>
+    <span class="n">g_eee</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_eee</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_eee</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_eee</span>
+        <span class="n">V_eee</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;e&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_eep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ee</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_ep</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_eep</span> <span class="o">=</span>  <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ee</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_ep</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_eep</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_eep</span>
+    <span class="n">g_eep</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_eep</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_eep</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_eep</span>
+        <span class="n">V_eep</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;e&#39;, &#39;p&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_epp</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_ep</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_e</span><span class="p">,</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_epp</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_ep</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_epp</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_epp</span>
+    <span class="n">g_epp</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_epp</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_epp</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_epp</span>
+        <span class="n">V_epp</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+    <span class="c1">#--- Computing derivatives (&#39;p&#39;, &#39;p&#39;, &#39;p&#39;)</span>
+
+    <span class="n">K_ppp</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">,[</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_3</span><span class="p">,[</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_p</span><span class="p">,</span><span class="n">V_p</span><span class="p">])</span>
+    <span class="n">L_ppp</span> <span class="o">=</span>  <span class="o">+</span> <span class="mi">3</span><span class="o">*</span><span class="n">mdot</span><span class="p">(</span><span class="n">g_aa</span><span class="p">,[</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_pp</span><span class="p">])</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_aaa</span><span class="p">,[</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_p</span><span class="p">,</span><span class="n">g_p</span><span class="p">])</span>
+
+    <span class="c1">#We solve A*X + const = 0</span>
+    <span class="n">const</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f_d</span><span class="p">,</span><span class="n">L_ppp</span><span class="p">)</span> <span class="o">+</span> <span class="n">K_ppp</span>
+    <span class="n">g_ppp</span> <span class="o">=</span> <span class="o">-</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span> <span class="n">const</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&lt;</span> <span class="n">max_order</span><span class="p">:</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">L_ppp</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,[</span><span class="n">g_ppp</span><span class="p">])</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">g_ppp</span>
+        <span class="n">V_ppp</span> <span class="o">=</span> <span class="n">build_V</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">,(</span><span class="n">n_a</span><span class="p">,</span><span class="n">n_e</span><span class="p">,</span><span class="n">n_p</span><span class="p">))</span>
+
+
+    <span class="n">d</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+        <span class="s1">&#39;g_aaa&#39;</span><span class="p">:</span><span class="n">g_aaa</span><span class="p">,</span>
+        <span class="s1">&#39;g_aae&#39;</span><span class="p">:</span><span class="n">g_aae</span><span class="p">,</span>
+        <span class="s1">&#39;g_aee&#39;</span><span class="p">:</span><span class="n">g_aee</span><span class="p">,</span>
+        <span class="s1">&#39;g_eee&#39;</span><span class="p">:</span><span class="n">g_eee</span><span class="p">,</span>
+        <span class="s1">&#39;g_aap&#39;</span><span class="p">:</span><span class="n">g_aap</span><span class="p">,</span>
+        <span class="s1">&#39;g_aep&#39;</span><span class="p">:</span><span class="n">g_aep</span><span class="p">,</span>
+        <span class="s1">&#39;g_eep&#39;</span><span class="p">:</span><span class="n">g_eep</span><span class="p">,</span>
+        <span class="s1">&#39;g_app&#39;</span><span class="p">:</span><span class="n">g_app</span><span class="p">,</span>
+        <span class="s1">&#39;g_epp&#39;</span><span class="p">:</span><span class="n">g_epp</span><span class="p">,</span>
+        <span class="s1">&#39;g_ppp&#39;</span><span class="p">:</span><span class="n">g_ppp</span>
+    <span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">d</span>
+
+
+<span class="k">def</span> <span class="nf">sigma2_correction</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">order</span><span class="p">,</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_s</span><span class="p">,</span><span class="n">f1_A</span><span class="p">,</span><span class="n">f1_B</span><span class="p">,</span> <span class="n">f_2</span><span class="p">,</span> <span class="n">h_2</span><span class="p">,</span> <span class="n">f_ss</span><span class="p">,</span> <span class="n">Sigma</span><span class="p">):</span>
+
+    <span class="n">resp</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">g_a</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_a&#39;</span><span class="p">]</span>
+        <span class="n">g_e</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_e&#39;</span><span class="p">]</span>
+        <span class="n">g_aa</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_aa&#39;</span><span class="p">]</span>
+        <span class="n">g_ae</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_ae&#39;</span><span class="p">]</span>
+        <span class="n">g_ee</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_ee&#39;</span><span class="p">]</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_v</span><span class="p">,</span><span class="n">n_v</span><span class="p">)</span>
+        <span class="n">A_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">g_a</span><span class="o">+</span><span class="n">I</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_B</span> <span class="p">)</span>
+        <span class="n">V_s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="n">n_v</span><span class="o">*</span><span class="mi">3</span><span class="o">+</span><span class="n">n_s</span><span class="o">+</span><span class="mi">1</span><span class="p">,))</span>
+        <span class="n">V_s</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">K_ss</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span><span class="n">f_2</span><span class="p">[:,:</span><span class="n">n_v</span><span class="p">,:</span><span class="n">n_v</span><span class="p">],[</span><span class="n">g_e</span><span class="p">,</span><span class="n">g_e</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f1_A</span><span class="p">,</span> <span class="n">g_ee</span> <span class="p">)</span>
+        <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tensordot</span><span class="p">(</span> <span class="n">K_ss</span><span class="p">,</span><span class="n">Sigma</span><span class="p">)</span> <span class="o">+</span> <span class="n">mdot</span><span class="p">(</span><span class="n">h_2</span><span class="p">,[</span><span class="n">V_s</span><span class="p">,</span><span class="n">V_s</span><span class="p">])</span>
+        <span class="n">sigma2</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">A_inv</span><span class="p">,</span><span class="o">-</span><span class="n">rhs</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">ds2</span> <span class="o">=</span> <span class="n">sigma2</span> <span class="o">-</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;g_ss&#39;</span><span class="p">]</span>
+        <span class="n">resp</span><span class="p">[</span><span class="s1">&#39;sigma2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sigma2</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="n">sdot</span><span class="p">(</span><span class="n">f1_A</span><span class="p">,</span><span class="n">g_a</span><span class="p">)</span> <span class="o">+</span> <span class="n">f1_B</span>
+        <span class="n">A_inv</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span> <span class="n">A</span> <span class="p">)</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="n">f1_A</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">g_a</span>
+        <span class="n">V_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">(</span> <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">g_a</span><span class="p">,</span><span class="n">g_a</span><span class="p">),</span>
+            <span class="n">g_a</span><span class="p">,</span>
+            <span class="n">I</span><span class="p">,</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_s</span><span class="p">,</span><span class="n">n_v</span><span class="p">))</span>
+        <span class="p">])</span>
+
+        <span class="n">D</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">f_ss</span><span class="p">,</span> <span class="p">[</span><span class="n">V_x</span><span class="p">])</span> <span class="o">+</span> <span class="n">sdot</span><span class="p">(</span> <span class="n">f1_A</span><span class="p">,</span> <span class="n">mdot</span><span class="p">(</span> <span class="n">g_aa</span><span class="p">,</span> <span class="p">[</span> <span class="n">g_a</span> <span class="p">,</span> <span class="n">ds2</span> <span class="p">])</span>  <span class="p">)</span>
+        <span class="n">dsigma2</span> <span class="o">=</span> <span class="n">solve_sylvester</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">D</span><span class="p">)</span>
+        <span class="n">resp</span><span class="p">[</span><span class="s1">&#39;dsigma2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dsigma2</span>
+        <span class="n">resp</span><span class="p">[</span><span class="s1">&#39;D&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">D</span>
+        <span class="n">resp</span><span class="p">[</span><span class="s1">&#39;f_ss&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_ss</span>
+    <span class="k">return</span> <span class="n">resp</span>
+
+<span class="k">def</span> <span class="nf">build_V</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">,</span><span class="n">others</span><span class="p">):</span>
+
+    <span class="n">ddim</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">new_dims</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ddim</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">others</span><span class="p">]</span>
+    <span class="n">l</span> <span class="o">=</span> <span class="p">[</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">new_dims</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">dolo</span> <span class="k">import</span> <span class="o">*</span>
+
+    <span class="n">fname</span> <span class="o">=</span> <span class="s2">&quot;/home/pablo/Programming/econforge/dolo/examples/models/rbc_dynare.yaml&quot;</span>
+
+
+    <span class="n">smodel</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">return_symbolic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">infos</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;name&#39;</span> <span class="p">:</span> <span class="s1">&#39;anonymous&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span> <span class="p">:</span> <span class="s1">&#39;dynare&#39;</span>
+    <span class="p">}</span>
+    <span class="kn">from</span> <span class="nn">dolo.compiler.model_dynare</span> <span class="k">import</span> <span class="n">NumericModel</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">NumericModel</span><span class="p">(</span><span class="n">smodel</span><span class="p">,</span> <span class="n">infos</span><span class="o">=</span><span class="n">infos</span><span class="p">)</span>
+
+    <span class="n">dr</span> <span class="o">=</span> <span class="n">solve_decision_rule</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">dr</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

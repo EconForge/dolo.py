@@ -1,0 +1,361 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.algos.dtmscc.value_iteration &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.algos.dtmscc.value_iteration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.algos.dtmscc.value_iteration</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span>
+
+<div class="viewcode-block" id="evaluate_policy"><a class="viewcode-back" href="../../../../dtmscc_value_iteration.html#dolo.algos.dtmscc.value_iteration.evaluate_policy">[docs]</a><span class="k">def</span> <span class="nf">evaluate_policy</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">mdr</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span>  <span class="n">maxit</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="p">{},</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hook</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">integration_orders</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Compute value function corresponding to a given decision rule</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    model : NumericModel</span>
+<span class="sd">        ``dtcscc`` model. Must contain a ``value`` function.</span>
+
+<span class="sd">    mdr :</span>
+<span class="sd">        decision rule to evaluate</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+
+<span class="sd">    decision rule :</span>
+<span class="sd">        value function (a function of the space similar to a decision rule</span>
+<span class="sd">        object)</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">assert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">model_type</span> <span class="o">==</span> <span class="s1">&#39;dtmscc&#39;</span><span class="p">)</span>
+
+    <span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">Q</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">markov_chain</span>
+
+    <span class="n">n_ms</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>   <span class="c1"># number of markov states</span>
+    <span class="n">n_mv</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>   <span class="c1"># number of markov variables</span>
+
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+    <span class="n">v0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;values&#39;</span><span class="p">]</span>
+    <span class="n">parms</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+    <span class="n">n_x</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x0</span><span class="p">)</span>
+    <span class="n">n_v</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v0</span><span class="p">)</span>
+    <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">])</span>
+
+    <span class="n">approx</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_grid</span><span class="p">(</span><span class="o">**</span><span class="n">grid</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">approx</span><span class="o">.</span><span class="n">a</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">approx</span><span class="o">.</span><span class="n">b</span>
+    <span class="n">orders</span> <span class="o">=</span> <span class="n">approx</span><span class="o">.</span><span class="n">orders</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.numeric.decision_rules_markov</span> <span class="k">import</span> <span class="n">MarkovDecisionRule</span>
+    <span class="n">mdrv</span> <span class="o">=</span> <span class="n">MarkovDecisionRule</span><span class="p">(</span><span class="n">n_ms</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">orders</span><span class="p">)</span> <span class="c1"># values</span>
+
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">mdrv</span><span class="o">.</span><span class="n">grid</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">grid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">controls</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_ms</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">n_x</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i_m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_ms</span><span class="p">):</span>
+        <span class="n">controls</span><span class="p">[</span><span class="n">i_m</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">mdr</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span><span class="n">grid</span><span class="p">)</span> <span class="c1">#x0[None,:]</span>
+
+    <span class="n">values_0</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_ms</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">n_v</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">initial_guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i_m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_ms</span><span class="p">):</span>
+            <span class="n">values_0</span><span class="p">[</span><span class="n">i_m</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">v0</span><span class="p">[</span><span class="kc">None</span><span class="p">,:]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i_m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_ms</span><span class="p">):</span>
+            <span class="n">values_0</span><span class="p">[</span><span class="n">i_m</span><span class="p">,:,:]</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
+
+
+    <span class="n">ff</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;arbitrage&#39;</span><span class="p">]</span>
+    <span class="n">gg</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;transition&#39;</span><span class="p">]</span>
+    <span class="n">aa</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;auxiliary&#39;</span><span class="p">]</span>
+    <span class="n">vaval</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span>
+
+
+    <span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">p</span><span class="p">:</span> <span class="n">ff</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">p</span><span class="p">:</span> <span class="n">gg</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">val</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">V</span><span class="p">,</span><span class="n">p</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">vaval</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">v</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">X</span><span class="p">,</span><span class="n">V</span><span class="p">,</span><span class="n">p</span><span class="p">)</span>
+    <span class="c1"># val = lambda m,s,x,v,M,S,X,V,p: vaval(m,s,x,aa(m,s,x,p),v,M,S,X,aa(M,S,X,p),V,p)</span>
+
+
+    <span class="n">sh_v</span> <span class="o">=</span> <span class="n">values_0</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="n">err</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">inner_maxit</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="n">headline</span> <span class="o">=</span> <span class="s1">&#39;|</span><span class="si">{0:^4}</span><span class="s1"> | </span><span class="si">{1:10}</span><span class="s1"> | </span><span class="si">{2:8}</span><span class="s1"> | </span><span class="si">{3:8}</span><span class="s1"> |&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span> <span class="s1">&#39;N&#39;</span><span class="p">,</span><span class="s1">&#39; Error&#39;</span><span class="p">,</span> <span class="s1">&#39;Gain&#39;</span><span class="p">,</span><span class="s1">&#39;Time&#39;</span><span class="p">)</span>
+        <span class="n">stars</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">headline</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stars</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">headline</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stars</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="n">t1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">err_0</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">verbit</span> <span class="o">=</span> <span class="p">(</span><span class="n">verbose</span> <span class="o">==</span> <span class="s1">&#39;full&#39;</span><span class="p">)</span>
+
+    <span class="k">while</span> <span class="n">err</span><span class="o">&gt;</span><span class="n">tol</span> <span class="ow">and</span> <span class="n">it</span><span class="o">&lt;</span><span class="n">maxit</span><span class="p">:</span>
+
+        <span class="n">it</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">t_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">mdrv</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">values_0</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh_v</span><span class="p">))</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">update_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">controls</span><span class="p">,</span> <span class="n">values_0</span><span class="p">,</span> <span class="n">mdr</span><span class="p">,</span> <span class="n">mdrv</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">Q</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">n_v</span><span class="p">))</span>
+
+        <span class="n">err</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh_v</span><span class="p">)</span><span class="o">-</span><span class="n">values_0</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+        <span class="n">err_SA</span> <span class="o">=</span> <span class="n">err</span><span class="o">/</span><span class="n">err_0</span>
+        <span class="n">err_0</span> <span class="o">=</span> <span class="n">err</span>
+
+        <span class="n">values_0</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh_v</span><span class="p">)</span>
+
+        <span class="n">t_finish</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">elapsed</span> <span class="o">=</span> <span class="n">t_finish</span> <span class="o">-</span> <span class="n">t_start</span>
+
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;|</span><span class="si">{0:4}</span><span class="s1"> | </span><span class="si">{1:10.3e}</span><span class="s1"> | </span><span class="si">{2:8.3f}</span><span class="s1"> | </span><span class="si">{3:8.3f}</span><span class="s1"> |&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span> <span class="n">it</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">err_SA</span><span class="p">,</span> <span class="n">elapsed</span>  <span class="p">))</span>
+
+    <span class="c1"># values_0 = values.reshape(sh_v)</span>
+
+    <span class="n">t2</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stars</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Elapsed: </span><span class="si">{}</span><span class="s2"> seconds.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t2</span><span class="o">-</span><span class="n">t1</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">stars</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mdrv</span></div>
+
+
+<span class="k">def</span> <span class="nf">update_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">drv</span><span class="p">,</span> <span class="n">P</span><span class="p">,</span> <span class="n">Q</span><span class="p">,</span> <span class="n">parms</span><span class="p">):</span>
+
+    <span class="n">N</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">n_s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">n_ms</span> <span class="o">=</span> <span class="n">P</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>   <span class="c1"># number of markov states</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i_ms</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_ms</span><span class="p">):</span>
+
+        <span class="n">m</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">i_ms</span><span class="p">,:][</span><span class="kc">None</span><span class="p">,:]</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">xm</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">i_ms</span><span class="p">,:,:]</span>
+        <span class="n">vm</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">i_ms</span><span class="p">,:,:]</span>
+
+        <span class="k">for</span> <span class="n">I_ms</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_ms</span><span class="p">):</span>
+
+            <span class="c1"># M = P[I_ms,:][None,:]</span>
+            <span class="n">M</span> <span class="o">=</span> <span class="n">P</span><span class="p">[</span><span class="n">I_ms</span><span class="p">,:][</span><span class="kc">None</span><span class="p">,:]</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">prob</span> <span class="o">=</span> <span class="n">Q</span><span class="p">[</span><span class="n">i_ms</span><span class="p">,</span> <span class="n">I_ms</span><span class="p">]</span>
+
+            <span class="n">S</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">xm</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
+            <span class="n">XM</span> <span class="o">=</span> <span class="n">dr</span><span class="p">(</span><span class="n">I_ms</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+            <span class="n">VM</span> <span class="o">=</span> <span class="n">drv</span><span class="p">(</span><span class="n">I_ms</span><span class="p">,</span> <span class="n">S</span><span class="p">)</span>
+
+            <span class="n">rr</span> <span class="o">=</span> <span class="n">val</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="n">xm</span><span class="p">,</span><span class="n">vm</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">S</span><span class="p">,</span><span class="n">XM</span><span class="p">,</span><span class="n">VM</span><span class="p">,</span><span class="n">parms</span><span class="p">)</span>
+
+            <span class="n">res</span><span class="p">[</span><span class="n">i_ms</span><span class="p">,:,:]</span> <span class="o">+=</span> <span class="n">prob</span><span class="o">*</span><span class="n">rr</span>
+
+    <span class="k">return</span> <span class="n">res</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

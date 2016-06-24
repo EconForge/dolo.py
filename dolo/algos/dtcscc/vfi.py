@@ -10,7 +10,7 @@ from dolo.numeric.interpolation import create_interpolator
 
 def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, verbose=False, hook=None,
                     integration_orders=None):
-    """Compute value function corresponding to policy ``dr``
+    """Compute value function corresponding to a given policy ``dr``.
 
     Parameters:
     -----------

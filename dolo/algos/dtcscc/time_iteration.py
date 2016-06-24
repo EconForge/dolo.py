@@ -19,20 +19,34 @@ def time_iteration(model, verbose=False, initial_dr=None, pert_order=1,
     ----------
     model : NumericModel
         "dtcscc" model to be solved
+
     verbose : boolean
         if True, display iterations
+
     initial_dr : decision rule
         initial guess for the decision rule
+
     pert_order : {1}
         if no initial guess is supplied, the perturbation solution at order
         ``pert_order`` is used as initial guess
+
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
-    grid: grid options
-    distribution: distribution options
-    maxit: maximum number of iterations
-    inner_maxit: maximum number of iteration for inner solver
-    tol: tolerance criterium for successive approximations
+
+    grid :
+        grid options
+
+    distribution :
+        distribution options
+
+    maxit :
+        maximum number of iterations
+
+    inner_maxit :
+        maximum number of iteration for inner solver
+
+    tol :
+        tolerance criterium for successive approximations
 
     Returns
     -------

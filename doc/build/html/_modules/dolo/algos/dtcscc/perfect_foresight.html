@@ -1,0 +1,587 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.algos.dtcscc.perfect_foresight &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.algos.dtcscc.perfect_foresight</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.algos.dtcscc.perfect_foresight</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">array</span><span class="p">,</span> <span class="n">atleast_2d</span><span class="p">,</span> <span class="n">linspace</span><span class="p">,</span> <span class="n">zeros</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">root</span>
+
+<span class="kn">from</span> <span class="nn">dolo.algos.dtcscc.steady_state</span> <span class="k">import</span> <span class="n">find_deterministic_equilibrium</span>
+<span class="kn">from</span> <span class="nn">dolo.numeric.optimize.ncpsolve</span> <span class="k">import</span> <span class="n">ncpsolve</span>
+<span class="kn">from</span> <span class="nn">dolo.numeric.optimize.newton</span> <span class="k">import</span> <span class="n">newton</span>
+<span class="kn">from</span> <span class="nn">dolo.numeric.serial_operations</span> <span class="k">import</span> <span class="n">serial_multiplication</span> <span class="k">as</span> <span class="n">smult</span>
+
+<span class="k">def</span> <span class="nf">_shocks_to_epsilons</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">shocks</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to support input argument `shocks` being one of many</span>
+<span class="sd">    different data types. Will always return a `T, n_e` matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_e</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">])</span>
+
+    <span class="c1"># if we have a DataFrame, convert it to a dict and rely on the method below</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shocks</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="n">shocks</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">shocks</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">shocks</span><span class="o">.</span><span class="n">columns</span><span class="p">}</span>
+
+    <span class="c1"># handle case where shocks might be a dict. Be careful to handle case where</span>
+    <span class="c1"># value arrays are not the same length</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shocks</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">epsilons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">T</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_e</span><span class="p">))</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s2">&quot;shocks&quot;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">shocks</span><span class="p">:</span>
+                <span class="n">this_shock</span> <span class="o">=</span> <span class="n">shocks</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                <span class="n">epsilons</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">this_shock</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_shock</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="n">epsilons</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="n">this_shock</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">this_shock</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># otherwise set to value in calibration</span>
+                <span class="n">epsilons</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s2">&quot;shocks&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">epsilons</span>
+
+    <span class="c1"># read from calibration if not given</span>
+    <span class="k">if</span> <span class="n">shocks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">shocks</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s2">&quot;shocks&quot;</span><span class="p">]</span>
+
+    <span class="c1"># now we just assume that shocks is array-like and try using the output of</span>
+    <span class="c1"># np.asarray(shocks)</span>
+    <span class="n">shocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">shocks</span><span class="p">)</span>
+    <span class="n">shocks</span> <span class="o">=</span> <span class="n">shocks</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_e</span><span class="p">))</span>
+
+    <span class="c1"># until last period, exogenous shock takes its last value</span>
+    <span class="n">epsilons</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">T</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_e</span><span class="p">))</span>
+    <span class="n">epsilons</span><span class="p">[:(</span><span class="n">shocks</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">shocks</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span>
+    <span class="n">epsilons</span><span class="p">[(</span><span class="n">shocks</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">):,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">shocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span>
+
+    <span class="k">return</span> <span class="n">epsilons</span>
+
+
+<div class="viewcode-block" id="deterministic_solve"><a class="viewcode-back" href="../../../../dtcscc_perfect_foresight.html#dolo.algos.dtcscc.perfect_foresight.deterministic_solve">[docs]</a><span class="k">def</span> <span class="nf">deterministic_solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">start_states</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                        <span class="n">ignore_constraints</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+                        <span class="n">initial_guess</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mi">1</span><span class="n">e</span><span class="o">-</span><span class="mi">6</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes a perfect foresight simulation using a stacked-time algorithm.</span>
+
+<span class="sd">    The initial state is specified either by providing a series of exogenous</span>
+<span class="sd">    shocks and assuming the model is initially in equilibrium with the first</span>
+<span class="sd">    value of the shock, or by specifying an initial value for the states.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : NumericModel</span>
+<span class="sd">        &quot;dtcscc&quot; model to be solved</span>
+<span class="sd">    shocks : array-like, dict, or pandas.DataFrame</span>
+<span class="sd">        A specification of the shocks to the model. Can be any of the</span>
+<span class="sd">        following (note by &quot;declaration order&quot; below we mean the order</span>
+<span class="sd">        of `model.symbols[&quot;shocks&quot;]`):</span>
+
+<span class="sd">        - A 1d numpy array-like specifying a time series for a single</span>
+<span class="sd">          shock, or all shocks stacked into a single array.</span>
+<span class="sd">        - A 2d numpy array where each column specifies the time series</span>
+<span class="sd">          for one of the shocks in declaration order. This must be an</span>
+<span class="sd">          `N` by number of shocks 2d array.</span>
+<span class="sd">        - A dict where keys are strings found in</span>
+<span class="sd">          `model.symbols[&quot;shocks&quot;]` and values are a time series of</span>
+<span class="sd">          values for that shock. For model shocks that do not appear in</span>
+<span class="sd">          this dict, the shock is set to the calibrated value. Note</span>
+<span class="sd">          that this interface is the most flexible as it allows the user</span>
+<span class="sd">          to pass values for only a subset of the model shocks and it</span>
+<span class="sd">          allows the passed time series to be of different lengths.</span>
+<span class="sd">        - A DataFrame where columns map shock names into time series.</span>
+<span class="sd">          The same assumptions and behavior that are used in the dict</span>
+<span class="sd">          case apply here</span>
+
+<span class="sd">        If nothing is given here, `shocks` is set equal to the</span>
+<span class="sd">        calibrated values found in `model.calibration[&quot;shocks&quot;]` for</span>
+<span class="sd">        all periods.</span>
+
+<span class="sd">        If the length of any time-series in shocks is less than `T`</span>
+<span class="sd">        (see below) it is assumed that that particular shock will</span>
+<span class="sd">        remain at the final given value for the duration of the</span>
+<span class="sd">        simulaiton.</span>
+<span class="sd">    start_states : ndarray or dict</span>
+<span class="sd">        a vector with the value of initial states, or a calibration</span>
+<span class="sd">        dictionary with the initial values of states and controls</span>
+<span class="sd">    T : int</span>
+<span class="sd">        horizon for the perfect foresight simulation</span>
+<span class="sd">    maxit : int</span>
+<span class="sd">        maximum number of iteration for the nonlinear solver</span>
+<span class="sd">    verbose : boolean</span>
+<span class="sd">        if True, the solver displays iterations</span>
+<span class="sd">    tol : float</span>
+<span class="sd">        stopping criterium for the nonlinear solver</span>
+<span class="sd">    ignore_constraints : bool</span>
+<span class="sd">        if True, complementarity constraints are ignored.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas dataframe</span>
+<span class="sd">        a dataframe with T+1 observations of the model variables along the</span>
+<span class="sd">        simulation (states, controls, auxiliaries). The first observation is</span>
+<span class="sd">        the steady-state corresponding to the first value of the shocks. The</span>
+<span class="sd">        simulation should return to a steady-state corresponding to the last</span>
+<span class="sd">        value of the exogenous shocks.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO:</span>
+
+    <span class="c1"># if model.model_spec == &#39;fga&#39;:</span>
+    <span class="c1">#     from dolo.compiler.converter import GModel_fg_from_fga</span>
+    <span class="c1">#     model = GModel_fg_from_fga(model)</span>
+
+    <span class="c1"># definitions</span>
+    <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">])</span>
+    <span class="n">n_x</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">])</span>
+
+    <span class="n">epsilons</span> <span class="o">=</span> <span class="n">_shocks_to_epsilons</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">shocks</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+
+    <span class="c1"># final initial and final steady-states consistent with exogenous shocks</span>
+    <span class="k">if</span> <span class="n">start_states</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">start_states</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_states</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="c1"># at least that part is clear</span>
+        <span class="n">start_equilibrium</span> <span class="o">=</span> <span class="n">start_states</span>
+        <span class="n">start_s</span> <span class="o">=</span> <span class="n">start_equilibrium</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span>
+        <span class="n">start_x</span> <span class="o">=</span> <span class="n">start_equilibrium</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+        <span class="n">final_s</span> <span class="o">=</span> <span class="n">start_equilibrium</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span>
+        <span class="n">final_x</span> <span class="o">=</span> <span class="n">start_equilibrium</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_states</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="n">start_s</span> <span class="o">=</span> <span class="n">start_states</span>
+        <span class="n">start_x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+        <span class="n">final_s</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span>
+        <span class="n">final_x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+
+    <span class="c1"># if start_constraints:</span>
+    <span class="c1">#     # we ignore start_constraints</span>
+    <span class="c1">#     start_dict.update(start_constraints)</span>
+    <span class="c1">#     final_equilibrium = start_constraints.copy()</span>
+    <span class="c1"># else:</span>
+    <span class="c1">#     final_eqm = find_deterministic_equilibrium(model,</span>
+    <span class="c1">#                                                constraints=final_dict)</span>
+    <span class="c1"># final_s = final_eqm[&#39;states&#39;]</span>
+    <span class="c1"># final_x = final_eqm[&#39;controls&#39;]</span>
+    <span class="c1">#</span>
+    <span class="c1"># start_s = start_states</span>
+    <span class="c1"># start_x = final_x</span>
+
+    <span class="c1"># TODO: for start_x, it should be possible to use first order guess</span>
+
+    <span class="n">final</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">final_s</span><span class="p">,</span> <span class="n">final_x</span><span class="p">])</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">start_s</span><span class="p">,</span> <span class="n">start_x</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">verbose</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initial states : </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">start_s</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Final controls : </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">final_x</span><span class="p">))</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">initial_guess</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">initial_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">([</span><span class="n">start</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">final</span><span class="o">*</span><span class="n">l</span>
+                                         <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">T</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">initial_guess</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">initial_guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">initial_guess</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">initial_guess</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">]</span>
+        <span class="n">initial_guess</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="n">start_s</span>
+        <span class="n">initial_guess</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">final_x</span>
+
+    <span class="n">sh</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">x_bounds</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ignore_constraints</span><span class="p">:</span>
+        <span class="n">initial_states</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span>
+        <span class="p">[</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">u</span><span class="p">(</span><span class="n">initial_states</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">x_bounds</span><span class="p">]</span>
+        <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="o">*</span><span class="mi">0</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">lower_bound</span><span class="p">[:,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">lb</span>
+        <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="o">*</span><span class="mi">0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">upper_bound</span><span class="p">[:,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">ub</span>
+        <span class="n">test1</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lb</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">lb</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">test2</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ub</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">ub</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">test1</span> <span class="o">&gt;</span> <span class="mf">0.00000001</span> <span class="ow">or</span> <span class="n">test2</span> <span class="o">&gt;</span> <span class="mf">0.00000001</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Not implemented: perfect foresight solution requires that &quot;</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;controls have constant bounds.&quot;</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ignore_constraints</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">lower_bound</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">upper_bound</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">nn</span> <span class="o">=</span> <span class="n">sh</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">sh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">fobj</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+        <span class="n">o</span> <span class="o">=</span> <span class="n">det_residual</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">vec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">),</span> <span class="n">start_s</span><span class="p">,</span> <span class="n">final_x</span><span class="p">,</span> <span class="n">epsilons</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">o</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ignore_constraints</span><span class="p">:</span>
+        <span class="k">def</span> <span class="nf">ff</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">det_residual</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">vec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">),</span> <span class="n">start_s</span><span class="p">,</span> <span class="n">final_x</span><span class="p">,</span>
+                                <span class="n">epsilons</span><span class="p">,</span> <span class="n">jactype</span><span class="o">=</span><span class="s1">&#39;sparse&#39;</span><span class="p">)</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">sol</span><span class="p">,</span> <span class="n">nit</span> <span class="o">=</span> <span class="n">ncpsolve</span><span class="p">(</span><span class="n">ff</span><span class="p">,</span> <span class="n">lower_bound</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">upper_bound</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span>
+                            <span class="n">initial_guess</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+                            <span class="n">maxit</span><span class="o">=</span><span class="n">maxit</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">jactype</span><span class="o">=</span><span class="s1">&#39;sparse&#39;</span><span class="p">)</span>
+
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="k">def</span> <span class="nf">ff</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">det_residual</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">vec</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">),</span> <span class="n">start_s</span><span class="p">,</span> <span class="n">final_x</span><span class="p">,</span>
+                                <span class="n">epsilons</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="n">x0</span> <span class="o">=</span> <span class="n">initial_guess</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">root</span><span class="p">(</span><span class="n">ff</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">ff</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">sh</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="s1">&#39;auxiliary&#39;</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+        <span class="n">colnames</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span> <span class="o">+</span>
+                    <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;auxiliaries&#39;</span><span class="p">])</span>
+        <span class="c1"># compute auxiliaries</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;auxiliary&#39;</span><span class="p">](</span><span class="n">sol</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">],</span> <span class="n">sol</span><span class="p">[:,</span> <span class="n">n_s</span><span class="p">:],</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">sol</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">colnames</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">sol</span><span class="p">,</span> <span class="n">epsilons</span><span class="p">])</span>
+    <span class="n">colnames</span> <span class="o">=</span> <span class="n">colnames</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]</span>
+
+    <span class="n">ts</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">colnames</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ts</span></div>
+
+
+<span class="k">def</span> <span class="nf">det_residual</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">guess</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">final</span><span class="p">,</span> <span class="n">shocks</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">jactype</span><span class="o">=</span><span class="s1">&#39;sparse&#39;</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Computes the residuals, the derivatives of the stacked-time system.</span>
+<span class="sd">    :param model: an fga model</span>
+<span class="sd">    :param guess: the guess for the simulated values. An `(n_s.n_x) x N` array,</span>
+<span class="sd">                  where n_s is the number of states,</span>
+<span class="sd">    n_x the number of controls, and `N` the length of the simulation.</span>
+<span class="sd">    :param start: initial boundary condition (initial value of the states)</span>
+<span class="sd">    :param final: final boundary condition (last value of the controls)</span>
+<span class="sd">    :param shocks: values for the exogenous shocks</span>
+<span class="sd">    :param diff: if True, the derivatives are computes</span>
+<span class="sd">    :return: a list with two elements:</span>
+<span class="sd">        - an `(n_s.n_x) x N` array with the residuals of the system</span>
+<span class="sd">        - a `(n_s.n_x) x N x (n_s.n_x) x N` array representing the jacobian of</span>
+<span class="sd">             the system</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="c1"># TODO: compute a sparse derivative and ensure the solvers can deal with it</span>
+
+    <span class="n">n_s</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">])</span>
+    <span class="n">n_x</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">])</span>
+
+    <span class="n">n_e</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">])</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">guess</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;arbitrage&#39;</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;transition&#39;</span><span class="p">]</span>
+
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">guess</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">vec_f</span> <span class="o">=</span> <span class="n">guess</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[:,</span> <span class="n">n_s</span><span class="p">:]</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">vec_f</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">vec_f</span><span class="p">[:,</span> <span class="n">n_s</span><span class="p">:]</span>
+
+    <span class="n">e</span> <span class="o">=</span> <span class="n">shocks</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+    <span class="n">E</span> <span class="o">=</span> <span class="n">shocks</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:]</span>
+
+    <span class="k">if</span> <span class="n">diff</span><span class="p">:</span>
+        <span class="n">SS</span><span class="p">,</span> <span class="n">SS_s</span><span class="p">,</span> <span class="n">SS_x</span><span class="p">,</span> <span class="n">SS_e</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">R</span><span class="p">,</span> <span class="n">R_s</span><span class="p">,</span> <span class="n">R_x</span><span class="p">,</span> <span class="n">R_e</span><span class="p">,</span> <span class="n">R_S</span><span class="p">,</span> <span class="n">R_X</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">diff</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">SS</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">R</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">E</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+    <span class="n">res_s</span> <span class="o">=</span> <span class="n">SS</span> <span class="o">-</span> <span class="n">S</span>
+    <span class="n">res_x</span> <span class="o">=</span> <span class="n">R</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">))</span>
+
+    <span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="n">res_s</span>
+    <span class="n">res</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">res_x</span>
+
+    <span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">guess</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+    <span class="n">res</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="o">-</span> <span class="p">(</span><span class="n">guess</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">-</span> <span class="n">guess</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:])</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">diff</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">res</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">sparse_jac</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sparse_jac</span><span class="p">:</span>
+
+            <span class="c1"># we compute the derivative matrix</span>
+            <span class="n">res_s_s</span> <span class="o">=</span> <span class="n">SS_s</span>
+            <span class="n">res_s_x</span> <span class="o">=</span> <span class="n">SS_x</span>
+
+            <span class="c1"># next block is probably very inefficient</span>
+            <span class="n">jac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">n_s</span><span class="o">+</span><span class="n">n_x</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="n">R_s</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">R_x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="n">R_S</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">R_X</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="n">SS_s</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="n">SS_x</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+                <span class="n">jac</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">)</span>
+                <span class="c1"># jac[i,n_s:,i,:n_s] = R_s[i,:,:]</span>
+                <span class="c1"># jac[i,n_s:,i,n_s:] = R_x[i,:,:]</span>
+                <span class="c1"># jac[i+1,n_s:,i,:n_s] = R_S[i,:,:]</span>
+                <span class="c1"># jac[i+1,n_s:,i,n_s:] = R_X[i,:,:]</span>
+                <span class="c1"># jac[i,:n_s,i+1,:n_s] = SS_s[i,:,:]</span>
+                <span class="c1"># jac[i,:n_s,i+1,n_s:] = SS_x[i,:,:]</span>
+                <span class="c1"># jac[i+1,:n_s,i+1,:n_s] = -np.eye(n_s)</span>
+            <span class="n">jac</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="n">n_s</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_s</span><span class="p">)</span>
+            <span class="n">jac</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_x</span><span class="p">)</span>
+            <span class="n">jac</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_s</span><span class="p">:]</span> <span class="o">=</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="n">n_x</span><span class="p">)</span>
+            <span class="n">nn</span> <span class="o">=</span> <span class="n">jac</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">jac</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+            <span class="n">jac</span> <span class="o">=</span> <span class="n">jac</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">nn</span><span class="p">,</span> <span class="n">nn</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">jactype</span> <span class="o">==</span> <span class="s1">&#39;sparse&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="k">import</span> <span class="n">csc_matrix</span><span class="p">,</span> <span class="n">csr_matrix</span>
+            <span class="n">jac</span> <span class="o">=</span> <span class="n">csc_matrix</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
+            <span class="c1"># scipy bug ? I don&#39;t get the same with csr</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="n">res</span><span class="p">,</span> <span class="n">jac</span><span class="p">]</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="c1"># this example computes the response of the rbc economy to a series of</span>
+    <span class="c1"># expected productivity shocks. investment is bounded by an exogenous value</span>
+    <span class="c1"># 0.2, so that investment is constrained in the first periods</span>
+
+    <span class="c1"># TODO: propose a meaningful economic example</span>
+
+    <span class="kn">from</span> <span class="nn">dolo</span> <span class="k">import</span> <span class="n">yaml_import</span>
+
+    <span class="n">m</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">&quot;../../../examples/models/Figv4_1191.yaml&quot;</span><span class="p">)</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">g_list</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">]</span><span class="o">*</span><span class="mi">10</span><span class="o">+</span><span class="p">[</span><span class="mf">0.4</span><span class="p">]</span>
+
+    <span class="c1"># first try using a list</span>
+    <span class="n">sol1</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">g_list</span><span class="p">)</span>
+
+    <span class="c1"># then try using a 1d array</span>
+    <span class="n">sol2</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">g_list</span><span class="p">))</span>
+
+    <span class="c1"># then try using a 2d array</span>
+    <span class="n">g_shock</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">g_list</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">sol3</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">g_shock</span><span class="p">)</span>
+
+    <span class="c1"># now try using a dict</span>
+    <span class="n">sol4</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;g&quot;</span><span class="p">:</span> <span class="n">g_list</span><span class="p">})</span>
+
+    <span class="c1"># now try using a DataFrame</span>
+    <span class="n">sol5</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;g&quot;</span><span class="p">:</span> <span class="n">g_list</span><span class="p">}))</span>
+
+    <span class="c1"># check that they are all the same</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">[</span><span class="n">sol2</span><span class="p">,</span> <span class="n">sol3</span><span class="p">,</span> <span class="n">sol4</span><span class="p">,</span> <span class="n">sol5</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="nb">max</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">sol1</span><span class="o">-</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">())</span> <span class="o">==</span> <span class="mf">0.0</span>
+
+    <span class="n">m2</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">&quot;../../../examples/models/rmt3_ch11.yaml&quot;</span><span class="p">)</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">deterministic_solve</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;g&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">]</span><span class="o">*</span><span class="mi">10</span><span class="o">+</span><span class="p">[</span><span class="mf">0.4</span><span class="p">]},</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

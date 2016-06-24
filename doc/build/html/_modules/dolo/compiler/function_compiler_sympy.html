@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.compiler.function_compiler_sympy &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.compiler.function_compiler_sympy</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.compiler.function_compiler_sympy</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="kn">import</span> <span class="nn">sympy</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">ast</span>
+
+
+<span class="k">def</span> <span class="nf">ast_to_sympy</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Converts an AST expression to a sympy expression (STUPID)&#39;&#39;&#39;</span>
+
+    <span class="kn">from</span> <span class="nn">.codegen</span> <span class="k">import</span> <span class="n">to_source</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">to_source</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sympy</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">non_decreasing_series</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Lists all combinations of 0,...,n-1 in increasing order&#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">a</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lc</span> <span class="o">=</span> <span class="n">non_decreasing_series</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ll</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lc</span><span class="p">:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="n">l</span> <span class="o">+</span> <span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">ll</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ll</span>
+
+<span class="k">def</span> <span class="nf">higher_order_diff</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="n">syms</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;Takes higher order derivatives of a list of equations w.r.t a list of paramters&#39;&#39;&#39;</span>
+
+    <span class="kn">import</span> <span class="nn">numpy</span>
+
+    <span class="n">eqs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">sympy</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">eqs</span><span class="p">])</span>
+    <span class="n">syms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">sympy</span><span class="o">.</span><span class="n">sympify</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">syms</span><span class="p">])</span>
+
+    <span class="n">neq</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)</span>
+
+    <span class="n">D</span> <span class="o">=</span> <span class="p">[</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">eqs</span><span class="p">)]</span>
+    <span class="n">orders</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">order</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="n">par</span> <span class="o">=</span> <span class="n">D</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">empty</span><span class="p">([</span><span class="n">neq</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">p</span><span class="p">]</span><span class="o">*</span><span class="n">i</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>   <span class="c1">#.append( numpy.zeros(orders))</span>
+        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">non_decreasing_series</span><span class="p">(</span><span class="n">p</span><span class="p">,</span><span class="n">i</span><span class="p">):</span>
+
+            <span class="n">ind_parent</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="n">ind</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">neq</span><span class="p">):</span>
+
+                <span class="n">ii</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span> <span class="o">+</span> <span class="n">ind</span>
+                <span class="n">iid</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span> <span class="o">+</span> <span class="n">ind_parent</span>
+                <span class="n">eeq</span> <span class="o">=</span> <span class="n">par</span><span class="p">[</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">iid</span><span class="p">)</span> <span class="p">]</span>
+                <span class="n">mat</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">ii</span><span class="p">)]</span> <span class="o">=</span> <span class="n">eeq</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">syms</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+        <span class="n">D</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mat</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">D</span>
+
+
+<div class="viewcode-block" id="compile_higher_order_function"><a class="viewcode-back" href="../../../function_factory.html#dolo.compiler.function_compiler_sympy.compile_higher_order_function">[docs]</a><span class="k">def</span> <span class="nf">compile_higher_order_function</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="n">syms</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">funname</span><span class="o">=</span><span class="s1">&#39;anonymous&#39;</span><span class="p">,</span>
+    <span class="n">return_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">compile</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;From a list of equations and variables, define a multivariate functions with higher order derivatives.&#39;&#39;&#39;</span>
+
+    <span class="kn">from</span> <span class="nn">.function_compiler_ast</span> <span class="k">import</span> <span class="n">std_date_symbol</span><span class="p">,</span> <span class="n">StandardizeDatesSimple</span>
+
+    <span class="n">all_vars</span> <span class="o">=</span> <span class="n">syms</span> <span class="o">+</span> <span class="p">[(</span><span class="n">p</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span>
+
+    <span class="n">sds</span> <span class="o">=</span> <span class="n">StandardizeDatesSimple</span><span class="p">(</span><span class="n">all_vars</span><span class="p">)</span>
+
+
+
+    <span class="c1"># TEMP: compatibility fix when eqs is an Odict:</span>
+    <span class="n">eqs</span> <span class="o">=</span> <span class="p">[</span><span class="n">eq</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">eqs</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">eqs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="c1"># elif not isinstance(eqs[0], sympy.Basic):</span>
+    <span class="c1"># assume we have ASTs</span>
+        <span class="n">eqs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">eqs</span><span class="p">])</span>
+        <span class="n">eqs_std</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="p">[</span><span class="n">sds</span><span class="o">.</span><span class="n">visit</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">eqs</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">eqs_sym</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="p">[</span><span class="n">ast_to_sympy</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="k">for</span> <span class="n">eq</span> <span class="ow">in</span> <span class="n">eqs_std</span><span class="p">]</span> <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">eqs_sym</span> <span class="o">=</span> <span class="n">eqs</span>
+
+    <span class="n">symsd</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="p">[</span><span class="n">std_date_symbol</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="n">syms</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">paramsd</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="p">[</span><span class="n">std_date_symbol</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span> <span class="p">)</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">higher_order_diff</span><span class="p">(</span><span class="n">eqs_sym</span><span class="p">,</span> <span class="n">symsd</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>
+
+    <span class="n">txt</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;def </span><span class="si">{funname}</span><span class="s2">(x, p, order=1):</span>
+
+<span class="s2">    import numpy</span>
+<span class="s2">    from numpy import log, exp, tan, sqrt, pi</span>
+<span class="s2">    from scipy.special import erfc</span>
+
+<span class="s2">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">funname</span><span class="o">=</span><span class="n">funname</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2"> = x[</span><span class="si">{}</span><span class="s2">]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">symsd</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)):</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2"> = p[</span><span class="si">{}</span><span class="s2">]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">paramsd</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">)</span>
+
+    <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    out = numpy.zeros(</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)):</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">    out[</span><span class="si">{}</span><span class="s2">] = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">D</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">    if order == 0:</span>
+<span class="s2">        return out</span>
+
+<span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># Jacobian</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_1 = numpy.zeros((</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">))</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">D</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_1[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">] = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">D</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">    if order == 1:</span>
+<span class="s2">        return [out, out_1]</span>
+
+<span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># Hessian</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_2 = numpy.zeros((</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">))</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">D</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">val</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_2[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">] = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">D</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">i1</span><span class="p">,</span> <span class="n">j1</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="p">)</span>
+                        <span class="k">if</span> <span class="n">D</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i1</span><span class="p">,</span><span class="n">j1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_2[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">] = out_2[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">i1</span><span class="p">,</span><span class="n">j1</span><span class="p">)</span>
+
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">    if order == 2:</span>
+<span class="s2">        return [out, out_1, out_2]</span>
+
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+    <span class="k">if</span> <span class="n">order</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="c1"># Hessian</span>
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_3 = numpy.zeros((</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">))</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">eqs</span><span class="p">)):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">syms</span><span class="p">)):</span>
+                        <span class="n">val</span> <span class="o">=</span> <span class="n">D</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">val</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_3[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">] = </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">D</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">])</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">i1</span><span class="p">,</span> <span class="n">j1</span><span class="p">,</span> <span class="n">k1</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="p">)</span>
+                            <span class="k">if</span> <span class="n">D</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">n</span><span class="p">,</span><span class="n">i1</span><span class="p">,</span><span class="n">j1</span><span class="p">,</span><span class="n">k1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                                <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;    out_3[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">] = out_3[</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="n">n</span><span class="p">,</span><span class="n">i1</span><span class="p">,</span><span class="n">j1</span><span class="p">,</span><span class="n">k1</span><span class="p">)</span>
+
+        <span class="n">txt</span> <span class="o">+=</span> <span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">    if order == 3:</span>
+<span class="s2">        return [out, out_1, out_2, out_3]</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">return_code</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">txt</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">d</span><span class="p">[</span><span class="s1">&#39;division&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">division</span>
+
+        <span class="n">exec</span><span class="p">(</span><span class="n">txt</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>
+        <span class="n">fun</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">funname</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">compile</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Not implemented.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">fun</span></div>
+
+
+        <span class="c1"># if compile:</span>
+        <span class="c1">#     from numba import jit</span>
+        <span class="c1">#     return jit(fun)</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     return fun</span>
+
+
+<span class="k">def</span> <span class="nf">test_deriv</span><span class="p">():</span>
+
+    <span class="c1"># list of equations</span>
+    <span class="n">eqs</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;(a*x + 2*b)**2&#39;</span><span class="p">,</span> <span class="s1">&#39;y + exp(a + 2*b)*c(1)&#39;</span><span class="p">]</span>
+
+    <span class="c1"># list of variables (time symbols)</span>
+    <span class="n">syms</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">),(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span><span class="mi">0</span><span class="p">),(</span><span class="s1">&#39;c&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">)]</span>
+
+    <span class="c1"># list of parameters</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+
+    <span class="c1"># compile a function with its derivatives</span>
+    <span class="n">fun</span> <span class="o">=</span> <span class="n">compile_higher_order_function</span><span class="p">(</span><span class="n">eqs</span><span class="p">,</span> <span class="n">syms</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+
+    <span class="c1"># evaluate the function</span>
+    <span class="kn">import</span> <span class="nn">numpy</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+
+
+    <span class="n">f0</span><span class="p">,</span><span class="n">f1</span><span class="p">,</span><span class="n">f2</span><span class="p">,</span><span class="n">f3</span> <span class="o">=</span> <span class="n">fun</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">assert</span><span class="p">(</span> <span class="p">(</span><span class="n">f0</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+    <span class="k">assert</span><span class="p">(</span> <span class="p">(</span><span class="n">f1</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span> <span class="p">(</span><span class="n">f2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">==</span><span class="mi">8</span><span class="p">))</span>
+    <span class="k">assert</span><span class="p">(</span> <span class="p">(</span><span class="n">f2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">f2</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">test_deriv</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

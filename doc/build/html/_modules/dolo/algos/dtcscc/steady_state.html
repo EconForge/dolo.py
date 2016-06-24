@@ -1,0 +1,437 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dolo.algos.dtcscc.steady_state &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="../../../../index.html"/>
+        <link rel="up" title="Module code" href="../../../index.html"/> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../../index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      
+    <li>dolo.algos.dtcscc.steady_state</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dolo.algos.dtcscc.steady_state</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="k">import</span> <span class="n">root</span>
+
+<span class="kn">from</span> <span class="nn">dolo.numeric.misc</span> <span class="k">import</span> <span class="n">MyJacobian</span>
+
+
+<div class="viewcode-block" id="find_deterministic_equilibrium"><a class="viewcode-back" href="../../../../dtcscc_steady_state.html#dolo.algos.dtcscc.steady_state.find_deterministic_equilibrium">[docs]</a><span class="k">def</span> <span class="nf">find_deterministic_equilibrium</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">return_jacobian</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Finds the steady state calibration.</span>
+
+<span class="sd">    Taking the value of parameters as given, finds the values for endogenous</span>
+<span class="sd">    variables consistent with the deterministic steady-state.</span>
+
+<span class="sd">    This function requires the specification of the first order equations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : NumericModel</span>
+<span class="sd">        A `dtcscc` model</span>
+
+<span class="sd">    constraints : dict</span>
+<span class="sd">        A dictionaries with forced values.</span>
+<span class="sd">        Use it to set shocks to non-zero values or to add additional</span>
+<span class="sd">        constraints in order to avoid unit roots.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    OrderedDict :</span>
+<span class="sd">        calibration dictionary (i.e. endogenous variables and parameters by</span>
+<span class="sd">        type)</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;arbitrage&#39;</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;transition&#39;</span><span class="p">]</span>
+
+    <span class="n">s0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;shocks&#39;</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">:</span>
+        <span class="n">e0</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">e0</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]))</span>
+
+    <span class="n">n_e</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">e0</span><span class="p">)</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">s0</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">e0</span><span class="p">])</span>
+
+    <span class="n">symbs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+    <span class="n">addcons_ind</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">addcons_val</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">constraints</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">constraints</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">constraints</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">symbs</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">symbs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">addcons_ind</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">addcons_val</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">constraints</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">e0</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">constraints</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid symbol &#39;</span><span class="si">{}</span><span class="s2">&#39; for steady_state constraint&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">fobj</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">z</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">s0</span><span class="p">)]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s0</span><span class="p">):</span><span class="o">-</span><span class="n">n_e</span><span class="p">]</span>
+        <span class="n">e</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="o">-</span><span class="n">n_e</span><span class="p">:]</span>
+
+        <span class="n">S</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">d_e</span> <span class="o">=</span> <span class="n">e</span> <span class="o">-</span> <span class="n">e0</span>
+        <span class="n">d_sx</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">addcons_ind</span><span class="p">]</span> <span class="o">-</span> <span class="n">addcons_val</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">S</span> <span class="o">-</span> <span class="n">s</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">d_e</span><span class="p">,</span> <span class="n">d_sx</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="n">jac</span> <span class="o">=</span> <span class="n">MyJacobian</span><span class="p">(</span><span class="n">fobj</span><span class="p">)(</span><span class="n">z</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">return_jacobian</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">jac</span>
+
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matrix_rank</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rank</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">        There are </span><span class="si">{}</span><span class="s2"> equilibrium variables to find, but the jacobian </span><span class="se">\</span>
+<span class="s2">        matrix is only of rank </span><span class="si">{}</span><span class="s2">. The solution is indeterminate.&quot;&quot;&quot;</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">),</span> <span class="n">rank</span><span class="p">))</span>
+
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">root</span><span class="p">(</span><span class="n">fobj</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;lm&#39;</span><span class="p">)</span>
+    <span class="n">steady_state</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">x</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">steady_state</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">s0</span><span class="p">)]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">steady_state</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s0</span><span class="p">):</span><span class="o">-</span><span class="n">n_e</span><span class="p">]</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">steady_state</span><span class="p">[</span><span class="o">-</span><span class="n">n_e</span><span class="p">:]</span>
+
+    <span class="n">calib</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">states</span><span class="o">=</span><span class="n">s</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">shocks</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+    <span class="k">if</span> <span class="s1">&#39;auxiliary&#39;</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">:</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;auxiliary&#39;</span><span class="p">](</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">calib</span><span class="p">[</span><span class="s1">&#39;auxiliaries&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">a</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.compiler.misc</span> <span class="k">import</span> <span class="n">CalibrationDict</span>
+    <span class="k">return</span> <span class="n">CalibrationDict</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span> <span class="n">calib</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="residuals"><a class="viewcode-back" href="../../../../dtcscc_steady_state.html#dolo.algos.dtcscc.steady_state.residuals">[docs]</a><span class="k">def</span> <span class="nf">residuals</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">calib</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Computes the residuals associated to a calibration.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : NumericModel</span>
+
+<span class="sd">    calib : OrderedDict</span>
+<span class="sd">        Calibration dictionary (i.e. endogenous variables and parameters by</span>
+<span class="sd">        type)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    --------</span>
+<span class="sd">    OrderedDict :</span>
+<span class="sd">        residuals vectors by equation type</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="k">if</span> <span class="n">calib</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">calib</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">calibration</span>
+
+    <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">calib</span><span class="p">[</span><span class="s1">&#39;states&#39;</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">calib</span><span class="p">[</span><span class="s1">&#39;controls&#39;</span><span class="p">]</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">calib</span><span class="p">[</span><span class="s1">&#39;shocks&#39;</span><span class="p">]</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">calib</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;arbitrage&#39;</span><span class="p">]</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">functions</span><span class="p">[</span><span class="s1">&#39;transition&#39;</span><span class="p">]</span>
+
+    <span class="n">res</span><span class="p">[</span><span class="s1">&#39;transition&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="o">-</span> <span class="n">s</span>
+    <span class="n">res</span><span class="p">[</span><span class="s1">&#39;arbitrage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">res</span></div>
+<span class="c1">#</span>
+<span class="c1"># def find_steady_state(model, e=None, force_states=None, constraints=None, return_jacobian=False):</span>
+<span class="c1">#     &#39;&#39;&#39;n</span>
+<span class="c1">#     Finds the steady state corresponding to exogenous shocks :math:`e`.</span>
+<span class="c1">#</span>
+<span class="c1">#     :param model: an &quot;fg&quot; model.</span>
+<span class="c1">#     :param e: a vector with the value for the exogenous shocks.</span>
+<span class="c1">#     :param force_values: (optional) a vector where finite values override the equilibrium conditions. For instance a vector :math:`[0,nan,nan]` would impose that the first state must be equal to 0, while the two next ones, will be determined by the model equations. This is useful, when the deterministic model has a unit root.</span>
+<span class="c1">#     :return: a list containing a vector for the steady-states and the corresponding steady controls.</span>
+<span class="c1">#     &#39;&#39;&#39;</span>
+<span class="c1">#</span>
+<span class="c1">#     s0 = model.calibration[&#39;states&#39;]</span>
+<span class="c1">#     x0 = model.calibration[&#39;controls&#39;]</span>
+<span class="c1">#     p = model.calibration[&#39;parameters&#39;]</span>
+<span class="c1">#     z = numpy.concatenate([s0, x0])</span>
+<span class="c1">#</span>
+<span class="c1">#     if e is None:</span>
+<span class="c1">#         e = numpy.zeros( len(model.symbols[&#39;shocks&#39;]) )</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         e = e.ravel()</span>
+<span class="c1">#</span>
+<span class="c1">#     if constraints is not None:</span>
+<span class="c1">#         if isinstance(constraints, (list, tuple)):</span>
+<span class="c1">#             inds =  numpy.where( numpy.isfinite( force_values ) )[0]</span>
+<span class="c1">#             vals = force_values[inds]</span>
+<span class="c1">#         elif isinstance(constraints, dict):</span>
+<span class="c1">#             inds = [model.symbols[&#39;states&#39;].index(k) for k in force_values.keys()]</span>
+<span class="c1">#             vals = force_values.values()</span>
+<span class="c1">#</span>
+<span class="c1">#     def fobj(z):</span>
+<span class="c1">#         s = z[:len(s0)]</span>
+<span class="c1">#         x = z[len(s0):]</span>
+<span class="c1">#         S = model.functions[&#39;transition&#39;](s,x,e,p)</span>
+<span class="c1">#         r = model.functions[&#39;arbitrage&#39;](s,x,s,x,p)</span>
+<span class="c1">#         res = numpy.concatenate([S-s, r,  ])</span>
+<span class="c1">#         if force_values is not None:</span>
+<span class="c1">#             add = S[inds]-vals</span>
+<span class="c1">#             res = numpy.concatenate([res, add])</span>
+<span class="c1">#         return res</span>
+<span class="c1">#</span>
+<span class="c1">#     from trash.dolo.numeric.solver import MyJacobian</span>
+<span class="c1">#     jac = MyJacobian(fobj)( z )</span>
+<span class="c1">#     if return_jacobian:</span>
+<span class="c1">#         return jac</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#     rank = numpy.linalg.matrix_rank(jac)</span>
+<span class="c1">#     if rank &lt; len(z):</span>
+<span class="c1">#         import warnings</span>
+<span class="c1">#         warnings.warn(&quot;There are {} equilibrium variables to find, but the jacobian matrix is only of rank {}. The solution is indeterminate.&quot;.format(len(z),rank))</span>
+<span class="c1">#</span>
+<span class="c1">#     from scipy.optimize import root</span>
+<span class="c1">#     sol = root(fobj, z, method=&#39;lm&#39;)</span>
+<span class="c1">#     steady_state = sol.x</span>
+<span class="c1">#</span>
+<span class="c1">#     return [steady_state[:len(s0)], steady_state[len(s0):]]</span>
+<span class="c1">#</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="kn">from</span> <span class="nn">dolo</span> <span class="k">import</span> <span class="o">*</span>
+    <span class="kn">from</span> <span class="nn">numpy</span> <span class="k">import</span> <span class="n">nan</span>
+
+    <span class="kn">from</span> <span class="nn">dolo.algos.steady_state</span> <span class="k">import</span> <span class="n">find_steady_state</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">&quot;examples/models/open_economy.yaml&quot;</span><span class="p">)</span>
+
+    <span class="n">ss</span> <span class="o">=</span> <span class="n">find_steady_state</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Steady-state variables&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;states: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ss</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;controls: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ss</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="n">jac</span> <span class="o">=</span> <span class="n">find_steady_state</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">return_jacobian</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">matrix_rank</span><span class="p">(</span><span class="n">jac</span><span class="p">)</span>
+
+    <span class="n">sol2</span> <span class="o">=</span> <span class="n">find_steady_state</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">force_values</span><span class="o">=</span><span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">nan</span><span class="p">]</span>
+    <span class="p">)</span>  <span class="c1"># -&gt; returns steady-state, using calibrated values as starting point</span>
+    <span class="n">sol3</span> <span class="o">=</span> <span class="n">find_steady_state</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">force_values</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;W_1&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+    <span class="p">)</span>  <span class="c1"># -&gt; returns steady-state, using calibrated values as starting point</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">sol2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">sol3</span><span class="p">)</span>
+
+<span class="c1">#    steady_state( model, e ) # -&gt; sets exogenous values for shocks</span>
+
+<span class="c1">#    steady_state( model, {&#39;e_a&#39;:1, &#39;e&#39;:9}, {&#39;k&#39;:[8,9]})</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../../',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

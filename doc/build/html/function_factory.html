@@ -1,0 +1,235 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Compiler &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="index.html"/>
+        <link rel="up" title="Miscellaneous topics" href="misc.html"/>
+        <link rel="next" title="Nonlinear solver" href="nonlinear_solver.html"/>
+        <link rel="prev" title="Interpolation" href="interpolation.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algos.html">Solution algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="misc.html">Miscellaneous topics</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="interpolation.html">Interpolation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Compiler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#function-factory">Function factory</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nonlinear_solver.html">Nonlinear solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="discretization.html">Discretization</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="misc.html">Miscellaneous topics</a> &raquo;</li>
+      
+    <li>Compiler</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="compiler">
+<h1>Compiler<a class="headerlink" href="#compiler" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="function-factory">
+<h2>Function factory<a class="headerlink" href="#function-factory" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="dolo.compiler.function_compiler_ast.compile_function_ast">
+<code class="descclassname">dolo.compiler.function_compiler_ast.</code><code class="descname">compile_function_ast</code><span class="sig-paren">(</span><em>expressions</em>, <em>symbols</em>, <em>arg_names</em>, <em>output_names=None</em>, <em>funname='anonymous'</em>, <em>return_ast=False</em>, <em>print_code=False</em>, <em>definitions=None</em>, <em>vectorize=True</em>, <em>use_file=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dolo/compiler/function_compiler_ast.html#compile_function_ast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.compiler.function_compiler_ast.compile_function_ast" title="Permalink to this definition">¶</a></dt>
+<dd><p>expressions: list of equations as string</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="dolo.compiler.function_compiler_sympy.compile_higher_order_function">
+<code class="descclassname">dolo.compiler.function_compiler_sympy.</code><code class="descname">compile_higher_order_function</code><span class="sig-paren">(</span><em>eqs</em>, <em>syms</em>, <em>params</em>, <em>order=2</em>, <em>funname='anonymous'</em>, <em>return_code=False</em>, <em>compile=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dolo/compiler/function_compiler_sympy.html#compile_higher_order_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.compiler.function_compiler_sympy.compile_higher_order_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>From a list of equations and variables, define a multivariate functions with higher order derivatives.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="nonlinear_solver.html" class="btn btn-neutral float-right" title="Nonlinear solver" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="interpolation.html" class="btn btn-neutral" title="Interpolation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

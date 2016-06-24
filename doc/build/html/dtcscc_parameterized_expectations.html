@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Parameterized expectations &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="index.html"/>
+        <link rel="up" title="Algorithms for DTCSCC models" href="algos_dtcscc.html"/>
+        <link rel="next" title="Algorithms for DTMSCC models" href="algos_dtmscc.html"/>
+        <link rel="prev" title="Time iteration" href="dtcscc_time_iteration.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="algos.html">Solution algorithms</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="algos_dtcscc.html">Algorithms for DTCSCC models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="dtcscc_steady_state.html">Steady-state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dtcscc_perturbations.html">Perturbation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dtcscc_perfect_foresight.html">Perfect foresight</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dtcscc_time_iteration.html">Time iteration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Parameterized expectations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="algos_dtmscc.html">Algorithms for DTMSCC models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="algos_dynare.html">Algorithms for Dynare models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="algos.html">Solution algorithms</a> &raquo;</li>
+      
+          <li><a href="algos_dtcscc.html">Algorithms for DTCSCC models</a> &raquo;</li>
+      
+    <li>Parameterized expectations</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="parameterized-expectations">
+<h1>Parameterized expectations<a class="headerlink" href="#parameterized-expectations" title="Permalink to this headline">¶</a></h1>
+<p>We consider an <cite>fgh</cite> model, that is a model with the form:</p>
+<blockquote>
+<div><p><span class="math">\(s_t = g\left(s_{t-1}, x_{t-1}, \epsilon_t \right)\)</span></p>
+<p><span class="math">\(0 = f\left(s_{t}, x_{t}, E_t[h(s_{t+1}, x_{t+1})] \right) \ \perp \ \underline{u} &lt;= x_t &lt;= \overline{u}\)</span></p>
+</div></blockquote>
+<p>where <span class="math">\(g\)</span> is the state transition function, <span class="math">\(f\)</span> is the arbitrage equation, and <span class="math">\(h\)</span> is the expectations function (more accurately, it is the function over which expectations are taken).</p>
+<p>The parameterized expectations algorithm consists in approximating the expectations function, <span class="math">\(h\)</span>, and solving for the associated optimal controls, <span class="math">\(x_t = x(s_t)\)</span>.</p>
+<dl class="docutils">
+<dt>At step <span class="math">\(n\)</span>, with a current guess of the control, <span class="math">\(x(s_t) = \varphi^n(s_t)\)</span>, and expectations function, <span class="math">\(h(s_t,x_t) = \psi^n(s_t)\)</span> :</dt>
+<dd><blockquote class="first">
+<div><ul class="simple">
+<li>Compute the conditional expectation <span class="math">\(z_t = E_t[\varphi^n(s_t)]\)</span></li>
+<li>Given the expectation, update the optimal control by solving <span class="math">\(0 = \left( f\left(s_{t}, \varphi^{n+1}(s), z_t \right) \right)\)</span></li>
+<li>Given the optimal control, update the expectations function <span class="math">\(\psi^{n+1}(s_t) = h(s_t, \varphi^{n+1}(s_t))\)</span></li>
+</ul>
+</div></blockquote>
+<table border="1" class="last docutils">
+<colgroup>
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+</dd>
+</dl>
+<dl class="function">
+<dt id="dolo.algos.dtcscc.parameterized_expectations.parameterized_expectations">
+<code class="descclassname">dolo.algos.dtcscc.parameterized_expectations.</code><code class="descname">parameterized_expectations</code><span class="sig-paren">(</span><em>model</em>, <em>verbose=False</em>, <em>initial_dr=None</em>, <em>pert_order=1</em>, <em>with_complementarities=True</em>, <em>grid={}</em>, <em>distribution={}</em>, <em>maxit=100</em>, <em>tol=1e-08</em>, <em>inner_maxit=10</em>, <em>direct=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dolo/algos/dtcscc/parameterized_expectations.html#parameterized_expectations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.algos.dtcscc.parameterized_expectations.parameterized_expectations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find global solution for <code class="docutils literal"><span class="pre">model</span></code> via parameterized expectations.
+Controls must be expressed as a direct function of equilibrium objects.
+Algorithm iterates over the expectations function in the arbitrage equation.</p>
+<dl class="docutils">
+<dt>model</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">NumericModel</span><dd><code class="docutils literal"><span class="pre">dtcscc</span></code> model to be solved</dd>
+<dt>verbose</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">boolean</span><dd>if True, display iterations</dd>
+<dt>initial_dr</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">decision rule</span><dd>initial guess for the decision rule</dd>
+<dt>pert_order</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">{1}</span><dd>if no initial guess is supplied, the perturbation solution at order
+<code class="docutils literal"><span class="pre">pert_order</span></code> is used as initial guess</dd>
+</dl>
+<p>grid : grid options</p>
+<p>distribution : distribution options</p>
+<p>maxit : maximum number of iterations</p>
+<p>tol : tolerance criterium for successive approximations</p>
+<p>inner_maxit : maximum number of iteration for inner solver</p>
+<p>direct : if True, solve with direct method. If false, solve indirectly</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">decision rule :</p>
+<blockquote class="last">
+<div><p>approximated solution</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="algos_dtmscc.html" class="btn btn-neutral float-right" title="Algorithms for DTMSCC models" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dtcscc_time_iteration.html" class="btn btn-neutral" title="Time iteration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

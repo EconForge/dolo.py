@@ -1,0 +1,282 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Simulations &mdash; dolo 0.4.9.5 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="dolo 0.4.9.5 documentation" href="index.html"/>
+        <link rel="up" title="Algorithms for DTMSCC models" href="algos_dtmscc.html"/>
+        <link rel="next" title="Value function iteration" href="dtmscc_value_iteration.html"/>
+        <link rel="prev" title="Time iteration" href="dtmscc_time_iteration.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> dolo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.4.9.5
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modeling_language.html">The dolo language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_api.html">Model API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_specification.html">Dolo Model Classification</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="algos.html">Solution algorithms</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="algos_dtcscc.html">Algorithms for DTCSCC models</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="algos_dtmscc.html">Algorithms for DTMSCC models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="dtmscc_steady_state.html">Steady state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dtmscc_time_iteration.html">Time iteration</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Simulations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dtmscc_value_iteration.html">Value function iteration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="algos_dynare.html">Algorithms for Dynare models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="misc.html">Miscellaneous topics</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">dolo</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="algos.html">Solution algorithms</a> &raquo;</li>
+      
+          <li><a href="algos_dtmscc.html">Algorithms for DTMSCC models</a> &raquo;</li>
+      
+    <li>Simulations</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="simulations">
+<h1>Simulations<a class="headerlink" href="#simulations" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="dolo.algos.dtmscc.simulations.simulate">
+<code class="descclassname">dolo.algos.dtmscc.simulations.</code><code class="descname">simulate</code><span class="sig-paren">(</span><em>model</em>, <em>dr</em>, <em>i_0</em>, <em>s0=None</em>, <em>drv=None</em>, <em>n_exp=100</em>, <em>horizon=50</em>, <em>markov_indices=None</em>, <em>return_array=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dolo/algos/dtmscc/simulations.html#simulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dolo.algos.dtmscc.simulations.simulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simulate <code class="docutils literal"><span class="pre">model</span></code> using the specified decision rule.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>model</strong> : NumericModel</p>
+<blockquote>
+<div><p>a <code class="docutils literal"><span class="pre">dtmscc</span></code> model</p>
+</div></blockquote>
+<p><strong>dr :</strong></p>
+<blockquote>
+<div><p>decision rule</p>
+</div></blockquote>
+<p><strong>i_0 :</strong></p>
+<blockquote>
+<div><p>index of initial markov state</p>
+</div></blockquote>
+<p><strong>s0</strong> : ndarray</p>
+<blockquote>
+<div><p>initial state where all simulations start</p>
+</div></blockquote>
+<p><strong>n_exp</strong> : int</p>
+<blockquote>
+<div><p>number of simulations. Use 0 for impulse-response functions</p>
+</div></blockquote>
+<p><strong>horizon</strong> : int</p>
+<blockquote>
+<div><p>horizon for the simulations</p>
+</div></blockquote>
+<p><strong>seed</strong> : int</p>
+<blockquote>
+<div><p>used to initialize the random number generator. Use it to replicate
+exact same results among simulations</p>
+</div></blockquote>
+<p><strong>return_array</strong> : boolean (False)</p>
+<blockquote>
+<div><p>if True, then all return a numpy array containing simulated data,
+otherwise return a pandas DataFrame or Panel.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">ndarray or pandas.Dataframe :</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>if <cite>n_exp&lt;=1</cite> returns a DataFrame object</li>
+<li>if <cite>n_exp&gt;1</cite> returns a <code class="docutils literal"><span class="pre">horizon</span> <span class="pre">x</span> <span class="pre">n_exp</span> <span class="pre">x</span> <span class="pre">n_v</span></code> array where <code class="docutils literal"><span class="pre">n_v</span></code>
+is the number of variables.</li>
+</ul>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dtmscc_value_iteration.html" class="btn btn-neutral float-right" title="Value function iteration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dtmscc_time_iteration.html" class="btn btn-neutral" title="Time iteration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2012-2016, Pablo Winant.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.4.9.5',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
