@@ -90,11 +90,11 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     z_new = np.zeros((N, len(model.symbols['expectations'])))
 
     xxnext = np.zeros((x_0.shape[0], x_0.shape[1], weights.shape[0]))
-#    for i in range(weights.shape[0]):
-#        e = nodes[i, :]
-#        ssnext = g(grid, x_0, e, parms)
-#        xxnext[:, :, i] = initial_dr(ssnext)
-#        z_0 += weights[i]*h(ssnext, xxnext[:, :, i], parms)
+    for i in range(weights.shape[0]):
+        e = nodes[i, :]
+        ssnext = g(grid, x_0, e, parms)
+        xxnext[:, :, i] = initial_dr(ssnext)
+        z_0 += weights[i]*h(ssnext, xxnext[:, :, i], parms)
 
     t1 = time.time()
     it = 0
