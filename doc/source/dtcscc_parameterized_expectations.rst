@@ -5,7 +5,7 @@ We consider an `fgh` model, that is a model with the form:
 
  :math:`s_t = g\left(s_{t-1}, x_{t-1}, \epsilon_t \right)`
 
- :math:`0 = f\left(s_{t}, x_{t}, E_t[h(s_{t+1}, x_{t+1})] \right) \ \perp \ \underline{u} <= x_t <= \overline{u}`
+ :math:`0 = f\left(s_{t}, x_{t}, E_t[h(s_{t+1}, x_{t+1})] \right)`
 
 where :math:`g` is the state transition function, :math:`f` is the arbitrage equation, and :math:`h` is the expectations function (more accurately, it is the function over which expectations are taken).
 
@@ -16,6 +16,5 @@ At step :math:`n`, with a current guess of the control, :math:`x(s_t) = \varphi^
   - Given the expectation, update the optimal control by solving :math:`0 = \left( f\left(s_{t}, \varphi^{n+1}(s), z_t \right) \right)`
   - Given the optimal control, update the expectations function :math:`\psi^{n+1}(s_t) = h(s_t, \varphi^{n+1}(s_t))`
 
- +-------------------------------------------------+------------------------------------------------------------------------------+
 
 .. autofunction:: dolo.algos.dtcscc.parameterized_expectations.parameterized_expectations

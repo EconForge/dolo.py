@@ -173,13 +173,42 @@ def time_iteration(model, verbose=False, initial_dr=None, pert_order=1,
 
 def step_residual(s, x, dr, f, g, parms, nodes, weights):
     """
-    Comptue the residuals of the arbitrage equaitons.
+    Comptue the residuals of the arbitrage equaitons. Recall that the arbitrage
+    equations have the form
 
-    Recall that the arbitrage equations have the form
+        :math:`0 = E_t [f(...)]`
 
-        0 = E_t [f(...)]
+    Parameters
+    ----------
+    s :
+        State vector
 
-    This function computes and returns the right hand side.
+    x :
+        Control variables
+
+    dr :
+        Decision rule
+
+    f : function
+        Arbitrage equations
+
+    g : function
+        State transition function
+
+    parms : OrderdDict
+        Model Parameters
+
+    nodes :
+        Points in the discretized expectation
+
+    weights :
+        Probability density at nodes in the discretized expectation
+
+    Returns
+    -------
+    residual :
+        residual from arbitrage equation
+
     """
 
     # TODO: transpose
