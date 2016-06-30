@@ -69,37 +69,36 @@ class IterationsPrinter:
 
 
 import numpy
-from dolo.numeric.decision_rules_markov import
+from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
-def solve_policy(model, grid={}, tol=1e-4, maxit=500, verbose=True):
-        """
-        Solve for the value function and associated Markov decision rule by iterating over
-        the value function.
+def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=True):
+    """
+    Solve for the value function and associated Markov decision rule by iterating over
+    the value function.
 
-        Parameters:
-        -----------
-        model :
-            "dtmscc" model. Must contain a 'felicity' function.
-        grid :
-            grid options
-        dr :
-            decision rule to evaluate
+    Parameters:
+    -----------
+    model :
+        "dtmscc" model. Must contain a 'felicity' function.
+    grid :
+        grid options
+    dr :
+        decision rule to evaluate
 
-        Returns:
-        --------
-        mdr : Markov decision rule
-            The solved decision rule/policy function
-        mdrv: decision rule
-            The solved value function
-        """
+    Returns:
+    --------
+    mdr : Markov decision rule
+        The solved decision rule/policy function
+    mdrv: decision rule
+        The solved value function
+    """
 
     assert(model.model_type == 'dtmscc')
 
     def vprint(t):
         if verbose:
             print(t)
-    #assert(set(['g','r']).issubset(set(model.model_spec)))
-
+    # assert(set(['g','r']).issubset(set(model.model_spec)))
 
     transition = model.functions['transition']
     felicity = model.functions['felicity']
@@ -138,14 +137,80 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, verbose=True):
     itprint = IterationsPrinter(('N', int), ('Error', float), ('Gain', float), ('Time', float), verbose=verbose)
     itprint.print_header('Evaluating value of initial guess')
 
-    # Reset counters
+    # FIRST: value function iterations, 10 iterations to start
+    it = 0
+    err_v = 100
+    err_v_0 = 0.0
+    gain_v = 0.0
+    err_x = 100
+    err_x_0 = 100
+
+    if verbose:
+        print('-----')
+        print('Starting value function iteration')
+        print('-----')
+
+    while it < 10 and err_v > tol:
+
+        t_start = time.time()
+        it += 1
+
+        # update interpolation object with current values
+        mdrv.set_values(values_0)
+
+        values = values_0.copy()
+        controls = controls_0.copy()
+
+        for i_m in range(n_ms):
+            for n in range(N):
+                m = P[i_m, :]
+                s = grid[n, :]
+                x = controls[i_m, n, :]
+                lb = controls_lb(m, s, parms)
+                ub = controls_ub(m, s, parms)
+                bnds = [e for e in zip(lb, ub)]
+
+                def valfun(xx):
+                    return -choice_value(transition, felicity, i_m, s, xx, mdrv, P, Q, parms, discount)[0]
+                res = scipy.optimize.minimize(valfun, x, bounds=bnds)
+
+                controls[i_m, n, :] = res.x
+                values[i_m, n, 0] = -valfun(res.x)
+
+        # compute error, update value and dr
+        err_x = abs(controls - controls_0).max()
+        err_v = abs(values - values_0).max()
+        t_end = time.time()
+        elapsed = t_end-t_start
+
+        values_0 = values
+        controls_0 = controls
+
+        gain_x = err_x / err_x_0
+        gain_v = err_v / err_v_0
+
+        err_x_0 = err_x
+        err_v_0 = err_v
+
+        itprint.print_iteration(N=it,
+                                Error_V=err_v,
+                                Gain_V=gain_v,
+                                Error_x=err_x,
+                                Gain_x=gain_x,
+                                Time=elapsed)
+
+    # SECOND: Howard improvement step, 10-20 iterations
     it = 0
     err_v = 100
     err_v_0 = 0.0
     gain_v = 1.0
 
-    # Iterating over value function using the same decision rule
-    while it < maxit and err_v > tol:
+    if verbose:
+        print('-----')
+        print('Starting Howard improvement step')
+        print('-----')
+
+    while it < maxit_howard and err_v > tol:
 
         t_start = time.time()
         it += 1
@@ -173,17 +238,8 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, verbose=True):
         itprint.print_iteration(N=it, Error=err_v, Gain=gain_v, Time=elapsed)
         # vprint(fmt_str.format(it, err_v, gain_v, elapsed))
 
-    itprint.print_finished()
 
-
-    itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
-                                ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
-    itprint.print_header('Start value function iterations.')
-
-    if verbose:
-        print('Finished iterating on value function only. Starting value with policy iteration.')
-
-    # Reset counters
+    # THIRD: value function iterations until convergence
     it = 0
     err_v = 100
     err_v_0 = 0.0
@@ -191,7 +247,11 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, verbose=True):
     err_x = 100
     err_x_0 = 100
 
-    # Optimization: update decision rule, as well as value function
+    if verbose:
+        print('-----')
+        print('Starting value function iteration')
+        print('-----')
+
     while it < maxit and err_v > tol:
 
         t_start = time.time()
@@ -240,6 +300,18 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, verbose=True):
                                 Error_x=err_x,
                                 Gain_x=gain_x,
                                 Time=elapsed)
+
+
+
+    itprint.print_finished()
+
+
+    itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
+                                ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
+    itprint.print_header('Start value function iterations.')
+
+    if verbose:
+        print('Finished iterating on value function only. Starting value with policy iteration.')
 
     # final value function and decision rule
     mdr = MarkovDecisionRule(n_ms, a, b, orders)  # values

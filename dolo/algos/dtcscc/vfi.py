@@ -153,7 +153,7 @@ from dolo.numeric.interpolation import create_interpolator
 from scipy.optimize import minimize
 
 
-def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=None, maxit=100, verbose=False, hook=None, initial_dr=None, pert_order=1):
+def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=None, maxit=100, maxit_howard=20, verbose=False, hook=None, initial_dr=None, pert_order=1):
     """
     Solve for the value function and associated decision rule by iterating over
     the value function.
@@ -303,7 +303,7 @@ def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=N
         print('Starting Howard improvement step')
         print(stars)
 
-    while err_v > tol and it < 20:
+    while err_v > tol and it < maxit_howard:
 
         t_start = time.time()
         it += 1
