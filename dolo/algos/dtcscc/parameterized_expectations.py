@@ -179,7 +179,7 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
         err = (abs(z_new - z_0).max())
 
         # Update guess for expectations function and the decision rule
-        z_0 = z_new
+        z_0 = z_new.copy()
         x_0 = xx
 
         # print error infomation if `verbose`
@@ -313,8 +313,8 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
         err = (abs(new_h - h_0).max())
 
         # Update guess for decision rule and expectations function
-        x_0 = new_x
-        h_0 = new_h
+        x_0 = new_x.copy()
+        h_0 = new_h.copy()
 
         # print error information if `verbose`
         err_SA = err/err_0
