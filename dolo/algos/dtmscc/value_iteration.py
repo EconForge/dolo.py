@@ -71,7 +71,8 @@ class IterationsPrinter:
 import numpy
 from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
-def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=True):
+def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20,
+                 verbose=True):
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.
@@ -95,9 +96,9 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
 
     assert(model.model_type == 'dtmscc')
 
-    def vprint(t):
-        if verbose:
-            print(t)
+    # def vprint(t):
+    #     if verbose:
+    #         print(t)
     # assert(set(['g','r']).issubset(set(model.model_spec)))
 
     transition = model.functions['transition']
@@ -134,7 +135,8 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
     values_0 = np.zeros((n_ms, N, 1))
     values_0[:, :, :] = r0/(1-discount)
 
-    itprint = IterationsPrinter(('N', int), ('Error', float), ('Gain', float), ('Time', float), verbose=verbose)
+    itprint = IterationsPrinter(('N', int), ('Error', float), ('Gain', float),
+                                ('Time', float), verbose=verbose)
     itprint.print_header('Evaluating value of initial guess')
 
     # FIRST: value function iterations, 10 iterations to start
@@ -171,7 +173,8 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
                 bnds = [e for e in zip(lb, ub)]
 
                 def valfun(xx):
-                    return -choice_value(transition, felicity, i_m, s, xx, mdrv, P, Q, parms, discount)[0]
+                    return -choice_value(transition, felicity, i_m, s, xx,
+                                         mdrv, P, Q, parms, discount)[0]
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
 
                 controls[i_m, n, :] = res.x
@@ -192,11 +195,7 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
         err_x_0 = err_x
         err_v_0 = err_v
 
-        itprint.print_iteration(N=it,
-                                Error_V=err_v,
-                                Gain_V=gain_v,
-                                Error_x=err_x,
-                                Gain_x=gain_x,
+        itprint.print_iteration(N=it, Error=err_v, Gain=gain_v,
                                 Time=elapsed)
 
     # SECOND: Howard improvement step, 10-20 iterations
@@ -237,7 +236,6 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
         err_v_0 = err_v
         itprint.print_iteration(N=it, Error=err_v, Gain=gain_v, Time=elapsed)
         # vprint(fmt_str.format(it, err_v, gain_v, elapsed))
-
 
     # THIRD: value function iterations until convergence
     it = 0
@@ -295,13 +293,9 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
         err_v_0 = err_v
 
         itprint.print_iteration(N=it,
-                                Error_V=err_v,
-                                Gain_V=gain_v,
-                                Error_x=err_x,
-                                Gain_x=gain_x,
+                                Error=err_v,
+                                Gain=gain_v,
                                 Time=elapsed)
-
-
 
     itprint.print_finished()
 
@@ -310,8 +304,8 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20, verbose=T
                                 ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
     itprint.print_header('Start value function iterations.')
 
-    if verbose:
-        print('Finished iterating on value function only. Starting value with policy iteration.')
+    # if verbose:
+    #     print('Finished iterating on value function only. Starting value with policy iteration.')
 
     # final value function and decision rule
     mdr = MarkovDecisionRule(n_ms, a, b, orders)  # values

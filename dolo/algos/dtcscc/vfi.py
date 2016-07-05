@@ -64,8 +64,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, v
     [nodes, weights] = gauss_hermite_nodes(integration_orders, sigma)
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error',
-                                                               'Gain', 'Time')
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error', 'Gain', 'Time')
         stars = '-' * len(headline)
         print(stars)
         print(headline)
