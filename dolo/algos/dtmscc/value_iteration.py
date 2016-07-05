@@ -71,8 +71,8 @@ class IterationsPrinter:
 import numpy
 from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
-def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20,
-                 verbose=True):
+def solve_policy(model, grid={}, tol=1e-6, maxit=500,
+                 maxit_howard=20, verbose=False):
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.
@@ -95,11 +95,6 @@ def solve_policy(model, grid={}, tol=1e-4, maxit=500, maxit_howard=20,
     """
 
     assert(model.model_type == 'dtmscc')
-
-    # def vprint(t):
-    #     if verbose:
-    #         print(t)
-    # assert(set(['g','r']).issubset(set(model.model_spec)))
 
     transition = model.functions['transition']
     felicity = model.functions['felicity']

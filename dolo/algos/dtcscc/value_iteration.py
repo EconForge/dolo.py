@@ -152,7 +152,7 @@ from dolo.numeric.interpolation import create_interpolator
 from scipy.optimize import minimize
 
 
-def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=None, maxit=100, maxit_howard=20, verbose=False, hook=None, initial_dr=None, pert_order=1):
+def solve_policy(model, tol=1e-6, grid={}, distribution={}, integration_orders=None, maxit=500, maxit_howard=500, verbose=False, hook=None, initial_dr=None, pert_order=1):
     """
     Solve for the value function and associated decision rule by iterating over
     the value function.
@@ -223,8 +223,7 @@ def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=N
     values_0[:, :] = r0/(1-discount)
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error',
-                                                               'Gain', 'Time')
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error','Gain', 'Time')
         stars = '-' * len(headline)
         print(stars)
         print(headline)
