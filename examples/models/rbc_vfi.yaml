@@ -1,0 +1,66 @@
+name: Real Business Cycle
+
+model_type: dtcscc
+
+symbols:
+
+   states:  [z, k]
+   controls: [i, n]
+   rewards: [u]
+   shocks: [e_z]
+   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
+
+definitions:
+    y: z*k^alpha*n^(1-alpha)
+    c: y - i
+    rk: alpha*y/k
+    w: (1-alpha)*y/n
+
+equations:
+
+    arbitrage:
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 <= i <= inf
+        - chi*n^eta*c^sigma - w                      | 0.0001 <= n <= inf
+
+
+    transition:
+        - z = (1-rho)*zbar + rho*z(-1) + e_z
+        - k = (1-delta)*k(-1) + i(-1)
+
+    felicity:
+        - u = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+
+calibration:
+
+    # parameters
+    beta : 0.99
+    phi: 1
+    delta : 0.025
+    alpha : 0.33
+    rho : 0.8
+    sigma: 2
+    eta: 1
+    sig_z: 0.016
+    zbar: 1
+    chi : w/c^sigma/n^eta
+
+    # endogenous variables
+    n: 0.33
+    k: n/(rk/alpha)^(1/(1-alpha))
+    w: (1-alpha)*z*(k/n)^(alpha)
+    i: delta*k
+    y: z*k^alpha*n^(1-alpha)
+    c: y - i
+    z: zbar
+    rk: 1/beta-1+delta
+    u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+
+options:
+
+    distribution: !Normal
+        sigma: [ [ sig_z**2] ]
+
+    grid: !Cartesian
+        a: [ 1-2*sig_z, k*0.9 ]
+        b: [ 1+2*sig_z, k*1.1 ]
+        orders: [3, 20]
