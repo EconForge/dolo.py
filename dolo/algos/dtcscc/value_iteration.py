@@ -2,7 +2,6 @@ import time
 import warnings
 import numpy
 from dolo.numeric.discretization import gauss_hermite_nodes
-from dolo.numeric.interpolation.splines import MultivariateSplines
 from dolo.numeric.interpolation import create_interpolator
 
 def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, verbose=False, hook=None,

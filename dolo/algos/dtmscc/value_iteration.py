@@ -387,6 +387,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
             values_0[i_m, :, :] = initial_guess(i_m, grid)
 
     val = model.functions['value']
+    g = model.functions['transition']
 
     sh_v = values_0.shape
 
