@@ -10,7 +10,7 @@ from dolo.numeric.interpolation import create_interpolator
 def parameterized_expectations(model, verbose=False, initial_dr=None,
                                pert_order=1, with_complementarities=True,
                                grid={}, distribution={},
-                               maxit=100, tol=1e-8, inner_maxit=100,
+                               maxit=100, tol=1e-8, inner_maxit=10,
                                direct=False):
 
     '''
@@ -54,15 +54,20 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
 
     '''
 
-    def vprint(t):
-        if verbose:
-            print(t)
+    t1 = time.time()
 
     g = model.functions['transition']
     h = model.functions['expectation']
     d = model.functions['direct_response']
     f = model.functions['arbitrage_exp']  # f(s, x, z, p, out)
     parms = model.calibration['parameters']
+
+    if initial_dr is None:
+        if pert_order == 1:
+            initial_dr = approximate_controls(model)
+
+        if pert_order > 1:
+            raise Exception("Perturbation order > 1 not supported (yet).")
 
     approx = model.get_grid(**grid)
     grid = approx.grid
@@ -74,29 +79,12 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     nodes, weights = distrib.discretize()
 
     N = grid.shape[0]
+    z = np.zeros((N, len(model.symbols['expectations'])))
 
-    if initial_dr is None:
-        if pert_order == 1:
-            initial_dr = approximate_controls(model)
-
-        if pert_order > 1:
-            raise Exception("Perturbation order > 1 not supported (yet).")
-
-    # Use initial decision rule to find initial expectation function
     x_0 = initial_dr(grid)
     x_0 = x_0.real  # just in case ...
+    h_0 = h(grid, x_0, parms)
 
-    z_0 = np.zeros((N, len(model.symbols['expectations'])))
-    z_new = np.zeros((N, len(model.symbols['expectations'])))
-
-    xxnext = np.zeros((x_0.shape[0], x_0.shape[1], weights.shape[0]))
-    for i in range(weights.shape[0]):
-        e = nodes[i, :]
-        ssnext = g(grid, x_0, e, parms)
-        xxnext[:, :, i] = initial_dr(ssnext)
-        z_0 += weights[i]*h(ssnext, xxnext[:, :, i], parms)
-
-    t1 = time.time()
     it = 0
     err = 10
     err_0 = 10
@@ -128,59 +116,41 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
         it += 1
         t_start = time.time()
 
-        # update interpolation object with current guess for expectation
-        expect.set_values(z_0)
+        # dr.set_values(x_0)
+        expect.set_values(h_0)
 
-        xxnext[...] = 0
+        # evaluate expectation over the future state
+        z[...] = 0
+        for i in range(weights.shape[0]):
+            e = nodes[i, :]
+            S = g(grid, x_0, e, parms)
+            z += weights[i]*expect(S)
+
         if direct is True:
             # Use control as direct function of arbitrage equation
-            xx = d(grid, expect(grid), parms)
-            for i in range(weights.shape[0]):
-                e = nodes[i, :]
-                ssnext = g(grid, xx, e, parms)
-                xxnext[:, :, i] = d(ssnext, expect(ssnext), parms)
-
+            new_x = d(grid, z, parms)
             if with_complementarities is True:
-                xx = np.minimum(xx, ub)
-                xx = np.maximum(xx, lb)
-                for i in range(weights.shape[0]):
-                    xxnext[:, :, i] = np.minimum(xxnext[:, :, i], ub)
-                    xxnext[:, :, i] = np.maximum(xxnext[:, :, i], lb)
+                new_x = np.minimum(new_x, ub)
+                new_x = np.maximum(new_x, lb)
         else:
             # Find control by solving arbitrage equation
-            def fun(x): return f(grid, x, expect(grid), parms)
+            def fun(x): return f(grid, x, z, parms)
             sdfun = SerialDifferentiableFunction(fun)
 
             if with_complementarities is True:
-                [xx, nit] = ncpsolve(sdfun, lb, ub, x_0, verbose=verbit,
-                                     maxit=inner_maxit)
-                for i in range(weights.shape[0]):
-                    e = nodes[i, :]
-                    ssnext = g(grid, xx, e, parms)
-                    xxnext[:, :, i] = d(ssnext, expect(ssnext), parms)
-                    # Make sure x_t+1 is within bounds
-                    xxnext[:, :, i] = np.minimum(xxnext[:, :, i], ub)
-                    xxnext[:, :, i] = np.maximum(xxnext[:, :, i], lb)
+                [new_x, nit] = ncpsolve(sdfun, lb, ub, x_0, verbose=verbit,
+                                        maxit=inner_maxit)
             else:
-                [xx, nit] = serial_newton(sdfun, x_0, verbose=verbit)
-                for i in range(weights.shape[0]):
-                    e = nodes[i, :]
-                    ssnext = g(grid, xx, e, parms)
-                    xxnext[:, :, i] = d(ssnext, expect(ssnext), parms)
+                [new_x, nit] = serial_newton(sdfun, x_0, verbose=verbit)
 
-        # Compute the new expectation function
-        z_new[...] = 0
-        for i in range(weights.shape[0]):
-            e = nodes[i, :]
-            ssnext = g(grid, xx, e, parms)
-            z_new += weights[i]*h(ssnext, xxnext[:, :, i], parms)
+        new_h = h(grid, new_x, parms)
 
         # update error
-        err = (abs(z_new - z_0).max())
+        err = (abs(new_h - h_0).max())
 
-        # Update guess for expectations function and the decision rule
-        z_0 = z_new.copy()
-        x_0 = xx
+        # Update guess for decision rule and expectations function
+        x_0 = new_x
+        h_0 = new_h
 
         # print error infomation if `verbose`
         err_SA = err/err_0
@@ -205,6 +175,7 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     dr.set_values(x_0)
 
     return dr
+
 
 import time
 import numpy as np
@@ -313,8 +284,8 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
         err = (abs(new_h - h_0).max())
 
         # Update guess for decision rule and expectations function
-        x_0 = new_x.copy()
-        h_0 = new_h.copy()
+        x_0 = new_x
+        h_0 = new_h
 
         # print error information if `verbose`
         err_SA = err/err_0

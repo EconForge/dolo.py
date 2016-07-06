@@ -21,7 +21,7 @@ equations:
 
    arbitrage:
       - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))     | 0.0 <= i <= inf
-      - chi*n^eta*c^sigma - w                         | 0.0 <= n <= inf
+      - chi*n^eta*c^sigma - w                         | 0.0001 <= n <= inf
 
    felicity:
        - u =  c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)

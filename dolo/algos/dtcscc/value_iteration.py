@@ -2,7 +2,6 @@ import time
 import warnings
 import numpy
 from dolo.numeric.discretization import gauss_hermite_nodes
-from dolo.numeric.interpolation.splines import MultivariateSplines
 from dolo.numeric.interpolation import create_interpolator
 
 def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, verbose=False, hook=None,
@@ -64,8 +63,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, v
     [nodes, weights] = gauss_hermite_nodes(integration_orders, sigma)
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error',
-                                                               'Gain', 'Time')
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error', 'Gain', 'Time')
         stars = '-' * len(headline)
         print(stars)
         print(headline)
@@ -153,7 +151,7 @@ from dolo.numeric.interpolation import create_interpolator
 from scipy.optimize import minimize
 
 
-def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=None, maxit=100, maxit_howard=20, verbose=False, hook=None, initial_dr=None, pert_order=1):
+def solve_policy(model, tol=1e-6, grid={}, distribution={}, integration_orders=None, maxit=500, maxit_howard=500, verbose=False, hook=None, initial_dr=None, pert_order=1):
     """
     Solve for the value function and associated decision rule by iterating over
     the value function.
@@ -224,8 +222,7 @@ def solve_policy(model, tol=1e-8, grid={}, distribution={}, integration_orders=N
     values_0[:, :] = r0/(1-discount)
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error',
-                                                               'Gain', 'Time')
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format('N', ' Error','Gain', 'Time')
         stars = '-' * len(headline)
         print(stars)
         print(headline)
