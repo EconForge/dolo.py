@@ -6,7 +6,8 @@ from dolo.numeric.interpolation import create_interpolator
 
 def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, verbose=False, hook=None,
                     integration_orders=None):
-    """Compute value function corresponding to policy ``dr``
+    '''
+    Compute value function corresponding to policy ``dr``
 
     Parameters:
     -----------
@@ -24,7 +25,7 @@ def evaluate_policy(model, dr, tol=1e-8, grid={}, distribution={}, maxit=2000, v
         value function (a function of the space similar to a decision rule
         object)
 
-    """
+    '''
 
     assert (model.model_type == 'dtcscc')
 
@@ -152,22 +153,22 @@ from scipy.optimize import minimize
 
 
 def solve_policy(model, tol=1e-6, grid={}, distribution={}, integration_orders=None, maxit=500, maxit_howard=500, verbose=False, hook=None, initial_dr=None, pert_order=1):
-    """
+    '''
     Solve for the value function and associated decision rule by iterating over
     the value function.
 
-    Parameters:
+    Parameters
     -----------
-    model:
-        "dtcscc" model. Must contain a 'felicity' function.
+    model :
+        ``dtcscc`` model. Must contain a ``felicity`` function.
 
-    Returns:
+    Returns
     --------
-        dr : Markov decision rule
-            The solved decision rule/policy function
-        drv: decision rule
-            The solved value function
-    """
+    dr : Markov decision rule
+        The solved decision rule/policy function
+    drv : decision rule
+        The solved value function
+    '''
 
     assert (model.model_type == 'dtcscc')
 
