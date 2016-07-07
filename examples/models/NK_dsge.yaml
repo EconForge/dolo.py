@@ -26,20 +26,10 @@ equations:
     - 1+theta*beta*pi(1)^(epsilon-1)*F2(1)-F2
     - c-exp(a)/Delta*n
 
-  # arbitrage_exp:
-  #   - 1/c-m1
-  #   - (epsilon/(epsilon-1))*mc + theta*beta*pi(1)^epsilon*F1(1) - F1
-  #   - 1+theta*beta*pi(1)^(epsilon-1)*F2(1) - F2
-  #   - c - exp(a)/Delta*n
-
   transition:
     - Delta__L=Delta(-1)
     - a=rho__a*a(-1)+u__a
     - cp=rho__tau*cp(-1)+u__tau
-
-  # expectation:
-  #   - m1 = beta*r/(c(1)*pi(1))
-
 
 calibration:
 
