@@ -179,6 +179,14 @@ file: "{filename}\n'''.format(**self.infos)
             equations = {"dynare": self.symbolic.equations}
         else:
             equations = self.symbolic.equations
+            # Create definitions equations and append to equations dictionary
+            definitions = self.symbolic.definitions
+            tmp = []
+            for deftype in definitions:
+                tmp.append(deftype + '=' + definitions[deftype])
+            definitions = {'definitions': tmp}
+            equations.update(definitions)
+
         variables = sum([e for k,e in self.symbols.items() if k != 'parameters'], [])
         table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
 
@@ -187,7 +195,9 @@ file: "{filename}\n'''.format(**self.infos)
             eq_lines = []
             for i in range(len(equations[eq_type])):
                 eq = equations[eq_type][i]
-                if eq_type in ('expectation','direct_response'):
+                # if eq_type in ('expectation','direct_response'):
+                #     vals = ''
+                if eq_type not in ('arbitrage', 'transition'):
                     vals = ''
                 else:
                     val = resids[eq_type][i]
@@ -199,7 +209,7 @@ file: "{filename}\n'''.format(**self.infos)
                     # keep only lhs for now
                     eq, comp = str.split(eq,'|')
                 lat = eq2tex(variables, eq)
-                lat =  '${}$'.format(lat)
+                lat = '${}$'.format(lat)
                 line = [lat, vals]
                 h = eq_type if i==0 else ''
                 fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(h, *line)
