@@ -113,7 +113,7 @@ class NumericModel:
     def __str__(self):
 
         from dolo.misc.termcolor import colored
-
+        from numpy import zeros
         s = u'''
 Model:
 ------
@@ -123,15 +123,30 @@ file: "{filename}\n'''.format(**self.infos)
 
         ss = '\nEquations:\n----------\n\n'
         res = self.residuals()
+        res.update({'definitions': zeros(1)})
+
+        equations = self.symbolic.equations
+        definitions = self.symbolic.definitions
+        tmp = []
+        for deftype in definitions:
+            tmp.append(deftype + '=' + definitions[deftype])
+        definitions = {'definitions': tmp}
+        equations.update(definitions)
 
         # for eqgroup, eqlist in self.symbolic.equations.items():
         for eqgroup in res.keys():
             if eqgroup == 'auxiliary':
                 continue
             if eqgroup == 'dynare':
-                eqlist = self.symbolic.equations
+                eqlist = equations
+            if eqgroup == 'definitions':
+                eqlist = equations[eqgroup]
+                # Update the residuals section with the right number of empty
+                # values. Note: adding 'zeros' was easiest (rather than empty
+                # cells), since other variable types have  arrays of zeros.
+                res.update({'definitions': zeros(len(eqlist))})
             else:
-                eqlist = self.symbolic.equations[eqgroup]
+                eqlist = equations[eqgroup]
             ss += u"{}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
