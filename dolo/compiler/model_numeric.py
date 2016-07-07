@@ -129,7 +129,7 @@ file: "{filename}\n'''.format(**self.infos)
         definitions = self.symbolic.definitions
         tmp = []
         for deftype in definitions:
-            tmp.append(deftype + '=' + definitions[deftype])
+            tmp.append(deftype + ' = ' + definitions[deftype])
         definitions = {'definitions': tmp}
         equations.update(definitions)
 
@@ -144,18 +144,21 @@ file: "{filename}\n'''.format(**self.infos)
                 # Update the residuals section with the right number of empty
                 # values. Note: adding 'zeros' was easiest (rather than empty
                 # cells), since other variable types have  arrays of zeros.
-                res.update({'definitions': zeros(len(eqlist))})
+                res.update({'definitions': [None for i in range(len(eqlist))]})
             else:
                 eqlist = equations[eqgroup]
             ss += u"{}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
-                if abs(val) < 1e-8:
-                    val = 0
-                vals = '{:.4f}'.format(val)
-                if abs(val) > 1e-8:
-                    vals = colored(vals, 'red')
-                ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+                if val is None:
+                    ss += u" {eqn:2} : {eqs}\n".format(eqn=str(i+1), eqs=eq)
+                else:
+                    if abs(val) < 1e-8:
+                        val = 0
+                    vals = '{:.4f}'.format(val)
+                    if abs(val) > 1e-8:
+                        vals = colored(vals, 'red')
+                    ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
             ss += "\n"
         s += ss
 
@@ -198,7 +201,7 @@ file: "{filename}\n'''.format(**self.infos)
             definitions = self.symbolic.definitions
             tmp = []
             for deftype in definitions:
-                tmp.append(deftype + '=' + definitions[deftype])
+                tmp.append(deftype + ' = ' + definitions[deftype])
             definitions = {'definitions': tmp}
             equations.update(definitions)
 
@@ -212,7 +215,7 @@ file: "{filename}\n'''.format(**self.infos)
                 eq = equations[eq_type][i]
                 # if eq_type in ('expectation','direct_response'):
                 #     vals = ''
-                if eq_type not in ('arbitrage', 'transition'):
+                if eq_type not in ('arbitrage', 'transition', 'arbitrage_exp'):
                     vals = ''
                 else:
                     val = resids[eq_type][i]
