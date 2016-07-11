@@ -2,7 +2,7 @@ dtcscc:
 
     model_spec: dtcscc
 
-    symbols: ['states', 'controls', 'expectations', 'values', 'shocks', 'parameters']
+    symbols: ['states', 'controls', 'rewards', 'expectations', 'values', 'shocks', 'parameters']
 
     specs:
 
@@ -74,12 +74,36 @@ dtcscc:
                 - ['expectations', 0, 'z']
                 - ['parameters',0,'p']
 
+        felicity:
+
+            optional: True
+            recursive: True
+            target: ['rewards', 0, 'r']
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters',0,'p']
+
+
+        arbitrage_exp:
+
+            optional: True
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['expectations', 0, 'z']
+                #- ['auxiliaries',0,'y']
+                - ['parameters', 0, 'p']
+
+
 
 dtmscc:
 
     model_spec: dtmscc
 
-    symbols: ['markov_states', 'states', 'controls', 'values', 'expectations', 'shocks', 'parameters']
+    symbols: ['markov_states', 'states', 'controls', 'rewards', 'values', 'expectations', 'shocks', 'parameters']
 
     specs:
 
@@ -106,7 +130,6 @@ dtmscc:
                     - ['parameters', 0, 'p']
 
                 middle: ['controls', 0, 's']
-
 
 
         transition:
@@ -166,7 +189,21 @@ dtmscc:
                 - ['expectations', 0, 'z']
                 - ['parameters',0,'p']
 
-        arbitrage_2:
+        felicity:
+
+            optional: True
+            recursive: True
+
+            target: ['rewards', 0,'r']
+
+            eqs:
+                - ['markov_states',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+        arbitrage_exp:
 
             optional: True
 
@@ -175,7 +212,6 @@ dtmscc:
                 - ['controls',0,'x']
                 #- ['auxiliaries',0,'y']
                 - ['parameters', 0, 'p']
-
 
 dynare:
 

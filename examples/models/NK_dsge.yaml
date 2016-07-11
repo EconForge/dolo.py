@@ -1,0 +1,75 @@
+name: New Keynesian DSGE
+
+model_type: dtcscc
+
+symbols:
+
+  states: [Delta__L, a, cp]
+  controls: [c, n, F1, F2]
+  expectations: [m1]
+  shocks: [u__a, u__tau]
+  parameters: [beta, psi, epsilon, phi, theta, tau, chi, sig_a, rho__a, rho__tau, sig_tau]
+
+definitions:
+
+      pi: ((1-(F1/F2)^(1-epsilon)*(1-theta))/theta)^(1/(epsilon-1))
+      r: (1/beta)*(pi)^phi
+      rw: chi*(n)^psi*(c)
+      mc: (1-tau*exp(cp))*(rw)/(exp(a))
+      Delta: theta*(pi)^epsilon*Delta__L+(1-theta)*((F1)/(F2))^(-epsilon)
+
+equations:
+
+  arbitrage:
+    - 1/c-beta*r/(c(1)*pi(1))
+    - (epsilon/(epsilon-1))*mc + theta*beta*pi(1)^epsilon*F1(1)-F1
+    - 1+theta*beta*pi(1)^(epsilon-1)*F2(1)-F2
+    - c-exp(a)/Delta*n
+
+  transition:
+    - Delta__L=Delta(-1)
+    - a=rho__a*a(-1)+u__a
+    - cp=rho__tau*cp(-1)+u__tau
+
+calibration:
+
+  # parameters calibration
+  beta: .995
+  psi: 1 #1.0
+  epsilon: 11
+  phi: 1.5
+  theta: .4
+  tau: 1/epsilon
+  chi: 1.0
+  sig_a: .0025
+  rho__a: .9
+  sig_tau: .025
+  rho__tau: 0
+
+
+  # variable steady states / initial conditions
+  pi: 1
+  r: 1/beta
+  Delta: 1
+  Delta__L: Delta
+  n: 1
+  c: 1
+  mc: (1-tau)*(rw)/(exp(a))
+  y: 1
+  F1:  (epsilon/(epsilon-1))*mc/(1-theta*beta*((pi))^epsilon)
+  F2:  1/(1-theta*beta*((pi)^(epsilon-1)))
+  a: 0
+  u__a: 0
+  cp: 0
+  u__tau: 0
+
+
+options:
+
+  distribution: !Normal
+    sigma: [[sig_a^2, 0], [0, sig_tau^2]]
+
+  grid: !CartesianGrid
+    a: [1, -3*((sig_a^2)/(1-rho__a^2))^.5, -3*sig_tau]
+    b: [1.05,  3*((sig_a^2)/(1-rho__a^2))^.5, 3*sig_tau]
+    orders: [20, 20, 20]

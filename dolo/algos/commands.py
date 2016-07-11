@@ -9,6 +9,20 @@ def time_iteration(model, *args, **kwargs):
 
     return time_iteration(model, *args, **kwargs)
 
+
+def parameterized_expectations(model, *args, **kwargs):
+
+    if model.model_type == 'dtcscc':
+        from dolo.algos.dtcscc.parameterized_expectations import parameterized_expectations
+    elif model.model_type == 'dtmscc':
+        raise Exception("Model type {} not supported (yet).".format(model.model_type))
+        #from dolo.algos.dtmscc.parameterized_expectations import parameterized_expectations
+    else:
+        raise Exception("Model type {} not supported.".format(model.model_type))
+
+    return parameterized_expectations(model, *args, **kwargs)
+
+
 def approximate_controls(model, *args, **kwargs):
 
     if model.model_type == 'dtcscc':
@@ -21,6 +35,7 @@ def approximate_controls(model, *args, **kwargs):
         raise Exception("Model type {} not supported.".format(model.model_type))
 
     return approximate_controls(model, *args, **kwargs)
+
 
 def simulate(model, *args, **kwargs):
 
@@ -39,11 +54,12 @@ def evaluate_policy(model, *args, **kwargs):
     if model.model_type == 'dtmscc':
         from dolo.algos.dtmscc.value_iteration import evaluate_policy
     elif model.model_type == 'dtcscc':
-        from dolo.algos.dtcscc.vfi import evaluate_policy        
+        from dolo.algos.dtcscc.vfi import evaluate_policy
     else:
         raise Exception("Model type {} not supported.".format(model.model_type))
 
     return evaluate_policy(model, *args, **kwargs)
+
 
 def plot_decision_rule(model, *args, **kwargs):
 

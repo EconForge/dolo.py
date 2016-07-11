@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import numpy
 from numpy import real_if_close,where
 
-def qzordered(A,B,crit=1.0+1e-6):
+def qzordered(A,B,crit=1.0):
     "Eigenvalues bigger than crit are sorted in the top-left."
 
     TOL = 1e-10

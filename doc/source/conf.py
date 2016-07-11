@@ -18,25 +18,6 @@ import sys, os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-
-#try:
-#    from mock import Mock as MagicMock
-#except ImportError:
-#    def install(package):
-#        pip.main(['install', package])
-#    install('mock')
-#    from mock import Mock as MagicMock
-
-
-#class Mock(MagicMock):
-#    @classmethod
-#    def __getattr__(cls, name):
-#        return Mock()
-
-#MOCK_MODULES = ['ipython', 'pyyaml', 'numpy', 'numpy.linalg', 'numba','numexpr','sympy','pandas','slycot','matplotlib']
-#sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
-
-
 # -- General configuration -----------------------------------------------------
 
 
@@ -45,7 +26,8 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.pngmath', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.graphviz', 'numpydoc']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.graphviz', 'numpydoc']
+# 'sphinx.ext.pngmath' 'sphinx.ext.imgmath',
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -114,6 +96,7 @@ exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+highlight_language = 'python3'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []

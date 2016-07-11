@@ -6,6 +6,7 @@ symbols:
    markov_states: [z]
    states:  [k]
    controls: [i, n]
+   rewards: [u]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z, kmax]
 
 definitions:
@@ -20,7 +21,10 @@ equations:
 
    arbitrage:
       - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))     | 0.0 <= i <= inf
-      - chi*n^eta*c^sigma - w                         | 0.0 <= n <= inf
+      - chi*n^eta*c^sigma - w                         | 0.0001 <= n <= inf
+
+   felicity:
+       - u =  c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
 
 calibration:
 
@@ -32,7 +36,7 @@ calibration:
     delta : 0.025
     alpha : 0.33
     rho : 0.8
-    sigma: 1.0
+    sigma: 2.0
     eta: 1.0
     zbar: 1.0
     sig_z: 0.001**2
@@ -46,6 +50,7 @@ calibration:
     k: n/(rk/alpha)^(1/(1-alpha))
     i: delta*k
     c: z*k^alpha*n^(1-alpha) - i
+    u: c^(1-sigma)/(1-sigma)  - chi*n^(1+eta)/(1+eta)
 
 options:
 
@@ -59,3 +64,4 @@ options:
         a: [5.0]
         b: [30.0]
         orders: [20]
+        mu: 3

@@ -156,7 +156,7 @@ def simulate(model, dr, s0=None, n_exp=0, horizon=40, seed=1, discard=False,
         return panel
 
 
-def plot_decision_rule(model, dr, state, grid={}, plot_controls=None, bounds=None,
+def plot_decision_rule(model, dr, state, plot_controls=None, grid={}, bounds=None,
                        n_steps=10, s0=None, **kwargs):
     """
     Plots decision rule
@@ -202,9 +202,14 @@ def plot_decision_rule(model, dr, state, grid={}, plot_controls=None, bounds=Non
     controls_names = model.symbols['controls']
     index = states_names.index(str(state))
 
-
-    approx = model.get_grid(**grid)
-    bounds = [approx.a[index], approx.b[index]]
+    if bounds is None:
+        try:
+            bounds = [dr.smin[index], dr.smax[index]]
+        except:
+            approx = model.get_grid(**grid)
+            bounds = [approx.a[index], approx.b[index]]
+        if bounds is None:
+            raise Exception("No bounds provided for simulation or by model.")
 
     values = numpy.linspace(bounds[0], bounds[1], n_steps)
     if s0 is None:

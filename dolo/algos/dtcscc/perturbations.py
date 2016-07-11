@@ -7,37 +7,33 @@ from dolo.numeric.extern.qz import qzordered
 from dolo.numeric.taylor_expansion import TaylorExpansion as CDR
 
 
-class BlanchardKahnError(Exception):
-
-    def __init__(self, n_found, n_expected, jac=None, diags=None, eigval=None,
-                 eigmax=None):
-        self.n_found = n_found
-        self.n_expected = n_expected
-        self.jac = jac
-        self.diags = diags
-        self.eigval = eigval
-        self.eigmax = eigmax
-
-    def __str__(self):
-
-        msg = """There are {} eigenvalues greater than one. \
-        There should be exactly {} to meet Blanchard-Kahn conditions.
-        """.format(self.n_found, self.n_expected)
-        return msg
-
-
 class GeneralizedEigenvaluesError(Exception):
 
-    def __init__(self, diag_S, diag_T):
-        self.diag_S = diag_S
-        self.diag_T = diag_T
+    def __init__(self, A=None, B=None, eigval=None, cutoff=None, n_states=None):
+
+        self.A = A
+        self.B = B
+        self.eigval = eigval
+        self.eigval_sorted = sorted(eigval)
+        self.cutoff = cutoff
+        self.n_states = n_states
+
+class GeneralizedEigenvaluesDefinition(GeneralizedEigenvaluesError):
 
     def __str__(self):
-        # TODO: explain better
-        return "Eigenvalues are not uniquely defined. "
+
+        return "Generalized Eigenvalues imply a 0/0 division. Undefined solution."
 
 
-def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-6,
+class GeneralizedEigenvaluesSelectionError(GeneralizedEigenvaluesError):
+
+    def __str__(self):
+
+        return "Impossible to select the {} bigger eigenvalues in a unique way.".format(self.n_states)
+
+
+
+def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
                          solve_steady_state=False, order=1):
     """Compute first order approximation of optimal controls
 
@@ -70,10 +66,6 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
 
     if order > 1:
         raise Exception("Not implemented.")
-
-    # get steady_state
-    # if model.model_spec == 'fga':
-    #     model = GModel_fg_from_fga(model)
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
@@ -115,7 +107,9 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
         column_stack([f_s, f_x])
     ])
 
-    [S, T, Q, Z, eigval] = qzordered(A, B, eigmax)
+
+    [S, T, Q, Z, eigval] = qzordered(A, B, 1.0-1e-8)
+
     Q = Q.real  # is it really necessary ?
     Z = Z.real
 
@@ -123,43 +117,50 @@ def approximate_controls(model, verbose=False, steady_state=None, eigmax=1.0+1e-
     diag_T = np.diag(T)
 
     tol_geneigvals = 1e-10
+
     try:
         ok = sum((abs(diag_S) < tol_geneigvals) *
                  (abs(diag_T) < tol_geneigvals)) == 0
         assert(ok)
     except Exception as e:
-        print(e)
-        # print(np.column_stack([diag_S, diag_T]))
-        raise GeneralizedEigenvaluesError(diag_S, diag_T)
+        raise GeneralizedEigenvaluesError(diag_S=diag_S, diag_T=diag_T)
 
-    # count fwd-looking variables # TODO: use symbolic analysis instead
-    n_fwd = sum((np.abs(f_X)>1e-8).sum(axis=0)!=0)
-
-    # Check Blanchard=Kahn conditions
-    n_big_one = sum(eigval > eigmax)
-    n_expected = n_fwd
-    if verbose:
-        msg = "There are {} eigenvalues greater than {}. Expected: {}."
-        print(msg.format(n_big_one, eigmax, n_x))
-    if n_expected != n_big_one:
-        raise BlanchardKahnError(n_big_one, n_expected, eigval=eigval, eigmax=eigmax, diags=[diag_S, diag_T])
+    if max(eigval[:n_s]) >= 1 and min(eigval[n_s:]) < 1:
+        # BK conditions are met
+        pass
+    else:
+        eigval_s = sorted(eigval, reverse=True)
+        ev_a = eigval_s[n_s-1]
+        ev_b = eigval_s[n_s]
+        cutoff = (ev_a - ev_b)/2
+        if not ev_a > ev_b:
+            raise GeneralizedEigenvaluesSelectionError(
+                    A=A, B=B, eigval=eigval, cutoff=cutoff,
+                    diag_S=diag_S, diag_T=diag_T, n_states=n_s
+                )
+        import warnings
+        if cutoff > 1:
+            warnings.warn("Solution is not convergent.")
+        else:
+            warnings.warn("There are multiple convergent solutions. The one with the smaller eigenvalues was selected.")
+        [S, T, Q, Z, eigval] = qzordered(A, B, cutoff)
 
     Z11 = Z[:n_s, :n_s]
-    Z12 = Z[:n_s, n_s:]
+    # Z12 = Z[:n_s, n_s:]
     Z21 = Z[n_s:, :n_s]
-    Z22 = Z[n_s:, n_s:]
-    S11 = S[:n_s, :n_s]
-    T11 = T[:n_s, :n_s]
+    # Z22 = Z[n_s:, n_s:]
+    # S11 = S[:n_s, :n_s]
+    # T11 = T[:n_s, :n_s]
 
     # first order solution
+    # P = (solve(S11.T, Z11.T).T @ solve(Z11.T, T11.T).T)
     C = solve(Z11.T, Z21.T).T
-    P = dot(solve(S11.T, Z11.T).T, solve(Z11.T, T11.T).T)
     Q = g_e
 
     s = s.ravel()
     x = x.ravel()
 
-    A = g_s + dot(g_x, C)
+    A = g_s + g_x @ C
     B = g_e
 
     dr = CDR([s, x, C])
