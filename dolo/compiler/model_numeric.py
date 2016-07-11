@@ -113,7 +113,7 @@ class NumericModel:
     def __str__(self):
 
         from dolo.misc.termcolor import colored
-
+        from numpy import zeros
         s = u'''
 Model:
 ------
@@ -123,24 +123,41 @@ file: "{filename}\n'''.format(**self.infos)
 
         ss = '\nEquations:\n----------\n\n'
         res = self.residuals()
+        res.update({'definitions': zeros(1)})
 
+        equations = self.symbolic.equations.copy()
+        definitions = self.symbolic.definitions
+        tmp = []
+        for deftype in definitions:
+            tmp.append(deftype + ' = ' + definitions[deftype])
+        definitions = {'definitions': tmp}
+        equations.update(definitions)
         # for eqgroup, eqlist in self.symbolic.equations.items():
         for eqgroup in res.keys():
             if eqgroup == 'auxiliary':
                 continue
             if eqgroup == 'dynare':
-                eqlist = self.symbolic.equations
+                eqlist = equations
+            if eqgroup == 'definitions':
+                eqlist = equations[eqgroup]
+                # Update the residuals section with the right number of empty
+                # values. Note: adding 'zeros' was easiest (rather than empty
+                # cells), since other variable types have  arrays of zeros.
+                res.update({'definitions': [None for i in range(len(eqlist))]})
             else:
-                eqlist = self.symbolic.equations[eqgroup]
+                eqlist = equations[eqgroup]
             ss += u"{}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
-                if abs(val) < 1e-8:
-                    val = 0
-                vals = '{:.4f}'.format(val)
-                if abs(val) > 1e-8:
-                    vals = colored(vals, 'red')
-                ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+                if val is None:
+                    ss += u" {eqn:2} : {eqs}\n".format(eqn=str(i+1), eqs=eq)
+                else:
+                    if abs(val) < 1e-8:
+                        val = 0
+                    vals = '{:.4f}'.format(val)
+                    if abs(val) > 1e-8:
+                        vals = colored(vals, 'red')
+                    ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
             ss += "\n"
         s += ss
 
@@ -176,9 +193,17 @@ file: "{filename}\n'''.format(**self.infos)
         # Equations and residuals
         resids = self.residuals()
         if self.model_type == 'dynare':
-            equations = {"dynare": self.symbolic.equations}
+            equations = {"dynare": self.symbolic.equations.copy()}
         else:
-            equations = self.symbolic.equations
+            equations = self.symbolic.equations.copy()
+        # Create definitions equations and append to equations dictionary
+        definitions = self.symbolic.definitions
+        tmp = []
+        for deftype in definitions:
+            tmp.append(deftype + ' = ' + definitions[deftype])
+        definitions = {'definitions': tmp}
+        equations.update(definitions)
+
         variables = sum([e for k,e in self.symbols.items() if k != 'parameters'], [])
         table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
 
@@ -187,7 +212,9 @@ file: "{filename}\n'''.format(**self.infos)
             eq_lines = []
             for i in range(len(equations[eq_type])):
                 eq = equations[eq_type][i]
-                if eq_type in ('expectation','direct_response'):
+                # if eq_type in ('expectation','direct_response'):
+                #     vals = ''
+                if eq_type not in ('arbitrage', 'transition', 'arbitrage_exp'):
                     vals = ''
                 else:
                     val = resids[eq_type][i]
@@ -199,7 +226,7 @@ file: "{filename}\n'''.format(**self.infos)
                     # keep only lhs for now
                     eq, comp = str.split(eq,'|')
                 lat = eq2tex(variables, eq)
-                lat =  '${}$'.format(lat)
+                lat = '${}$'.format(lat)
                 line = [lat, vals]
                 h = eq_type if i==0 else ''
                 fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(h, *line)
