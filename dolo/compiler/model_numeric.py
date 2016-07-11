@@ -125,14 +125,13 @@ file: "{filename}\n'''.format(**self.infos)
         res = self.residuals()
         res.update({'definitions': zeros(1)})
 
-        equations = self.symbolic.equations
+        equations = self.symbolic.equations.copy()
         definitions = self.symbolic.definitions
         tmp = []
         for deftype in definitions:
             tmp.append(deftype + ' = ' + definitions[deftype])
         definitions = {'definitions': tmp}
         equations.update(definitions)
-
         # for eqgroup, eqlist in self.symbolic.equations.items():
         for eqgroup in res.keys():
             if eqgroup == 'auxiliary':
@@ -194,16 +193,16 @@ file: "{filename}\n'''.format(**self.infos)
         # Equations and residuals
         resids = self.residuals()
         if self.model_type == 'dynare':
-            equations = {"dynare": self.symbolic.equations}
+            equations = {"dynare": self.symbolic.equations.copy()}
         else:
-            equations = self.symbolic.equations
-            # Create definitions equations and append to equations dictionary
-            definitions = self.symbolic.definitions
-            tmp = []
-            for deftype in definitions:
-                tmp.append(deftype + ' = ' + definitions[deftype])
-            definitions = {'definitions': tmp}
-            equations.update(definitions)
+            equations = self.symbolic.equations.copy()
+        # Create definitions equations and append to equations dictionary
+        definitions = self.symbolic.definitions
+        tmp = []
+        for deftype in definitions:
+            tmp.append(deftype + ' = ' + definitions[deftype])
+        definitions = {'definitions': tmp}
+        equations.update(definitions)
 
         variables = sum([e for k,e in self.symbols.items() if k != 'parameters'], [])
         table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
