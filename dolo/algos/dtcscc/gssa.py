@@ -4,10 +4,9 @@ import warnings
 import numpy as np
 from numba import jit
 from scipy.linalg import lstsq
-
+from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.algos.dtcscc.simulations import simulate
-from dolo.numeric.discretization import gauss_hermite_nodes
-from dolo.numeric.interpolation.complete_poly import (
+from interpolation.complete_poly import (CompletePolynomial,
     _complete_poly_impl, _complete_poly_impl_vec, complete_polynomial,
     n_complete)
 
@@ -71,7 +70,7 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     np.random.seed(seed)
     distrib = model.get_distribution()
     sigma = distrib.sigma
-    epsilon = numpy.random.multivariate_normal(np.zeros(n_eps), sigma, n_sim)
+    epsilon = np.random.multivariate_normal(np.zeros(n_eps), sigma, n_sim)
 
     # simulate initial decision rule and do initial regression for coefs
     init_sim = simulate(model, drp, horizon=n_sim, return_array=True,
@@ -186,16 +185,6 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
         print('Elapsed: {} seconds.'.format(t2 - t1))
         print(stars)
 
-    return coefs
-
-
-if __name__ == '__main__':
-
-    from dolo import *
-    from dolo.algos.dtcscc.accuracy import omega
-
-    model = yaml_import("../../../examples/models/rbc_full.yaml")
-
-    gssa(model, deg=5, verbose=True, damp=0.1)
-
-    # TODO: time and check the returned coefficients
+    cp = CompletePolynomial(deg, len(s0))
+    cp.fit_values(s_sim, x_sim)
+    return cp
