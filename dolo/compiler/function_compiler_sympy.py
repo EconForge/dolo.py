@@ -1,13 +1,11 @@
 from __future__ import division
 
 import sympy
-import numpy
 import ast
 
 
 def ast_to_sympy(expr):
     '''Converts an AST expression to a sympy expression (STUPID)'''
-
     from .codegen import to_source
     s = to_source(expr)
     return sympy.sympify(s)
@@ -67,9 +65,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
     from .function_compiler_ast import std_date_symbol, StandardizeDatesSimple
-
     all_vars = syms + [(p,0) for p in params]
-
     sds = StandardizeDatesSimple(all_vars)
 
 
