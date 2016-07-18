@@ -1,8 +1,8 @@
 // Example 2 from Collard's guide to Dynare
-var y, c, k, a, h, b;
-varexo e, u;
+var y c k a h b;
+varexo e u;
 
-parameters beta, rho, alpha, delta, theta, psi, tau;
+parameters beta rho alpha delta theta psi tau;
 
 alpha = 0.36;
 rho   = 0.95;
@@ -25,9 +25,9 @@ end;
 initval;
 y = 0.1;
 c = -0.2;
-h = -1.2;
 k =  2.4;
 a = 0;
+h = -1.2;
 b = 0;
 e = 0;
 u = 0;
