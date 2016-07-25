@@ -60,15 +60,16 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
 
     g = model.functions['transition']
     h = model.functions['expectation']
-    d = model.functions['direct_response']
     f = model.functions['arbitrage_exp']  # f(s, x, z, p, out)
     parms = model.calibration['parameters']
+    if direct is True:
+        d = model.functions['direct_response']
 
     approx = model.get_grid(**grid)
     grid = approx.grid
     interp_type = approx.interpolation
-    dr = create_interpolator(approx, interp_type)
-    expect = create_interpolator(approx, interp_type)
+    dr = create_interpolator(approx, interp_type)     # Interp for control
+    expect = create_interpolator(approx, interp_type)  # Interp for expectation
 
     distrib = model.get_distribution(**distribution)
     nodes, weights = distrib.discretize()
@@ -154,19 +155,22 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
             if with_complementarities is True:
                 [xx, nit] = ncpsolve(sdfun, lb, ub, x_0, verbose=verbit,
                                      maxit=inner_maxit)
+                dr.set_values(xx)  # Update decision rule object
                 for i in range(weights.shape[0]):
                     e = nodes[i, :]
                     ssnext = g(grid, xx, e, parms)
-                    xxnext[:, :, i] = d(ssnext, expect(ssnext), parms)
+                    xxnext[:, :, i] = dr(ssnext)
+
                     # Make sure x_t+1 is within bounds
                     xxnext[:, :, i] = np.minimum(xxnext[:, :, i], ub)
                     xxnext[:, :, i] = np.maximum(xxnext[:, :, i], lb)
             else:
                 [xx, nit] = serial_newton(sdfun, x_0, verbose=verbit)
+                dr.set_values(xx)  # Update decision rule object
                 for i in range(weights.shape[0]):
                     e = nodes[i, :]
                     ssnext = g(grid, xx, e, parms)
-                    xxnext[:, :, i] = d(ssnext, expect(ssnext), parms)
+                    xxnext[:, :, i] = dr(ssnext)
 
         # Compute the new expectation function
         z_new[...] = 0
