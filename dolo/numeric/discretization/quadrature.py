@@ -29,7 +29,7 @@ def hermgauss(n):
             z = 1.91*z+0.91*x[1]
         else:
             z = 2*z+x[i-2]
-    # root finding iterations 
+    # root finding iterations
         its = 0
         while its<maxit:
             its += 1
@@ -52,12 +52,30 @@ def hermgauss(n):
         w[n-i-1] = w[i]
 
     return [x,w]
- 
+
 
 
 
 def gauss_hermite_nodes(orders, sigma, mu=None):
+    '''
+    Computes the weights and nodes for Gauss Hermite quadrature.
+    
+    Parameters
+    ----------
+    orders : int, list, array
+        The order of integration used in the quadrature routine
+    sigma : list, array
+        If one dimensional, the variance of the normal distribution being
+        approximated. If multidimensional, the variance-covariance matrix of
+        the multivariate normal process being approximated.
 
+    Returns
+    -------
+    x : array
+        Quadrature nodes
+    w : array
+        Quadrature weights
+    '''
     if isinstance(orders, int):
         orders = [orders]
 
@@ -75,7 +93,7 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
     weights = [ h[1]/numpy.sqrt( numpy.pi) for h in herms]
 
     if len(orders) == 1:
-        x = numpy.array(points)*sigma
+        x = numpy.array(points)*numpy.sqrt(sigma)
         w = weights[0]
         return [x.T,w]
 
@@ -102,7 +120,7 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
 #from numpy.polynomial.hermite import hermgauss
 
-           
+
 if __name__ == '__main__':
 
     orders = [8,8]
