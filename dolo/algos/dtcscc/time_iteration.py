@@ -224,7 +224,7 @@ from dolo.algos.dtcscc.perturbations import approximate_controls
 
 
 def time_iteration_direct(model, verbose=False, initial_dr=None,
-                          pert_order=1, grid={}, distribution={}, maxit=500,
+                          pert_order=1, with_complementarities=True, grid={}, distribution={}, maxit=500,
                           tol=1e-8):
     '''
     Finds a global solution for ``model`` using backward time-iteration.
@@ -290,6 +290,15 @@ def time_iteration_direct(model, verbose=False, initial_dr=None,
     x_0 = initial_dr(grid)
     x_0 = x_0.real  # just in case...
 
+    if with_complementarities:
+        lbfun = model.functions['controls_lb']
+        ubfun = model.functions['controls_ub']
+        lb = lbfun(grid, parms)
+        ub = ubfun(grid, parms)
+    else:
+        lb = None
+        ub = None
+
     ##
     t1 = time.time()
     err = 10
@@ -325,8 +334,12 @@ def time_iteration_direct(model, verbose=False, initial_dr=None,
             z += weights[i]*h(S, X, parms)
 
         # Update control
-        # TODO: check that control is admissible
-        new_x = d(grid, z, parms)
+        if with_complementarities:
+            new_x = d(grid, z, parms)
+            new_x = np.minimum(new_x, ub)
+            new_x = np.maximum(new_x, lb)
+        else:
+            new_x = d(grid, z, parms)
 
         # update error
         err = (abs(new_x - x_0).max())
