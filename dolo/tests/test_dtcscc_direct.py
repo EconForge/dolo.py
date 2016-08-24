@@ -6,8 +6,19 @@ def test_direct():
 
     model = yaml_import("examples/models/rbc_full.yaml")
 
-    dr = time_iteration_direct(model)
-    ddr = time_iteration(model)
+    # Check without complementarity conditions
+    dr = time_iteration_direct(model, with_complementarities=False)
+    ddr = time_iteration(model, with_complementarities=False)
+
+    x0 = dr(dr.grid)
+    x1 = ddr(dr.grid)
+
+    print(abs(x1 - x0).max()<1e-5)
+
+
+    # Check with complementarity conditions
+    dr = time_iteration_direct(model, with_complementarities=True)
+    ddr = time_iteration(model, with_complementarities=True)
 
     x0 = dr(dr.grid)
     x1 = ddr(dr.grid)
