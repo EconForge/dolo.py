@@ -81,7 +81,6 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
     import numpy
 
-    sigma = sigma.copy()
 
     if mu is None:
         mu = numpy.array( [0]*sigma.shape[0] )
@@ -94,7 +93,8 @@ def gauss_hermite_nodes(orders, sigma, mu=None):
 
     if len(orders) == 1:
         # Note: if sigma is 2D, x will always be 2D, even if sigma is only 1x1.
-        x = numpy.array(points)*numpy.sqrt(float(sigma))
+        # print(points.shape)
+        x = numpy.array(points[0])*numpy.sqrt(float(sigma))
         if sigma.ndim==2:
             x = x[:,None]
         w = weights[0]
