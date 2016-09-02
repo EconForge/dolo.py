@@ -1,0 +1,54 @@
+model_type: dtcscc
+
+name: incomplete_markets
+
+symbols:
+    states: [e, k]
+    controls: [c]
+    shocks: [eps]
+    expectations: [m]
+    parameters: [beta,sigma,alpha,delta,a,lbar,Lbar,kagg,y,w,r,sig,rho, sig_un]
+
+equations:
+
+    transition:
+        - e = rho*e(-1) + eps
+        - k = k(-1)*(1+r-delta) + lbar*exp(e(-1))*w - c(-1)
+    arbitrage:
+        - 1 = beta*(c(1)/c)^(-sigma)*(1 + r - delta)  |   0 <= c <= k*(1+r-delta) + lbar*exp(e)*w
+    expectation:
+        - m = beta/c(1)^sigma*(1-delta+r)
+    direct_response:
+        - c = m^(-1/sigma)
+
+calibration:
+
+    beta: 0.99
+    sigma: 2
+    alpha: 0.36
+    delta: 0.025
+    a: 1
+    lbar: 0.9
+    rho: 0.85
+    sig: ((1 - rho^2)*2*log(1/lbar))^(1/2)
+    kagg: 50
+    r: a*alpha*(kagg/(Lbar))^(alpha - 1)
+    k: kagg
+    c: y - delta*kagg
+    e: 1.0
+    eps: 0.0
+    Lbar: lbar*exp(1/2*sig^2/(1-rho^2))
+    y: a*kagg^alpha*(Lbar)^alpha
+    w: a*(1-alpha)*(kagg/(Lbar))^alpha
+    sig_un: 3*sig/sqrt(1 - rho^2)
+    m: c^(-sigma)
+
+options:
+
+    distribution: !Normal
+        sigma: [ [ sig**2] ]
+
+    grid: !Cartesian
+        a: [-sig_un, 0.0]
+        b: [sig_un, 150.0]
+        orders: [10, 20]
