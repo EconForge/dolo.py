@@ -21,9 +21,9 @@ def test_rbc_model():
     pol = evaluate_policy(model, dr, verbose=True)
     polg = evaluate_policy(model, drg, verbose=True)
 
-    sim = simulate(model, dr, n_exp=0) # irf
-    sim = simulate(model, dr, n_exp=2) # stochastic simulations (2 draws)
-    # extract first simulation
+    sim = simulate(model, dr, n_exp=0)  # irf
+    sim = simulate(model, dr, n_exp=2)  # stochastic simulations (2 draws)
+                                        # extract first simulation
     assert(len(sim[0]['k'])==40)
 
 

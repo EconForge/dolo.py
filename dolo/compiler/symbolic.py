@@ -219,6 +219,8 @@ def eval_scalar(tree):
         elif isinstance(tree, ast.UnaryOp):
             if isinstance(tree.op, ast.USub):
                 return -tree.operand.n
+            if isinstance(tree.op, ast.UAdd):
+                return tree.operand.n
         else:
             raise Exception("Don't know how to do that.")
     except:
