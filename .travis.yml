@@ -36,7 +36,8 @@ install:
   - conda install -c conda-forge ruamel.yaml=0.11.11
   - conda install -c cwrowley slycot=0.2.0
   - conda install -c albop interpolation=0.1.6
-  - pip install git+https://github.com/EconForge/Dolang.git@albop/from_dolo
+#  - pip install git+https://github.com/EconForge/Dolang.git@albop/from_dolo
+  - pip install dolang
   - python setup.py install
 
 
