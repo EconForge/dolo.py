@@ -6,20 +6,17 @@ import sympy
 from dolo.compiler.function_compiler_sympy import compile_higher_order_function
 from dolo.compiler.function_compiler_sympy import ast_to_sympy
 from dolo.numeric.decision_rules_states import CDR
-from dolo.compiler.function_compiler_ast import (StandardizeDatesSimple,
-                                                 std_date_symbol)
+from dolang import stringify, normalize
 
 def timeshift(expr, variables, date):
     from sympy import Symbol
-    from dolo.compiler.function_compiler_ast import std_date_symbol
-    d = {Symbol(std_date_symbol(v, 0)): Symbol(std_date_symbol(v, date))
-         for v in variables}
+    from dolang import stringify
+    d = {Symbol(stringify((v, 0))): Symbol(stringify((v, date))) for v in variables}
     return expr.subs(d)
 
 
+import ast
 def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
-
-    sds = StandardizeDatesSimple(vars)
 
     eq = eq_string.split('|')[0]  # ignore complentarity constraints
 
@@ -27,13 +24,11 @@ def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
         eq = eq.replace('=', '==')
 
     expr = ast.parse(eq).body[0].value
-    expr_std = sds.visit(expr)
-
-    from dolo.compiler.codegen import to_source
+    expr_std = normalize(expr, variables=vars)
 
     if isinstance(expr_std, Compare):
-        lhs = expr.left
-        rhs = expr.comparators[0]
+        lhs = expr_std.left
+        rhs = expr_std.comparators[0]
         if substract_lhs:
             expr_std = BinOp(left=rhs, right=lhs, op=Sub())
         else:
@@ -55,8 +50,6 @@ def model_to_fg(model, order=2):
                       [(d, -1) for d in all_variables])
     psyms = [(e,0) for e in model.symbols['parameters']]
 
-    sds = StandardizeDatesSimple(all_dvariables)
-
     if hasattr(model.symbolic, 'definitions'):
         definitions = model.symbolic.definitions
     else:
@@ -65,21 +58,21 @@ def model_to_fg(model, order=2):
     d = dict()
 
     for k in definitions:
-        v = parse_equation(definitions[k], all_dvariables + psyms, to_sympy=True)
-        kk = std_date_symbol(k, 0)
+        v = parse_equation(definitions[k], all_variables, to_sympy=True)
+        kk = stringify( (k, 0) )
+        kk_m1 = stringify( (k, -1) )
+        kk_1 = stringify( (k, 1) )
         d[sympy.Symbol(kk)] = v
-
-    for k in list(d.keys()):
-        d[timeshift(k, all_variables, 1)] = timeshift(d[k], all_variables, 1)
-        d[timeshift(k, all_variables, -1)] = timeshift(d[k], all_variables, -1)
+        d[sympy.Symbol(kk_m1)] = timeshift(v, all_variables, -1)
+        d[sympy.Symbol(kk_1)] = timeshift(v, all_variables, 1)
 
 
     f_eqs = model.symbolic.equations['arbitrage']
-    f_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True) for eq in f_eqs]
+    f_eqs = [parse_equation(eq, all_variables, to_sympy=True) for eq in f_eqs]
     f_eqs = [eq.subs(d) for eq in f_eqs]
 
     g_eqs = model.symbolic.equations['transition']
-    g_eqs = [parse_equation(eq, all_dvariables + psyms, to_sympy=True, substract_lhs=False) for eq in g_eqs]
+    g_eqs = [parse_equation(eq, all_variables, to_sympy=True, substract_lhs=False) for eq in g_eqs]
     #solve_recursively
     from collections import OrderedDict
     dd = OrderedDict()
@@ -98,9 +91,10 @@ def model_to_fg(model, order=2):
 
     params = model.symbols['parameters']
 
+    print(f_eqs)
+    print(f_syms)
     f = compile_higher_order_function(f_eqs, f_syms, params, order=order,
         funname='f', return_code=False, compile=False)
-
 
     g = compile_higher_order_function(g_eqs, g_syms, params, order=order,
         funname='g', return_code=False, compile=False)

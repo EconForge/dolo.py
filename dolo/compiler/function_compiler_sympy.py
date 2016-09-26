@@ -6,9 +6,11 @@ import ast
 
 def ast_to_sympy(expr):
     '''Converts an AST expression to a sympy expression (STUPID)'''
-    from .codegen import to_source
+    from dolang import to_source
     s = to_source(expr)
-    return sympy.sympify(s)
+    not_to_be_treated_as_functions = ['alpha','beta', 'gamma','zeta', 'Chi']
+    d = {v: sympy.Symbol(v) for v in not_to_be_treated_as_functions}
+    return sympy.sympify(s, locals=d)
 
 def non_decreasing_series(n, size):
     '''Lists all combinations of 0,...,n-1 in increasing order'''
@@ -64,12 +66,9 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     return_code=False, compile=False):
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
-    from .function_compiler_ast import std_date_symbol, StandardizeDatesSimple
-    all_vars = syms + [(p,0) for p in params]
-    sds = StandardizeDatesSimple(all_vars)
+    from dolang import normalize, stringify
 
-
-
+    vars = [s[0] for s in syms]
     # TEMP: compatibility fix when eqs is an Odict:
     eqs = [eq for eq in eqs]
 
@@ -77,19 +76,21 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     # elif not isinstance(eqs[0], sympy.Basic):
     # assume we have ASTs
         eqs = list([ast.parse(eq).body[0] for eq in eqs])
-        eqs_std = list( [sds.visit(eq) for eq in eqs] )
+        eqs_std = list( [normalize(eq, variables=vars) for eq in eqs] )
         eqs_sym = list( [ast_to_sympy(eq) for eq in eqs_std] )
     else:
         eqs_sym = eqs
 
-    symsd = list( [std_date_symbol(a,b) for a,b in syms] )
-    paramsd = list( [std_date_symbol(a,0) for a in params] )
+    symsd = list( [stringify((a,b)) for a,b in syms] )
+    paramsd = list( [stringify(a) for a in params] )
     D = higher_order_diff(eqs_sym, symsd, order=order)
 
     txt = """def {funname}(x, p, order=1):
 
     import numpy
-    from numpy import log, exp, tan, sqrt, pi
+    from numpy import log, exp, tan, sqrt
+    from numpy import pi as pi_
+    from numpy import inf as inf_
     from scipy.special import erfc
 
 """.format(funname=funname)
@@ -177,6 +178,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
         return [out, out_1, out_2, out_3]
     """
 
+    print(txt)
     if return_code:
         return txt
     else:
