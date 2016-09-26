@@ -1,3 +1,119 @@
+
+dtcc:
+
+    model_spec: dtcc
+
+    symbols: ['exogenous', 'states', 'controls', 'rewards', 'values', 'expectations', 'shocks', 'parameters']
+
+    specs:
+
+        arbitrage:
+
+            eqs:
+
+                - ['exogenous',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+
+                - ['exogenous',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+
+                - ['parameters',0,'p']
+
+            complementarities:
+
+                left-right:
+
+                    - ['exogenous',0,'m']
+                    - ['states', 0, 's']
+                    - ['parameters', 0, 'p']
+
+                middle: ['controls', 0, 's']
+
+
+        transition:
+
+            target: ['states',0,'S']
+
+            eqs:
+                - ['exogenous',-1,'m']
+                - ['states',-1,'s']
+                - ['controls',-1,'x']
+                - ['exogenous',0,'M']
+                - ['parameters', 0, 'p']
+
+        value:
+
+            optional: True
+
+            target: ['values',0,'v']
+            recursive: False
+
+            eqs:
+                - ['exogenous',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['values', 0, 'v']
+
+                - ['exogenous',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+                - ['values', 1, 'V']
+
+                - ['parameters',0,'p']
+
+        expectation:
+
+            optional: True
+
+            target: ['expectations',0,'z']
+            recursive: False
+
+            eqs:
+                - ['exogenous',1,'M']
+                - ['states',1,'S']
+                - ['controls',1,'X']
+
+                - ['parameters',0,'p']
+
+        direct_response:
+
+            optional: True
+            recursive: True
+            target: ['controls', 0,'x']
+
+            eqs:
+                - ['exogenous',0,'m']
+                - ['states',0,'s']
+                - ['expectations', 0, 'z']
+                - ['parameters',0,'p']
+
+        felicity:
+
+            optional: True
+            recursive: True
+
+            target: ['rewards', 0,'r']
+
+            eqs:
+                - ['exogenous',0,'m']
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                - ['parameters', 0, 'p']
+
+
+        arbitrage_exp:
+
+            optional: True
+
+            eqs:
+                - ['states',0,'s']
+                - ['controls',0,'x']
+                #- ['auxiliaries',0,'y']
+                - ['parameters', 0, 'p']
+
+
 dtcscc:
 
     model_spec: dtcscc

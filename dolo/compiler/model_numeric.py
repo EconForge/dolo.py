@@ -372,8 +372,10 @@ file: "{filename}\n'''.format(**self.infos)
         eqs = ['{} = {}'.format(k,k) for k in auxiliaries]
         if model_type == 'dtcscc':
             arg_names = [('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
-        else:
+        elif model_type=='dtmscc':
             arg_names = [('markov_states',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
+        elif model_type=='dtcc':
+            arg_names = [('exogenous',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
         target = ('auxiliaries',0,'y')
         rhs_only = True
         funname = 'auxiliary'

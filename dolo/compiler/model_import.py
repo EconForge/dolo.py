@@ -39,7 +39,10 @@ def yaml_import(fname, return_symbolic=False, check=True, check_only=False):
 def autodetect_type(data):
     if 'variables' in data['symbols']: return 'dynare'
     elif 'markov_states' in data['symbols']: return 'dtmscc'
-    else: return 'dtcscc'
+    elif 'shocks' in data['symbols']: return 'dtcscc'
+    elif 'exogenous' in data['symbols']: return 'dtcc'
+    else:
+        raise Exception("Could not detect model type")
 
 
 def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=False):
@@ -61,7 +64,7 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
 
     model_type = data.get('model_type')
     auto_type = autodetect_type(data)
-
+    print(model_type, auto_type)
     if model_type is None:
         model_type = auto_type
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
@@ -83,6 +86,7 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     initial_values = {
         'shocks': 0,
         'markov_states': 0,
+        'exogenous': 0,
         'expectations': 0,
         'values': 0,
         'controls': float('nan'),
@@ -117,7 +121,7 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     if return_symbolic:
         return smodel
 
-    if model_type in ('dtcscc', 'dtmscc'):
+    if model_type in ('dtcscc', 'dtmscc', 'dtcc'):
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:
