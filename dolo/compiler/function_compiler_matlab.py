@@ -1,5 +1,5 @@
 import ast
-import codegen
+from dolang import to_source
 
 def str_to_expr(s):
     return ast.parse(s).body[0]
@@ -13,7 +13,6 @@ def str_to_expr(s):
 
 
 def print_matlab(sexpr):
-    from dolo.compiler.codegen import to_source
     ss = (to_source(sexpr))
     ss = ss.replace(' ** ', '.^')
     ss = ss.replace(' * ', '.*')

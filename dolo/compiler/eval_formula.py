@@ -1,5 +1,6 @@
 from ast import *
-from dolo.compiler.function_compiler_ast import std_date_symbol, to_source
+# from dolo.compiler.function_compiler_ast import std_date_symbol, to_source
+from dolang import normalize, stringify, to_source
 from dolo.compiler.misc import CalibrationDict
 
 
@@ -20,6 +21,10 @@ def eval_formula(expr, dataframe=None, context=None):
     else:
         dd = context.copy()
 
+    # compat since normalize form for parameters doesn't match calib dict.
+    for k in [*dd.keys()]:
+        dd[stringify(k)] = dd[k]
+
     from numpy import log, exp
     dd['log'] = log
     dd['exp'] = exp
@@ -31,15 +36,18 @@ def eval_formula(expr, dataframe=None, context=None):
         for k in tvariables:
             if k in dd:
                 dd[k+'_ss'] = dd[k]  # steady-state value
-            dd[std_date_symbol(k, 0)] = dataframe[k]
+            dd[stringify((k, 0))] = dataframe[k]
             for h in range(1, 3):  # maximum number of lags
-                dd[std_date_symbol(k, -h)] = dataframe[k].shift(h)
-                dd[std_date_symbol(k, h)] = dataframe[k].shift(-h)
+                dd[stringify((k, -h))] = dataframe[k].shift(h)
+                dd[stringify((k, h))] = dataframe[k].shift(-h)
         dd['t'] = pd.Series(dataframe.index, index=dataframe.index)
 
         import ast
         expr_ast = ast.parse(expr).body[0].value
-        nexpr = StandardizeDatesSimple(tvariables).visit(expr_ast)
+        # nexpr = StandardizeDatesSimple(tvariables).visit(expr_ast)
+        print(tvariables)
+        nexpr = normalize(expr_ast, variables=tvariables)
+
         expr = to_source(nexpr)
 
     res = eval(expr, dd)
@@ -57,7 +65,7 @@ class StandardizeDatesSimple(NodeTransformer):
     def visit_Name(self, node):
 
         name = node.id
-        newname = std_date_symbol(name, 0)
+        newname = normalize((name, 0))
         if name in self.variables:
             expr = Name(newname, Load())
             return expr

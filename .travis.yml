@@ -3,7 +3,7 @@ language: python
 python:
 #    - "2.7"
     - "3.5"
-    
+
 sudo: false
 
 addons:
@@ -11,7 +11,7 @@ addons:
     packages:
     - gfortran
     - liblapack-dev
-    
+
 install:
   # You may want to periodically update this, although the conda update
   # conda line below will keep everything up-to-date.  We do this
@@ -36,6 +36,7 @@ install:
   - conda install -c conda-forge ruamel.yaml=0.11.11
   - conda install -c cwrowley slycot=0.2.0
   - conda install -c albop interpolation=0.1.6
+  - pip install git+https://github.com/EconForge/Dolang.git@albop/from_dolo
   - python setup.py install
 
 
