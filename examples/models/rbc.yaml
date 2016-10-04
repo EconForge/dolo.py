@@ -28,7 +28,7 @@ equations:
         - k = (1-delta)*k(-1) + i(-1)
 
     value:
-        - V = log(c) + beta*V(1)
+        - V =  log(c) + beta*V(1)
 
 calibration:
 
