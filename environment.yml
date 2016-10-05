@@ -4,6 +4,7 @@ dependencies:
 - babel=2.2.0=py35_0
 - docutils=0.12=py35_0
 - fastcache=1.0.2=py35_0
+- ipython=5.1.0
 - jinja2=2.8=py35_0
 - llvmlite=0.8.0=py35_0
 - markupsafe=0.23=py35_0
