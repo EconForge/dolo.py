@@ -64,12 +64,13 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
 
     model_type = data.get('model_type')
     auto_type = autodetect_type(data)
-    print(model_type, auto_type)
+
     if model_type is None:
         model_type = auto_type
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
     else:
         assert(model_type == auto_type)
+
     symbols = data['symbols']
     definitions = data.get('definitions', {})
     equations = data['equations']
@@ -125,6 +126,7 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:
+
         from dolo.compiler.model_dynare import DynareModel
         model = DynareModel(smodel, infos=infos)
     return model

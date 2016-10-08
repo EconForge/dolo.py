@@ -120,7 +120,10 @@ file: "{filename}\n'''.format(**self.infos)
         res = self.residuals()
         res.update({'definitions': zeros(1)})
 
-        equations = self.symbolic.equations.copy()
+        if self.model_type == 'dynare':
+            equations = {"dynare": self.symbolic.equations.copy()}
+        else:
+            equations = self.symbolic.equations.copy()
         definitions = self.symbolic.definitions
         tmp = []
         for deftype in definitions:
@@ -196,6 +199,7 @@ file: "{filename}\n'''.format(**self.infos)
         tmp = []
         for deftype in definitions:
             tmp.append(deftype + ' = ' + definitions[deftype])
+
         definitions = {'definitions': tmp}
         equations.update(definitions)
 
