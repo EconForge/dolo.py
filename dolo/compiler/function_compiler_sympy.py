@@ -178,7 +178,6 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
         return [out, out_1, out_2, out_3]
     """
 
-    print(txt)
     if return_code:
         return txt
     else:

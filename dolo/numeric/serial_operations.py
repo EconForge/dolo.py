@@ -65,6 +65,78 @@ S1 x ... x Sf x R1 x ... x Rd x Rn
 import numpy
 from numba import jit
 
+
+import numpy
+from numba import guvectorize
+from numba import double
+
+
+def solve(m, sol):
+
+    # seems to segfault on windows
+
+    h,w = m.shape
+
+    for y in range(0,h):
+        maxrow = y
+        for y2 in range(y+1, h):    # Find max pivot
+            if abs(m[y2,y]) > abs(m[maxrow,y]):
+                maxrow = y2
+        for y2 in range(0,w):
+            t = m[y,y2]
+            m[y,y2] = m[maxrow,y2]
+            m[maxrow,y2] = t
+
+        for y2 in range(y+1, h):    # Eliminate column y
+            c = m[y2,y] / m[y,y]
+            for x in range(y, w):
+                m[y2,x] -= m[y,x] * c
+
+    for y in range(h-1, 0-1, -1): # Backsubstitute
+        c  = m[y,y]
+        for y2 in range(0,y):
+            for x in range(w-1, y-1, -1):
+                m[y2,x] -=  m[y,x] * m[y2,y] / c
+        m[y,y] /= c
+        for x in range(h, w):       # Normalize row y
+          m[y,x] /= c
+
+    for y in range(h):
+        sol[y] = m[y,w-1]
+
+# serial_solve_numba = guvectorize('void(f8[:,:], f8[:])', '(m,n)->(m)')(solve)
+serial_solve_numba = guvectorize('void(f8[:,:], f8[:])', '(m,n)->(m)', target='parallel')(solve)
+
+
+from numpy.linalg import solve as linalg_solve
+from numpy import zeros_like
+
+
+def serial_solve(A, B, diagnose=True):
+
+
+    if diagnose:
+
+        sol = zeros_like(B)
+
+        for i in range(sol.shape[0]):
+            try:
+                sol[i,:] = linalg_solve( A[i,:,:], B[i,:])
+            except:
+                # Should be a special type of exception
+                a = Exception("Error solving point {}".format(i))
+                a.x = B[i,:]
+                a.J = A[i,:,:]
+                a.i = i
+                raise a
+
+    else:
+        M = numpy.concatenate([A,B[:,:,None]],axis=2)
+        sol = numpy.zeros_like(B)
+        serial_solve_numba(M,sol)
+
+    return sol
+
 @jit
 def serial_multiplication(A,B):
 
