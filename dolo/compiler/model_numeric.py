@@ -163,7 +163,7 @@ file: "{filename}\n'''.format(**self.infos)
 
     def _repr_html_(self):
 
-        from dolo.compiler.latex import eq2tex
+        from dolang.latex import eq2tex
 
         # general informations
         infos = self.infos

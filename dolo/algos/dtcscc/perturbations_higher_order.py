@@ -91,8 +91,6 @@ def model_to_fg(model, order=2):
 
     params = model.symbols['parameters']
 
-    print(f_eqs)
-    print(f_syms)
     f = compile_higher_order_function(f_eqs, f_syms, params, order=order,
         funname='f', return_code=False, compile=False)
 
