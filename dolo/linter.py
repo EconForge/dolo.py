@@ -331,9 +331,6 @@ def check_calibration(data):
             exceptions.append(exc)
     return exceptions
 
-
-
-
 def check_all(data):
 
     def serious(exsc): return ('error' in [e.type for e in exsc])
@@ -390,27 +387,31 @@ def lint(txt, source='<string>', format='human'):
     except:
         return [] # should return parse error
 
-    try:
-        exceptions = check_all(data)
-    except Exception as e:
-        # raise(e)
-        exc = ModelException("Linter Error: Uncaught Exception")
-        exc.pos = [0,0,0,0]
-        exc.type = 'error'
-        exceptions = [exc]
-
-    output = []
-    for k in exceptions:
+    if not ('symbols' in data or 'equations' in data or 'calibration' in data):
+        # this is probably not a yaml filename
+        output = []
+    else:
         try:
-            err_type = k.type
-        except:
-            err_type = 'error'
-        output.append({
-            'type': err_type,
-            'source': source,
-            'range': ((k.pos[0],k.pos[1]),(k.pos[2],k.pos[3])),
-            'text': k.args[0]
-        })
+            exceptions = check_all(data)
+        except Exception as e:
+            # raise(e)
+            exc = ModelException("Linter Error: Uncaught Exception")
+            exc.pos = [0,0,0,0]
+            exc.type = 'error'
+            exceptions = [exc]
+
+        output = []
+        for k in exceptions:
+            try:
+                err_type = k.type
+            except:
+                err_type = 'error'
+            output.append({
+                'type': err_type,
+                'source': source,
+                'range': ((k.pos[0],k.pos[1]),(k.pos[2],k.pos[3])),
+                'text': k.args[0]
+            })
 
     if format == 'json':
         return (json.dumps(output))
