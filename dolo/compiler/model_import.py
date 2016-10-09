@@ -80,7 +80,6 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
         model_type = auto_type
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
     else:
-        print(model_type, auto_type)
         assert(model_type == auto_type)
 
 

@@ -9,7 +9,6 @@ class Normal(IIDProcess):
     def __init__(self, sigma=None, orders=None, mu=None):
 
         self.sigma = np.atleast_2d( np.array(sigma, dtype=float) )
-        print(sigma)
         self.d = len(self.sigma)
         if orders is None:
             self.orders = np.array([5]*self.d)
@@ -38,8 +37,8 @@ class MarkovChain(list):
         import numpy
         P = numpy.array(P, dtype=float)
         Q = numpy.array(Q, dtype=float)
-        self.P = P
-        self.Q = Q
+        self.states = P
+        self.transitions = Q
         self.extend([P, Q]) # compatibility fix
 
 
@@ -60,8 +59,8 @@ class AR1(MarkovChain):
         from dolo.numeric.discretization import multidimensional_discretization
 
         [P,Q] = multidimensional_discretization(rho_array, sigma_array)
-        self.P = P
-        self.Q = Q
+        self.states = P
+        self.transitions = Q
         self.extend([P, Q])
 
 class MarkovProduct(MarkovChain):
@@ -69,9 +68,12 @@ class MarkovProduct(MarkovChain):
     def __init__(self, M1=None, M2=None):
 
         from dolo.numeric.discretization import tensor_markov
-        [P, Q] = tensor_markov( (M1.P,M1.Q), (M2.P, M2.Q) )
-        self.P = P
-        self.Q = Q
+        [P, Q] = tensor_markov(
+                    (M1.states, M1.transitions),
+                    (M2.states, M2.transitions)
+                )
+        self.states = P
+        self.transitions = Q
         self.extend([P,Q])
 
 
