@@ -4,7 +4,7 @@ def test_big_system():
 
     from dolo.algos.dtcscc.time_iteration import time_iteration
 
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/compat/rbc.yaml')
 
     dr = time_iteration(model, grid={'type': 'smolyak', 'mu': 3}, verbose=True)
     sol = nonlinear_system(model, grid={'type': 'smolyak', 'mu': 3})

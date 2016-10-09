@@ -3,7 +3,7 @@ def test_eval_formula():
     from dolo.compiler.eval_formula import eval_formula
     from dolo import yaml_import, approximate_controls, simulate
 
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/compat/rbc.yaml')
     dr = approximate_controls(model)
     sim = simulate(model, dr)
 

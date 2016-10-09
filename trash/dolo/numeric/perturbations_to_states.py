@@ -362,6 +362,6 @@ def state_perturb(f_fun, g_fun, sigma, sigma2_correction=None, verbose=True):
 
 if __name__ == '__main__':
     from dolo import *
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/compat/rbc.yaml')
     dr = approximate_controls(model)
     print(dr.X_s)

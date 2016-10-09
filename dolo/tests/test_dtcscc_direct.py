@@ -4,7 +4,7 @@ def test_direct():
     from dolo.algos.dtcscc.perturbations import approximate_controls
     from dolo.algos.dtcscc.time_iteration import time_iteration_direct, time_iteration
 
-    model = yaml_import("examples/models/rbc_full.yaml")
+    model = yaml_import("examples/models/compat/rbc_full.yaml")
 
     # Check without complementarity conditions
     dr = time_iteration_direct(model, with_complementarities=False)

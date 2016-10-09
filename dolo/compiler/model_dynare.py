@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     from dolo import *
 
-    fname = "/home/pablo/Programming/econforge/dolo/examples/models/rbc_dynare.yaml"
+    fname = "/home/pablo/Programming/econforge/dolo/examples/models/compat/rbc_dynare.yaml"
 
 
     smodel = yaml_import(fname, return_symbolic=True)

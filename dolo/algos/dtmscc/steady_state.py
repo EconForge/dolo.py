@@ -2,6 +2,8 @@
 
 def residuals(model, calib=None):
 
+    assert(model.is_dtmscc())
+    
     if calib is None:
         calib = model.calibration
 
@@ -10,7 +12,7 @@ def residuals(model, calib=None):
 
     if 'auxiliary' not in model.functions:
 
-        m = calib['markov_states']
+        m = calib['exogenous']
         s = calib['states']
         x = calib['controls']
         p = calib['parameters']
@@ -27,7 +29,7 @@ def residuals(model, calib=None):
 
     else:
 
-        m = calib['markov_states']
+        m = calib['exogenous']
 
         s = calib['states']
         x = calib['controls']

@@ -18,7 +18,7 @@ class NumericModel:
         if self.symbolic.definitions:
             self.symbols['auxiliaries'] = [e for e in self.symbolic.definitions.keys()]
 
-        self.variables = sum( [tuple(e) for k,e in  self.symbols.items() if k not in ('parameters','shocks','values')], ())
+        self.variables = sum( [tuple(e) for k,e in  self.symbols.items() if k not in ('parameters','shocks','exogenous', 'values')], ())
 
         self.options = options if options is not None else {}
 
@@ -51,24 +51,36 @@ class NumericModel:
         # distribution = evaluator.eval(self.symbolic.options.get('distribution'))
         # discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
 
-        distribution = self.options.get('distribution')
-        discrete_transition = self.options.get('discrete_transition')
+        exogenous = self.options.get('exogenous')
+        self.exogenous = exogenous
 
-        self.distribution = distribution
-        self.discrete_transition = discrete_transition
-
-        if distribution is None:
-            self.covariances = None
+        from dolo.compiler.objects import IIDProcess, MarkovChain
+        if isinstance(exogenous, IIDProcess):
+            self.distribution = exogenous
         else:
-            self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
-
-        markov_chain = discrete_transition
-
-        if markov_chain is None:
-            self.markov_chain = None
+            self.distribution = None
+        if isinstance(exogenous, MarkovChain):
+            self.discrete_transition = exogenous
         else:
-            markov_chain = [markov_chain.P, markov_chain.Q]
-            self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
+            self.discrete_transition = None
+        # distribution = self.options.get('distribution')
+        # discrete_transition = self.options.get('discrete_transition')
+        #
+        # self.distribution = distribution
+        # self.discrete_transition = discrete_transition
+        #
+        # if distribution is None:
+        #     self.covariances = None
+        # else:
+        #     self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
+        #
+        # markov_chain = discrete_transition
+        #
+        # if markov_chain is None:
+        #     self.markov_chain = None
+        # else:
+        #     markov_chain = [markov_chain.P, markov_chain.Q]
+        #     self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
     def get_calibration(self, pname, *args):
 
@@ -104,6 +116,14 @@ class NumericModel:
             calib =  self.symbolic.calibration_dict
             calib.update(kwargs)
             self.__update_from_symbolic__()
+
+    def is_dtmscc(model):
+        from dolo.compiler.objects import MarkovChain
+        return isinstance(model.exogenous, MarkovChain)
+
+    def is_dtcscc(model):
+        from dolo.compiler.objects import IIDProcess
+        return isinstance(model.exogenous, IIDProcess)
 
     def __str__(self):
 
@@ -248,10 +268,10 @@ file: "{filename}\n'''.format(**self.infos)
 
     def residuals(self, calib=None):
 
+        if self.model_type == 'dtcc':
+            from dolo.algos.dtcc.steady_state import residuals
         if self.model_type == 'dtcscc':
             from dolo.algos.dtcscc.steady_state import residuals
-        elif self.model_type == 'dtmscc':
-            from dolo.algos.dtmscc.steady_state import residuals
         elif self.model_type == 'dynare':
             from dolo.algos.dynare.steady_state import residuals
         return residuals(self, calib)
@@ -264,14 +284,19 @@ file: "{filename}\n'''.format(**self.infos)
         return eval_formula(expr, dataframe=dataframe, context=calib)
 
     def get_distribution(model, **opts):
+        from dolo.compiler.objects import IIDProcess
         import copy
-        gg = model.symbolic.options.get('distribution')
+        gg = model.symbolic.options.get('exogenous')
         if gg is None:
             raise Exception("Model has no distribution.")
         d = copy.deepcopy(gg)
         d.update(opts)
         if 'type' in d: d.pop('type')
-        return d.eval(model.calibration.flat)
+        obj =  d.eval(model.calibration.flat)
+        if not isinstance(obj, IIDProcess):
+            raise Exception("Exgogenous shocks don't follow an IID process.")
+        else:
+            return obj
 
     def get_grid(model, **dis_opts):
         import copy
@@ -376,8 +401,6 @@ file: "{filename}\n'''.format(**self.infos)
         eqs = ['{} = {}'.format(k,k) for k in auxiliaries]
         if model_type == 'dtcscc':
             arg_names = [('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
-        elif model_type=='dtmscc':
-            arg_names = [('markov_states',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
         elif model_type=='dtcc':
             arg_names = [('exogenous',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
         target = ('auxiliaries',0,'y')

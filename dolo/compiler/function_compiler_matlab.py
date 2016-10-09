@@ -310,7 +310,7 @@ if __name__ == '__main__':
     print('***************#######################************************')
 
     from dolo import *
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/compat/rbc.yaml')
 
     import time
     t1 = time.time()

@@ -4,7 +4,7 @@ def test_parameterized_expectations_direct():
     from dolo.algos.dtcscc.parameterized_expectations import parameterized_expectations
     from dolo.algos.dtcscc.time_iteration import time_iteration_direct
 
-    model = yaml_import("examples/models/rbc_full.yaml")
+    model = yaml_import("examples/models/compat/rbc_full.yaml")
 
     dr_ti = time_iteration_direct(model)
     dr_pea = parameterized_expectations(model, direct=True)
@@ -24,7 +24,7 @@ def test_parameterized_expectations():
     from dolo.algos.dtcscc.parameterized_expectations import parameterized_expectations
     from dolo.algos.dtcscc.time_iteration import time_iteration
 
-    model = yaml_import("examples/models/rbc_full.yaml")
+    model = yaml_import("examples/models/compat/rbc_full.yaml")
 
     dr_ti = time_iteration(model)
     dr_pea = parameterized_expectations(model, direct=False)

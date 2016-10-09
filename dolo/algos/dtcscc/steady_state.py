@@ -209,7 +209,7 @@ if __name__ == '__main__':
 
     from dolo.algos.steady_state import find_steady_state
 
-    model = yaml_import("examples/models/open_economy.yaml")
+    model = yaml_import("examples/models/compat/open_economy.yaml")
 
     ss = find_steady_state(model)
 

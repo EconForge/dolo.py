@@ -94,7 +94,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         The solved value function
     """
 
-    assert(model.model_type == 'dtmscc')
+    assert(model.is_dtmscc())
 
     transition = model.functions['transition']
     felicity = model.functions['felicity']
@@ -105,11 +105,11 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     discount = model.calibration['beta']
 
     x0 = model.calibration['controls']
-    m0 = model.calibration['markov_states']
+    m0 = model.calibration['exogenous']
     s0 = model.calibration['states']
     r0 = felicity(m0, s0, x0, parms)
 
-    [P, Q] = model.markov_chain
+    [P, Q] = model.exogenous
     n_ms = P.shape[0]   # number of markov states
 
     approx = model.get_grid(**grid)
@@ -349,9 +349,9 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
 
     """
 
-    assert(model.model_type == 'dtmscc')
+    assert(model.is_dtmscc())
 
-    [P, Q] = model.markov_chain
+    [P, Q] = model.exogenous
 
     n_ms = P.shape[0]   # number of markov states
     n_mv = P.shape[1]   # number of markov variables

@@ -38,7 +38,7 @@ def yaml_import(fname, return_symbolic=False, check=True, check_only=False):
 
 def autodetect_type(data):
     if 'variables' in data['symbols']: return 'dynare'
-    elif 'markov_states' in data['symbols']: return 'dtmscc'
+    elif 'markov_states' in data['symbols']: return 'dtcc'
     elif 'shocks' in data['symbols']: return 'dtcscc'
     elif 'exogenous' in data['symbols']: return 'dtcc'
     else:
@@ -60,6 +60,17 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     if parse_only:
         return data
 
+    # quick fix
+    if data['model_type'] == 'dtmscc':
+        data['model_type'] = 'dtcc'
+    if 'markov_states' in data['symbols']:
+        data['symbols']['exogenous'] = data['symbols'].pop('markov_states')
+    if 'distribution' in data['options']:
+        data['options']['exogenous'] = data['options'].pop('distribution')
+    if 'discrete_transition' in data['options']:
+        data['options']['exogenous'] = data['options'].pop('discrete_transition')
+
+
     name = data['name']
 
     model_type = data.get('model_type')
@@ -69,7 +80,11 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
         model_type = auto_type
         print("Missing `model_type` field. Set to `{}`".format(auto_type))
     else:
+        print(model_type, auto_type)
         assert(model_type == auto_type)
+
+
+
 
     symbols = data['symbols']
     definitions = data.get('definitions', {})
@@ -82,11 +97,12 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     infos['name'] = name
     infos['type'] = model_type
 
+
     # all symbols are initialized to nan
     # except shocks and markov_states which are initialized to 0
     initial_values = {
         'shocks': 0,
-        'markov_states': 0,
+        # 'markov_states': 0,
         'exogenous': 0,
         'expectations': 0,
         'values': 0,
@@ -122,7 +138,7 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     if return_symbolic:
         return smodel
 
-    if model_type in ('dtcscc', 'dtmscc', 'dtcc'):
+    if model_type in ('dtcscc', 'dtcc'):
         from dolo.compiler.model_numeric import NumericModel
         model = NumericModel(smodel, infos=infos)
     else:
@@ -134,8 +150,8 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
 
 if __name__ == "__main__":
 
-    # fname = "../../examples/models/rbc.yaml"
-    fname = "examples/models/integration_A.yaml"
+    # fname = "../../examples/models/compat/rbc.yaml"
+    fname = "examples/models/compat/integration_A.yaml"
 
     import os
     print(os.getcwd())

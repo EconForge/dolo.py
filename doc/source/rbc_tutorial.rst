@@ -34,7 +34,7 @@ which we can read locally or pull off the web.
 .. code:: python
 
     filename = ('https://raw.githubusercontent.com/EconForge/dolo'
-                '/master/examples/models/rbc.yaml')
+                '/master/examples/models/compat/rbc.yaml')
 
     #filename='../models/rbc.yaml'
 
@@ -296,7 +296,7 @@ less display prescision.
 
     - name: "RBC"
     - type: "fga"
-    - file: "https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml
+    - file: "https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/compat/rbc.yaml
 
     - residuals:
 

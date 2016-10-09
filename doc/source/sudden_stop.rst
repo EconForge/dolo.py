@@ -41,7 +41,7 @@ writing the model
 
 .. code:: python
 
-    filename = 'https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/sudden_stop.yaml'
+    filename = 'https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/compat/sudden_stop.yaml'
     filename = 'sudden_stop.yaml'
     # the model file is coded in a separate file called sudden_stop.yaml
     # note how the borrowing constraint is implemented as complementarity condition

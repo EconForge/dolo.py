@@ -58,7 +58,7 @@ After dolo is installed, try to solve a model by typing the following commands i
 .. code:: python
 
     from dolo import *                           # load the library
-    model = yaml_import("https://github.com/EconForge/dolo/blob/master/examples/models/rbc.yaml")
+    model = yaml_import("https://github.com/EconForge/dolo/blob/master/examples/models/compat/rbc.yaml")
                                                  # import the model
     display(model)                               # display the model
     dr = time_iteration(model, verbose=True)     # solve

@@ -3,7 +3,7 @@ def test_omega_errors():
         from dolo import yaml_import
         from dolo.algos.dtcscc.time_iteration import time_iteration as time_iteration
 
-        model = yaml_import('examples/models/rbc.yaml')
+        model = yaml_import('examples/models/compat/rbc.yaml')
 
         from dolo.algos.dtcscc.perturbations import approximate_controls
 
@@ -28,7 +28,7 @@ def test_denhaan_errors():
         from dolo import yaml_import
         from dolo.algos.dtcscc.time_iteration import time_iteration as time_iteration
 
-        model = yaml_import('examples/models/rbc.yaml')
+        model = yaml_import('examples/models/compat/rbc.yaml')
 
         from dolo.algos.dtcscc.perturbations import approximate_controls
 

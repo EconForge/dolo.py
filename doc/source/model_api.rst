@@ -159,7 +159,7 @@ Distribution and markov_chain objects
 +++++++++++++++++++++++++++++++++++++
 
 Mixed states and continuous states models specify the structure of the stochastic innovations using a markov chain or a covariance matrix respectively.
-These are accessed in the ``model.covariances`` and ``model.markov_chain`` respectively. If not relevant, these structures are set to ``None``.
+These are accessed in the ``model.covariances`` and ``model.exogenous`` respectively. If not relevant, these structures are set to ``None``.
 A covariance matrix, is a square array, with as the number of rows given by the number of shocks. A Markov chain is a list, where the the first element enumerates values taken by discrete states, line by line, while the second element holds the stochastic matrix whose element :math:`i,j` is the probability to jump from the `i`-th state to the `j`-th one.
 
 

@@ -92,8 +92,8 @@ from collections import OrderedDict
 from dolo.compiler.recipes import recipes
 
 known_symbol_types = {
+    'dtcc':recipes['dtcc']['symbols'],
     'dtcscc':recipes['dtcscc']['symbols'],
-    'dtmscc':recipes['dtmscc']['symbols'],
     'dynare':recipes['dynare']['symbols']
     }
 
@@ -362,7 +362,7 @@ def check_infos(data):
     exceptions = []
     if 'model_type' in data:
         model_type = data['model_type']
-        if model_type not in ['dtmscc', 'dtcscc','dynare']:
+        if model_type not in ['dtcc', 'dtmscc', 'dtcscc','dynare']:
             exc = ModelException('Uknown model type: {}.'.format(str(model_type)))
             exc.pos = data.lc.data['model_type']
             exc.type='error'

@@ -109,13 +109,13 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         approximated solution
     '''
 
-    assert(model.model_type == 'dtmscc')
+    assert(model.is_dtmscc())
 
     def vprint(t):
         if verbose:
             print(t)
 
-    [P, Q] = model.markov_chain
+    [P, Q] = model.exogenous
 
     n_ms = P.shape[0]   # number of markov states
     n_mv = P.shape[1] # number of markov variables
@@ -257,10 +257,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 if __name__ == '__main__':
 
     from dolo import *
-    model = yaml_import("../../../examples/models/rbc_mfga.yaml")
+    model = yaml_import("../../../examples/models/compat/rbc_mfga.yaml")
     print(model.calibration['states'])
     print(model.calibration_dict)
-    print(model.markov_chain)
+    print(model.exogenous)
 
 
     initial_guess_symbolic = [
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     from dolo.compiler.function_compiler import standard_function
 
     arg_names = [
-        ['markov_states',0,'m'],
+        ['exogenous',0,'m'],
         ['states',0,'s'],
         ['parameters',0,'p']
     ]

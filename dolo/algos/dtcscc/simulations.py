@@ -251,7 +251,7 @@ def test_simulations():
     from matplotlib.pyplot import hist, show, figure, plot, title
     from dolo import yaml_import, approximate_controls
     from dolo.numeric.discretization import gauss_hermite_nodes
-    model = yaml_import('../../examples/models/rbc.yaml')
+    model = yaml_import('../../examples/models/compat/rbc.yaml')
 
     dr = approximate_controls(model)
 

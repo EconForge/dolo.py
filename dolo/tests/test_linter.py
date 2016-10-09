@@ -4,7 +4,7 @@ def test_lint_all():
     import os
     import re
 
-    examples_dir = 'examples/models/'
+    examples_dir = 'examples/models/compat/'
     examples = os.listdir(examples_dir)
 
     regex = re.compile("(.*).yaml")

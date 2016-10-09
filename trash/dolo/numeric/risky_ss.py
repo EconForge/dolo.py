@@ -271,6 +271,6 @@ def solve_risky_ss(model, X_bar, X_s, verbose=False):
 if __name__ == '__main__':
     from dolo import yaml_import
     fname = '/home/pablo/Documents/Research/Thesis/chapter_4/code/models/open_economy.yaml'
-    #fname = 'examples/models/open_economy_with_pf.yaml'
+    #fname = 'examples/models/compat/open_economy_with_pf.yaml'
     model = yaml_import(fname)
     sol = solve_model_around_risky_ss(model, verbose=True)

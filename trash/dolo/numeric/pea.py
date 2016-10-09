@@ -94,7 +94,7 @@ from dolo import yaml_import
 
 from trash.dolo.numeric.perturbations_to_states import approximate_controls
 
-model = yaml_import('../../../examples/models/rbc_fgah.yaml')
+model = yaml_import('../../../examples/models/compat/rbc_fgah.yaml')
 
 
 dr_pert = approximate_controls(model, order=1, substitute_auxiliary=True)

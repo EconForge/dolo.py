@@ -13,8 +13,8 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
 
     from dolo import yaml_import
 
-    #model = yaml_import('examples/models/rbc_fg.yaml', compiler=compiler, order=data_layout)
-    model = yaml_import('examples/models/rbc.yaml')
+    #model = yaml_import('examples/models/compat/rbc_fg.yaml', compiler=compiler, order=data_layout)
+    model = yaml_import('examples/models/compat/rbc.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
@@ -56,7 +56,7 @@ def test_dtcscc_model():
 
     # test a model defined with auxiliary variables
     from dolo import yaml_import
-    model = yaml_import('examples/models/rbc_full.yaml')
+    model = yaml_import('examples/models/compat/rbc_full.yaml')
 
     s = model.calibration['states']
     x = model.calibration['controls']

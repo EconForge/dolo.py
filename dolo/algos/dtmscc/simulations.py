@@ -74,11 +74,13 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
            is the number of variables.
     '''
 
+    assert(model.is_dtmscc())
+
     if n_exp<1:
         is_irf = True
         n_exp = 1
 
-    nodes, transitions = model.markov_chain
+    nodes, transitions = model.exogenous
     if s0 is None:
         s0 = model.calibration['states']
     else:
@@ -146,9 +148,9 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
 
 
     if with_aux:
-        columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
+        columns = model.symbols['exogenous'] + model.symbols['states'] + model.symbols['controls'] + model.symbols['auxiliaries']
     else:
-        columns = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls']
+        columns = model.symbols['exogenous'] + model.symbols['states'] + model.symbols['controls']
 
     if drv is not None:
         n_vals = len(model.symbols['values'])
@@ -178,6 +180,8 @@ def simulate(model, dr, i_0, s0=None, drv=None, n_exp=100, horizon=50, markov_in
 
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, **kwargs):
 
+    assert(model.is_dtmscc())
+
     import numpy
 
     states_names = model.symbols['states']
@@ -199,7 +203,7 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
         s0 = model.calibration['states']
 
     if i0 == None:
-        P,Q = model.markov_chain
+        P,Q = model.exogenous
         n_ms = P.shape[0]
         [q,r] = divmod(n_ms,2)
         i0 = q-1+r
@@ -209,11 +213,11 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     xvec = dr(i0,svec)
 
-    m = model.markov_chain[0][i0]
+    m = model.exogenous[0][i0]
     mm = numpy.row_stack([m]*n_steps)
     l = [mm, svec, xvec]
 
-    series = model.symbols['markov_states'] + model.symbols['states'] + model.symbols['controls']
+    series = model.symbols['exogenous'] + model.symbols['states'] + model.symbols['controls']
 
     if 'auxiliary' in model.functions:
         p = model.calibration['parameters']

@@ -107,7 +107,7 @@ Example
 
 Here is an example model contained in the file ``examples\global_models\example.yaml``
 
-.. literalinclude:: ../../examples/models/rbc.yaml
+.. literalinclude:: ../../examples/models/compat/rbc.yaml
     :language: yaml
     :linenos:
 

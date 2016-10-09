@@ -8,8 +8,9 @@ def test_mfg_model():
     from dolo.algos.dtmscc.simulations import simulate, plot_decision_rule
 
 
-    model = yaml_import("examples/models/sudden_stop.yaml")
-
+    model = yaml_import("examples/models/compat/sudden_stop.yaml")
+    print(model.exogenous)
+    print(model.is_dtmscc())
     mdr = time_iteration(model)
 
     #

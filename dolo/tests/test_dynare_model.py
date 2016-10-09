@@ -5,7 +5,7 @@ from dolo.algos.dynare.simulations import *
 
 def test_dynare_model():
 
-    model = yaml_import("examples/models/rbc_dynare.yaml")
+    model = yaml_import("examples/models/compat/rbc_dynare.yaml")
 
     dr = solve_decision_rule(model, order=2)
     print(dr['ys'])

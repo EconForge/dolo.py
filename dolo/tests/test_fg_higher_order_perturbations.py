@@ -3,7 +3,7 @@ def test_fga_higher_order_perturbations():
     from dolo import yaml_import
     from dolo.algos.dtcscc.perturbations_higher_order import approximate_controls
 
-    model = yaml_import('examples/models/rbc.yaml')
+    model = yaml_import('examples/models/compat/rbc.yaml')
     # for i in [1,2,3]:
     dr1 = approximate_controls(model, order=1)
     dr2 = approximate_controls(model, order=2)

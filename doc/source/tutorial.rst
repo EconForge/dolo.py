@@ -7,9 +7,9 @@ Here we illustrate how to solve the RBC model.
 Write a model
 -------------
 
-Models are defined in YAML, which is a very readable standard for coding native data structures (see http://yaml.org/). This makes the model definition file quite easy to read. Take a look at the ``rbc.yaml`` from the ``examples/models`` directory. It is a valid YAML file. In particular, indentation defines nesting, colons define key-value associations that generate Python dicts, dashes generate Python lists, and the file must not contain any tabs. Here is its content:
+Models are defined in YAML, which is a very readable standard for coding native data structures (see http://yaml.org/). This makes the model definition file quite easy to read. Take a look at the ``rbc.yaml`` from the ``examples/models/compat`` directory. It is a valid YAML file. In particular, indentation defines nesting, colons define key-value associations that generate Python dicts, dashes generate Python lists, and the file must not contain any tabs. Here is its content:
 
-.. literalinclude:: ../../examples/models/rbc.yaml
+.. literalinclude:: ../../examples/models/compat/rbc.yaml
     :language: yaml
     :linenos:
 
@@ -64,11 +64,11 @@ Import dolo:
 
    from dolo import *
 
-Import the example file provided with dolo in ``examples/models`` subdirectory and display it.
+Import the example file provided with dolo in ``examples/models/compat`` subdirectory and display it.
 
 .. code-block:: python
 
-   model = yaml_import('examples/models/rbc.yaml')
+   model = yaml_import('examples/models/compat/rbc.yaml')
    display(model) # this prints the model equations
 
 Solving the model :

@@ -361,7 +361,7 @@ if __name__ == '__main__':
 
     from dolo import yaml_import
 
-    m = yaml_import("../../../examples/models/Figv4_1191.yaml")
+    m = yaml_import("../../../examples/models/compat/Figv4_1191.yaml")
     T = 100
     g_list = [0.2]*10+[0.4]
 
@@ -385,5 +385,5 @@ if __name__ == '__main__':
     for s in [sol2, sol3, sol4, sol5]:
         assert max(abs(sol1-s).max()) == 0.0
 
-    m2 = yaml_import("../../../examples/models/rmt3_ch11.yaml")
+    m2 = yaml_import("../../../examples/models/compat/rmt3_ch11.yaml")
     sol = deterministic_solve(m, shocks={"g": [0.2]*10+[0.4]}, T=T)

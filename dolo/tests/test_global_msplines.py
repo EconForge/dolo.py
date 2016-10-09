@@ -8,7 +8,7 @@ class TestGlobal(unittest.TestCase):
         from dolo import yaml_import, time_iteration
 
 
-        filename = 'examples/models/rbc.yaml'
+        filename = 'examples/models/compat/rbc.yaml'
 
         model = yaml_import(filename)
 

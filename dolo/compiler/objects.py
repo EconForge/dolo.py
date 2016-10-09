@@ -1,12 +1,15 @@
 import numpy as np
 
+class IIDProcess:
+    pass
 
 
-class Normal:
+class Normal(IIDProcess):
 
     def __init__(self, sigma=None, orders=None, mu=None):
 
-        self.sigma = np.array(sigma, dtype=float)
+        self.sigma = np.atleast_2d( np.array(sigma, dtype=float) )
+        print(sigma)
         self.d = len(self.sigma)
         if orders is None:
             self.orders = np.array([5]*self.d)
@@ -32,6 +35,9 @@ class MarkovChain(list):
 
     def __init__(self, P=None, Q=None):
 
+        import numpy
+        P = numpy.array(P, dtype=float)
+        Q = numpy.array(Q, dtype=float)
         self.P = P
         self.Q = Q
         self.extend([P, Q]) # compatibility fix
