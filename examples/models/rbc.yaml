@@ -4,11 +4,11 @@ model_type: dtcscc
 
 symbols:
 
-   states:  [z, k]
-   controls: [i, n]
+   states:  [z,k]
+   controls: [i,n]
    values: [V]
    shocks: [e_z]
-   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
+   parameters: [beta,sigma,eta,chi,delta,alpha,rho,zbar,sig_z]
 
 definitions:
     y: z*k^alpha*n^(1-alpha)
