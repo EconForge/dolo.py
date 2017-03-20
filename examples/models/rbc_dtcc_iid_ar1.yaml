@@ -4,8 +4,8 @@ model_type: dtcc
 
 symbols:
 
-   exogenous: [z]
-   states: [k]
+   exogenous: [e_z]
+   states: [z, k]
    controls: [n, i]
    expectations: [m]
    values: [V]
@@ -21,11 +21,12 @@ definitions:
 equations:
 
     arbitrage:
-        - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
-        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 <= i <= inf
-        # - V0 = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta) + beta*V0(1) |  -100000<=V0<=100000
+        - chi*n^eta*c^sigma - w                      | 0.0 <= n <= inf
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0.0 <= i <= inf
+
 
     transition:
+        - z = rho*z(-1) + e_z
         - k = (1-delta)*k(-1) + i(-1)
 
     value:
@@ -44,7 +45,7 @@ equations:
 calibration:
 
     # parameters
-    beta: 0.99
+    beta : 0.99
     phi: 1
     delta : 0.025
     alpha : 0.33
@@ -57,8 +58,6 @@ calibration:
     c_i: 1.5
     c_y: 0.5
     e_z: 0.0
-    m: 0
-    V0: (c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta))/(1-beta)
 
     # endogenous variables
     n: 0.33
@@ -71,18 +70,17 @@ calibration:
     c: y - i
     V: log(c)/(1-beta)
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
-
+    m: beta/c^sigma*(1-delta+rk)
 
 options:
 
-    exogenous: !MarkovChain
-        P: [[0.00]]
-        Q: [[1.0]]
+    exogenous: !Normal
+        sigma: sig_z**2
 
     grid: !Cartesian
-        a: [k*0.5]
-        b: [k*1.5]
-        orders: [50]
+        a: [-sig_z, k*0.5]
+        b: [+sig_z, k*1.5]
+        orders: [10, 50]
 
     random:
         any: 0.1
