@@ -76,8 +76,8 @@ calibration:
 options:
 
     exogenous: !MarkovChain
-        P: [[0.00]]
-        Q: [[1.0]]
+        values: [[0.00]]
+        transitions: [[1.0]]
 
     grid: !Cartesian
         a: [k*0.5]

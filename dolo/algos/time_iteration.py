@@ -1,81 +1,81 @@
 import numpy
+from dolo import dprint
 
-def residuals_simple(f, g, s, x, dr, P, Q, parms):
+def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
 
-    n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1] # number of markov variable
+    # n_ms = P.shape[0]   # number of markov states
+    # n_mv = P.shape[1] # number of markov variable
 
     res = numpy.zeros_like(x)
 
-    for i_ms in range(n_ms):
+    for i_ms in range(dprocess.n_nodes()):
+
         # solving on grid for markov index i_ms
         # m = P[i_ms,:][None,:]
-        m = numpy.tile(P[i_ms,:],(N,1))
+        m = numpy.tile(dprocess.node(i_ms),(N,1))
         xm = x[i_ms,:,:]
 
-        for I_ms in range(n_ms):
-
+        for I_ms in range(dprocess.n_inodes(i_ms)):
             # M = P[I_ms,:][None,:]
-            M = numpy.tile(P[I_ms,:], (N,1))
-            prob = Q[i_ms, I_ms]
-
+            M = numpy.tile(dprocess.inode(i_ms, I_ms), (N,1))
+            prob = dprocess.iweight(i_ms, I_ms)
             S = g(m, s, xm, M, parms)
             XM = dr(I_ms, S)
             rr = f(m,s,xm,M,S,XM,parms)
             res[i_ms,:,:] += prob*rr
 
     return res
-
-def residuals(f, g, s, x, dr, P, Q, parms):
-
-    N = s.shape[0]
-    n_s = s.shape[1]
-    n_x = x.shape[2]
-
-    n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1] # number of markov variable
-
-    res = numpy.zeros_like(x)
-
-    m = P
-
-    s_ = numpy.tile(s, (n_ms*n_ms, 1))
-    x_ = numpy.repeat(x[None,:,:,:], n_ms, axis=0)
-    m_ = numpy.repeat( m, N, axis=0 )
-    m_ = numpy.tile( m_, (n_ms,1) )
-
-    M_ = numpy.repeat( m, N*n_ms, axis=0 )
-
-    # reshape everything as 2d arrays
-    s_ = s_.reshape( (-1, n_s) )
-    x_ = x_.reshape( (-1, n_x) )
-    m_ = m_.reshape( (-1, n_mv) )
-    M_ = M_.reshape( (-1, n_mv) )
-
-
-    S_ = g(m_, s_, x_, M_, parms)
-    X_ = numpy.zeros_like(x_)
-
-    S_r = S_.reshape( (n_ms, n_ms, N, n_s) )
-    X_r = X_.reshape( (n_ms, n_ms, N, n_x) )
-
-    for I_ms in range(n_ms):
-        SS_ = S_r[I_ms, :, :, :].reshape( (n_ms*N, n_s) )
-        X_r[I_ms,:,:,:] = dr(I_ms, SS_).reshape( (n_ms, N, n_x) )
-
-    rr = f(m_, s_, x_, M_, S_, X_, parms)
-
-    rr = rr.reshape( (n_ms, n_ms, N, n_x) )
-
-    for i_ms in range(n_ms):
-        res[i_ms,:,:] = 0
-        for I_ms in range(n_ms):
-            res[i_ms, :, :] += Q[i_ms, I_ms] * rr[I_ms, i_ms, :, :]
-
-    return res
+#
+# def residuals(f, g, s, x, dr, dprocess, parms):
+#
+#     N = s.shape[0]
+#     n_s = s.shape[1]
+#     n_x = x.shape[2]
+#
+#     n_ms = P.shape[0]   # number of markov states
+#     n_mv = P.shape[1] # number of markov variable
+#
+#     res = numpy.zeros_like(x)
+#
+#     m = P
+#
+#     s_ = numpy.tile(s, (n_ms*n_ms, 1))
+#     x_ = numpy.repeat(x[None,:,:,:], n_ms, axis=0)
+#     m_ = numpy.repeat( m, N, axis=0 )
+#     m_ = numpy.tile( m_, (n_ms,1) )
+#
+#     M_ = numpy.repeat( m, N*n_ms, axis=0 )
+#
+#     # reshape everything as 2d arrays
+#     s_ = s_.reshape( (-1, n_s) )
+#     x_ = x_.reshape( (-1, n_x) )
+#     m_ = m_.reshape( (-1, n_mv) )
+#     M_ = M_.reshape( (-1, n_mv) )
+#
+#
+#     S_ = g(m_, s_, x_, M_, parms)
+#     X_ = numpy.zeros_like(x_)
+#
+#     S_r = S_.reshape( (n_ms, n_ms, N, n_s) )
+#     X_r = X_.reshape( (n_ms, n_ms, N, n_x) )
+#
+#     for I_ms in range(n_ms):
+#         SS_ = S_r[I_ms, :, :, :].reshape( (n_ms*N, n_s) )
+#         X_r[I_ms,:,:,:] = dr(I_ms, SS_).reshape( (n_ms, N, n_x) )
+#
+#     rr = f(m_, s_, x_, M_, S_, X_, parms)
+#
+#     rr = rr.reshape( (n_ms, n_ms, N, n_x) )
+#
+#     for i_ms in range(n_ms):
+#         res[i_ms,:,:] = 0
+#         for I_ms in range(n_ms):
+#             res[i_ms, :, :] += Q[i_ms, I_ms] * rr[I_ms, i_ms, :, :]
+#
+#     return res
 
 
 
@@ -108,44 +108,44 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     decision rule :
         approximated solution
     '''
-
-    assert(model.is_dtmscc())
-
+    from dolo import dprint
     def vprint(t):
         if verbose:
             print(t)
 
-    [P, Q] = model.exogenous
+    process = model.exogenous
+    dprocess = process.discretize()
 
-    n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1] # number of markov variables
+    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
     x0 = model.calibration['controls']
     parms = model.calibration['parameters']
     n_x = len(x0)
     n_s = len(model.symbols['states'])
-
     approx = model.get_grid(**grid)
     a = approx.a
     b = approx.b
     orders = approx.orders
     interp_type = approx.interpolation # unused
 
-    from dolo.numeric.decision_rules_markov import MarkovDecisionRule
+    from dolo.numeric.processes import DiscretizedIIDProcess
+    from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
 
-    mdr = MarkovDecisionRule(n_ms, a, b, orders)
+    if isinstance(dprocess, DiscretizedIIDProcess):
+        mdr = IIDDecisionRule(n_ms, a, b, orders)
+    else:
+        mdr = MarkovDecisionRule(n_ms, a, b, orders)
 
     grid = mdr.grid
     N = grid.shape[0]
 
-
     controls_0 = numpy.zeros((n_ms, N, n_x))
-
     if initial_guess is None:
         controls_0[:,:,:] = x0[None,None,:]
     else:
         for i_m in range(n_ms):
-            m = P[i_m,:][None,:]
+            m = dp[None,:]
             controls_0[i_m,:,:] = initial_guess(i_m, grid)
 
     f = model.functions['arbitrage']
@@ -157,7 +157,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         lb = numpy.zeros_like(controls_0)*numpy.nan
         ub = numpy.zeros_like(controls_0)*numpy.nan
         for i_m in range(n_ms):
-            m = P[i_m,:][None,:]
+            m = dprocess.node(i_m)[None,:]
             p = parms[None,:]
             m = numpy.repeat(m, N, axis=0)
             p = numpy.repeat(p, N, axis=0)
@@ -168,13 +168,9 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     else:
         with_complementarities = False
 
-
-    # mdr.set_values(controls)
-
     sh_c = controls_0.shape
 
     controls_0 = controls_0.reshape( (-1,n_x) )
-
 
     from dolo.numeric.optimize.newton import newton, SerialDifferentiableFunction
     from dolo.numeric.optimize.ncpsolve import ncpsolve
@@ -210,9 +206,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
         mdr.set_values(controls_0.reshape(sh_c))
 
-        fn = lambda x: residuals(f, g, grid, x.reshape(sh_c), mdr, P, Q, parms).reshape((-1,n_x))
+        fn = lambda x: residuals_simple(f, g, grid, x.reshape(sh_c), mdr, dprocess, parms).reshape((-1,n_x))
         dfn = SerialDifferentiableFunction(fn)
 
+        res = fn(controls_0)
 
         if hook:
             hook()

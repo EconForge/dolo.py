@@ -2,70 +2,10 @@ import time
 import numpy as np
 import scipy.optimize
 from collections import OrderedDict
+from dolo.numeric.processes import DiscretizedIIDProcess
+from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
 
-class IterationsPrinter:
-
-    def __init__(self, *knames, verbose=False):
-        knames = OrderedDict(knames)
-        names = []
-        types = []
-        fmts = []
-        for k, v in knames.items():
-            names.append(k)
-            types.append(v)
-            if v == int:
-                fmts.append("{:4}")
-            elif v == float:
-                fmts.append("{:9.3e}")
-        fmt_str = "| " + str.join(' | ', fmts) + " |"
-        self.verbose = verbose
-        self.names = names
-        self.types = types
-        self.fmts = fmts
-        self.width = len( fmt_str.format(*[0 for i in self.names]) )
-        self.fmt_str = fmt_str
-        self.t_start = time.time()
-
-
-    def print_line(self):
-        if not self.verbose:
-            return
-        print("-"*self.width)
-
-    def print_header(self, msg=None):
-        if not self.verbose:
-            return
-        self.print_line()
-        if msg is not None:
-            ll = '| ' + msg
-            print(ll + ' '*(self.width-len(ll)-1) + '|')
-            self.print_line()
-        title_str = ''
-        for i, v in enumerate(self.types):
-            k = self.names[i]
-            if v == int:
-                title_str += " {:4} |".format(k)
-            elif v == float:
-                title_str += " {:9} |".format(k)
-        title_str = '|' + title_str
-        print(title_str)
-        self.print_line()
-
-    def print_iteration(self, **args):
-        if not self.verbose:
-            return
-        vals = [args[k] for k in self.names]
-        print(self.fmt_str.format(*vals))
-
-    def print_finished(self):
-        if not self.verbose:
-            return
-        elapsed = time.time() - self.t_start
-        line = '| Elapsed: {:.2f} seconds.'.format(elapsed)
-        self.print_line()
-        print(line + ' '*(self.width-len(line)-1) + '|')
-        self.print_line()
-        print()
+from dolo.misc.itprinter import IterationsPrinter
 
 
 import numpy
@@ -94,8 +34,6 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         The solved value function
     """
 
-    assert(model.is_dtmscc())
-
     transition = model.functions['transition']
     felicity = model.functions['felicity']
     controls_lb = model.functions['controls_lb']
@@ -109,16 +47,22 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     s0 = model.calibration['states']
     r0 = felicity(m0, s0, x0, parms)
 
-    [P, Q] = model.exogenous
-    n_ms = P.shape[0]   # number of markov states
+    process = model.exogenous
+    dprocess = process.discretize()
+
+    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
     approx = model.get_grid(**grid)
     a = approx.a
     b = approx.b
     orders = approx.orders
 
-    MarkovDecisionRule
-    mdrv = MarkovDecisionRule(n_ms, a, b, orders)  # values
+
+    if isinstance(dprocess, DiscretizedIIDProcess):
+        mdrv = IIDDecisionRule(n_ms, a, b, orders)
+    else:
+        mdrv = MarkovDecisionRule(n_ms, a, b, orders)
 
     grid = mdrv.grid
     N = grid.shape[0]
@@ -158,9 +102,9 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         values = values_0.copy()
         controls = controls_0.copy()
 
-        for i_m in range(n_ms):
+        for i_m in range(dprocess.n_nodes()):
+            m = dprocess.node(i_m)
             for n in range(N):
-                m = P[i_m, :]
                 s = grid[n, :]
                 x = controls[i_m, n, :]
                 lb = controls_lb(m, s, parms)
@@ -169,7 +113,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
                 def valfun(xx):
                     return -choice_value(transition, felicity, i_m, s, xx,
-                                         mdrv, P, Q, parms, discount)[0]
+                                         mdrv, dprocess, parms, discount)[0]
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
 
                 controls[i_m, n, :] = res.x
@@ -215,10 +159,10 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
         for i_m in range(n_ms):
             for n in range(N):
-                m = P[i_m, :]
+                m = dprocess.node(i_m)
                 s = grid[n, :]
                 x = controls_0[i_m, n, :]
-                values[i_m, n, 0] = choice_value(transition, felicity, i_m, s, x, mdrv, P, Q, parms, discount)
+                values[i_m, n, 0] = choice_value(transition, felicity, i_m, s, x, mdrv, dprocess, parms, discount)
 
         # compute error, update value function
         err_v = abs(values - values_0).max()
@@ -240,10 +184,15 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     err_x = 100
     err_x_0 = 100
 
-    if verbose:
-        print('-----')
-        print('Starting value function iteration')
-        print('-----')
+    # if verbose:
+    #     print('-----')
+    #     print('Starting value function iteration')
+    #     print('-----')
+
+    itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
+                                ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
+    itprint.print_header('Start value function iterations.')
+
 
     while it < maxit and err_v > tol:
 
@@ -258,7 +207,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
         for i_m in range(n_ms):
             for n in range(N):
-                m = P[i_m, :]
+                m = dprocess.node(i_m)
                 s = grid[n, :]
                 x = controls[i_m, n, :]
                 lb = controls_lb(m, s, parms)
@@ -266,7 +215,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
                 bnds = [e for e in zip(lb, ub)]
 
                 def valfun(xx):
-                    return -choice_value(transition, felicity, i_m, s, xx, mdrv, P, Q, parms, discount)[0]
+                    return -choice_value(transition, felicity, i_m, s, xx, mdrv, dprocess, parms, discount)[0]
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
 
                 controls[i_m, n, :] = res.x
@@ -288,38 +237,34 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         err_v_0 = err_v
 
         itprint.print_iteration(N=it,
-                                Error=err_v,
-                                Gain=gain_v,
+                                Error_V=err_v,
+                                Gain_V=gain_v,
+                                Error_x=err_x,
+                                Gain_x=gain_x,
                                 Time=elapsed)
 
     itprint.print_finished()
 
 
-    itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
-                                ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
-    itprint.print_header('Start value function iterations.')
+    if isinstance(dprocess, DiscretizedIIDProcess):
+        mdr = IIDDecisionRule(n_ms, a, b, orders)
+    else:
+        mdr = MarkovDecisionRule(n_ms, a, b, orders)
 
-    # if verbose:
-    #     print('Finished iterating on value function only. Starting value with policy iteration.')
-
-    # final value function and decision rule
-    mdr = MarkovDecisionRule(n_ms, a, b, orders)  # values
     mdr.set_values(controls)
     mdrv.set_values(values_0)
 
-    itprint.print_finished()
 
     return mdr, mdrv
 
 
-def choice_value(transition, felicity, i_ms, s, x, drv, P, Q, parms, beta):
+def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
 
-    n_ms = P.shape[0]   # number of markov states
-    m = P[i_ms, :]
+    m = dprocess.node(i_ms)
     cont_v = 0.0
-    for I_ms in range(n_ms):
-        M = P[I_ms, :]
-        prob = Q[i_ms, I_ms]
+    for I_ms in range(dprocess.n_inodes(i_ms)):
+        M = dprocess.inode(i_ms,I_ms)
+        prob = dprocess.iweight(i_ms, I_ms)
         S = transition(m, s, x, M, parms)
         V = drv(I_ms, S)[0]
         cont_v += prob*V

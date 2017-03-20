@@ -55,9 +55,9 @@ class AR1(LanguageElement):
 
 class MarkovChain(LanguageElement):
     baseclass = objects.MarkovChain
-
-class MarkovProduct(LanguageElement):
-    baseclass = objects.MarkovProduct
+#
+# class MarkovProduct(LanguageElement):
+#     baseclass = objects.MarkovProduct
 
 class CartesianGrid(LanguageElement):
     baseclass = objects.CartesianGrid
@@ -78,7 +78,7 @@ minilang = [
     Normal,
     AR1,
     MarkovChain,
-    MarkovProduct,
+    # MarkovProduct,
     Smolyak,
     Cartesian,
     CartesianGrid,

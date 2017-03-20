@@ -5,8 +5,6 @@ class NumericModel:
 
     calibration = None
     calibration_dict = None
-    covariances = None
-    markov_chain = None
 
     def __init__(self, symbolic_model, options=None, infos=None):
 
@@ -47,40 +45,9 @@ class NumericModel:
         evaluator = NumericEval(self.calibration_dict)
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
-        #
-        # distribution = evaluator.eval(self.symbolic.options.get('distribution'))
-        # discrete_transition = evaluator.eval(self.symbolic.options.get('discrete_transition'))
 
         exogenous = self.options.get('exogenous')
         self.exogenous = exogenous
-
-        from dolo.compiler.objects import IIDProcess, MarkovChain
-        if isinstance(exogenous, IIDProcess):
-            self.distribution = exogenous
-        else:
-            self.distribution = None
-        if isinstance(exogenous, MarkovChain):
-            self.discrete_transition = exogenous
-        else:
-            self.discrete_transition = None
-        # distribution = self.options.get('distribution')
-        # discrete_transition = self.options.get('discrete_transition')
-        #
-        # self.distribution = distribution
-        # self.discrete_transition = discrete_transition
-        #
-        # if distribution is None:
-        #     self.covariances = None
-        # else:
-        #     self.covariances = numpy.atleast_2d(numpy.array(distribution.sigma, dtype=float))
-        #
-        # markov_chain = discrete_transition
-        #
-        # if markov_chain is None:
-        #     self.markov_chain = None
-        # else:
-        #     markov_chain = [markov_chain.P, markov_chain.Q]
-        #     self.markov_chain = [numpy.atleast_2d(numpy.array(tab, dtype=float)) for tab in markov_chain]
 
     def get_calibration(self, pname, *args):
 
@@ -116,14 +83,6 @@ class NumericModel:
             calib =  self.symbolic.calibration_dict
             calib.update(kwargs)
             self.__update_from_symbolic__()
-
-    def is_dtmscc(model):
-        from dolo.compiler.objects import MarkovChain
-        return isinstance(model.exogenous, MarkovChain)
-
-    def is_dtcscc(model):
-        from dolo.compiler.objects import IIDProcess
-        return isinstance(model.exogenous, IIDProcess)
 
     def __str__(self):
 
