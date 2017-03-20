@@ -75,6 +75,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     null = opts['null']
     Big  = opts['Big']
     preprocess = opts['preprocess']
+    presteps = opts['presteps']
     #verbose = opts['verbose']
 
     x = x0
