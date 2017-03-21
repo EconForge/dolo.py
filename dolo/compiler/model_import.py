@@ -38,8 +38,6 @@ def yaml_import(fname, return_symbolic=False, check=True, check_only=False):
 
 def autodetect_type(data):
     if 'variables' in data['symbols']: return 'dynare'
-    elif 'markov_states' in data['symbols']: return 'dtcc'
-    elif 'shocks' in data['symbols']: return 'dtcscc'
     elif 'exogenous' in data['symbols']: return 'dtcc'
     else:
         raise Exception("Could not detect model type")
@@ -60,25 +58,13 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     if parse_only:
         return data
 
-    # quick fix
-    if data['model_type'] == 'dtmscc':
-        data['model_type'] = 'dtcc'
-    if 'markov_states' in data['symbols']:
-        data['symbols']['exogenous'] = data['symbols'].pop('markov_states')
-    if 'distribution' in data['options']:
-        data['options']['exogenous'] = data['options'].pop('distribution')
-    if 'discrete_transition' in data['options']:
-        data['options']['exogenous'] = data['options'].pop('discrete_transition')
-
 
     name = data['name']
 
     model_type = data.get('model_type')
     auto_type = autodetect_type(data)
-
     if model_type is None:
         model_type = auto_type
-        print("Missing `model_type` field. Set to `{}`".format(auto_type))
     else:
         assert(model_type == auto_type)
 

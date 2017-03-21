@@ -299,7 +299,6 @@ def check_definitions(data):
             exc = ModelException("Syntax Error.")
             exc.pos = [pp[0], pp[1]+e.offset, pp[0], pp[1]+e.offset]
             exceptions.append(exc)
-            print(e)
 
 
     return exceptions
@@ -368,10 +367,12 @@ def check_infos(data):
             exc.type='error'
             exceptions.append(exc)
     else:
-        exc = ModelException("Missing field: 'model_type'.")
-        exc.pos = (0,0,0,0)
-        exc.type='error'
-        exceptions.append(exc)
+        model_type = 'dtcc'
+        data['model_type'] = 'dtcc'
+        # exc = ModelException("Missing field: 'model_type'.")
+        # exc.pos = (0,0,0,0)
+        # exc.type='error'
+        # exceptions.append(exc)
     if 'name' not in data:
         exc = ModelException("Missing field: 'name'.")
         exc.pos = (0,0,0,0)

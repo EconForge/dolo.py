@@ -1,7 +1,5 @@
 name: Real Business Cycle
 
-model_type: dtcc
-
 symbols:
 
    exogenous: [e_z]
@@ -21,8 +19,8 @@ definitions:
 equations:
 
     arbitrage:
-        - chi*n^eta*c^sigma - w                      | 0.01 <= n <= 1
-        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0.0 <= i <= 1.0
+        - chi*n^eta*c^sigma - w^                     | 0.0 <= n <= inf
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0.0 <= i <= inf
 
 
     transition:
@@ -75,11 +73,11 @@ calibration:
 options:
 
     exogenous: !Normal
-        sigma: sig_z**2*0.000001
+        sigma: sig_z**2
 
     grid: !Cartesian
-        a: [-0.00001, k*0.5]
-        b: [0.00001, k*1.5]
+        a: [-2*sig_z/(1-rho^2)^0.5, k*0.5]
+        b: [ 2*sig_z/(1-rho^2)^0.5, k*1.5]
         orders: [5, 50]
 
     random:

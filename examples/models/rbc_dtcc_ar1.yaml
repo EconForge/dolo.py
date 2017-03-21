@@ -1,7 +1,5 @@
 name: Real Business Cycle
 
-model_type: dtcc
-
 symbols:
 
    exogenous: [z]

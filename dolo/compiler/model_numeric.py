@@ -227,12 +227,7 @@ file: "{filename}\n'''.format(**self.infos)
 
     def residuals(self, calib=None):
 
-        if self.model_type == 'dtcc':
-            from dolo.algos.dtcc.steady_state import residuals
-        if self.model_type == 'dtcscc':
-            from dolo.algos.dtcscc.steady_state import residuals
-        elif self.model_type == 'dynare':
-            from dolo.algos.dynare.steady_state import residuals
+        from dolo.algos.steady_state import residuals
         return residuals(self, calib)
 
     def eval_formula(self, expr, dataframe=None, calib=None):

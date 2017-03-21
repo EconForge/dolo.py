@@ -1,5 +1,49 @@
 import numpy as np
 
+import numpy
+
+
+# from dolo import *
+import pickle
+
+# should be moved to markov
+from numba import jit, njit
+
+@njit
+def choice(x, n, cumul):
+    i = 0
+    running = True
+    while i<n and running:
+        if x < cumul[i]:
+            running = False
+        else:
+            i += 1
+    return i
+
+
+@jit
+def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
+
+    n_states = nodes.shape[0]
+
+#    start = numpy.array( (i_0,)*n_exp )
+    simul = numpy.zeros( (horizon, n_exp), dtype=int)
+    simul[0,:] = i_0
+    rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
+
+    cumuls = transitions.cumsum(axis=1)
+    cumuls = numpy.ascontiguousarray(cumuls)
+
+    for t in range(horizon-1):
+        for i in range(n_exp):
+            s = simul[t,i]
+            p = cumuls[s,:]
+            simul[t+1,i] = choice(rnd[t,i], n_states, p)
+
+    res = numpy.row_stack(simul)
+
+    return res
+
 class Process:
     pass
 
@@ -69,6 +113,19 @@ class MvNormal(IIDProcess):
         [x, w] = gauss_hermite_nodes(orders, self.sigma, mu=self.mu)
         return DiscretizedIIDProcess(x,w)
 
+    def simulate(self, N, T, m0=None, stochastic=True):
+        from numpy.random import multivariate_normal
+        sigma = self.sigma
+        mu = self.mu
+        if stochastic:
+            sim = multivariate_normal(mu, sigma, N*T)
+        else:
+            sim = mu[None,len(mu)].repeat(T*N,axis=0)
+        return sim.reshape((T,N,len(mu)))
+
+
+
+
 class DiscreteMarkovProcess(DiscretizedProcess):
 
     # transitions: 2d float array
@@ -101,7 +158,9 @@ class DiscreteMarkovProcess(DiscretizedProcess):
     def iweight(self, i:int, j:int): # scalar
         return self.transitions[i,j]
 
-
+    def simulate(self, N, T, i0=0, stochastic=True):
+        inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
+        return self.values[inds]
 #
 # class MarkovChain(list):
 #
