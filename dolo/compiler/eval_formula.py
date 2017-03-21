@@ -3,6 +3,7 @@ from ast import *
 from dolang import normalize, stringify, to_source
 from dolo.compiler.misc import CalibrationDict
 
+import xarray
 
 def eval_formula(expr, dataframe=None, context=None):
     '''
@@ -45,7 +46,6 @@ def eval_formula(expr, dataframe=None, context=None):
         import ast
         expr_ast = ast.parse(expr).body[0].value
         # nexpr = StandardizeDatesSimple(tvariables).visit(expr_ast)
-        print(tvariables)
         nexpr = normalize(expr_ast, variables=tvariables)
 
         expr = to_source(nexpr)

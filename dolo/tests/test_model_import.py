@@ -2,23 +2,23 @@ import unittest
 import numpy
 
 
-def test_web_import():
-
-    from dolo import yaml_import
-
-    model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
-    assert(len(model.symbols['states'])==2)
+# def test_web_import():
+#
+#     from dolo import yaml_import
+#
+#     model = yaml_import("https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/rbc.yaml")
+#     assert(len(model.symbols['states'])==2)
 
 def model_evaluation(compiler='numpy', data_layout='columns'):
 
     from dolo import yaml_import
 
     #model = yaml_import('examples/models/compat/rbc_fg.yaml', compiler=compiler, order=data_layout)
-    model = yaml_import('examples/models/compat/rbc.yaml')
+    model = yaml_import('examples/models/rbc_dtcc_iid.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']
-    e0 = model.calibration['shocks']
+    e0 = model.calibration['exogenous']
     p = model.calibration['parameters']
 
     assert(s0.ndim == 1)
@@ -41,9 +41,9 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
     xx = x0[None,:].repeat(N,axis=0)
     ee = e0[None,:].repeat(N,axis=0)
 
-    vec_res = f(ss,xx,ee,ss,xx,p)
+    vec_res = f(ee,ss,xx,ee,ss,xx,p)
 
-    res = f(s0, x0, e0, s0, x0, p)
+    res = f(e0, s0, x0, e0, s0, x0, p)
 
     assert(res.ndim==1)
 
@@ -52,39 +52,7 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
         d += abs(vec_res[i,:] - res).max()
     assert(d == 0)
 
-def test_dtcscc_model():
-
-    # test a model defined with auxiliary variables
-    from dolo import yaml_import
-    model = yaml_import('examples/models/compat/rbc_full.yaml')
-
-    s = model.calibration['states']
-    x = model.calibration['controls']
-    X = x
-
-    y = model.calibration['auxiliaries']
-
-    E = model.calibration['shocks']
-    V = model.calibration['values']
-    p = model.calibration['parameters']
-
-
-    S = model.functions['transition'](s,x,E,p)
-    r = model.functions['arbitrage'](s,x,E,S,X,p)
-    y = model.functions['auxiliary'](s,x,p)
-    v = model.functions['value'](s,x,S,X,V,p)
-
-    z = model.functions['expectation'](S, X, p)
-
-    x1 = model.functions['direct_response'](s,z, p)
-
-    print('x1')
-    print(x)
-    print(x1)
-
-    assert(abs(x-x1).max()<1e-12)
 
 
 if __name__ == '__main__':
-    test_dtcscc_model()
     model_evaluation()

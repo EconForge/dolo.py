@@ -48,13 +48,13 @@ def simulate(model, dr, s0=None, m0=None, n_exp=1, horizon=40, seed=42, stochast
     if m0 is None:
         m0 = calib['exogenous']
 
+    x0 = dr(m0,s0)
 
     m_simul = model.exogenous.simulate(n_exp, horizon, m0=m0, stochastic=stochastic)
     s_simul = numpy.zeros((horizon, n_exp, s0.shape[0]))
     x_simul = numpy.zeros((horizon, n_exp, x0.shape[0]))
 
     s_simul[0, :, :] = s0[None, :]
-    x0 = dr(m0,s0)
     x_simul[0, :, :] = x0[None, :]
 
     fun = model.functions
