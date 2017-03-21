@@ -12,7 +12,9 @@ class IterationsPrinter:
             names.append(k)
             types.append(v)
             if v == int:
-                fmts.append("{:4}")
+                mm = max([4,len(k)])
+                print(mm)
+                fmts.append("{{:{}}}".format(mm))
             elif v == float:
                 fmts.append("{:9.3e}")
         fmt_str = "| " + str.join(' | ', fmts) + " |"

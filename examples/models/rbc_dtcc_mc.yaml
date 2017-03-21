@@ -21,8 +21,8 @@ definitions:
 equations:
 
     arbitrage:
-        - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
-        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 <= i <= inf
+        - chi*n^eta*c^sigma - w                      | 0.01 <= n <= 1.0
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0.00 <= i <= 1.0
         # - V0 = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta) + beta*V0(1) |  -100000<=V0<=100000
 
     transition:
@@ -80,9 +80,9 @@ options:
         transitions: [[1.0]]
 
     grid: !Cartesian
-        a: [k*0.5]
-        b: [k*1.5]
-        orders: [50]
+        a: [k*0.2]
+        b: [k*2.0]
+        orders: [100]
 
     random:
         any: 0.1

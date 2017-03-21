@@ -8,6 +8,29 @@ from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRu
 from dolo.misc.itprinter import IterationsPrinter
 
 
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import numpy as np
+
+
+class ConstantDecisionRule:
+
+    def __init__(self, x0):
+        self.x0 = x0
+
+    def __call__(self, i, s):
+        if s.ndim==1:
+            return self.x0
+        else:
+            N = s.shape[0]
+            return self.x0[None,:].repeat(N,axis=0)
+
+def constant_policy(model):
+    return ConstantDecisionRule(model.calibration["controls"])
+
+
 import numpy
 from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
@@ -68,139 +91,55 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     N = grid.shape[0]
     n_x = len(x0)
 
+
+
+    mdr = constant_policy(model)
     controls_0 = np.zeros((n_ms, N, n_x))
-    controls_0[:, :, :] = model.calibration['controls'][None, None, :]
-    #
+    for i_ms in range(n_ms):
+        controls_0[i_ms, :, :] = mdr(i_ms, grid)
+
     values_0 = np.zeros((n_ms, N, 1))
-    values_0[:, :, :] = r0/(1-discount)
+    # for i_ms in range(n_ms):
+    #     values_0[i_ms, :, :] = mdrv(i_ms, grid)
 
-    itprint = IterationsPrinter(('N', int), ('Error', float), ('Gain', float),
-                                ('Time', float), verbose=verbose)
-    itprint.print_header('Evaluating value of initial guess')
+    if isinstance(dprocess, DiscretizedIIDProcess):
+        mdr = IIDDecisionRule(n_ms, a, b, orders)
+    else:
+        mdr = MarkovDecisionRule(n_ms, a, b, orders)
 
-    # FIRST: value function iterations, 10 iterations to start
-    it = 0
-    err_v = 100
-    err_v_0 = 0.0
-    gain_v = 0.0
-    err_x = 100
-    err_x_0 = 100
-
-    if verbose:
-        print('-----')
-        print('Starting value function iteration')
-        print('-----')
-
-    while it < 10 and err_v > tol:
-
-        t_start = time.time()
-        it += 1
-
-        # update interpolation object with current values
-        mdrv.set_values(values_0)
-
-        values = values_0.copy()
-        controls = controls_0.copy()
-
-        for i_m in range(dprocess.n_nodes()):
-            m = dprocess.node(i_m)
-            for n in range(N):
-                s = grid[n, :]
-                x = controls[i_m, n, :]
-                lb = controls_lb(m, s, parms)
-                ub = controls_ub(m, s, parms)
-                bnds = [e for e in zip(lb, ub)]
-
-                def valfun(xx):
-                    return -choice_value(transition, felicity, i_m, s, xx,
-                                         mdrv, dprocess, parms, discount)[0]
-                res = scipy.optimize.minimize(valfun, x, bounds=bnds)
-
-                controls[i_m, n, :] = res.x
-                values[i_m, n, 0] = -valfun(res.x)
-
-        # compute error, update value and dr
-        err_x = abs(controls - controls_0).max()
-        err_v = abs(values - values_0).max()
-        t_end = time.time()
-        elapsed = t_end-t_start
-
-        values_0 = values
-        controls_0 = controls
-
-        gain_x = err_x / err_x_0
-        gain_v = err_v / err_v_0
-
-        err_x_0 = err_x
-        err_v_0 = err_v
-
-        itprint.print_iteration(N=it, Error=err_v, Gain=gain_v,
-                                Time=elapsed)
-
-    # SECOND: Howard improvement step, 10-20 iterations
-    it = 0
-    err_v = 100
-    err_v_0 = 0.0
-    gain_v = 1.0
-
-    if verbose:
-        print('-----')
-        print('Starting Howard improvement step')
-        print('-----')
-
-    while it < maxit_howard and err_v > tol:
-
-        t_start = time.time()
-        it += 1
-
-        # update interpolation object with current values
-        mdrv.set_values(values_0)
-        values = values_0.copy()
-
-        for i_m in range(n_ms):
-            for n in range(N):
-                m = dprocess.node(i_m)
-                s = grid[n, :]
-                x = controls_0[i_m, n, :]
-                values[i_m, n, 0] = choice_value(transition, felicity, i_m, s, x, mdrv, dprocess, parms, discount)
-
-        # compute error, update value function
-        err_v = abs(values - values_0).max()
-        values_0 = values
-
-        t_end = time.time()
-        elapsed = t_end-t_start
-
-        gain_v = err_v / err_v_0
-        err_v_0 = err_v
-        itprint.print_iteration(N=it, Error=err_v, Gain=gain_v, Time=elapsed)
-        # vprint(fmt_str.format(it, err_v, gain_v, elapsed))
 
     # THIRD: value function iterations until convergence
     it = 0
     err_v = 100
-    err_v_0 = 0.0
+    err_v_0 = 0
     gain_v = 0.0
     err_x = 100
-    err_x_0 = 100
+    err_x_0 = 0
+    tol_x = 1e-5
+    tol_v = 1e-7
 
-    # if verbose:
-    #     print('-----')
-    #     print('Starting value function iteration')
-    #     print('-----')
 
     itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
-                                ('Error_x', float), ('Gain_x', float), ('Time', float), verbose=verbose)
+                                ('Error_x', float), ('Gain_x', float), ('Eval_n', int), ('Time', float), verbose=verbose)
     itprint.print_header('Start value function iterations.')
 
 
-    while it < maxit and err_v > tol:
+    while (it<maxit) and (err_v>tol or err_x>tol_x):
 
         t_start = time.time()
         it += 1
 
+        mdr.set_values(controls_0)
+        if it>2:
+            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
+        else:
+            ev = evaluate_policy(model, mdr, verbose=False, infos=True)
+        mdrv = ev.solution
+
+        for i_ms in range(n_ms):
+            values_0[i_ms, :, :] = mdrv(i_ms, grid)
         # update interpolation object with current values
-        mdrv.set_values(values_0)
+        # mdrv.set_values(values_0)
 
         values = values_0.copy()
         controls = controls_0.copy()
@@ -214,12 +153,18 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
                 ub = controls_ub(m, s, parms)
                 bnds = [e for e in zip(lb, ub)]
 
+                # def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
+
+
                 def valfun(xx):
                     return -choice_value(transition, felicity, i_m, s, xx, mdrv, dprocess, parms, discount)[0]
+
+
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
 
+
                 controls[i_m, n, :] = res.x
-                values[i_m, n, 0] = -valfun(res.x)
+                values[i_m, n, 0] = -valfun(x)
 
         # compute error, update value and dr
         err_x = abs(controls - controls_0).max()
@@ -241,6 +186,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
                                 Gain_V=gain_v,
                                 Error_x=err_x,
                                 Gain_x=gain_x,
+                                Eval_n=ev.iterations,
                                 Time=elapsed)
 
     itprint.print_finished()
@@ -270,9 +216,18 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
         cont_v += prob*V
     return felicity(m, s, x, parms) + beta*cont_v
 
+class EvaluationResult:
 
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None):
+    def __init__(self, solution, iterations, tol, error):
+        self.solution = solution
+        self.iterations = iterations
+        self.tol = tol
+        self.error = error
+
+
+
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, infos=False):
 
     """Compute value function corresponding to policy ``dr``
 
@@ -294,12 +249,11 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
 
     """
 
-    assert(model.is_dtmscc())
+    process = model.exogenous
+    dprocess = process.discretize()
 
-    [P, Q] = model.exogenous
-
-    n_ms = P.shape[0]   # number of markov states
-    n_mv = P.shape[1]   # number of markov variables
+    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
     x0 = model.calibration['controls']
     v0 = model.calibration['values']
@@ -313,15 +267,23 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
     b = approx.b
     orders = approx.orders
 
-    from dolo.numeric.decision_rules_markov import MarkovDecisionRule
-    mdrv = MarkovDecisionRule(n_ms, a, b, orders) # values
+    if initial_guess is not None:
+        mdrv = initial_guess
+    else:
+        if isinstance(dprocess, DiscretizedIIDProcess):
+            mdrv = IIDDecisionRule(n_ms, a, b, orders)
+        else:
+            mdrv = MarkovDecisionRule(n_ms, a, b, orders)
 
     grid = mdrv.grid
     N = grid.shape[0]
 
-    controls = np.zeros((n_ms, N, n_x))
-    for i_m in range(n_ms):
-        controls[i_m, :, :] = mdr(i_m, grid) #x0[None,:]
+    if isinstance(mdr, np.ndarray):
+        controls = mdr
+    else:
+        controls = np.zeros((n_ms, N, n_x))
+        for i_m in range(n_ms):
+            controls[i_m, :, :] = mdr(i_m, grid) #x0[None,:]
 
     values_0 = np.zeros((n_ms, N, n_v))
     if initial_guess is None:
@@ -360,9 +322,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
         t_start = time.time()
 
         mdrv.set_values(values_0.reshape(sh_v))
-
-        values = update_value(val, g, grid, controls, values_0, mdr, mdrv, P, Q, parms).reshape((-1,n_v))
-
+        values = update_value(val, g, grid, controls, values_0, mdr, mdrv, dprocess, parms).reshape((-1,n_v))
         err = abs(values.reshape(sh_v)-values_0).max()
 
         err_SA = err/err_0
@@ -385,30 +345,34 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
         print("Elapsed: {} seconds.".format(t2-t1))
         print(stars)
 
-    return mdrv
+    if not infos:
+        return mdrv
+    else:
+        return EvaluationResult(mdrv, it, tol, err)
 
 
-def update_value(val, g, s, x, v, dr, drv, P, Q, parms):
+def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
 
-    n_ms = P.shape[0]   # number of markov states
+    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
     res = np.zeros_like(v)
 
     for i_ms in range(n_ms):
 
-        m = P[i_ms, :][None, :].repeat(N, axis=0)
+        m = dprocess.node(i_ms)[None, :].repeat(N, axis=0)
 
         xm = x[i_ms, :, :]
         vm = v[i_ms, :, :]
 
-        for I_ms in range(n_ms):
+        for I_ms in range(n_mv):
 
             # M = P[I_ms,:][None,:]
-            M = P[I_ms, :][None, :].repeat(N, axis=0)
-            prob = Q[i_ms, I_ms]
+            M = dprocess.inode(i_ms,I_ms)[None, :].repeat(N, axis=0)
+            prob = dprocess.iweight(i_ms,I_ms)
 
             S = g(m, s, xm, M, parms)
             XM = dr(I_ms, S)
