@@ -1,14 +1,12 @@
 name: Open economy
 
-model_type: dtcscc
-
 description: Two endowment economies with one riskless bond
 
 symbols:
 
   states: [W_1, W_2]
   controls: [p_f, db_f]
-  shocks: [epsilon_1, epsilon_2]
+  exogenous: [epsilon_1, epsilon_2]
   parameters: [beta, gamma, ybar_1, ybar_2, kappa, dumb]
 
 definitions:
@@ -49,7 +47,7 @@ calibration:
 
 options:
 
-    distribution: !Normal
+    exogenous: !Normal
         sigma: [[ 0.005, 0 ],
                 [ 0, 0.005 ]]
 

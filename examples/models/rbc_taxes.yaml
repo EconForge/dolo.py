@@ -1,11 +1,9 @@
 name: taxes
 
-model_type: dtcscc
-
 symbols:
    states:  [z, k, g]
    controls: [i, n]
-   shocks: [e_g]
+   exogenous: [e_g]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar ]
 
 definitions:
@@ -49,5 +47,6 @@ calibration:
       g: 0
 
 
-covariances: !Normal
-    sigma: [ [ 0.0015 ] ]
+options:
+    exogenous: !Normal
+        sigma: [ [ 0.0015 ] ]
