@@ -123,6 +123,13 @@ class MvNormal(IIDProcess):
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
+    def response(self, T, impulse):
+        from numpy.random import multivariate_normal
+        sigma = self.sigma
+        mu = self.mu
+        irf = numpy.zeros((T,len(mu)))
+        irf[1,:] = impulse[None,:]
+        return irf
 
 
 

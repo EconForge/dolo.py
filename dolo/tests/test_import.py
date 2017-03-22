@@ -30,3 +30,6 @@ def test_import():
         print( dprocess.n_inodes(0) )
         print( dprocess.inode(0,0) )
         print( dprocess.node(0) )
+
+if __name__ == "__main__":
+    test_import()
