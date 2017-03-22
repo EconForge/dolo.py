@@ -1,12 +1,11 @@
 # Model in chapter 11 of Recursive Macroeconomic Theory 3rd edition by
 # Ljvinquist and Sargent
 name: fiscal_growth
-model_type: dtcscc
 
 symbols:
     states: [k, tau_c, tau_k]
     controls: [c]
-    shocks: [g, exog_tau_c, exog_tau_k]
+    exogenous: [g, exog_tau_c, exog_tau_k]
     parameters: [beta, gamma, delta, alpha, A]
 
 definitions:

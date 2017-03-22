@@ -4,11 +4,9 @@
 
 name: Sudden Stop (General)
 
-model_type: dtmscc
-
 symbols:
 
-    markov_states: [y]
+    exogenous: [y]
     states: [l]
     controls: [b, lam]
     values: [V, Vc]
@@ -54,13 +52,13 @@ calibration:
 options:
 
 
-    discrete_transition: !MarkovChain
+    exogenous: !MarkovChain
 
-        P: [[ 1.0-delta_y ],  # bad state
-           [ 1.0 ]]          # good state
+        values: [[ 1.0-delta_y ],  # bad state
+                 [ 1.0 ]]          # good state
 
-        Q: [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
-           [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
+        transitions: [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
+                      [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
 
     grid: !Cartesian
 

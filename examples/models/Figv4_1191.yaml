@@ -1,12 +1,10 @@
 #  Adapted from the Dynare .mod file Figv3_1161.mod for RMT3
-
 name: Figv3_1161
-model_type: dtcscc
 
 symbols:
     states: [k]
     controls: [c]
-    shocks: [g]
+    exogenous: [g]
     parameters: [beta, gamma, delta, alpha, A, tau_c, tau_k]
 
 definitions:
@@ -44,6 +42,8 @@ calibration:
     w: A * k ** alpha - k * eta
     R: eta-delta +1
 
-distribution: !Normal
+options:
 
-    sigma: [ [ 0.0] ]
+  exogenous: !Normal
+  
+      sigma: [ [ 0.0] ]

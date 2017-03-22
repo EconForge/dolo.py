@@ -1,21 +1,16 @@
-model_type: dtcscc
-
 name: Neoclassical model of capital accumulation
 
 symbols:
 
-  states: [k, A]
-
-  controls: [i]
-
-  shocks: [epsilon]
-
-  parameters: [beta, gamma, delta, theta, rho]
+    states: [k, A]
+    controls: [i]
+    exogenous: [epsilon]
+    parameters: [beta, gamma, delta, theta, rho]
 
 definitions:
 
-  c: A*k^theta - i
-  r_I: A*theta*k^(theta-1) + (1-delta)
+    c: A*k^theta - i
+    r_I: A*theta*k^(theta-1) + (1-delta)
 
 equations:
 
@@ -50,5 +45,5 @@ calibration:
     rho: 0.0
 
 options:
-  distribution: !Normal
-    sigma: [[ 0.00001 ]]
+    exogenous: !Normal
+        sigma: [[ 0.00001 ]]
