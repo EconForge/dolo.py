@@ -1,6 +1,6 @@
 import numpy as np
 
-from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1
+from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
 from dolo.numeric.processes import IIDProcess
 
 Normal = MvNormal

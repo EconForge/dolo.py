@@ -443,7 +443,7 @@ def lint(txt, source='<string>', format='human'):
             exceptions = check_all(data)
         except Exception as e:
             # raise(e)
-            exc = ModelException("Linter Error: Uncaught Exception")
+            exc = ModelException("Linter Error: Uncaught Exception.")
             exc.pos = [0, 0, 0, 0]
             exc.type = 'error'
             exceptions = [exc]

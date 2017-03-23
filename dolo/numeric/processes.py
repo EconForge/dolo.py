@@ -180,6 +180,25 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 #         self.transitions = Q
 #         self.extend([P, Q]) # compatibility fix
 # #
+
+
+class MarkovProduct(DiscreteMarkovProcess):
+
+    def __init__(self, M1=None, M2=None):
+
+        self.M1 = M1
+        self.M2 = M2
+
+    def discretize(self):
+
+        M1 = self.M1.discretize()
+        M2 = self.M2.discretize()
+        from dolo.numeric.discretization import tensor_markov
+        [P, Q] = tensor_markov(
+            (M1.values, M1.transitions),
+            (M2.values, M2.transitions) )
+        return DiscreteMarkovProcess(Q,P)
+
 class VAR1(DiscreteMarkovProcess):
 
     def __init__(self, rho=None, sigma=None, N=2):
@@ -208,4 +227,4 @@ class VAR1(DiscreteMarkovProcess):
 
         [P,Q] = multidimensional_discretization(rho_array, sigma_array)
 
-        return DiscreteMarkovProcess(transitions=P, values=Q)
+        return DiscreteMarkovProcess(values=P, transitions=Q)
