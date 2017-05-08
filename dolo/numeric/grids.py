@@ -2,6 +2,7 @@ from functools import reduce
 from operator import mul
 from quantecon import cartesian
 import numpy as np
+from numpy import zeros
 
 
 def prod(l): return reduce(mul, l, 1.0)
@@ -38,9 +39,9 @@ class CartesianGrid(Grid):
 
     def __init__(self, min, max, n):
 
-        self.min = min
-        self.max = max
-        self.n = n
+        self.min = np.array(min, dtype=float)
+        self.max = np.array(max, dtype=float)
+        self.n = np.array(n, dtype=int)
         self.__nodes__ = mlinspace(self.min, self.max, self.n)
 
 
@@ -64,6 +65,16 @@ class SmolyakGrid(Grid):
         self.sg = sg
         self.__nodes__ = sg.grid
 
+def cat_grids(grid_1, grid_2):
+    if isinstance(grid_1, EmptyGrid):
+        return grid_2
+    if isinstance(grid_1, CartesianGrid) and isinstance(grid_2, CartesianGrid):
+        min = np.concatenate([grid_1.min, grid_2.min])
+        max = np.concatenate([grid_1.max, grid_2.max])
+        n = np.concatenate([grid_1.n, grid_2.n])
+        return CartesianGrid(min, max, n)
+    else:
+        raise Exception("Not Implemented.")
 
 # compat
 def node(grid, i): return grid.node(i)
