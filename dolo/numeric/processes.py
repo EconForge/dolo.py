@@ -8,6 +8,7 @@ import pickle
 
 # should be moved to markov
 from numba import jit, njit
+from dolo.numeric.grids import EmptyGrid, CartesianGrid, UnstructuredGrid
 
 @njit
 def choice(x, n, cumul):
@@ -70,7 +71,7 @@ class DiscretizedIIDProcess(DiscretizedProcess):
 
     @property
     def grid(self):
-        return None
+        return EmptyGrid()
 
     def n_nodes(self): # integer
         return 1
@@ -148,7 +149,7 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 
     @property
     def grid(self):
-        return self.values
+        return UnstructuredGrid(self.values)
 
     def n_nodes(self): # integer
         return self.values.shape[0]

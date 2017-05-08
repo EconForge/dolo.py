@@ -23,7 +23,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
             M = numpy.tile(dprocess.inode(i_ms, I_ms), (N,1))
             prob = dprocess.iweight(i_ms, I_ms)
             S = g(m, s, xm, M, parms)
-            XM = dr(I_ms, S)
+            XM = dr.eval_ijs(i_ms, I_ms, S)
             rr = f(m,s,xm,M,S,XM,parms)
             res[i_ms,:,:] += prob*rr
 
@@ -132,12 +132,23 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     from dolo.numeric.processes import DiscretizedIIDProcess
     from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
 
-    if isinstance(dprocess, DiscretizedIIDProcess):
-        mdr = IIDDecisionRule(n_ms, a, b, orders)
-    else:
-        mdr = MarkovDecisionRule(n_ms, a, b, orders)
+    from dolo.numeric.decision_rule import DecisionRule
+    from dolo.numeric.grids import CartesianGrid
 
-    grid = mdr.grid
+    endo_grid = CartesianGrid(a,b,orders)
+    exo_grid = dprocess.grid
+
+    mdr = DecisionRule(exo_grid, endo_grid)
+
+    print(mdr)
+    print(mdr.endo_grid)
+    print(mdr.exo_grid)
+    # if isinstance(dprocess, DiscretizedIIDProcess):
+    #     mdr = IIDDecisionRule(n_ms, a, b, orders)
+    # else:
+    #     mdr = MarkovDecisionRule(n_ms, a, b, orders)
+
+    grid = mdr.endo_grid.nodes()
     N = grid.shape[0]
 
     controls_0 = numpy.zeros((n_ms, N, n_x))

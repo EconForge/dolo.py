@@ -90,7 +90,7 @@ class DynareDecisionRule(TaylorExpansion):
     @property
     @memoized
     def g_1(self):
-        
+
         g_1x = self.ghx
         g_1u = self.ghu
 
@@ -158,7 +158,7 @@ class DynareDecisionRule(TaylorExpansion):
         ghxxu = self.ghxxu
         ghxuu = self.ghxuu
         ghuuu = self.ghuuu
-        
+
         g_3 = np.zeros( (n_v,n_s+n_e,n_s+n_e,n_s+n_e))
 
         g_3[:,:n_s,:n_s,:n_s] = ghxxx
@@ -183,7 +183,7 @@ class DynareDecisionRule(TaylorExpansion):
 Decision rule (order {order}) :
 {msg}
     - States : {states}
-    
+
     - Endogenous variables : {endo}
 
     - First order coefficients :
@@ -213,13 +213,13 @@ Decision rule (order {order}) :
             return self['ys']
         elif oo in (2,3):
             #TODO: RSS for order 3 should be computed differently
-            import numpy.linalg      
+            import numpy.linalg
             A = self['g_a']
             I = np.eye(A.shape[0])
             D = self['g_ss']/2
             dx = numpy.linalg.solve( I - A, D)
             return self['ys'] + dx
-        
+
     def gap_to_risky_steady_state(self,x):
         from dolo.numeric.tensor import mdot
         d = x - self['ys']
@@ -313,7 +313,7 @@ def theoretical_moments(dr,with_correlations=True):
 
 
 
-    
+
 
 def symmetrize(tens):
     return (tens + tens.swapaxes(3,2) + tens.swapaxes(1,2) + tens.swapaxes(1,2).swapaxes(2,3) + tens.swapaxes(1,3) + tens.swapaxes(1,3).swapaxes(2,3) )/6
@@ -347,10 +347,10 @@ def fold(tens):
 
 
 def impulse_response_function(decision_rule, shock, variables = None, horizon=40, order=1, output='deviations', plot=True):
-    
+
     if order > 1:
         raise Exception('irfs, for order > 1 not implemented')
-    
+
     dr = decision_rule
     A = dr['g_a']
     B = dr['g_e']
@@ -449,7 +449,7 @@ def stoch_simul(decision_rule, variables = None,  horizon=40, order=None, start=
     RSS = dr.risky_ss()
     if start is None:
         start = RSS
-        
+
     if not order:
         order = dr.order
 
