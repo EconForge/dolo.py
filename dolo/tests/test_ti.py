@@ -23,7 +23,7 @@ from dolo.algos.time_iteration import time_iteration
 # model_ar1 = yaml_import('examples/models/rbc_dtcc_ar1.yaml')
 # dr_ar1 = value_iteration(model_ar1, verbose=True)
 #
-model_iid = yaml_import('examples/models/rbc_dtcc_mc.yaml')
+model_iid = yaml_import('examples/models/rbc_dtcc_iid_ar1.yaml')
 
 endo_grid = model_iid.get_grid()
 exo_grid = model_iid.exogenous.discretize()

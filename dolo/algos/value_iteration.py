@@ -76,7 +76,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     #     values_0[i_ms, :, :] = mdrv(i_ms, grid)
 
     mdr = DecisionRule(exo_grid, endo_grid)
-    mdr.set_values(controls_0)
+    # mdr.set_values(controls_0)
 
     # THIRD: value function iterations until convergence
     it = 0
@@ -99,10 +99,10 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         it += 1
 
         mdr.set_values(controls_0)
-        # if it>2:
-        #     ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
-        # else:
-        ev = evaluate_policy(model, mdr, verbose=False, infos=True)
+        if it>2:
+            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
+        else:
+            ev = evaluate_policy(model, mdr, verbose=False, infos=True)
 
         mdrv = ev.solution
         for i_ms in range(n_ms):
@@ -124,7 +124,6 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
                     return -choice_value(transition, felicity, i_m, s, xx, mdrv, dprocess, parms, discount)[0]
 
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
-
                 controls[i_m, n, :] = res.x
                 values[i_m, n, 0] = -valfun(x)
 
@@ -153,7 +152,7 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
     itprint.print_finished()
 
-    mdr = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
+    mdr = DecisionRule(exo_grid, endo_grid)
     mdr.set_values(controls)
     mdrv.set_values(values_0)
 
@@ -172,6 +171,7 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
         cont_v += prob*V
     return felicity(m, s, x, parms) + beta*cont_v
 
+
 class EvaluationResult:
 
     def __init__(self, solution, iterations, tol, error):
@@ -179,6 +179,7 @@ class EvaluationResult:
         self.iterations = iterations
         self.tol = tol
         self.error = error
+
 
 def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, infos=False, interp_type='cubic'):
 
@@ -319,13 +320,12 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
         for I_ms in range(n_mv):
 
             # M = P[I_ms,:][None,:]
-            M = dprocess.inode(i_ms,I_ms)[None, :].repeat(N, axis=0)
-            prob = dprocess.iweight(i_ms,I_ms)
+            M = dprocess.inode(i_ms, I_ms)[None, :].repeat(N, axis=0)
+            prob = dprocess.iweight(i_ms, I_ms)
 
             S = g(m, s, xm, M, parms)
             XM = dr.eval_ijs(i_ms, I_ms, S)
             VM = drv.eval_ijs(i_ms, I_ms, S)
-
             rr = val(m, s, xm, vm, M, S, XM, VM, parms)
 
             res[i_ms, :, :] += prob*rr

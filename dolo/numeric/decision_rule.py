@@ -151,7 +151,7 @@ class DecisionRule:
         elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
             self.eval_s(s, out=out)
         elif isinstance(self.exo_grid, CartesianGrid) and isinstance(self.endo_grid, CartesianGrid):
-            m = self.dprocess.i_node(i, j)
+            m = self.dprocess.inode(i, j)
             self.eval_ms(m, s, out=out)
         else:
             raise Exception("Not Implemented.")
