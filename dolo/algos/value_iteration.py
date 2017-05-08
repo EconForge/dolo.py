@@ -1,38 +1,18 @@
 import time
 import numpy as np
+import numpy
 import scipy.optimize
 from collections import OrderedDict
 from dolo.numeric.processes import DiscretizedIIDProcess
-from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
-
+# from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
+from dolo.numeric.decision_rule import DecisionRule, ConstantDecisionRule
+from dolo.numeric.grids import Grid, CartesianGrid, SmolyakGrid, UnstructuredGrid
 from dolo.misc.itprinter import IterationsPrinter
-
-
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import numpy as np
-
-
-class ConstantDecisionRule:
-
-    def __init__(self, x0):
-        self.x0 = x0
-
-    def __call__(self, i, s):
-        if s.ndim==1:
-            return self.x0
-        else:
-            N = s.shape[0]
-            return self.x0[None,:].repeat(N,axis=0)
 
 def constant_policy(model):
     return ConstantDecisionRule(model.calibration["controls"])
 
 
-import numpy
-from dolo.numeric.decision_rules_markov import MarkovDecisionRule
 
 def solve_policy(model, grid={}, tol=1e-6, maxit=500,
                  maxit_howard=20, verbose=False):
@@ -73,40 +53,30 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     process = model.exogenous
     dprocess = process.discretize()
 
-    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_ms = dprocess.n_nodes()   # number of exogenous states
     n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
-    approx = model.get_grid(**grid)
-    a = approx.a
-    b = approx.b
-    orders = approx.orders
+    endo_grid = model.get_grid(**grid)
 
+    exo_grid = dprocess.grid
 
-    if isinstance(dprocess, DiscretizedIIDProcess):
-        mdrv = IIDDecisionRule(n_ms, a, b, orders)
-    else:
-        mdrv = MarkovDecisionRule(n_ms, a, b, orders)
+    mdrv = DecisionRule(exo_grid, endo_grid)
 
-    grid = mdrv.grid
+    grid = mdrv.endo_grid.nodes()
     N = grid.shape[0]
     n_x = len(x0)
-
-
 
     mdr = constant_policy(model)
     controls_0 = np.zeros((n_ms, N, n_x))
     for i_ms in range(n_ms):
-        controls_0[i_ms, :, :] = mdr(i_ms, grid)
+        controls_0[i_ms, :, :] = mdr.eval_is(i_ms, grid)
 
     values_0 = np.zeros((n_ms, N, 1))
     # for i_ms in range(n_ms):
     #     values_0[i_ms, :, :] = mdrv(i_ms, grid)
 
-    if isinstance(dprocess, DiscretizedIIDProcess):
-        mdr = IIDDecisionRule(n_ms, a, b, orders)
-    else:
-        mdr = MarkovDecisionRule(n_ms, a, b, orders)
-
+    mdr = DecisionRule(exo_grid, endo_grid)
+    mdr.set_values(controls_0)
 
     # THIRD: value function iterations until convergence
     it = 0
@@ -117,7 +87,6 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
     err_x_0 = 0
     tol_x = 1e-5
     tol_v = 1e-7
-
 
     itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
                                 ('Error_x', float), ('Gain_x', float), ('Eval_n', int), ('Time', float), verbose=verbose)
@@ -130,38 +99,31 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
         it += 1
 
         mdr.set_values(controls_0)
-        if it>2:
-            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
-        else:
-            ev = evaluate_policy(model, mdr, verbose=False, infos=True)
-        mdrv = ev.solution
+        # if it>2:
+        #     ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
+        # else:
+        ev = evaluate_policy(model, mdr, verbose=False, infos=True)
 
+        mdrv = ev.solution
         for i_ms in range(n_ms):
-            values_0[i_ms, :, :] = mdrv(i_ms, grid)
-        # update interpolation object with current values
-        # mdrv.set_values(values_0)
+            values_0[i_ms, :, :] = mdrv.eval_is(i_ms, grid)
 
         values = values_0.copy()
         controls = controls_0.copy()
 
         for i_m in range(n_ms):
+            m = dprocess.node(i_m)
             for n in range(N):
-                m = dprocess.node(i_m)
                 s = grid[n, :]
                 x = controls[i_m, n, :]
                 lb = controls_lb(m, s, parms)
                 ub = controls_ub(m, s, parms)
                 bnds = [e for e in zip(lb, ub)]
 
-                # def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
-
-
                 def valfun(xx):
                     return -choice_value(transition, felicity, i_m, s, xx, mdrv, dprocess, parms, discount)[0]
 
-
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
-
 
                 controls[i_m, n, :] = res.x
                 values[i_m, n, 0] = -valfun(x)
@@ -191,15 +153,9 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
     itprint.print_finished()
 
-
-    if isinstance(dprocess, DiscretizedIIDProcess):
-        mdr = IIDDecisionRule(n_ms, a, b, orders)
-    else:
-        mdr = MarkovDecisionRule(n_ms, a, b, orders)
-
+    mdr = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
     mdr.set_values(controls)
     mdrv.set_values(values_0)
-
 
     return mdr, mdrv
 
@@ -209,15 +165,14 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
     m = dprocess.node(i_ms)
     cont_v = 0.0
     for I_ms in range(dprocess.n_inodes(i_ms)):
-        M = dprocess.inode(i_ms,I_ms)
+        M = dprocess.inode(i_ms, I_ms)
         prob = dprocess.iweight(i_ms, I_ms)
         S = transition(m, s, x, M, parms)
-        V = drv(I_ms, S)[0]
+        V = drv.eval_is(I_ms, S)[0]
         cont_v += prob*V
     return felicity(m, s, x, parms) + beta*cont_v
 
 class EvaluationResult:
-
 
     def __init__(self, solution, iterations, tol, error):
         self.solution = solution
@@ -225,9 +180,7 @@ class EvaluationResult:
         self.tol = tol
         self.error = error
 
-
-
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, infos=False):
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, infos=False, interp_type='cubic'):
 
     """Compute value function corresponding to policy ``dr``
 
@@ -262,20 +215,15 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
     n_v = len(v0)
     n_s = len(model.symbols['states'])
 
-    approx = model.get_grid(**grid)
-    a = approx.a
-    b = approx.b
-    orders = approx.orders
+    endo_grid = model.get_grid(**grid)
+    exo_grid = dprocess.grid
 
     if initial_guess is not None:
         mdrv = initial_guess
     else:
-        if isinstance(dprocess, DiscretizedIIDProcess):
-            mdrv = IIDDecisionRule(n_ms, a, b, orders)
-        else:
-            mdrv = MarkovDecisionRule(n_ms, a, b, orders)
+        mdrv = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
 
-    grid = mdrv.grid
+    grid = mdrv.endo_grid.nodes()
     N = grid.shape[0]
 
     if isinstance(mdr, np.ndarray):
@@ -283,7 +231,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
     else:
         controls = np.zeros((n_ms, N, n_x))
         for i_m in range(n_ms):
-            controls[i_m, :, :] = mdr(i_m, grid) #x0[None,:]
+            controls[i_m, :, :] = mdr.eval_is(i_m, grid)
 
     values_0 = np.zeros((n_ms, N, n_v))
     if initial_guess is None:
@@ -291,7 +239,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
             values_0[i_m, :, :] = v0[None, :]
     else:
         for i_m in range(n_ms):
-            values_0[i_m, :, :] = initial_guess(i_m, grid)
+            values_0[i_m, :, :] = initial_guess.eval_is(i_m, grid)
 
     val = model.functions['value']
     g = model.functions['transition']
@@ -334,7 +282,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
         elapsed = t_finish - t_start
 
         if verbose:
-            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'.format( it, err, err_SA, elapsed  ))
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'.format(it, err, err_SA, elapsed))
 
     # values_0 = values.reshape(sh_v)
 
@@ -375,8 +323,8 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
             prob = dprocess.iweight(i_ms,I_ms)
 
             S = g(m, s, xm, M, parms)
-            XM = dr(I_ms, S)
-            VM = drv(I_ms, S)
+            XM = dr.eval_ijs(i_ms, I_ms, S)
+            VM = drv.eval_ijs(i_ms, I_ms, S)
 
             rr = val(m, s, xm, vm, M, S, XM, VM, parms)
 
