@@ -125,7 +125,7 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
     return data
 
 
-def plot_decision_rule_mc(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, **kwargs):
+def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, m0=None, **kwargs):
 
     import numpy
 
