@@ -1,7 +1,7 @@
 import numpy
 import pandas
 from matplotlib import pyplot
-
+import numpy as np
 from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import newton as newton_solver
 from dolo.numeric.optimize.newton import SerialDifferentiableFunction
@@ -24,10 +24,28 @@ def response(model, dr, varname, T=40, impulse:float=None):
     sim = simulate(model, dr, N=1, T=T, driving_process=m_simul, stochastic=False)
 
     irf = sim.sel(N=0)
+
     return irf
 
 
-def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=42, stochastic=True):
+def find_index(sim, values):
+    sh = sim.shape
+    N = sh[0]
+    T = sh[1]
+    indices = np.zeros((N,T))
+    for n in range(N):
+        for t in range(T):
+            v = sim[n,t,:]
+            ind = np.where((values == v[None,:]).all(axis=1))[0][0]
+            indices[n,t] = ind
+    return indices
+
+from dolo.numeric.processes import DiscreteMarkovProcess
+
+from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
+
+def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
+        driving_process=None, seed=42, stochastic=True):
     '''
     Simulate a model using the specified decision rule.
 
@@ -67,15 +85,32 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
     if s0 is None:
         s0 = calib['states']
 
-    if m0 is None:
-        m0 = calib['exogenous']
-
-    x0 = dr.eval_ms(m0,s0)
-
-    if driving_process is None:
-        m_simul = model.exogenous.simulate(N, T, m0=m0, stochastic=stochastic)
-    else:
+    # are we simulating a markov chain or a continuous process ?
+    if driving_process is not None:
         m_simul = driving_process
+        sim_type = 'continuous'
+    else:
+        if isinstance(dr.exo_grid, UnstructuredGrid):
+            if i0 is None:
+                i0 = 0
+            dp = model.exogenous.discretize() ## TODO (nothing guarantee the processes match)
+            m_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic)
+            i_simul = find_index(m_simul, dp.values)
+            sim_type = 'discrete'
+            m0 = dp.node(i0)
+        else:
+            process = model.exogenous ## TODO (nothing guarantee the processes match)
+            m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
+            sim_type = 'continuous'
+            if m0 is None:
+                m0 = model.calibration["exogenous"]
+
+
+    if sim_type=='discrete':
+        x0 = dr.eval_is(i0, s0)
+    else:
+        x0 = dr.eval_ms(m0, s0)
+
     s_simul = numpy.zeros((T, N, s0.shape[0]))
     x_simul = numpy.zeros((T, N, x0.shape[0]))
 
@@ -92,7 +127,13 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
     for i in range(T):
         m = m_simul[i,:,:]
         s = s_simul[i,:,:]
-        x = dr.eval_ms(m,s)
+        if sim_type=='discrete':
+            i_m = i_simul[i,:]
+            xx = [dr.eval_is(i_m[ii], s[ii,:]) for ii in range(s.shape[0])]
+            x = np.row_stack(xx)
+        else:
+            x = dr.eval_ms(m, s)
+
         x_simul[i,:,:] = x
         ss = g(mp, s, x, m, parms)
         if i < T-1:
@@ -124,7 +165,6 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
 
     return data
 
-
 def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, m0=None, **kwargs):
 
     import numpy
@@ -147,8 +187,6 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
 
     if s0 is None:
         s0 = model.calibration['states']
-
-
 
     svec = numpy.row_stack([s0]*n_steps)
     svec[:,index] = values
