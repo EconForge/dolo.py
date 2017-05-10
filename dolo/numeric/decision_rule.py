@@ -62,7 +62,7 @@ class DecisionRule:
     def eval_is(self, i, s, out=None):
 
         if s.ndim == 1:
-            self.eval_is(i, s[None,:], out=out)[0,:]
+            return self.eval_is(i, s[None,:], out=out)[0,:]
         s = np.atleast_2d(s)
 
         if out is None:
@@ -85,7 +85,7 @@ class DecisionRule:
     def eval_ms(self, m, s, out=None):
 
         if s.ndim==1 and m.ndim==1:
-            self.eval_ms(m[None,:], s[None,:], out=out)[0,:]
+            return self.eval_ms(m[None,:], s[None,:], out=out)[0,:]
         s = np.atleast_2d(s)
         m = np.atleast_2d(m)
         if s.shape[0] == 1 and m.shape[0]>1:
@@ -95,15 +95,30 @@ class DecisionRule:
 
         v = np.concatenate([m,s], axis=1)
 
-        self.eval_s(v, out=out)
+        if out is None:
+            out = np.zeros((v.shape[0], self.n_x))
 
-        raise Exception("Not Implemented.")
+        if isinstance(self.exo_grid, (EmptyGrid)) and isinstance(self.endo_grid, CartesianGrid):
+            self.eval_s(v, out=out)
+        elif isinstance(self.exo_grid, CartesianGrid) and isinstance(self.endo_grid, CartesianGrid):
+            full_grid = self.full_grid
+            min = full_grid.min
+            max = full_grid.max
+            n = full_grid.n
+            coeffs = self.coefficients
+            vec_eval_cubic_splines(min, max, n, coeffs, v, out)
+        else:
+            raise Exception("Not Implemented.")
+
+        return out
+        # raise Exception("Not Implemented.")
 
 
     def eval_s(self, s, out=None):
 
         if s.ndim==1:
-            self.eval_s(s[None,:], out=out)[0,:]
+            return self.eval_s(s[None,:], out=out)[0,:]
+
         s = np.atleast_2d(s)
 
         if isinstance(self.exo_grid, (EmptyGrid, CartesianGrid)) and isinstance(self.endo_grid, CartesianGrid):

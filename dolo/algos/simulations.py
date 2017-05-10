@@ -70,7 +70,7 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
     if m0 is None:
         m0 = calib['exogenous']
 
-    x0 = dr(m0,s0)
+    x0 = dr.eval_ms(m0,s0)
 
     if driving_process is None:
         m_simul = model.exogenous.simulate(N, T, m0=m0, stochastic=stochastic)
@@ -92,7 +92,7 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
     for i in range(T):
         m = m_simul[i,:,:]
         s = s_simul[i,:,:]
-        x = dr(m,s)
+        x = dr.eval_ms(m,s)
         x_simul[i,:,:] = x
         ss = g(mp, s, x, m, parms)
         if i < T-1:
@@ -123,3 +123,80 @@ def simulate(model, dr, N=1, T=40, s0=None, driving_process=None, m0=None, seed=
         )
 
     return data
+
+
+def plot_decision_rule_mc(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, **kwargs):
+
+    import numpy
+
+    states_names = model.symbols['states']
+    controls_names = model.symbols['controls']
+    index = states_names.index(str(state))
+
+    if bounds is None:
+        try:
+            endo_grid = dr.endo_grid
+            bounds = [endo_grid.min[index], endo_grid.max[index]]
+        except:
+            approx = model.get_grid(**grid)
+            bounds = [approx.a[index], approx.b[index]]
+        if bounds is None:
+            raise Exception("No bounds provided for simulation or by model.")
+
+    values = numpy.linspace(bounds[0], bounds[1], n_steps)
+
+    if s0 is None:
+        s0 = model.calibration['states']
+
+
+
+    svec = numpy.row_stack([s0]*n_steps)
+    svec[:,index] = values
+
+    dp = model.exogenous.discretize()
+
+    if (i0 is None) and (m0 is None):
+        from dolo.numeric.grids import UnstructuredGrid
+        if isinstance(dp.grid, UnstructuredGrid):
+            n_ms = dp.n_nodes
+            [q,r] = divmod(n_ms,2)
+            i0 = q-1+r
+        else:
+            m0 = model.calibration["exogenous"]
+
+
+    if i0 is not None:
+        m = dp.node(i0)
+        xvec = dr.eval_is(i0,svec)
+    elif m0 is not None:
+        m = m0
+        xvec = dr.eval_ms(m0,svec)
+
+    mm = numpy.row_stack([m]*n_steps)
+    l = [mm, svec, xvec]
+
+    series = model.symbols['exogenous'] + model.symbols['states'] + model.symbols['controls']
+
+    if 'auxiliary' in model.functions:
+        p = model.calibration['parameters']
+        pp = numpy.row_stack([p]*n_steps)
+        avec = model.functions['auxiliary'](mm, svec,xvec,pp)
+        l.append(avec)
+        series.extend(model.symbols['auxiliaries'])
+
+    import pandas
+    tb = numpy.concatenate(l, axis=1)
+    df = pandas.DataFrame(tb, columns=series)
+
+    if plot_controls is None:
+        return df
+    else:
+        from matplotlib import pyplot
+        if isinstance(plot_controls, str):
+            cn = plot_controls
+            pyplot.plot(values, df[cn], **kwargs)
+        else:
+            for cn in  plot_controls:
+                pyplot.plot(values, df[cn], label=cn, **kwargs)
+            pyplot.legend()
+        pyplot.xlabel('state = {} | mstate = {}'.format(state, i0))

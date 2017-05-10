@@ -80,7 +80,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
 
 def time_iteration(model, initial_guess=None, with_complementarities=True,
-                        verbose=True, grid={}, output_type='dr',
+                        verbose=True, grid={},
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
     '''
@@ -140,14 +140,6 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     mdr = DecisionRule(exo_grid, endo_grid)
 
-    print(mdr)
-    print(mdr.endo_grid)
-    print(mdr.exo_grid)
-    # if isinstance(dprocess, DiscretizedIIDProcess):
-    #     mdr = IIDDecisionRule(n_ms, a, b, orders)
-    # else:
-    #     mdr = MarkovDecisionRule(n_ms, a, b, orders)
-
     grid = mdr.endo_grid.nodes()
     N = grid.shape[0]
 
@@ -156,7 +148,6 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         controls_0[:,:,:] = x0[None,None,:]
     else:
         for i_m in range(n_ms):
-            m = dp[None,:]
             controls_0[i_m,:,:] = initial_guess(i_m, grid)
 
     f = model.functions['arbitrage']
@@ -252,14 +243,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         print("Elapsed: {} seconds.".format(t2-t1))
         print(stars)
 
-
-    if output_type == 'dr':
-        return mdr
-    elif output_type == 'controls':
-        return controls_0
-    else:
-        raise Exception("Unsupported ouput type {}.".format(output_type))
-
+    return mdr
 
 
 if __name__ == '__main__':
