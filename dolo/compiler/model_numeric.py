@@ -269,7 +269,13 @@ file: "{filename}\n'''.format(**self.infos)
     #     return cc
         d.update(**dis_opts)
         if 'type' in d: d.pop('type')
-        return d.eval(d=model.calibration.flat)
+        grid = d.eval(d=model.calibration.flat)
+        # temporary
+        from dolo.numeric.grids import CartesianGrid, SmolyakGrid
+        if 'Cartesian' in str(grid.__class__):
+            return CartesianGrid(grid.a, grid.b, grid.orders)
+        if 'Smolyak' in str(grid.__class__):
+            return SmolyakGrid(grid.a, grid.b, grid.mu)
 
     def __compile_functions__(self):
 

@@ -1,25 +1,24 @@
 import numpy
 from dolo import dprint
+from dolo.numeric.processes import DiscretizedIIDProcess
+from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
+from dolo.numeric.decision_rule import DecisionRule
+from dolo.numeric.grids import CartesianGrid
 
 def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
     N = s.shape[0]
     n_s = s.shape[1]
 
-    # n_ms = P.shape[0]   # number of markov states
-    # n_mv = P.shape[1] # number of markov variable
-
     res = numpy.zeros_like(x)
 
     for i_ms in range(dprocess.n_nodes()):
 
         # solving on grid for markov index i_ms
-        # m = P[i_ms,:][None,:]
         m = numpy.tile(dprocess.node(i_ms),(N,1))
         xm = x[i_ms,:,:]
 
         for I_ms in range(dprocess.n_inodes(i_ms)):
-            # M = P[I_ms,:][None,:]
             M = numpy.tile(dprocess.inode(i_ms, I_ms), (N,1))
             prob = dprocess.iweight(i_ms, I_ms)
             S = g(m, s, xm, M, parms)
@@ -28,55 +27,6 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
             res[i_ms,:,:] += prob*rr
 
     return res
-#
-# def residuals(f, g, s, x, dr, dprocess, parms):
-#
-#     N = s.shape[0]
-#     n_s = s.shape[1]
-#     n_x = x.shape[2]
-#
-#     n_ms = P.shape[0]   # number of markov states
-#     n_mv = P.shape[1] # number of markov variable
-#
-#     res = numpy.zeros_like(x)
-#
-#     m = P
-#
-#     s_ = numpy.tile(s, (n_ms*n_ms, 1))
-#     x_ = numpy.repeat(x[None,:,:,:], n_ms, axis=0)
-#     m_ = numpy.repeat( m, N, axis=0 )
-#     m_ = numpy.tile( m_, (n_ms,1) )
-#
-#     M_ = numpy.repeat( m, N*n_ms, axis=0 )
-#
-#     # reshape everything as 2d arrays
-#     s_ = s_.reshape( (-1, n_s) )
-#     x_ = x_.reshape( (-1, n_x) )
-#     m_ = m_.reshape( (-1, n_mv) )
-#     M_ = M_.reshape( (-1, n_mv) )
-#
-#
-#     S_ = g(m_, s_, x_, M_, parms)
-#     X_ = numpy.zeros_like(x_)
-#
-#     S_r = S_.reshape( (n_ms, n_ms, N, n_s) )
-#     X_r = X_.reshape( (n_ms, n_ms, N, n_x) )
-#
-#     for I_ms in range(n_ms):
-#         SS_ = S_r[I_ms, :, :, :].reshape( (n_ms*N, n_s) )
-#         X_r[I_ms,:,:,:] = dr(I_ms, SS_).reshape( (n_ms, N, n_x) )
-#
-#     rr = f(m_, s_, x_, M_, S_, X_, parms)
-#
-#     rr = rr.reshape( (n_ms, n_ms, N, n_x) )
-#
-#     for i_ms in range(n_ms):
-#         res[i_ms,:,:] = 0
-#         for I_ms in range(n_ms):
-#             res[i_ms, :, :] += Q[i_ms, I_ms] * rr[I_ms, i_ms, :, :]
-#
-#     return res
-
 
 
 def time_iteration(model, initial_guess=None, with_complementarities=True,
@@ -108,6 +58,7 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     decision rule :
         approximated solution
     '''
+
     from dolo import dprint
     def vprint(t):
         if verbose:
@@ -123,19 +74,11 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     parms = model.calibration['parameters']
     n_x = len(x0)
     n_s = len(model.symbols['states'])
-    approx = model.get_grid(**grid)
-    a = approx.a
-    b = approx.b
-    orders = approx.orders
-    interp_type = approx.interpolation # unused
 
-    from dolo.numeric.processes import DiscretizedIIDProcess
-    from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
+    endo_grid = model.get_grid(**grid)
 
-    from dolo.numeric.decision_rule import DecisionRule
-    from dolo.numeric.grids import CartesianGrid
+    interp_type = 'cubic'
 
-    endo_grid = CartesianGrid(a,b,orders)
     exo_grid = dprocess.grid
 
     mdr = DecisionRule(exo_grid, endo_grid)
@@ -145,10 +88,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     controls_0 = numpy.zeros((n_ms, N, n_x))
     if initial_guess is None:
-        controls_0[:,:,:] = x0[None,None,:]
+        controls_0[:, :, :] = x0[None,None,:]
     else:
         for i_m in range(n_ms):
-            controls_0[i_m,:,:] = initial_guess(i_m, grid)
+            controls_0[i_m, :, :] = initial_guess(i_m, grid)
 
     f = model.functions['arbitrage']
     g = model.functions['transition']

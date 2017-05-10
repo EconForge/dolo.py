@@ -79,7 +79,7 @@ options:
     grid: !Cartesian
         a: [k*0.2]
         b: [k*2.0]
-        orders: [100]
+        orders: [50]
 
     random:
         any: 0.1
