@@ -37,11 +37,14 @@ class UnstructuredGrid(Grid):
 
 class CartesianGrid(Grid):
 
-    def __init__(self, min, max, n):
+    def __init__(self, min, max, n=[]):
 
         self.min = np.array(min, dtype=float)
         self.max = np.array(max, dtype=float)
-        self.n = np.array(n, dtype=int)
+        if len(n) == 0:
+            self.n = np.zeros(n, dtype=int) + 20
+        else:
+            self.n = np.array(n, dtype=int)
         self.__nodes__ = mlinspace(self.min, self.max, self.n)
 
 
@@ -56,7 +59,7 @@ class NonUniformCartesianGrid(Grid):
 
 
 class SmolyakGrid(Grid):
-    def __init__(self, min, max, mu):
+    def __init__(self, min, max, mu=2):
         from interpolation.smolyak import SmolyakGrid as ISmolyakGrid
         min = np.array(min)
         max = np.array(max)

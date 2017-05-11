@@ -13,7 +13,7 @@ class IterationsPrinter:
             types.append(v)
             if v == int:
                 mm = max([4,len(k)])
-                print(mm)
+                # print(mm)
                 fmts.append("{{:{}}}".format(mm))
             elif v == float:
                 fmts.append("{:9.3e}")

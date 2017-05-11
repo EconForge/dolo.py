@@ -2,11 +2,21 @@ import numpy as np
 
 from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
 from dolo.numeric.processes import IIDProcess
+from collections import OrderedDict
 
 Normal = MvNormal
 MarkovChain = DiscreteMarkovProcess
 
 AR1 = VAR1
+
+class Domain(OrderedDict):
+
+    def __init__(self, states=[], **kwargs):
+        super().__init__()
+        for k, w in kwargs.items():
+            v = kwargs[k]
+            self[k] = np.array(v, dtype=float)
+
 
 class CartesianGrid:
 

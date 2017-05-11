@@ -4,8 +4,8 @@ from .recipes import recipes
 
 class SymbolicModel:
 
-    def __init__(self, model_name, model_type, symbols, symbolic_equations, symbolic_calibration,
-                    options=None, definitions=None):
+    def __init__(self, model_name, model_type, symbols, equations, calibration,
+                    domain=None, exogenous=None, options=None, definitions=None):
 
         self.name = model_name
         self.model_type = model_type
@@ -22,18 +22,10 @@ class SymbolicModel:
                  osyms[vg] = symbols[vg]
 
         self.symbols = osyms
-        self.equations = symbolic_equations
-        self.calibration_dict = symbolic_calibration
+        self.equations = equations
+        self.calibration_dict = calibration
 
-        # self.distribution = distribution
-        # self.discrete_transition = discrete_transition
-
+        self.domain = domain
+        self.exogenous = exogenous
         self.options = options
         self.definitions = definitions
-
-        self.check()
-
-    def check(self):
-
-        # reuse code from linter ?
-        pass

@@ -100,9 +100,9 @@ def solve_policy(model, grid={}, tol=1e-6, maxit=500,
 
         mdr.set_values(controls_0)
         if it>2:
-            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, infos=True)
+            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, details=True)
         else:
-            ev = evaluate_policy(model, mdr, verbose=False, infos=True)
+            ev = evaluate_policy(model, mdr, verbose=False, details=True)
 
         mdrv = ev.solution
         for i_ms in range(n_ms):

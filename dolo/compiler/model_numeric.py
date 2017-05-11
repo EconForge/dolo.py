@@ -1,7 +1,7 @@
 from dolo.compiler.recipes import recipes
+import numpy as np
 
-
-class NumericModel:
+class Model:
 
     calibration = None
     calibration_dict = None
@@ -9,7 +9,6 @@ class NumericModel:
     def __init__(self, symbolic_model, options=None, infos=None):
 
         self.symbolic = symbolic_model
-
         self.symbols = symbolic_model.symbols
 
         # compat
@@ -46,7 +45,7 @@ class NumericModel:
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
 
-        exogenous = self.options.get('exogenous')
+        exogenous = self.get_exogenous()
         self.exogenous = exogenous
 
     def get_calibration(self, pname, *args):
@@ -237,12 +236,12 @@ file: "{filename}\n'''.format(**self.infos)
             calib = self.calibration
         return eval_formula(expr, dataframe=dataframe, context=calib)
 
-    def get_distribution(model, **opts):
+    def get_exogenous(model, **opts):
         from dolo.compiler.objects import IIDProcess
         import copy
-        gg = model.symbolic.options.get('exogenous')
+        gg = model.symbolic.exogenous
         if gg is None:
-            raise Exception("Model has no distribution.")
+            raise Exception("Model has no exggenous process.")
         d = copy.deepcopy(gg)
         d.update(opts)
         if 'type' in d: d.pop('type')
@@ -252,11 +251,25 @@ file: "{filename}\n'''.format(**self.infos)
         else:
             return obj
 
+    def get_domain(model):
+
+        sdomain = model.symbolic.domain
+        states = model.symbols['states']
+        from dolo.compiler.language import Domain
+        d = Domain(**sdomain)
+        domain = d.eval(d=model.calibration.flat)
+        # a bit of a hack...
+        for k in domain.keys():
+            if k not in states:
+                domain.pop(k)
+        return domain
+
     def get_grid(model, **dis_opts):
         import copy
-        gg = model.symbolic.options.get('grid')
-        if gg is None:
-            raise Exception("Model has no grid.")
+        domain = model.get_domain()
+        a = np.array([e[0] for e in domain.values()])
+        b = np.array([e[1] for e in domain.values()])
+        gg = model.symbolic.options.get('grid',{})
         d = copy.deepcopy(gg)
         gtype = dis_opts.get('type')
         if gtype:
@@ -268,6 +281,10 @@ file: "{filename}\n'''.format(**self.infos)
             d = cls(**d)
     #     return cc
         d.update(**dis_opts)
+        if 'a' not in d.keys():
+            d['min'] = a
+        if 'b' not in d.keys():
+            d['max'] = b
         if 'type' in d: d.pop('type')
         grid = d.eval(d=model.calibration.flat)
         # temporary
@@ -399,3 +416,6 @@ def decode_complementarity(comp, control):
         msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(comp, control, res[1])
         raise Exception(msg)
     return [res[0], res[2]]
+
+# compat
+NumericModel = Model

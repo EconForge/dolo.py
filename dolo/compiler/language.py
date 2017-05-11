@@ -65,6 +65,8 @@ class CartesianGrid(LanguageElement):
 class SmolyakGrid(LanguageElement):
     baseclass = objects.SmolyakGrid
 
+class Domain(LanguageElement):
+    baseclass = objects.Domain
 
 
 # aliases
@@ -82,7 +84,8 @@ minilang = [
     Smolyak,
     Cartesian,
     CartesianGrid,
-    SmolyakGrid
+    SmolyakGrid,
+    Domain
 ]
 
 # import yaml

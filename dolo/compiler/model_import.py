@@ -69,13 +69,13 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
         assert(model_type == auto_type)
 
 
-
-
     symbols = data['symbols']
     definitions = data.get('definitions', {})
     equations = data['equations']
     calibration = data.get('calibration', {})
     options = data.get('options', {})
+    domain = data.get('domain', {})
+    exogenous = data.get('exogenous', {})
 
     infos = dict()
     infos['filename'] = filename
@@ -117,19 +117,14 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
                     calibration[s] = default
 
     from dolo.compiler.model_symbolic import SymbolicModel
-    smodel = SymbolicModel(name, model_type, symbols, equations,
-                           calibration, options=options, definitions=definitions)
+    smodel = SymbolicModel(name, model_type,
+                        symbols, equations, calibration,
+                        domain=domain, exogenous=exogenous,
+                        options=options, definitions=definitions)
 
-    if return_symbolic:
-        return smodel
+    from dolo.compiler.model_numeric import NumericModel
+    model = NumericModel(smodel, infos=infos)
 
-    if model_type in ('dtcscc', 'dtcc'):
-        from dolo.compiler.model_numeric import NumericModel
-        model = NumericModel(smodel, infos=infos)
-    else:
-
-        from dolo.compiler.model_dynare import DynareModel
-        model = DynareModel(smodel, infos=infos)
     return model
 
 
@@ -172,6 +167,3 @@ if __name__ == "__main__":
 
     print(lb)
     print(ub)
-
-
-    # print(model.calibration['parameters'])
