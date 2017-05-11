@@ -70,6 +70,9 @@ class NumericEval:
 
         return res
 
+    def eval_commentedseq(self, s):
+        return self.eval_list(s)
+
     def eval_ndarray(self, array_in):
         import numpy
         array_out = numpy.zeros_like(array_in, dtype=float)
