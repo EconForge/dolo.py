@@ -20,40 +20,38 @@ class Domain(OrderedDict):
 
 class CartesianGrid:
 
-    def __init__(self, a=None, b=None, orders=None, mu=None, interpolation='cspline'):
+    def __init__(self, min=None, max=None, n=None):
 
-        assert(len(a) == len(b) == len(orders))
-        self.a = np.array(a, dtype=float)
-        self.b = np.array(b, dtype=float)
         self.orders = np.array(orders, dtype=int)
-        if not (interpolation in ('spline','cspline')):
-            raise Exception("Interpolation method '{}' is not implemented for cartesian grids.")
-        self.interpolation = interpolation
-        self.__grid__ = None
-
-    @property
-    def grid(self):
-        if self.__grid__ is None:
-            from dolo.numeric.misc import mlinspace
-            self.__grid__ = mlinspace(self.a, self.b, self.orders)
-        return self.__grid__
+        if min is None:
+            min = np.zeros(len(n)) + 0.0
+        if max is None:
+            max = np.zeros(len(n)) + 1.0
+    #     if not (interpolation in ('spline','cspline')):
+    #         raise Exception("Interpolation method '{}' is not implemented for cartesian grids.")
+    #     self.interpolation = interpolation
+    #     self.__grid__ = None
+    #
+    # @property
+    # def grid(self):
+    #     if self.__grid__ is None:
+    #         from dolo.numeric.misc import mlinspace
+    #         self.__grid__ = mlinspace(self.a, self.b, self.orders)
+    #     return self.__grid__
 
 
 from interpolation.smolyak import SmolyakGrid as SmolyakGridO
 
 class SmolyakGrid(SmolyakGridO):
 
-    def __init__(self, a=None, b=None, mu=2, orders=None, interpolation='chebychev'):
-        assert(len(a) == len(b))
-        a = np.array(a, dtype=float)
-        b = np.array(b, dtype=float)
-        self.a = a
-        self.b = b
-        d = len(a)
-        if interpolation not in ('chebychev','polynomial'):
-            raise Exception("Interpolation method '{}' is not implemented for Smolyak grids.")
-        self.interpolation = interpolation
-        super().__init__(d,mu,a,b)
+    def __init__(self, mu=2):
+
+        d = max([len(e) for e in [a,b,orders]])
+
+        # if interpolation not in ('chebychev','polynomial'):
+        #     raise Exception("Interpolation method '{}' is not implemented for Smolyak grids.")
+        # self.interpolation = interpolation
+        # super().__init__(d,mu)
 
 
 if __name__ == '__main__':

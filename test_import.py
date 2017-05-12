@@ -1,20 +1,8 @@
 import ruamel.yaml as ry
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
-#
-# class OrderedLoader(Loader):
-#     pass
-# def construct_mapping(loader, node):
-#     loader.flatten_mapping(node)
-#     return object_pairs_hook(loader.construct_pairs(node))
-# OrderedLoader.add_constructor(
-#     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-#     construct_mapping)
-# return yaml.load(stream, OrderedLo
 
-
-with open("examples/models/rbc00.yaml") as f:
+with open("examples/models/rbc0.yaml") as f:
     txt = f.read()
-
 
 print( txt )
 
@@ -83,9 +71,35 @@ class SymbolicModel:
 
     def get_grid(self):
 
+        domain = self.get_domain()
+        calibration = self.get_calibration()
         options = self.data.get("options", {})
-        options.get("grid",{})
+        grid = options.get("grid",{}).copy()
+        type = get_type(grid)
+        states = self.symbols['states']
+        if 'a' not in grid:
+            a = [v[0] for v in domain.values()]
+            grid['min'] = a
+        if 'b' not in grid:
+            b = [v[1] for v in domain.values()]
+            grid['max'] = b
+        if type is None:
+            if len(states)<=3:
+                type = "CartesianGrid"
+            else:
+                type = "SmolyakGrid"
+        if 'orders' not in grid and type=='CartesianGrid':
+            grid['orders'] = [20]*len(states)
+        elif 'mu' not in grid and type=='SmolyakGrid':
+            grid['mu'] = 2
 
+        from dolo.compiler.language import CartesianGrid, SmolyakGrid
+        if type == 'CartesianGrid':
+            d = CartesianGrid(**grid)
+        elif type == 'SmolyakGrid':
+            d = SmolyakGrid()
+        d = d.eval(d=calibration)
+        return grid
 
 def get_type(d):
     try:
@@ -104,3 +118,4 @@ smodel.data.get('symbols')
 smodel.get_calibration()
 smodel.get_domain()
 smodel.get_exogenous()
+smodel.get_grid()
