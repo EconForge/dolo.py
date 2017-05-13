@@ -17,6 +17,12 @@ class Domain(OrderedDict):
             v = kwargs[k]
             self[k] = np.array(v, dtype=float)
 
+    def min(self):
+        return np.array([self[e][0] for e in self.states])
+
+    def max(self):
+        return np.array([self[e][1] for e in self.states])
+
 
 class CartesianGrid:
 
