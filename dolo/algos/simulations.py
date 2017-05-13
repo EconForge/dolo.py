@@ -165,7 +165,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
 
     return data
 
-def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_steps=100, s0=None, i0=None, m0=None, **kwargs):
+def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=None, **kwargs):
 
     import numpy
 
@@ -226,15 +226,19 @@ def plot_decision_rule(model, dr, state, plot_controls=None, bounds=None, n_step
     tb = numpy.concatenate(l, axis=1)
     df = pandas.DataFrame(tb, columns=series)
 
-    if plot_controls is None:
-        return df
+    return df
+
+
+def plot_decision_rule(plot_controls=None,**kwargs):
+
+    df = tabulate(dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=None)
+
+    from matplotlib import pyplot
+    if isinstance(plot_controls, str):
+        cn = plot_controls
+        pyplot.plot(values, df[cn], **kwargs)
     else:
-        from matplotlib import pyplot
-        if isinstance(plot_controls, str):
-            cn = plot_controls
-            pyplot.plot(values, df[cn], **kwargs)
-        else:
-            for cn in  plot_controls:
-                pyplot.plot(values, df[cn], label=cn, **kwargs)
-            pyplot.legend()
-        pyplot.xlabel('state = {} | mstate = {}'.format(state, i0))
+        for cn in  plot_controls:
+            pyplot.plot(values, df[cn], label=cn, **kwargs)
+        pyplot.legend()
+    pyplot.xlabel('state = {} | mstate = {}'.format(state, i0))
