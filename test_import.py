@@ -1,20 +1,8 @@
 import ruamel.yaml as ry
 from ruamel.yaml.comments import CommentedSeq, CommentedMap
-#
-# class OrderedLoader(Loader):
-#     pass
-# def construct_mapping(loader, node):
-#     loader.flatten_mapping(node)
-#     return object_pairs_hook(loader.construct_pairs(node))
-# OrderedLoader.add_constructor(
-#     yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-#     construct_mapping)
-# return yaml.load(stream, OrderedLo
 
-
-with open("examples/models/rbc00.yaml") as f:
+with open("examples/models/rbc0.yaml") as f:
     txt = f.read()
-
 
 print( txt )
 
@@ -87,6 +75,8 @@ class SymbolicModel:
 
     def get_grid(self):
 
+        domain = self.get_domain()
+        calibration = self.get_calibration()
         options = self.data.get("options", {})
 
         # determine grid_type
@@ -108,7 +98,6 @@ class SymbolicModel:
         #     # create default grid
         #
         # print(grid_type)
-
 
 def get_type(d):
     try:
@@ -141,5 +130,4 @@ smodel.data.get('symbols')
 smodel.get_calibration()
 smodel.get_domain()
 smodel.get_exogenous()
-
-print( smodel.get_grid() )
+smodel.get_grid()

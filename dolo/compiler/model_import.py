@@ -58,7 +58,6 @@ def fast_import(txt, return_symbolic=False, filename='<string>', parse_only=Fals
     if parse_only:
         return data
 
-
     name = data['name']
 
     model_type = data.get('model_type')
@@ -140,7 +139,6 @@ if __name__ == "__main__":
 
     print("calib")
     # print(model.calibration['parameters'])
-
 
     print(model)
 

@@ -44,9 +44,10 @@ class Model:
         evaluator = NumericEval(self.calibration_dict)
         # read symbolic structure
         self.options = evaluator.eval(self.symbolic.options)
+        self.exogenous = self.get_exogenous()
+        self.domain = self.get_domain()
 
-        exogenous = self.get_exogenous()
-        self.exogenous = exogenous
+
 
     def get_calibration(self, pname, *args):
 
@@ -269,7 +270,9 @@ file: "{filename}\n'''.format(**self.infos)
         domain = model.get_domain()
         a = np.array([e[0] for e in domain.values()])
         b = np.array([e[1] for e in domain.values()])
+
         gg = model.symbolic.options.get('grid',{})
+        
         d = copy.deepcopy(gg)
         gtype = dis_opts.get('type')
         if gtype:
