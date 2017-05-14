@@ -10,6 +10,7 @@ def prod(l): return reduce(mul, l, 1.0)
 from dolo.numeric.misc import mlinspace
 
 class Grid:
+
     def nodes(self):
         return self.__nodes__
 
@@ -20,6 +21,9 @@ class Grid:
         return self.__nodes__[i,:]
 
 class EmptyGrid(Grid):
+
+    type = 'empty'
+
     def nodes(self):
         return None
     def n_nodes(self):
@@ -29,6 +33,8 @@ class EmptyGrid(Grid):
 
 class UnstructuredGrid(Grid):
 
+    type = 'unstructured'
+
     def __init__(self, nodes):
         nodes = np.array(nodes, dtype=float)
         self.min = nodes.min(axis=0)
@@ -36,6 +42,8 @@ class UnstructuredGrid(Grid):
         self.__nodes__ = nodes
 
 class CartesianGrid(Grid):
+
+    type = 'cartesian'
 
     def __init__(self, min, max, n=[]):
 
@@ -50,6 +58,8 @@ class CartesianGrid(Grid):
 
 class NonUniformCartesianGrid(Grid):
 
+    type = "NonUniformCartesian"
+
     def __init__(self, list_of_nodes):
         list_of_nodes = [np.array(l) for l in list_of_nodes]
         self.min = [min(l) for l in list_of_nodes]
@@ -59,7 +69,12 @@ class NonUniformCartesianGrid(Grid):
 
 
 class SmolyakGrid(Grid):
+
+    type = "Smolyak"
+
     def __init__(self, min, max, mu=2):
+
+        print(min, max, mu)
         from interpolation.smolyak import SmolyakGrid as ISmolyakGrid
         min = np.array(min)
         max = np.array(max)
@@ -67,11 +82,13 @@ class SmolyakGrid(Grid):
         self.max = max
         self.mu = mu
         d = len(min)
+        print(mu)
         sg = ISmolyakGrid(d, mu, lb=min, ub=max)
         self.sg = sg
         self.__nodes__ = sg.grid
 
 def cat_grids(grid_1, grid_2):
+
     if isinstance(grid_1, EmptyGrid):
         return grid_2
     if isinstance(grid_1, CartesianGrid) and isinstance(grid_2, CartesianGrid):

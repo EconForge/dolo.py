@@ -81,6 +81,10 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     exo_grid = dprocess.grid
 
+    from dolo import dprint
+    dprint(exo_grid)
+    dprint(endo_grid)
+
     mdr = DecisionRule(exo_grid, endo_grid)
 
     grid = mdr.endo_grid.nodes()

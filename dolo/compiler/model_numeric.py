@@ -272,7 +272,7 @@ file: "{filename}\n'''.format(**self.infos)
         b = np.array([e[1] for e in domain.values()])
 
         gg = model.symbolic.options.get('grid',{})
-        
+
         d = copy.deepcopy(gg)
         gtype = dis_opts.get('type')
         if gtype:
