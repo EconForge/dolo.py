@@ -34,6 +34,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION $deps
   - source activate test-environment
   - conda install -c conda-forge ruamel.yaml=0.11.11
+  - conda install -c conda-forge quantecon
   - conda install -c cwrowley slycot=0.2.0
   - conda install -c albop interpolation=0.1.6
 #  - pip install git+https://github.com/EconForge/Dolang.git@albop/from_dolo
