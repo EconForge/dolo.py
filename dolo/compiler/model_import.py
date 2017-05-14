@@ -28,43 +28,6 @@ def yaml_import(fname, check=True, check_only=False):
     return Model(data)
 
 
-# This should be done in ModelSymbolic
-#
-# # all symbols are initialized to nan
-# # except shocks and markov_states which are initialized to 0
-# initial_values = {
-#     'shocks': 0,
-#     # 'markov_states': 0,
-#     'exogenous': 0,
-#     'expectations': 0,
-#     'values': 0,
-#     'controls': float('nan'),
-#     'states': float('nan')
-# }
-#
-# # variables defined by a model equation default to using these definitions
-# initialized_from_model = {
-#     'values': 'value',
-#     'expectations': 'expectation',
-#     'direct_responses': 'direct_response'
-# }
-#
-# for k, v in definitions.items():
-#     if k not in calibration:
-#         calibration[k] = v
-#
-# for symbol_group in symbols:
-#     if symbol_group not in initialized_from_model.keys():
-#         if symbol_group in initial_values:
-#             default = initial_values[symbol_group]
-#         else:
-#             default =  float('nan')
-#         for s in symbols[symbol_group]:
-#             if s not in calibration:
-#                 calibration[s] = default
-
-
-
 
 
 if __name__ == "__main__":

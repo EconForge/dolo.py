@@ -181,7 +181,7 @@ class EvaluationResult:
         self.error = error
 
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, infos=False, interp_type='cubic'):
+def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, details=False, interp_type='cubic'):
 
     """Compute value function corresponding to policy ``dr``
 
@@ -294,7 +294,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
         print("Elapsed: {} seconds.".format(t2-t1))
         print(stars)
 
-    if not infos:
+    if not details:
         return mdrv
     else:
         return EvaluationResult(mdrv, it, tol, err)

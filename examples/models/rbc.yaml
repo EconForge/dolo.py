@@ -70,15 +70,11 @@ calibration:
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
     m: beta/c^sigma*(1-delta+rk)
 
+exogenous: !Normal
+    sigma: sig_z**2
+
 options:
-
-    exogenous: !Normal
-        sigma: sig_z**2
-
     grid: !Cartesian
         a: [-2*sig_z/(1-rho^2)^0.5, k*0.5]
         b: [ 2*sig_z/(1-rho^2)^0.5, k*1.5]
         orders: [5, 50]
-
-    random:
-        any: 0.1

@@ -1,12 +1,11 @@
 name: Open economy
-model_type: 'dtcscc'
 
 # description: Adapted from "country portfolios dynamics"
 
 symbols:
   states: [R]
   controls: [p_f, db_f]
-  shocks: [epsilon]
+  exogenous: [epsilon]
   parameters: [beta, gamma, ybar_1, ybar_2, kappa, dumb]
 
 
@@ -50,13 +49,11 @@ calibration:
 
 
 ############################
+exogenous: !Normal
+  sigma: [[ 0.05 ]]
 
 options:
-
     grid: !Cartesian
         a: [-0.5]
         b: [0.5]
         orders: [10]
-
-    distribution: !Normal
-        sigma: [[ 0.05 ]]

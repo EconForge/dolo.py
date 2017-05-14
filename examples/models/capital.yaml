@@ -44,6 +44,5 @@ calibration:
     theta: 0.3
     rho: 0.0
 
-options:
-    exogenous: !Normal
-        sigma: [[ 0.00001 ]]
+exogenous: !Normal
+    sigma: [[ 0.00001 ]]

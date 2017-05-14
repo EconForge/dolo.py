@@ -42,8 +42,7 @@ calibration:
     w: A * k ** alpha - k * eta
     R: eta-delta +1
 
-options:
 
-  exogenous: !Normal
-  
-      sigma: [ [ 0.0] ]
+exogenous: !Normal
+
+    sigma: [ [ 0.0] ]

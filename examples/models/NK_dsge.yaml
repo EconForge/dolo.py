@@ -64,11 +64,11 @@ calibration:
   u__tau: 0
 
 
+
+exogenous: !Normal
+  sigma: [[sig_a^2, 0], [0, sig_tau^2]]
+
 options:
-
-  distribution: !Normal
-    sigma: [[sig_a^2, 0], [0, sig_tau^2]]
-
   grid: !CartesianGrid
     a: [1, -3*((sig_a^2)/(1-rho__a^2))^.5, -3*sig_tau]
     b: [1.05,  3*((sig_a^2)/(1-rho__a^2))^.5, 3*sig_tau]
