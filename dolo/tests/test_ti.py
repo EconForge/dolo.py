@@ -13,4 +13,4 @@ def test_vfi():
 
     drv = evaluate_policy(model_iid, mdr)
 
-    dr_iid = value_iteration(model_iid, verbose=True)
+    dr_iid = value_iteration(model_iid, verbose=True, maxit=5)
