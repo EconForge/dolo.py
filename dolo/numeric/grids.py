@@ -36,7 +36,7 @@ class PointGrid(Grid):
     type = 'point'
 
     def __init__(self, point):
-        self.poitn = np.array(point)
+        self.point = np.array(point)
 
     def nodes(self):
         return None
