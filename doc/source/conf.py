@@ -29,7 +29,7 @@ import sys, os
 extensions = ['sphinx.ext.autosummary',
                 'sphinx.ext.autodoc',
                 'sphinx.ext.mathjax',
-                'sphinx.ext.viewcode',
+                # 'sphinx.ext.viewcode',
                 'sphinx.ext.graphviz',
                 # 'sphinx.ext.napoleon']
                 'numpydoc']

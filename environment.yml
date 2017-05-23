@@ -8,9 +8,10 @@ dependencies:
 - pip
 - pandas
 - pygments
-- python=3.5.1=0
-- pyyaml=3.11
+- python=3.5
+- pyyaml
 - scipy
+- sphinx
 - sphinx_rtd_theme
 - sympy
 - statsmodels
