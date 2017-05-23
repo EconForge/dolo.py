@@ -26,8 +26,17 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.graphviz', 'numpydoc']
-# 'sphinx.ext.pngmath' 'sphinx.ext.imgmath',
+extensions = ['sphinx.ext.autosummary',
+                'sphinx.ext.autodoc',
+                'sphinx.ext.mathjax',
+                'sphinx.ext.viewcode',
+                'sphinx.ext.graphviz',
+                # 'sphinx.ext.napoleon']
+                'numpydoc']
+
+# workaround to "nonexisting document error"
+numpydoc_show_class_members = True
+class_members_toctree = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

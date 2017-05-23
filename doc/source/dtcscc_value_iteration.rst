@@ -1,5 +1,5 @@
 Value function iteration
-..............
+........................
 
 .. autofunction:: dolo.algos.value_iteration.evaluate_policy
 

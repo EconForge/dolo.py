@@ -4,8 +4,6 @@ from dolo.numeric.grids import cat_grids, n_nodes, node
 from dolo.numeric.grids import UnstructuredGrid, CartesianGrid, EmptyGrid
 from dolo.numeric.misc import mlinspace
 
-from interpolation.splines.eval_cubic import vec_eval_cubic_splines
-from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
 
 import numpy as np
 
@@ -30,6 +28,7 @@ class ConstantDecisionRule:
 def filter_controls(a,b,ndims,controls):
 
     from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
+
     dinv = (b-a)/(ndims-1)
     ndims = array(ndims)
     n_m, N, n_x = controls.shape
@@ -61,6 +60,8 @@ class DecisionRule:
 
     def set_values(self, x):
 
+        from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
+
         if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, CartesianGrid):
             min = self.endo_grid.min
             max = self.endo_grid.max
@@ -80,6 +81,8 @@ class DecisionRule:
             raise Exception("Not implemented")
 
     def eval_is(self, i, s, out=None):
+
+        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
 
         if s.ndim == 1:
             return self.eval_is(i, s[None,:], out=out)[0,:]
@@ -104,6 +107,8 @@ class DecisionRule:
         return out
 
     def eval_ms(self, m, s, out=None):
+
+        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
 
         if s.ndim==1 and m.ndim==1:
             return self.eval_ms(m[None,:], s[None,:], out=out)[0,:]
@@ -137,6 +142,8 @@ class DecisionRule:
 
 
     def eval_s(self, s, out=None):
+
+        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
 
         if s.ndim==1:
             return self.eval_s(s[None,:])[0,:]

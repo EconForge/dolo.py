@@ -1,5 +1,5 @@
 Parameterized expectations
-..............
+..........................
 
 We consider an `fgh` model, that is a model with the form:
 

@@ -31,10 +31,6 @@ class SymbolicModel:
         return self.data.get("name", "Anonymous")
 
     @property
-    def name(self):
-        return self.data.get("name", "Anonymous")
-
-    @property
     def infos(self):
         infos = {
             'name': self.data.get('name', 'anonymous'),

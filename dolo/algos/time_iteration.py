@@ -1,7 +1,6 @@
 import numpy
 from dolo import dprint
 from dolo.numeric.processes import DiscretizedIIDProcess
-from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.grids import CartesianGrid
 
