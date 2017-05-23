@@ -2,3 +2,4 @@ sphinx-better-theme==0.1.4
 numpydoc
 docutils==0.12
 ipython
+quantecon
