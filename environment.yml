@@ -13,6 +13,5 @@ dependencies:
 - sympy
 - xarray
 - scipy
-- quantecon
 # - pip:
 #   - sphinx-better-theme==0.13
