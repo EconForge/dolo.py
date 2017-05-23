@@ -1,18 +1,20 @@
 name: dolo_env
 dependencies:
+- ipython
 - numba
 - numexpr
 - numpy
 - numpydoc
-- pandas
 - pip
+- pandas
 - pygments
-- ipython
 - python=3.5.1=0
 - pyyaml=3.11
+- scipy
 - sphinx_rtd_theme
 - sympy
+- statsmodels
+- matplotlib
 - xarray
-- scipy
 # - pip:
 #   - sphinx-better-theme==0.13
