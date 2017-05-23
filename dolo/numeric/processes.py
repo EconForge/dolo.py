@@ -157,6 +157,9 @@ class DiscreteMarkovProcess(DiscretizedProcess):
     def node(self, i:int): # vector
         return self.values[i,:]
 
+    def nodes(self):
+        return self.values
+
     def n_inodes(self, i:int): # integer
         return self.transitions.shape[1]
 
