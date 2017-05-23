@@ -91,10 +91,10 @@ class DiscretizedIIDProcess(DiscretizedProcess):
 
 class MvNormal(IIDProcess):
 
-    def __init__(self, sigma=None, orders=None, mu=None):
+    def __init__(self, Sigma=None, orders=None, mu=None):
 
-        self.sigma = np.atleast_2d( np.array(sigma, dtype=float) )
-        self.d = len(self.sigma)
+        self.Sigma = np.atleast_2d( np.array(Sigma, dtype=float) )
+        self.d = len(self.Sigma)
         if orders is None:
             self.orders = np.array([5]*self.d)
         else:
@@ -103,30 +103,30 @@ class MvNormal(IIDProcess):
             self.mu = np.array([0.0]*self.d)
         else:
             self.mu = np.array(mu, dtype=float)
-        assert(self.sigma.shape[0] == self.d)
-        assert(self.sigma.shape[0] == self.d)
+        assert(self.Sigma.shape[0] == self.d)
+        assert(self.Sigma.shape[0] == self.d)
         assert(self.orders.shape[0] == self.d)
 
     def discretize(self, orders=None):
         if orders is None:
             orders = self.orders
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
-        [x, w] = gauss_hermite_nodes(orders, self.sigma, mu=self.mu)
+        [x, w] = gauss_hermite_nodes(orders, self.Sigma, mu=self.mu)
         return DiscretizedIIDProcess(x,w)
 
     def simulate(self, N, T, m0=None, stochastic=True):
         from numpy.random import multivariate_normal
-        sigma = self.sigma
+        Sigma = self.Sigma
         mu = self.mu
         if stochastic:
-            sim = multivariate_normal(mu, sigma, N*T)
+            sim = multivariate_normal(mu, Sigma, N*T)
         else:
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
     def response(self, T, impulse):
         from numpy.random import multivariate_normal
-        sigma = self.sigma
+        Sigma = self.Sigma
         mu = self.mu
         irf = numpy.zeros((T,len(mu)))
         irf[1,:] = impulse[None,:]
@@ -205,11 +205,20 @@ class MarkovProduct(DiscreteMarkovProcess):
 
 class VAR1(DiscreteMarkovProcess):
 
-    def __init__(self, rho=None, sigma=None, N=2):
+    def __init__(self, rho=None, Sigma=None, N=2):
 
-        self.rho = rho
-        self.sigma = sigma
+        self.Sigma = np.atleast_2d(Sigma)
+        d = self.Sigma.shape[0]
+        rho = np.array(rho)
+        if rho.ndim == 0:
+            self.rho = np.eye(d)*rho
+        elif rho.ndim ==1:
+            self.rho = np.diag(rho)
+        else:
+            self.rho = rho
+        self.mu = np.zeros(d)
         self.N = N
+        self.d = d
 
     def discretize(self):
 
@@ -232,3 +241,32 @@ class VAR1(DiscreteMarkovProcess):
         [P,Q] = multidimensional_discretization(rho_array, sigma_array)
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
+
+
+    def simulate(self, N, T, m0=None, stochastic=True):
+        d = self.d
+        if m0 is None:
+            m0 = np.zeros(d)
+        from numpy.random import multivariate_normal
+        Sigma = self.Sigma
+        mu = self.mu
+        if stochastic:
+            innov = multivariate_normal(mu, Sigma, N*T)
+        else:
+            innov = mu[None,len(mu)].repeat(T*N,axis=0)
+        innov = innov.reshape((T,N,d))
+        rho = self.rho
+        sim = np.zeros((T,N,d))
+        sim[0,:,:] = m0[None,:]
+        for t in range(1,sim.shape[0]-1):
+            sim[t,:,:] = sim[t-1,:,:]@rho.T + innov[t,:,:]
+        return sim
+
+    def response(self, T, impulse):
+        d = self.d
+        irf = np.zeros((T,d))
+        irf[0,:] = impulse
+        rho = self.rho
+        for t in range(1,irf.shape[0]):
+            irf[t,:] = rho@irf[t-1,:]
+        return irf

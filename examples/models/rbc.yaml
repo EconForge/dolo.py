@@ -71,10 +71,12 @@ calibration:
     m: beta/c^sigma*(1-delta+rk)
 
 exogenous: !Normal
-    sigma: sig_z**2
+    Sigma: [[sig_z**2]]
+
+domain:
+    z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
+    k: [ k*0.5, k*1.5]
 
 options:
     grid: !Cartesian
-        a: [-2*sig_z/(1-rho^2)^0.5, k*0.5]
-        b: [ 2*sig_z/(1-rho^2)^0.5, k*1.5]
         orders: [5, 50]

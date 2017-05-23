@@ -15,6 +15,10 @@ class SymbolicModel:
         return symbols
 
     @property
+    def variables(self):
+        return sum([self.symbols[e] for e in ['exogenous','states','controls','auxiliaries']], [])
+
+    @property
     def equations(self):
         return self.data['equations']
 
@@ -248,6 +252,11 @@ class Model(SymbolicModel):
         self.__domain__ = None
         self.__exogenous__ = None
         self.__calibration__ = None
+
+    def set_calibration(self, **kwargs):
+        self.set_changed()
+        self.data['calibration'].update(kwargs)
+
 
     @property
     def calibration(self):

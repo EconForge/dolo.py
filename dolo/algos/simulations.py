@@ -13,7 +13,7 @@ def response(model, dr, varname, T=40, impulse:float=None):
     i_exo = model.symbols["exogenous"].index(varname)
 
     if impulse is None:
-        impulse = numpy.sqrt( model.exogenous.sigma[i_exo, i_exo] ) # works only for IID/AR1
+        impulse = numpy.sqrt( model.exogenous.Sigma[i_exo, i_exo] ) # works only for IID/AR1
 
     e1 = numpy.zeros(len(model.symbols["exogenous"]))
     e1[i_exo] = impulse
@@ -41,7 +41,6 @@ def find_index(sim, values):
     return indices
 
 from dolo.numeric.processes import DiscreteMarkovProcess
-
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
 
 def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
@@ -79,16 +78,27 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
            is the number of variables.
     '''
 
+
     calib = model.calibration
     parms = numpy.array(calib['parameters'])
 
     if s0 is None:
         s0 = calib['states']
 
+    n_x = len(model.symbols["controls"])
+    n_s = len(model.symbols["states"])
+
+    s_simul = numpy.zeros((T, N, n_s))
+    x_simul = numpy.zeros((T, N, n_x))
+
+    s_simul[0, :, :] = s0[None, :]
+
     # are we simulating a markov chain or a continuous process ?
     if driving_process is not None:
         m_simul = driving_process
         sim_type = 'continuous'
+        m0 = m_simul[0,:,:]
+        x_simul[0,:,:] = dr.eval_ms(m0, s0)
     else:
         if isinstance(dr.exo_grid, UnstructuredGrid):
             if i0 is None:
@@ -98,24 +108,16 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             i_simul = find_index(m_simul, dp.values)
             sim_type = 'discrete'
             m0 = dp.node(i0)
+            x0 = dr.eval_is(i0, s0)
+
         else:
             process = model.exogenous ## TODO (nothing guarantee the processes match)
             m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
             sim_type = 'continuous'
             if m0 is None:
                 m0 = model.calibration["exogenous"]
-
-
-    if sim_type=='discrete':
-        x0 = dr.eval_is(i0, s0)
-    else:
-        x0 = dr.eval_ms(m0, s0)
-
-    s_simul = numpy.zeros((T, N, s0.shape[0]))
-    x_simul = numpy.zeros((T, N, x0.shape[0]))
-
-    s_simul[0, :, :] = s0[None, :]
-    x_simul[0, :, :] = x0[None, :]
+            x0 = dr.eval_ms(m0, s0)
+            x_simul[0, :, :] = x0[None, :]
 
     fun = model.functions
     f = model.functions['arbitrage']
@@ -178,8 +180,8 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
             endo_grid = dr.endo_grid
             bounds = [endo_grid.min[index], endo_grid.max[index]]
         except:
-            approx = model.get_grid(**grid)
-            bounds = [approx.a[index], approx.b[index]]
+            domain = model.domain
+            bounds = [domain.min[index], domain.max[index]]
         if bounds is None:
             raise Exception("No bounds provided for simulation or by model.")
 

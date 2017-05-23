@@ -73,9 +73,9 @@ calibration:
 
 
 
-exogenous: !AR1
+exogenous: !VAR1
     rho: 0.8
-    sigma: sig_z^2
+    Sigma: [[sig_z^2]]
     N: 5
 
 options:

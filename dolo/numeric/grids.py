@@ -31,6 +31,20 @@ class EmptyGrid(Grid):
     def node(self, i):
         return None
 
+class PointGrid(Grid):
+
+    type = 'point'
+
+    def __init__(self, point):
+        self.poitn = np.array(point)
+
+    def nodes(self):
+        return None
+    def n_nodes(self):
+        return 1
+    def node(self, i):
+        return None
+
 class UnstructuredGrid(Grid):
 
     type = 'unstructured'

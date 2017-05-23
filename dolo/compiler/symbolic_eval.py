@@ -111,7 +111,7 @@ tensor:
 
     - rouwenhorst:
         rho: 0.9
-        sigma: 0.4
+        Sigma: 0.4
         N: 3
 
     - markov:

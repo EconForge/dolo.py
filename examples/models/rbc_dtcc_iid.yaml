@@ -71,7 +71,7 @@ calibration:
     m: beta/c^sigma*(1-delta+rk)
 
 exogenous: !Normal
-    sigma: sig_z**2
+    Sigma: [[sig_z**2]]
 
 options:
     grid: !Cartesian

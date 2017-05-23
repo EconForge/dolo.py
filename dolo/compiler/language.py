@@ -104,7 +104,7 @@ if __name__ == '__main__':
        orders: [50,50]
 
     distribution: !Normal
-        sigma: [[sig_z]]
+        Sigma: [[sig_z]]
         mu: [0.0]
     """
 
