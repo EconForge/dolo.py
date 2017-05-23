@@ -21,7 +21,7 @@ setup(
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo', 'bin/dolo-lint'],
 
     install_requires = ["pyyaml", "numba", "numpy", "numexpr", "sympy",
-                        "pandas", "interpolation", "ruamel.yaml", "xarray"],
+                        "pandas", "interpolation", "ruamel.yaml", "xarray", "quantecon"],
 
     extras_require = {
             'plots':  ["matplotlib"],
