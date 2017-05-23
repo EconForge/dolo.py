@@ -6,6 +6,9 @@ Solution algorithms
 .. toctree::
     :maxdepth: 2
 
-    algos_dtcscc
-    algos_dtmscc
-    algos_dynare
+    dtcscc_steady_state
+    dtcscc_perturbations
+    dtcscc_parameterized_expectations
+    dtcscc_perfect_foresight
+    dtcscc_time_iteration
+    dtcscc_value_iteration

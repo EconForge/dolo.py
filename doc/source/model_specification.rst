@@ -1,18 +1,9 @@
-Dolo Model Classification
-=========================
-
-Dolo differentiates several types of models. Which type of model is more relevant depends on the particular problem under consideration. A model with a large number of equations, or whose behaviour consists in small fluctations around the steady-state is easier to analyse using Dynare conventions that don't make an explicit distinction between variables.
-
-By contrast, nonlinear or nondifferentiable global analysis, is made computationally tractable by separating symbols of diffent kinds (states, controls, values, ...) and by distinguishing between several types of equations (Bellman equations, Euler equations, ...). Each of these equations (aka ``feature`` of the model), must satisfy a precise definition. Each symbol type is characterized by a 1-character short name and a full name. For instances symbol types ``states``, ``controls`` and ``shocks`` are consistently abbreviated by ``s`` and ``x`` respectively.
-
-Appart from the distinction between Dynare models and nonlocal models, Dolo also treats differently global models where all states evolve continuously (DTCSCC) and models where some of the models evolve according to a discrete Markov chain (DTMSCC).
-
-The purpose of this chapter is to define unambiguously these definitions. The solution method available for each of the features set will be detailed in the next chapter.
+Model Specification
+===================
 
 
-
-Discrete Time - Continuous States - Continuous Controls models (DTCSCC)
------------------------------------------------------------------------
+Variable types
+--------------
 
 The following types of variables can be used in DTCSCC models:
 

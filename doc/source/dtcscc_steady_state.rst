@@ -15,6 +15,4 @@ the steady state values of the controls, :math:`x`, which can then be used along
 with the transition function to find the steady state values of the state variables,
 :math:`s`.
 
-.. autofunction:: dolo.algos.dtcscc.steady_state.residuals
-
-.. autofunction:: dolo.algos.dtcscc.steady_state.find_deterministic_equilibrium
+.. autofunction:: dolo.algos.steady_state.residuals

@@ -30,8 +30,3 @@ The stacked system of equations satisfied by the solution is:
  +-------------------------------------------------+------------------------------------------------------------------------------+
  |  :math:`s_T = g(s_{T-1}, x_{T-1}, \epsilon_T)`  |   :math:`f(s_T, x_T, s_T, x_T) \perp \underline{u} <= x_T <= \overline{u}`   |
  +-------------------------------------------------+------------------------------------------------------------------------------+
-
-
-
-
-.. autofunction:: dolo.algos.dtcscc.perfect_foresight.deterministic_solve

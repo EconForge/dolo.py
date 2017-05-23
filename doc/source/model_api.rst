@@ -178,18 +178,8 @@ The ``model.options`` structure holds an information required by a particular so
 Source documentation
 --------------------
 
-Numerical Model
+Model
 +++++++++++++++
 
-.. autoclass:: dolo.compiler.model_numeric.NumericModel
-   :members:
-
-
-Symbolic Model
-++++++++++++++
-
-The symbolic model contains all equations and calibrations as strings, which is
-the way they are read from the yaml files. It is the natural base to start symbolic computations.
-
-.. autoclass:: dolo.compiler.model_symbolic.SymbolicModel
+.. autoclass:: dolo.compiler.model.Model
    :members:

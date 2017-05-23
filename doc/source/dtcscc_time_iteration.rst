@@ -14,6 +14,6 @@ The time iteration algorithm consists in approximating the optimal controls, :ma
 At step :math:`n`, the current guess for the control, :math:`x(s_t) = \varphi^n(s_t)`, serves as the control being exercised next period  :
   - Given current guess, find the current period's control by solving the arbitrage equation : :math:`0 = E_t \left[ f\left(s_{t}, \varphi^{n+1}(s_t), g(s_t, \varphi^{n+1}(s_t)), \varphi^{n}(g(s_t, \varphi^{n+1}(s_t))) \right) \right]`
 
-.. autofunction:: dolo.algos.dtcscc.time_iteration.time_iteration
+.. autofunction:: dolo.algos.time_iteration.time_iteration
 
-.. autofunction:: dolo.algos.dtcscc.time_iteration.step_residual
+.. autofunction:: dolo.algos.time_iteration.residuals_simple

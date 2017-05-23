@@ -15,6 +15,3 @@ At step :math:`n`, with a current guess of the control, :math:`x(s_t) = \varphi^
   - Compute the conditional expectation :math:`z_t = E_t[\varphi^n(s_t)]`
   - Given the expectation, update the optimal control by solving :math:`0 = \left( f\left(s_{t}, \varphi^{n+1}(s), z_t \right) \right)`
   - Given the optimal control, update the expectations function :math:`\psi^{n+1}(s_t) = h(s_t, \varphi^{n+1}(s_t))`
-
-
-.. autofunction:: dolo.algos.dtcscc.parameterized_expectations.parameterized_expectations

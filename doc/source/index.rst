@@ -27,4 +27,3 @@ What is dolo ?
     algos
     examples
     faq
-    misc

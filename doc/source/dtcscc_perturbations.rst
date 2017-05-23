@@ -1,4 +1,4 @@
 Perturbation
 ............
 
-.. autofunction:: dolo.algos.dtcscc.perturbations.approximate_controls
+.. autofunction:: dolo.algos.perturbation.perturbate

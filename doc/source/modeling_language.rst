@@ -105,9 +105,9 @@ Those models, differ by the type of equations they require, but the general prin
 Example
 -------
 
-Here is an example model contained in the file ``examples\global_models\example.yaml``
+Here is an example model contained in the file ``examples\models\rbc.yaml``
 
-.. literalinclude:: ../../examples/models/compat/rbc.yaml
+.. literalinclude:: ../../examples/models/rbc.yaml
     :language: yaml
     :linenos:
 
