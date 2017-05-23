@@ -45,4 +45,4 @@ calibration:
     rho: 0.0
 
 exogenous: !Normal
-    sigma: [[ 0.00001 ]]
+    Sigma: [[ 0.00001 ]]

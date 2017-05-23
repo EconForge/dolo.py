@@ -56,8 +56,9 @@ exogenous: !MarkovChain
     transitions: [[ 0.5, 1-0.5 ],   # probabilities   [p(L|L), p(H|L)]
                   [ 0.5, 0.5 ]]     # probabilities   [p(L|H), p(H|H)]
 
+domain:
+    l: [-1, 1]
+
 options:
     grid: !Cartesian
-        a: [-1.0]
-        b: [ 1.0]
         orders: [10]

@@ -49,4 +49,4 @@ calibration:
 
 options:
     exogenous: !Normal
-        sigma: [ [ 0.0015 ] ]
+        Sigma: [ [ 0.0015 ] ]

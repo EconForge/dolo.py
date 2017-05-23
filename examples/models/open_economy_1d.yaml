@@ -50,10 +50,11 @@ calibration:
 
 ############################
 exogenous: !Normal
-  sigma: [[ 0.05 ]]
+  Sigma: [[ 0.05 ]]
 
+domain:
+    R: [-0.5, 0.5]
+    
 options:
     grid: !Cartesian
-        a: [-0.5]
-        b: [0.5]
         orders: [10]

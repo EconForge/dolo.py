@@ -74,8 +74,9 @@ exogenous: !MarkovChain
     values: [[-0.01, 0.1],[0.01, 0.1]]
     transitions: [[0.9, 0.1], [0.1, 0.9]]
 
+domain:
+    k: [k*0.2, k*2.0]
+    
 options:
     grid: !Cartesian
-        a: [k*0.2]
-        b: [k*2.0]
         orders: [50]

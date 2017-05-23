@@ -78,8 +78,9 @@ exogenous: !VAR1
     Sigma: [[sig_z^2]]
     N: 5
 
+domain:
+    k: [k*0.5, k*1.5]
+
 options:
     grid: !Cartesian
-        a: [k*0.5]
-        b: [k*1.5]
         orders: [20]
