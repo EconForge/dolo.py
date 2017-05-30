@@ -224,21 +224,16 @@ class VAR1(DiscreteMarkovProcess):
 
         N = self.N
         rho = self.rho
-        sigma = self.sigma
+        Sigma = self.Sigma
 
-        rho_array = np.array(rho, dtype=float)
-        sigma_array = np.atleast_2d(np.array(sigma, dtype=float))
         try:
-            assert(rho_array.ndim <= 1)
+            assert(abs(np.eye(rho.shape[0])*rho[0,0]-rho).max() <= 1)
         except:
             raise Exception("When discretizing a Vector AR1 process, the autocorrelation coefficient must be as scalar. Found: {}".format(rho_array))
-        try:
-            assert(sigma_array.shape[0] == sigma_array.shape[1])
-        except:
-            raise Exception("The covariance matrix for a Vector AR1 process must be square. Found: {}".format())
+
         from dolo.numeric.discretization import multidimensional_discretization
 
-        [P,Q] = multidimensional_discretization(rho_array, sigma_array)
+        [P,Q] = multidimensional_discretization(rho[0,0], Sigma)
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
 

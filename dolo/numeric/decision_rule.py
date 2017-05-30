@@ -1,9 +1,11 @@
 import numpy
 from numpy import array, zeros
+from interpolation.smolyak import SmolyakGrid as SmolyakGrid0
+from interpolation.smolyak import SmolyakInterp, build_B
 from dolo.numeric.grids import cat_grids, n_nodes, node
-from dolo.numeric.grids import UnstructuredGrid, CartesianGrid, EmptyGrid
+from dolo.numeric.grids import UnstructuredGrid, CartesianGrid, SmolyakGrid, EmptyGrid
 from dolo.numeric.misc import mlinspace
-
+import scipy
 
 import numpy as np
 
@@ -48,19 +50,27 @@ class DecisionRule:
         self.endo_grid = endo_grid
         self.interp_type = interp_type
         self.dprocess = dprocess
+        if isinstance(self.exo_grid, (UnstructuredGrid, EmptyGrid)) and isinstance(self.endo_grid, SmolyakGrid):
+            min = self.endo_grid.min
+            max = self.endo_grid.max
+            d = len(min)
+            mu = self.endo_grid.mu
+            sg = SmolyakGrid0(d, mu, lb=min, ub=max) # That is really strange
+            sg.lu_fact = scipy.linalg.lu_factor(sg.B)
+            self.sg = sg
+            self.interp_type = 'chebychev'
+        else:
+            self.interp_type = 'cubic'
 
     @property
     def full_grid(self):
         return cat_grids(self.exo_grid, self.endo_grid)
-    #
-    # @property
-    # def full_grid(self):
-    #     return self.full_grid
-
 
     def set_values(self, x):
 
         from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
+
+        x = np.array(x)
 
         if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, CartesianGrid):
             min = self.endo_grid.min
@@ -68,7 +78,14 @@ class DecisionRule:
             n = self.endo_grid.n
             coeffs = filter_controls(min, max, n, x)
             self.coefficients = coeffs
-            self.n_x = x.shape[-1]
+        elif isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, SmolyakGrid):
+            from scipy.linalg import lu_solve
+            from numpy import linalg
+            self.thetas = [lu_solve( self.sg.lu_fact, v ) for v in x]
+        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, SmolyakGrid):
+            from scipy.linalg import lu_solve
+            from numpy import linalg
+            self.thetas = lu_solve( self.sg.lu_fact, x[0] )
         elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
             full_grid = self.full_grid
             min = full_grid.min
@@ -76,9 +93,9 @@ class DecisionRule:
             n = full_grid.n
             coeffs = filter_mcoeffs(min, max, n, x)
             self.coefficients = coeffs
-            self.n_x = x.shape[-1]
         else:
             raise Exception("Not implemented")
+        self.n_x = x.shape[-1]
 
     def eval_is(self, i, s, out=None):
 
@@ -101,6 +118,11 @@ class DecisionRule:
             vec_eval_cubic_splines(min, max, n, coeffs, s, out)
         elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
             self.eval_s(s, out=out)
+        elif isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, SmolyakGrid):
+            trans_points = self.sg.dom2cube(s)
+            Phi = build_B(self.sg.d, self.sg.mu, trans_points, self.sg.pinds)
+            theta = self.thetas[i]
+            out[...] =  Phi@theta
         else:
             raise Exception("Not Implemented.")
 
@@ -159,6 +181,11 @@ class DecisionRule:
             n = self.full_grid.n
             coeffs = self.coefficients
             vec_eval_cubic_splines(min, max, n, coeffs, s, out)
+        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, SmolyakGrid):
+            trans_points = self.sg.dom2cube(s)
+            Phi = build_B(self.sg.d, self.sg.mu, trans_points, self.sg.pinds)
+            theta = self.thetas
+            out[...] = Phi@theta
         else:
             raise Exception("Not Implemented.")
 
@@ -169,9 +196,9 @@ class DecisionRule:
         if out is None:
             out = np.zeros((s.shape[0], self.n_x))
 
-        if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, CartesianGrid):
+        if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, (CartesianGrid, SmolyakGrid)):
             self.eval_is(j, s, out=out)
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
+        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, (CartesianGrid,SmolyakGrid)):
             self.eval_s(s, out=out)
         elif isinstance(self.exo_grid, CartesianGrid) and isinstance(self.endo_grid, CartesianGrid):
             m = self.dprocess.inode(i, j)

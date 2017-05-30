@@ -1,23 +1,22 @@
 Perfect foresight
 .................
 
+Consider a series for the exogenous process :math:`(m_t)_{0 \leq t \leq T}`.
+The perfect foresight problem consists in finding the path of optimal controls :math:`(x_t)_{0 \leq t \leq T}`
+and corresponding states :math:`(s_t)_{0 \leq t \leq T}` such that:
 
-We consider an `fg` model, that is a model with in the form:
+ :math:`s_t = g\left(m_{t-1}, s_{t-1}, x_{t-1}, \epsilon_t \right)`
 
- :math:`s_t = g\left(s_{t-1}, x_{t-1}, \epsilon_t \right)`
+ :math:`0 = E_t \left( f\left(m_{t}, s_{t}, x_{t}, m_{t+1}, s_{t+1}, x_{t+1}\right) \right) \ \perp \ \underline{u} <= x_t <= \overline{u}`
 
- :math:`0 = E_t \left( f\left(s_{t}, x_{t}, s_{t+1}, x_{t+1}\right) \right) \ \perp \ \underline{u} <= x_t <= \overline{u}`
+Special conditions apply for the initial state and controls. Initial state :math:`s_0` is given exogenously.
+Final states and controls are determined by assuming the exogenous process satisfies :math:`m_t=m_T` for all :math:`t\leq T` and optimality conditions are satisfied in the last period:
+
+:math:`f(m_T, s_T, x_T, m_T,s_T, x_T) \perp \underline{u} <= x_T <= \overline{u}`.
 
 We assume that :math:`\underline{u}` and :math:`\overline{u}` are constants. This is not a big restriction since the model can always be reformulated in order to meet that constraint, by adding more equations.
 
-Given a realization of the shocks :math:`(\epsilon_i)_{i>=1}` and an initial state :math:`s_0`, the perfect foresight
-problem consists in finding the path of optimal controls  :math:`(x_t)_{t>=0}` and the corresponding
-evolution of states :math:`(s_t)_{t>=0}`.
-
-In practice, we find a solution over a finite horizon :math:`T>0` by assuming that the last state is constant forever.
 The stacked system of equations satisfied by the solution is:
-
-
 
 
  +-------------------------------------------------+------------------------------------------------------------------------------+
@@ -30,3 +29,5 @@ The stacked system of equations satisfied by the solution is:
  +-------------------------------------------------+------------------------------------------------------------------------------+
  |  :math:`s_T = g(s_{T-1}, x_{T-1}, \epsilon_T)`  |   :math:`f(s_T, x_T, s_T, x_T) \perp \underline{u} <= x_T <= \overline{u}`   |
  +-------------------------------------------------+------------------------------------------------------------------------------+
+
+The system is solved using a nonlinear solver.

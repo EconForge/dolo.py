@@ -1,6 +1,6 @@
 def test_vfi():
 
-    from dolo.algos.value_iteration import solve_policy as value_iteration, evaluate_policy
+    from dolo.algos.value_iteration import value_iteration as value_iteration, evaluate_policy
     from dolo import yaml_import
     from dolo.algos.time_iteration import time_iteration
 

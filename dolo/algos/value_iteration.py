@@ -12,9 +12,7 @@ from dolo.misc.itprinter import IterationsPrinter
 def constant_policy(model):
     return ConstantDecisionRule(model.calibration["controls"])
 
-
-
-def solve_policy(model, grid={}, tol=1e-6, maxit=500,
+def value_iteration(model, grid={}, tol=1e-6, maxit=500,
                  maxit_howard=20, verbose=False):
     """
     Solve for the value function and associated Markov decision rule by iterating over

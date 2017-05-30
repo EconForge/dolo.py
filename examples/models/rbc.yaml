@@ -79,4 +79,8 @@ domain:
 
 options:
     grid: !Cartesian
-        orders: [5, 50]
+        n: [10, 10]
+# options:
+#     grid: !Smolyak
+#         mu: 3
+#         # orders: [5, 50]
