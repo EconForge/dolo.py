@@ -98,7 +98,7 @@ def rouwenhorst(rho, sigma, N):
 
 
 
-def multidimensional_discretization(rho, sigma, N=2, method='rouwenhorst', m=2):
+def multidimensional_discretization(rho, sigma, N=3, method='rouwenhorst', m=2):
     """
     Discretize an VAR(1) into a markov chain. The autoregression matrix is supposed to be a scalar.
 

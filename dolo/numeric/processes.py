@@ -170,7 +170,10 @@ class DiscreteMarkovProcess(DiscretizedProcess):
         return self.transitions[i,j]
 
     def simulate(self, N, T, i0=0, stochastic=True):
-        inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
+        if stochastic:
+            inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
+        else:
+            inds = np.zeros((T,N), dtype=int) + i0
         return self.values[inds]
 #
 # class MarkovChain(list):
@@ -205,7 +208,7 @@ class MarkovProduct(DiscreteMarkovProcess):
 
 class VAR1(DiscreteMarkovProcess):
 
-    def __init__(self, rho=None, Sigma=None, N=2):
+    def __init__(self, rho=None, Sigma=None, N=3):
 
         self.Sigma = np.atleast_2d(Sigma)
         d = self.Sigma.shape[0]
@@ -217,12 +220,10 @@ class VAR1(DiscreteMarkovProcess):
         else:
             self.rho = rho
         self.mu = np.zeros(d)
-        self.N = N
         self.d = d
 
-    def discretize(self):
+    def discretize(self, N=3):
 
-        N = self.N
         rho = self.rho
         Sigma = self.Sigma
 
@@ -233,7 +234,7 @@ class VAR1(DiscreteMarkovProcess):
 
         from dolo.numeric.discretization import multidimensional_discretization
 
-        [P,Q] = multidimensional_discretization(rho[0,0], Sigma)
+        [P,Q] = multidimensional_discretization(rho[0,0], Sigma, N=N)
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
 
