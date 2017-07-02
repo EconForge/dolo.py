@@ -173,7 +173,7 @@ Declaration of equations
 
 The `equations` section contains blocks of equations sorted by type.
 
-Epxressions follow (roughly) the Dynare conventions. Common arithmetic operators (`+,-,*,/,^`) are allowed with conventional priorities as well as usual functions (`sqrt, log, exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh`). The definitions of these functions match the definitions from the `numpy` package. All symbols appearing in an expression must either be declared in the `symbols` section or be one of the predefined functions.
+Expressions follow (roughly) the Dynare conventions. Common arithmetic operators (`+,-,*,/,^`) are allowed with conventional priorities as well as usual functions (`sqrt, log, exp, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh`). The definitions of these functions match the definitions from the `numpy` package. All symbols appearing in an expression must either be declared in the `symbols` section or be one of the predefined functions.
 Any symbol `s` that is not a parameter is assumed to be considered at date `t`. Values at date `t+1` and `t-1` are denoted by `s(1)` and `s(-1)` respectively.
 
 All equations are implicitly enclosed by the expectation operator :math:`E_t\left[\cdots \right]`. Consequently, the law of motion for the capital
