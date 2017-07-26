@@ -1,7 +1,5 @@
 name: New Keynesian DSGE
 
-model_type: dtcscc
-
 symbols:
 
   states: [Delta__L, a, cp]
