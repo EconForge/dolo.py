@@ -42,6 +42,10 @@ class NumericEval:
     def eval_float(self, s):
 
         return s
+    
+    def eval_scalarfloat(self, s):
+
+        return float(s)
 
     def eval_int(self, s):
 
