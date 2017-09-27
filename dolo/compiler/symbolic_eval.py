@@ -39,6 +39,9 @@ class NumericEval:
 
         return fun(struct)
 
+    def eval_scalarfloat(self, s):
+        return float(s)
+
     def eval_float(self, s):
 
         return s
