@@ -32,7 +32,7 @@ def find_index(sim, values):
     sh = sim.shape
     N = sh[0]
     T = sh[1]
-    indices = np.zeros((N,T))
+    indices = np.zeros((N,T), dtype=int)
     for n in range(N):
         for t in range(T):
             v = sim[n,t,:]
@@ -124,7 +124,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     g = model.functions['transition']
 
     numpy.random.seed(seed)
-
+    from dolo.misc.dprint import dprint
     mp = m0
     for i in range(T):
         m = m_simul[i,:,:]
@@ -198,7 +198,7 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     if (i0 is None) and (m0 is None):
         from dolo.numeric.grids import UnstructuredGrid
         if isinstance(dp.grid, UnstructuredGrid):
-            n_ms = dp.n_nodes
+            n_ms = dp.n_nodes()
             [q,r] = divmod(n_ms,2)
             i0 = q-1+r
         else:
