@@ -32,7 +32,7 @@ def find_index(sim, values):
     sh = sim.shape
     N = sh[0]
     T = sh[1]
-    indices = np.zeros((N,T))
+    indices = np.zeros((N,T), dtype=int)
     for n in range(N):
         for t in range(T):
             v = sim[n,t,:]
@@ -124,7 +124,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     g = model.functions['transition']
 
     numpy.random.seed(seed)
-
+    from dolo.misc.dprint import dprint
     mp = m0
     for i in range(T):
         m = m_simul[i,:,:]
@@ -198,7 +198,7 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     if (i0 is None) and (m0 is None):
         from dolo.numeric.grids import UnstructuredGrid
         if isinstance(dp.grid, UnstructuredGrid):
-            n_ms = dp.n_nodes
+            n_ms = dp.n_nodes()
             [q,r] = divmod(n_ms,2)
             i0 = q-1+r
         else:
@@ -229,6 +229,73 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     df = pandas.DataFrame(tb, columns=series)
 
     return df
+
+def tabulate_2d(model, dr, states=None, i0=0, s0=None, n=[12,13]):
+    import numpy
+    import xarray as xr
+    if s0 is None:
+        s0 = model.calibration["states"]
+    if states is None:
+        states = model.symbols["states"]
+    assert(len(states)==2)
+    domain = model.get_domain()
+    lps = [numpy.linspace(*domain[s], n[i]) for i,s in enumerate(states)]
+    i_x = model.symbols["states"].index(states[0])
+    i_y = model.symbols["states"].index(states[1])
+    vals = []
+    vstates = []
+    s = s0.copy()
+    for xx in lps[0]:
+        vv = []
+        s[i_x] = xx
+        for yy in lps[1]:
+            s[i_y] = yy
+            x = dr.eval_is(i0, s)
+            vv.append(numpy.concatenate([s,x]))
+        vals.append(vv)
+    vv = numpy.array(vals)
+    controls = model.symbols["states"] + model.symbols["controls"]
+#     tab = xr.DataArray(vv, dims=[states[0], states[1], 'V'], coords=[lps[0], lps[1], 'V'])
+    tab = xr.DataArray(vv, dims=[states[0], states[1], 'V'], coords={states[0]:lps[0], states[1]:lps[1], 'V':controls})
+    return tab
+
+def plot3d(tab, varname):
+    X = numpy.array( tab[tab.dims[0]] )
+    Y = numpy.array( tab[tab.dims[1]] )
+    Z = numpy.array( tab.loc[:,:,varname] )
+    data = [
+        go.Surface(
+            x=X,
+            y=Y,
+            z=Z
+        )
+    ]
+    layout = go.Layout(
+        title='Equity',
+        autosize=False,
+        width=500,
+        height=500,
+#         xaxis=go.XAxis(title=tab.dims[0]),
+#         yaxis={'title':tab.dims[1]},
+#         zaxis={'title':varname},
+        xaxis=dict(
+            title='x Axis',
+            nticks=7,
+            titlefont=dict(
+                family='Courier New, monospace',
+                size=18,
+                color='#7f7f7f'
+            )
+        ),
+        margin=dict(
+            l=65,
+            r=50,
+            b=65,
+            t=90
+        )
+    )
+    fig = go.Figure(data=data, layout=layout)
+    return iplot(fig, filename='graph_'+varname)
 
 
 def plot_decision_rule(plot_controls=None,**kwargs):
