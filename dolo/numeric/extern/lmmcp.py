@@ -105,7 +105,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     Indexset[I_lu]=3
 
     #I_f=find(Indexset==0)
-    I_f = - (I_l | I_u | I_lu)
+    I_f = ~ (I_l | I_u | I_lu)
 
 
     # function evaluations
