@@ -1,16 +1,15 @@
 language: python
 
 python:
-#    - "2.7"
-    - "3.5"
+    - "3.6"
 
 sudo: false
 
-addons:
-  apt:
-    packages:
-    - gfortran
-    - liblapack-dev
+#addons:
+#  apt:
+#    packages:
+#    - gfortran
+#    - liblapack-dev
 
 install:
   # You may want to periodically update this, although the conda update
@@ -30,15 +29,11 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - deps='pip nose ipython jsonschema pyyaml numba numpy scipy pandas=0.19.2 numexpr sympy matplotlib runipy mistune xarray'
+  - deps='pip nose ipython jsonschema pyyaml numba numpy scipy numexpr sympy matplotlib runipy mistune xarray'
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION $deps
   - source activate test-environment
-  - conda install -c conda-forge ruamel.yaml=0.11.11
-  - conda install -c conda-forge quantecon
-  - conda install -c cwrowley slycot=0.2.0
-  - conda install -c albop interpolation=0.1.6
-#  - pip install git+https://github.com/EconForge/Dolang.git@albop/from_dolo
-  - pip install dolang
+  - conda install -c conda-forge ruamel.yaml quantecon interpolation
+  - conda install -c albop dolang
   - python setup.py install
 
 

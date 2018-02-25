@@ -5,8 +5,8 @@ functions = {
     'log': math.log,
     'exp': math.exp,
     'sin': math.sin,
-    'cos': math.sin,
-    'tan': math.sin,
+    'cos': math.cos,
+    'tan': math.tan,
 }
 
 constants = {
