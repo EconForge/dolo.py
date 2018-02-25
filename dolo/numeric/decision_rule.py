@@ -14,6 +14,17 @@ class ConstantDecisionRule:
     def __init__(self, x0):
         self.x0 = x0
 
+
+    def __call__(self, *args):
+        args = [np.array(e) for e in args]
+        if len(args)==1:
+            return self.eval_s(args[0])
+        elif len(args)==2:
+            if args[0].dtype in ('int64','int32'):
+                return self.eval_is(args[0],args[1])
+            else:
+                return self.eval_ms(args[0],args[1])
+
     def eval_s(self, s):
         if s.ndim==1:
             return self.x0
@@ -50,6 +61,7 @@ class DecisionRule:
         self.endo_grid = endo_grid
         self.interp_type = interp_type
         self.dprocess = dprocess
+        
         if isinstance(self.exo_grid, (UnstructuredGrid, EmptyGrid)) and isinstance(self.endo_grid, SmolyakGrid):
             min = self.endo_grid.min
             max = self.endo_grid.max
@@ -61,6 +73,16 @@ class DecisionRule:
             self.interp_type = 'chebychev'
         else:
             self.interp_type = 'cubic'
+
+    def __call__(self, *args):
+        args = [np.array(e) for e in args]
+        if len(args)==1:
+            return self.eval_s(args[0])
+        elif len(args)==2:
+            if args[0].dtype in ('int64','int32'):
+                return self.eval_is(args[0],args[1])
+            else:
+                return self.eval_ms(args[0],args[1])
 
     @property
     def full_grid(self):
