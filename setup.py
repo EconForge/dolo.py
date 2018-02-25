@@ -20,12 +20,11 @@ setup(
 
     scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo', 'bin/dolo-lint'],
 
-    install_requires = ["pyyaml", "numba", "numpy", "numexpr", "sympy","scipy","quantecon",
+    install_requires = ["pyyaml", "numba", "numpy", "sympy","scipy","quantecon",
                         "pandas", "interpolation", "ipython", "ruamel.yaml", "xarray"],
 
     extras_require = {
             'plots':  ["matplotlib"],
-            'higher_order': ["slycot"]
     },
 
     author = "Pablo Winant",
