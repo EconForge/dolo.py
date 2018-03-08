@@ -76,8 +76,6 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
 
     endo_grid = model.get_grid(**grid)
 
-    interp_type = 'cubic'
-
     exo_grid = dprocess.grid
 
     mdr = DecisionRule(exo_grid, endo_grid)
@@ -89,8 +87,13 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
     if initial_guess is None:
         controls_0[:, :, :] = x0[None,None,:]
     else:
-        for i_m in range(n_ms):
-            controls_0[i_m, :, :] = initial_guess(i_m, grid)
+        try:
+            for i_m in range(n_ms):
+                controls_0[i_m, :, :] = initial_guess(i_m, grid)
+        except Exception:
+            for i_m in range(n_ms):
+                m = dprocess.node(i_m)
+                controls_0[i_m, :, :] = initial_guess(m, grid)
 
     f = model.functions['arbitrage']
     g = model.functions['transition']

@@ -54,13 +54,11 @@ def get_derivatives(model, steady_state=None):
     return G_s, G_x, G_e, F_s, F_x, F_S, F_X
 
 from dolo.numeric.grids import PointGrid, EmptyGrid
+from dolo.numeric.decision_rule import CallableDecisionRule
 
-
-class BivariateTaylor:
+class BivariateTaylor(CallableDecisionRule):
 
     def __init__(self, m_bar, s_bar, x_bar, C_m, C_s):
-
-
 
         self.endo_grid = PointGrid(s_bar)
         if C_m is None:
