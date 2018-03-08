@@ -39,18 +39,26 @@ def second_order_solver(FF,GG,HH, eigmax=1.0+1e-6):
 
     return [eigval,PP]
 
-def solve_sylvester(A,B,C,D,Ainv = None):
+def solve_sylvester_vectorized(*args):
+    from numpy import kron
+    from numpy.linalg import solve
+    vec = lambda M: M.ravel()
+    n = args[0][0].shape[0]
+    q = args[0][1].shape[0]
+    K = vec(args[-1])
+    L = sum([kron(A,B.T) for (A,B) in args[:-1]])
+    X = solve(L,-K)
+    return X.reshape((n,q))
+
+def solve_sylvester(A,B,C,D,Ainv = None,method='linear'):
     # Solves equation : A X + B X [C,...,C] + D = 0
     # where X is a multilinear function whose dimension is determined by D
     # inverse of A can be optionally specified as an argument
-
-    import slycot
 
     n_d = D.ndim - 1
     n_v = C.shape[1]
 
     n_c = D.size//n_v**n_d
-
 
 #    import dolo.config
 #    opts = dolo.config.use_engine
@@ -68,17 +76,25 @@ def solve_sylvester(A,B,C,D,Ainv = None):
     for i in range(n_d-2):
         CC = np.kron(CC,C)
 
-    if Ainv != None:
-        Q = sdot(Ainv,B)
-        S = sdot(Ainv,DD)
+    if method=='linear':
+        I = np.eye(CC.shape[0])
+        XX = solve_sylvester_vectorized((A,I),(B,CC),DD)
+
     else:
-        Q = np.linalg.solve(A,B)
-        S = np.linalg.solve(A,DD)
+        # we use slycot by default
+        import slycot
 
-    n = n_c
-    m = n_v**n_d
+        if Ainv != None:
+            Q = sdot(Ainv,B)
+            S = sdot(Ainv,DD)
+        else:
+            Q = np.linalg.solve(A,B)
+            S = np.linalg.solve(A,DD)
 
-    XX = slycot.sb04qd(n,m,Q,CC,-S)
+        n = n_c
+        m = n_v**n_d
+
+        XX = slycot.sb04qd(n,m,Q,CC,-S)
 
     X = XX.reshape( (n_c,)+(n_v,)*(n_d) )
 
