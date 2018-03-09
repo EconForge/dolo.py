@@ -43,36 +43,6 @@ class TaylorExpansion:
         elif self.order == 3:
             return eval_te_order_3(self.S_bar, self.X_bar, self.X_s, self.X_ss, self.X_sss, points)
 
-    def __call2__(self,points):
-
-        from numpy import tile
-        from dolo.numeric.tensor import mdot
-
-
-        # slower implementation, kept for comparison purpose
-        if points.ndim == 1:
-            pp = atleast_2d(points)
-            res = self.__call__(pp)
-            return res.ravel()
-
-        points = points.T
-
-        n_s = points.shape[1]
-        ds = points - self.S_bar[:,None]
-        choice =  dot(self.X_s, ds) + self.X_bar[:,None]
-        n_ss = self.X_s.shape[1]
-        if self.order == 2:
-            for k in range(self.X_ss.shape[0]):
-                for i in range(n_ss):
-                    for j in range(n_ss):
-                        choice[k,:] += self.X_ss[k,i,j]*ds[i,:]*ds[j,:]/2
-        if self.order == 3:
-            for i in range(n_s):
-                choice[:,i] += mdot(self.X_ss,[ds[:,i],ds[:,i]]) / 2
-                choice[:,i] += mdot(self.X_sss,[ds[:,i],ds[:,i],ds[:,i]]) / 6
-
-        return choice.T
-
 
 # helper functions
 
@@ -117,7 +87,8 @@ def eval_te_order_3(s0, x0, x1, x2, x3, points, out):
                     out[n] += x3[n,i,j,k]*(points[i]-s0[i])*(points[j]-s0[j])*(points[k]-s0[k])/6.0
 
 
-
+class CDR(TaylorExpansion):
+    pass
 
 
 def test_taylor_expansion():
