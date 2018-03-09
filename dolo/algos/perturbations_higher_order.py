@@ -1,6 +1,8 @@
 from dolo.numeric.taylor_expansion import CDR
 from dolo.numeric.extern.qz import qzordered
 from dolo.compiler.derivatives import get_model_derivatives
+from typing import List
+from numpy import ndarray
 
 def approximate_controls(model, order=1, lambda_name=None, return_dr=True, steady_state=None, verbose=True):
 
@@ -18,10 +20,12 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, stead
         calibration = steady_state
 
     [f, g] = get_model_derivatives(model, order=order, calibration=calibration)
-
     sigma = model.exogenous.Sigma
 
-    pert_sol = state_perturb(f, g, sigma, verbose=verbose)
+    problem = PerturbationProblem(f,g,sigma)
+    print(len(problem.f))
+
+    pert_sol = state_perturb(problem, verbose=verbose)
 
     controls_ss = calibration['controls']
     states_ss = calibration['states']
@@ -73,8 +77,20 @@ def approximate_controls(model, order=1, lambda_name=None, return_dr=True, stead
             return dr
         return [X_bar, X_s, X_ss, X_sss]
 
+class PerturbationProblem:
 
-def state_perturb(f_fun, g_fun, sigma, verbose=True):
+    def __init__(self, f:List[ndarray], g:List[ndarray], sigma: ndarray):
+        self.f = f
+        self.g = g
+        self.sigma = sigma
+        assert len(f)==len(g)
+
+    @property
+    def order(self):
+        return len(self.f)-1
+
+
+def state_perturb(problem: PerturbationProblem, verbose=True):
     """Computes a Taylor approximation of decision rules, given the supplied derivatives.
 
     The original system is assumed to be in the the form:
@@ -109,11 +125,12 @@ def state_perturb(f_fun, g_fun, sigma, verbose=True):
     import numpy as np
     from numpy.linalg import solve
 
-    approx_order = len(f_fun) - 1  # order of approximation
+    approx_order = problem.order  # order of approximation
 
-    [f0, f1] = f_fun[:2]
+    [f0, f1] = problem.f[:2]
+    [g0, g1] = problem.g[:2]
+    sigma = problem.sigma
 
-    [g0, g1] = g_fun[:2]
     n_x = f1.shape[0]           # number of controls
     n_s = f1.shape[1]//2 - n_x   # number of states
     n_e = g1.shape[1] - n_x - n_s
@@ -186,10 +203,10 @@ def state_perturb(f_fun, g_fun, sigma, verbose=True):
     P = np.dot(solve(S11.T, Z11.T).T, solve(Z11.T, T11.T).T)
     Q = g_e
 
-    if False:
-        from numpy import dot
-        test = f_s + f_x @ C + f_snext @ (g_s + g_x @ C) + f_xnext @ C @ (g_s + g_x @ C)
-        print('Error: ' + str(abs(test).max()))
+    # if False:
+    #     from numpy import dot
+    #     test = f_s + f_x @ C + f_snext @ (g_s + g_x @ C) + f_xnext @ C @ (g_s + g_x @ C)
+    #     print('Error: ' + str(abs(test).max()))
 
     if approx_order == 1:
         return [C]
@@ -199,8 +216,8 @@ def state_perturb(f_fun, g_fun, sigma, verbose=True):
     from numpy import dot
     from dolo.numeric.matrix_equations import solve_sylvester
 
-    f2 = f_fun[2]
-    g2 = g_fun[2]
+    f2 = problem.f[2]
+    g2 = problem.g[2]
     g_ss = g2[:, :n_s, :n_s]
     g_sx = g2[:, :n_s, n_s:n_v]
     g_xx = g2[:, n_s:n_v, n_s:n_v]
@@ -245,8 +262,8 @@ def state_perturb(f_fun, g_fun, sigma, verbose=True):
 
     # third order solution
 
-    f3 = f_fun[3]
-    g3 = g_fun[3]
+    f3 = problem.f[3]
+    g3 = problem.g[3]
     g_sss = g3[:, :n_s, :n_s, :n_s]
     g_ssx = g3[:, :n_s, :n_s, n_s:n_v]
     g_sxx = g3[:, :n_s, n_s:n_v, n_s:n_v]

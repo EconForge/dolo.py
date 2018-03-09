@@ -98,7 +98,10 @@ def model_to_fg(model, order=2):
 
     return [f, g]
 
-def get_model_derivatives(model, order, calibration):
+def get_model_derivatives(model, order, calibration=None):
+
+    if calibration is None:
+        calibration = model.calibration
 
     [f_fun, g_fun] = model_to_fg(model, order=order)
 
