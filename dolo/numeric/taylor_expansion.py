@@ -1,6 +1,7 @@
 from numpy import atleast_2d, dot
+from dolo.numeric.decision_rule import CallableDecisionRule
 
-class TaylorExpansion:
+class TaylorExpansion(CallableDecisionRule):
 
     def __init__(self,*l):
 
@@ -34,7 +35,7 @@ class TaylorExpansion:
         return TaylorExpansion( l )
 
 
-    def __call__(self, points):
+    def eval_s(self, points):
 
         if self.order == 1:
             return eval_te_order_1(self.S_bar, self.X_bar, self.X_s, points)
@@ -42,6 +43,11 @@ class TaylorExpansion:
             return eval_te_order_2(self.S_bar, self.X_bar, self.X_s, self.X_ss, points)
         elif self.order == 3:
             return eval_te_order_3(self.S_bar, self.X_bar, self.X_s, self.X_ss, self.X_sss, points)
+
+    def eval_ms(self, m, s):
+
+        return self.eval_s(s)
+
 
 
 # helper functions
