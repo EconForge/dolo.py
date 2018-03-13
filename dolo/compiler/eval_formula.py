@@ -1,6 +1,6 @@
 from ast import *
 # from dolo.compiler.function_compiler_ast import std_date_symbol, to_source
-from dolang import normalize, stringify, to_source
+from dolang import stringify, stringify_symbol to_source
 from dolo.compiler.misc import CalibrationDict
 
 import xarray
@@ -37,16 +37,16 @@ def eval_formula(expr, dataframe=None, context=None):
         for k in tvariables:
             if k in dd:
                 dd[k+'_ss'] = dd[k]  # steady-state value
-            dd[stringify((k, 0))] = dataframe[k]
+            dd[stringify_symbol((k, 0))] = dataframe[k]
             for h in range(1, 3):  # maximum number of lags
-                dd[stringify((k, -h))] = dataframe[k].shift(h)
-                dd[stringify((k, h))] = dataframe[k].shift(-h)
+                dd[stringify_symbol((k, -h))] = dataframe[k].shift(h)
+                dd[stringify_symbol((k, h))] = dataframe[k].shift(-h)
         dd['t'] = pd.Series(dataframe.index, index=dataframe.index)
 
         import ast
         expr_ast = ast.parse(expr).body[0].value
         # nexpr = StandardizeDatesSimple(tvariables).visit(expr_ast)
-        nexpr = normalize(expr_ast, variables=tvariables)
+        nexpr = stringify(expr_ast, variables=tvariables)
 
         expr = to_source(nexpr)
 

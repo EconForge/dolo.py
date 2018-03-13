@@ -1,3 +1,4 @@
+from dolang.symbolic import sanitize
 
 import copy
 
@@ -16,14 +17,24 @@ class SymbolicModel:
 
     @property
     def variables(self):
-        return sum([self.symbols[e] for e in ['exogenous','states','controls','auxiliaries']], [])
+        return sum([self.symbols[e] for e in self.symbols.keys() if e != 'parameters'], [])
 
     @property
     def equations(self):
-        return self.data['equations']
+        vars = self.variables + [*self.definitions.keys()]
+        d = dict()
+        for g, v in self.data['equations'].items():
+            l = []
+            for eq in v:
+                if "|" in eq:
+                    eq = eq.split("|")[0]
+                l.append(sanitize(eq, variables=vars))
+            d[g] = l
+        return d
 
     @property
     def definitions(self):
+        self.data.get('definitions', {})
         return self.data.get('definitions', {})
 
     @property
@@ -241,7 +252,7 @@ class Model(SymbolicModel):
 
         self.data = data
         self.model_type = 'dtcc'
-        self.__compile_functions__()
+        # self.__compile_functions__()
         self.set_changed()
 
     def set_changed(self):
@@ -299,7 +310,10 @@ class Model(SymbolicModel):
         for funname in self.equations:
 
             spec = recipe['specs'][funname]
+            from dolo.compiler.factories import get_factory
 
+            fff = get_factory(self, funname)
+            print(fff)
             eqs = self.equations[funname]
 
             if spec.get('target'):
@@ -349,6 +363,10 @@ class Model(SymbolicModel):
 
             arg_names = recipe['specs'][funname]['eqs']
 
+            print("ARGUMENTS")
+            print(eqs)
+            print(symbols)
+            print(arg_names)
             fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target, rhs_only=rhs_only, funname=funname, definitions=defs,                                   )
             n_output = len(eqs)
             original_functions[funname] = fun

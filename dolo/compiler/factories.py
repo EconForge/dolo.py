@@ -12,7 +12,7 @@ import ast
 from ast import BinOp, Sub
 from dolang import to_source, parse_string
 # from dolang.factory import FlatFunctionFactory
-from dolang.factory import ExpressionSanitizer
+from dolang.symbolic import ExpressionSanitizer
 from typing import Dict
 from dolang.factory import FlatFunctionFactory
 
@@ -30,21 +30,26 @@ def reorder_preamble(pr):
 def get_factory(model, eq_type: str):
     from dolang import to_source
     from dolo.compiler.recipes import recipes
-    from dolang import normalize
-    from dolang.symbolic import stringify
+
+    from dolang.symbolic import stringify, stringify_symbol
     import copy
     import sympy
     import re
     variables = model.variables
     specs = recipes['dtcc']['specs'][eq_type]
-    preamble_tshift = [s[1] for s in specs]
+
+    # this is acutally incorrect
+
+    preamble_tshift = set([s[1] for s in specs['eqs'] if s[0]=='states'])
+    preamble_tshift = preamble_tshift.intersection(set([s[1] for s in specs['eqs'] if s[0]=='controls']))
+
     args = []
     for sg in specs['eqs']:
         if sg[0] == 'parameters':
             args.append([s for s in model.symbols["parameters"]])
         else:
             args.append([(s, sg[1]) for s in model.symbols[sg[0]]])
-    args = [[stringify(e) for e in vg] for vg in args]
+    args = [[stringify_symbol(e) for e in vg] for vg in args]
 
     arguments = dict( zip([sg[2] for sg in specs['eqs']], args) )
 
@@ -68,20 +73,32 @@ def get_factory(model, eq_type: str):
     eqs = [dolang.parse_string(eq) for eq in eqs]
     es = ExpressionSanitizer(model.variables)
     eqs = [es.visit(eq) for eq in eqs]
-    eqs = [dolang.normalize(eq) for eq in eqs]
+    eqs = [stringify(eq) for eq in eqs]
     eqs = [dolang.to_source(eq) for eq in eqs]
 
-    targets = [stringify(e) for e in targets]
+    targets = [stringify_symbol(e) for e in targets]
 
     # sanitize defs ( should be )
     defs = dict()
     for k in model.definitions:
         if '(' not in k:
-            s = "{}__0_".format(k)
+            s = "{}(0)".format(k)
             val = model.definitions[k]
-            val = dolang.normalize(es.visit(dolang.parse_string(val)))
-            val = dolang.to_source(val)
-            defs[s] = val
+            val = es.visit(dolang.parse_string(val))
+            for t in preamble_tshift:
+                s = stringify_symbol((k,t))
+                vv = stringify(time_shift(val, t))
+                defs[s] = dolang.to_source(vv)
+
+    #
+    # defs = dict()
+    # for k in model.definitions:
+    #     if '(' not in k:
+    #         s = "{}__0_".format(k)
+    #         val = model.definitions[k]
+    #         val = stringify(es.visit(dolang.parse_string(val)))
+    #         val = dolang.to_source(val)
+    #         defs[s] = val
 
     preamble = reorder_preamble(defs)
 
