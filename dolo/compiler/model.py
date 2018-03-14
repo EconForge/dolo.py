@@ -252,7 +252,7 @@ class Model(SymbolicModel):
 
         self.data = data
         self.model_type = 'dtcc'
-        # self.__compile_functions__()
+        self.__compile_functions__()
         self.set_changed()
 
     def set_changed(self):
@@ -290,7 +290,11 @@ class Model(SymbolicModel):
 
     def __compile_functions__(self):
 
-        from dolang.function_compiler import compile_function_ast, standard_function
+        from dolang.function_compiler import compile_factory
+        from dolang.function_compiler import make_method_from_factory
+
+        from dolang.vectorize import standard_function
+        from dolo.compiler.factories import get_factory
         from dolo.compiler.recipes import recipes
 
         defs = self.definitions
@@ -306,87 +310,16 @@ class Model(SymbolicModel):
         original_functions = {}
         original_gufunctions = {}
 
-        # for funname in recipe['specs'].keys():
         for funname in self.equations:
 
-            spec = recipe['specs'][funname]
-            from dolo.compiler.factories import get_factory
-
             fff = get_factory(self, funname)
-            print(fff)
-            eqs = self.equations[funname]
-
-            if spec.get('target'):
-                target = spec['target']
-                rhs_only = True
-            else:
-                target = None
-                rhs_only = False
-
-            if spec.get('complementarities'):
-
-                # TODO: Rewrite and simplify
-                comp_spec = spec.get('complementarities')
-                comp_order = comp_spec['middle']
-                comp_args = comp_spec['left-right']
-
-                comps = []
-                eqs = []
-                for i,eq in enumerate(self.equations[funname]):
-
-                    if '|' in eq:
-                        control = self.symbols[comp_order[0]][i]
-                        eq, comp = str.split(eq,'|')
-                        lhs, rhs = decode_complementarity(comp, control)
-                        comps.append([lhs, rhs])
-                    else:
-                        comps.append(['-inf', 'inf'])
-
-                    eqs.append(eq)
-
-                    comp_lhs, comp_rhs = zip(*comps)
-                    # fb_names = ['{}_lb'.format(funname), '{}_ub'.format(funname)]
-                    fb_names = ['controls_lb'.format(funname), 'controls_ub'.format(funname)]
-
-                    lower_bound, gu_lower_bound = compile_function_ast(comp_lhs, symbols, comp_args, funname=fb_names[0],definitions=defs)
-                    upper_bound, gu_upper_bound = compile_function_ast(comp_rhs, symbols, comp_args, funname=fb_names[1],definitions=defs)
-
-                    n_output = len(comp_lhs)
-
-                    functions[fb_names[0]] = standard_function(gu_lower_bound, n_output )
-                    functions[fb_names[1]] = standard_function(gu_upper_bound, n_output )
-                    original_functions[fb_names[0]] = lower_bound
-                    original_functions[fb_names[1]] = upper_bound
-                    original_gufunctions[fb_names[0]] = gu_lower_bound
-                    original_gufunctions[fb_names[1]] = gu_upper_bound
-
-
-            arg_names = recipe['specs'][funname]['eqs']
-
-            print("ARGUMENTS")
-            print(eqs)
-            print(symbols)
-            print(arg_names)
-            fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target, rhs_only=rhs_only, funname=funname, definitions=defs,                                   )
-            n_output = len(eqs)
-            original_functions[funname] = fun
+            fun, gufun = make_method_from_factory(fff, vectorize=True)
+            n_output = len(fff.content)
             functions[funname] = standard_function(gufun, n_output )
-            original_functions[funname] = fun
-            original_gufunctions[funname] = gufun
-        #
-        # temporary hack to keep auxiliaries
-        auxiliaries = symbols['auxiliaries']
-        eqs = ['{} = {}'.format(k,k) for k in auxiliaries]
-        arg_names = [('exogenous',0,'m'),('states',0,'s'),('controls',0,'x'),('parameters',0,'p')]
-        target = ('auxiliaries',0,'y')
-        rhs_only = True
-        funname = 'auxiliary'
-        fun, gufun = compile_function_ast(eqs, symbols, arg_names, output_names=target,
-            rhs_only=rhs_only, funname=funname, definitions=defs)
-        n_output = len(eqs)
-        functions[funname] = standard_function(gufun, n_output )
-        original_functions[funname] = fun
-        original_gufunctions[funname] = gufun
+            original_gufunctions[funname] = gufun # basic gufun function
+            original_functions[funname] = fun     # basic numba fun
+
+
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions

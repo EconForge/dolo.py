@@ -2,18 +2,18 @@
 # del plainformatter.type_printers[dict]
 
 import yaml
-
-from dolang import *
-import dolang
 import numpy as np
-
 from typing import List
+
 import ast
 from ast import BinOp, Sub
-from dolang import to_source, parse_string
-# from dolang.factory import FlatFunctionFactory
-from dolang.symbolic import ExpressionSanitizer
+
 from typing import Dict
+
+import dolang
+from dolang import to_source, parse_string
+from dolang.symbolic import time_shift
+from dolang.symbolic import ExpressionSanitizer
 from dolang.factory import FlatFunctionFactory
 
 def get_name(e):
@@ -28,14 +28,11 @@ def reorder_preamble(pr):
     return dict([(k, pr[k]) for k in sol.keys()])
 
 def get_factory(model, eq_type: str):
-    from dolang import to_source
-    from dolo.compiler.recipes import recipes
 
+    from dolo.compiler.recipes import recipes
     from dolang.symbolic import stringify, stringify_symbol
-    import copy
-    import sympy
     import re
-    variables = model.variables
+
     specs = recipes['dtcc']['specs'][eq_type]
 
     # this is acutally incorrect
@@ -89,16 +86,6 @@ def get_factory(model, eq_type: str):
                 s = stringify_symbol((k,t))
                 vv = stringify(time_shift(val, t))
                 defs[s] = dolang.to_source(vv)
-
-    #
-    # defs = dict()
-    # for k in model.definitions:
-    #     if '(' not in k:
-    #         s = "{}__0_".format(k)
-    #         val = model.definitions[k]
-    #         val = stringify(es.visit(dolang.parse_string(val)))
-    #         val = dolang.to_source(val)
-    #         defs[s] = val
 
     preamble = reorder_preamble(defs)
 
