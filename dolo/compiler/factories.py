@@ -51,6 +51,9 @@ def get_factory(model, eq_type: str):
                 eq = decode_complementarity(comp, v)[ind]
             eqs.append(eq)
         specs = {'eqs': recipes['dtcc']['specs']['arbitrage']['complementarities']['left-right']}
+    elif eq_type == "auxiliary":
+        eqs = [('{}({})'.format(s,0)) for s in model.symbols['auxiliaries']]
+        specs = {'eqs': [['exogenous', 0, 'm'], ['states', 0, 's'], ['controls', 0, 'x'],['parameters', 0, 'p']]}
     else:
         eqs = model.equations[eq_type]
         eqs = [regex.match(eq).group(1) for eq in eqs]

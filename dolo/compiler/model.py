@@ -299,16 +299,20 @@ class Model(SymbolicModel):
         original_functions = {}
         original_gufunctions = {}
 
-        funnames = [*self.equations.keys()]
+        funnames = [*self.equations.keys()] + ['auxiliary']
 
         for x in ("controls_lb", "controls_ub"):
             if x not in self.equations:
                 funnames.append(x)
 
+        import dolo.config
+        debug = dolo.config.debug
+
         for funname in funnames:
 
             fff = get_factory(self, funname)
-            fun, gufun = make_method_from_factory(fff, vectorize=True)
+            print(fff)
+            fun, gufun = make_method_from_factory(fff, vectorize=True, debug=debug)
             n_output = len(fff.content)
             functions[funname] = standard_function(gufun, n_output )
             original_gufunctions[funname] = gufun # basic gufun function

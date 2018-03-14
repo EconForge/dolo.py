@@ -2,12 +2,17 @@ def test_eval_formula():
 
     from dolo.compiler.eval_formula import eval_formula
     from dolo import yaml_import, time_iteration, simulate
+    import dolo.config
+
+    from dolo import perturbate
 
     model = yaml_import('examples/models/rbc.yaml')
-    dr = time_iteration(model)
+
+    dr = perturbate(model)
     sim = simulate(model, dr)
     sim = sim.sel(N=0)
     sim = sim.to_pandas()
+
 
     print(sim.columns)
     rr = eval_formula("delta*k(0)-i(0)", sim, context=model.calibration)
