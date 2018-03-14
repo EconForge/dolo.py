@@ -29,13 +29,34 @@ def reorder_preamble(pr):
 
 def get_factory(model, eq_type: str):
 
+    from dolo.compiler.model import decode_complementarity
+
     from dolo.compiler.recipes import recipes
     from dolang.symbolic import stringify, stringify_symbol
     import re
 
-    specs = recipes['dtcc']['specs'][eq_type]
+    regex = re.compile(r"\s*([^\|\s][^\|]*[^\|\s])\s*(\|([^\|\s][^\|]*[^\|\s])|\s*)")
+    if eq_type in ('controls_lb', 'controls_ub') and (eq_type not in model.equations):
+        eqs = []
+        ind = ('controls_lb', 'controls_ub').index(eq_type)
+        for i,eq in enumerate(model.equations['arbitrage']):
+            if "|" not in eq:
+                if ind==0:
+                    eq = "-inf"
+                else:
+                    eq = "inf"
+            else:
+                comp = eq.split("|")[1]
+                v = model.symbols["controls"][i]
+                eq = decode_complementarity(comp, v)[ind]
+            eqs.append(eq)
+        specs = {'eqs': recipes['dtcc']['specs']['arbitrage']['complementarities']['left-right']}
+    else:
+        eqs = model.equations[eq_type]
+        eqs = [regex.match(eq).group(1) for eq in eqs]
+        specs = recipes['dtcc']['specs'][eq_type]
 
-    # this is acutally incorrect
+
 
     preamble_tshift = set([s[1] for s in specs['eqs'] if s[0]=='states'])
     preamble_tshift = preamble_tshift.intersection(set([s[1] for s in specs['eqs'] if s[0]=='controls']))
@@ -50,21 +71,14 @@ def get_factory(model, eq_type: str):
 
     arguments = dict( zip([sg[2] for sg in specs['eqs']], args) )
 
-    eqs = model.equations[eq_type]
 
     if 'target' in specs:
         sg = specs['target']
         targets = [(s, sg[1]) for s in model.symbols[sg[0]]]
-    else:
-        targets = [('out{}'.format(i),0) for i in range(len(eqs))]
-
-    regex = re.compile(r"\s*([^\|\s][^\|]*[^\|\s])\s*(\|([^\|\s][^\|]*[^\|\s])|\s*)")
-    eqs = [regex.match(eq).group(1) for eq in eqs]
-
-    if 'target' in specs:
         eqs = [eq.split('=')[1] for eq in eqs]
     else:
         eqs = [("({1})-({0})".format(*eq.split('=')) if '=' in eq else eq) for eq in eqs]
+        targets = [('out{}'.format(i),0) for i in range(len(eqs))]
 
     eqs = [str.strip(eq) for eq in eqs]
     eqs = [dolang.parse_string(eq) for eq in eqs]

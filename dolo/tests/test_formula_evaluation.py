@@ -9,9 +9,10 @@ def test_eval_formula():
     sim = sim.sel(N=0)
     sim = sim.to_pandas()
 
-    rr = eval_formula("delta*k-i", sim, context=model.calibration)
-    rr = eval_formula("y(1) - y", sim, context=model.calibration)
+    print(sim.columns)
+    rr = eval_formula("delta*k(0)-i(0)", sim, context=model.calibration)
+    rr = eval_formula("y(1) - y(0)", sim, context=model.calibration)
 
-    sim['diff'] = model.eval_formula("delta*k-i", sim)
-    model.eval_formula("y(1) - y", sim)
+    sim['diff'] = model.eval_formula("delta*k(0)-i(0)", sim)
+    model.eval_formula("y(1) - y(0)", sim)
     sim['ddiff'] = model.eval_formula("diff(1)-diff(-1)", sim)

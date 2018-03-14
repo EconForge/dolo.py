@@ -290,27 +290,22 @@ class Model(SymbolicModel):
 
     def __compile_functions__(self):
 
-        from dolang.function_compiler import compile_factory
         from dolang.function_compiler import make_method_from_factory
 
         from dolang.vectorize import standard_function
         from dolo.compiler.factories import get_factory
-        from dolo.compiler.recipes import recipes
-
-        defs = self.definitions
-
-        model_type = self.model_type
-
-        recipe = recipes[model_type]
-        symbols = self.symbols # should match self.symbols
-
-        comps = []
 
         functions = {}
         original_functions = {}
         original_gufunctions = {}
 
-        for funname in self.equations:
+        funnames = [*self.equations.keys()]
+
+        for x in ("controls_lb", "controls_ub"):
+            if x not in self.equations:
+                funnames.append(x)
+
+        for funname in funnames:
 
             fff = get_factory(self, funname)
             fun, gufun = make_method_from_factory(fff, vectorize=True)
@@ -318,7 +313,6 @@ class Model(SymbolicModel):
             functions[funname] = standard_function(gufun, n_output )
             original_gufunctions[funname] = gufun # basic gufun function
             original_functions[funname] = fun     # basic numba fun
-
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
