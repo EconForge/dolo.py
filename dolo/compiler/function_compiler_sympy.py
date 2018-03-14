@@ -1,5 +1,3 @@
-from __future__ import division
-
 import sympy
 import ast
 
@@ -66,7 +64,7 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     return_code=False, compile=False):
     '''From a list of equations and variables, define a multivariate functions with higher order derivatives.'''
 
-    from dolang import normalize, stringify
+    from dolang.symbolic import stringify, stringify_symbol
 
     vars = [s[0] for s in syms]
     # TEMP: compatibility fix when eqs is an Odict:
@@ -76,13 +74,13 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
     # elif not isinstance(eqs[0], sympy.Basic):
     # assume we have ASTs
         eqs = list([ast.parse(eq).body[0] for eq in eqs])
-        eqs_std = list( [normalize(eq, variables=vars) for eq in eqs] )
+        eqs_std = list( [stringify_symbol(eq, variables=vars) for eq in eqs] )
         eqs_sym = list( [ast_to_sympy(eq) for eq in eqs_std] )
     else:
         eqs_sym = eqs
 
-    symsd = list( [stringify((a,b)) for a,b in syms] )
-    paramsd = list( [stringify(a) for a in params] )
+    symsd = list( [stringify_symbol((a,b)) for a,b in syms] )
+    paramsd = list( [stringify_symbol(a) for a in params] )
     D = higher_order_diff(eqs_sym, symsd, order=order)
 
     txt = """def {funname}(x, p, order=1):
@@ -182,7 +180,6 @@ def compile_higher_order_function(eqs, syms, params, order=2, funname='anonymous
         return txt
     else:
         d = {}
-        d['division'] = division
 
         exec(txt, d)
         fun = d[funname]

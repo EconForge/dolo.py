@@ -320,7 +320,6 @@ class Model(SymbolicModel):
             original_functions[funname] = fun     # basic numba fun
 
 
-
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
         self.functions = functions
