@@ -109,8 +109,6 @@ def match(m, s):
 
 known_symbol_types = {
     'dtcc': recipes['dtcc']['symbols'],
-    'dtcscc': recipes['dtcscc']['symbols'],
-    'dynare': recipes['dynare']['symbols']
 }
 
 

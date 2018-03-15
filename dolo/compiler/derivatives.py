@@ -5,13 +5,13 @@ import numpy
 
 from dolo.compiler.function_compiler_sympy import ast_to_sympy, compile_higher_order_function
 
-from dolang import stringify, normalize
+from dolang.symbolic import stringify, stringify_symbol
 
 
 def timeshift(expr, variables, date):
     from sympy import Symbol
     from dolang import stringify
-    d = {Symbol(stringify((v, 0))): Symbol(stringify((v, date))) for v in variables}
+    d = {Symbol(stringify_symbol((v, 0))): Symbol(stringify_symbol((v, date))) for v in variables}
     return expr.subs(d)
 
 def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
@@ -22,7 +22,7 @@ def parse_equation(eq_string, vars, substract_lhs=True, to_sympy=False):
         eq = eq.replace('=', '==')
 
     expr = ast.parse(eq).body[0].value
-    expr_std = normalize(expr, variables=vars)
+    expr_std = stringify(expr, variables=vars)
 
     if isinstance(expr_std, Compare):
         lhs = expr_std.left
@@ -55,9 +55,9 @@ def model_to_fg(model, order=2):
 
     for k in definitions:
         v = parse_equation(definitions[k], all_variables, to_sympy=True)
-        kk = stringify( (k, 0) )
-        kk_m1 = stringify( (k, -1) )
-        kk_1 = stringify( (k, 1) )
+        kk = stringify_symbol( (k, 0) )
+        kk_m1 = stringify_symbol( (k, -1) )
+        kk_1 = stringify_symbol( (k, 1) )
         d[sympy.Symbol(kk)] = v
         d[sympy.Symbol(kk_m1)] = timeshift(v, all_variables, -1)
         d[sympy.Symbol(kk_1)] = timeshift(v, all_variables, 1)
