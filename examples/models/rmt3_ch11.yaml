@@ -35,8 +35,6 @@ calibration:
     delta: 0.2
     alpha: 0.33
     A: 1.
-    tau_c: 0.0
-    tau_k: 0.0
     exog_tau_c: 0.0
     exog_tau_k: 0.0
     tau_c: exog_tau_c
