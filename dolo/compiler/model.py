@@ -2,8 +2,8 @@ from dolang.symbolic import sanitize
 
 import copy
 
-class SymbolicModel:
 
+class SymbolicModel:
     def __init__(self, data):
 
         self.data = data
@@ -11,13 +11,15 @@ class SymbolicModel:
     @property
     def symbols(self):
         auxiliaries = [k for k in self.definitions.keys()]
-        symbols = copy.deepcopy( self.data['symbols'] )
+        symbols = copy.deepcopy(self.data['symbols'])
         symbols['auxiliaries'] = auxiliaries
         return symbols
 
     @property
     def variables(self):
-        return sum([self.symbols[e] for e in self.symbols.keys() if e != 'parameters'], [])
+        return sum([
+            self.symbols[e] for e in self.symbols.keys() if e != 'parameters'
+        ], [])
 
     @property
     def equations(self):
@@ -84,7 +86,7 @@ class SymbolicModel:
                 if symbol_group in initial_values:
                     default = initial_values[symbol_group]
                 else:
-                    default =  float('nan')
+                    default = float('nan')
                 for s in symbols[symbol_group]:
                     if s not in calibration:
                         calibration[s] = default
@@ -103,21 +105,24 @@ class SymbolicModel:
                 sdomain.pop(k)
 
         # backward compatibility
-        if len(sdomain)==0 and len(states)>0:
+        if len(sdomain) == 0 and len(states) > 0:
             try:
                 import warnings
-                min = get_address(self.data, ["options:grid:a", "options:grid:min"])
-                max = get_address(self.data, ["options:grid:b", "options:grid:max"])
-                for i,s in enumerate(states):
+                min = get_address(self.data,
+                                  ["options:grid:a", "options:grid:min"])
+                max = get_address(self.data,
+                                  ["options:grid:b", "options:grid:max"])
+                for i, s in enumerate(states):
                     sdomain[s] = [min[i], max[i]]
                 # shall we raise a warning for deprecated syntax ?
             except Exception as e:
                 print(e)
                 pass
 
-        if len(sdomain)<len(states):
+        if len(sdomain) < len(states):
             missing = [s for s in states if s not in sdomain]
-            raise Exception("Missing domain for states: {}.".format(str.join(', ', missing)))
+            raise Exception("Missing domain for states: {}.".format(
+                str.join(', ', missing)))
 
         from dolo.compiler.language import Domain
 
@@ -126,7 +131,6 @@ class SymbolicModel:
         domain.states = states
 
         return domain
-
 
     def get_exogenous(self):
 
@@ -146,7 +150,6 @@ class SymbolicModel:
         d = exog.eval(d=calibration)
         return d
 
-
     def get_grid(self):
 
         states = self.symbols['states']
@@ -161,7 +164,8 @@ class SymbolicModel:
         # determine grid_type
         grid_type = get_type(options.get("grid"))
         if grid_type is None:
-            grid_type = get_address(self.data, ["options:grid:type", "options:grid_type"])
+            grid_type = get_address(self.data,
+                                    ["options:grid:type", "options:grid_type"])
         if grid_type is None:
             raise Exception('Missing grid geometry ("options:grid:type")')
 
@@ -169,9 +173,10 @@ class SymbolicModel:
         if grid_type.lower() in ('cartesian', 'cartesiangrid'):
             # from dolo.numerid.grids import CartesianGrid
             from dolo.numeric.grids import CartesianGrid
-            orders = get_address(self.data, ["options:grid:n", "options:grid:orders"])
+            orders = get_address(self.data,
+                                 ["options:grid:n", "options:grid:orders"])
             if orders is None:
-                orders = [20]*len(min)
+                orders = [20] * len(min)
             grid = CartesianGrid(min=min, max=max, n=orders)
         elif grid_type.lower() in ('smolyak', 'smolyakgrid'):
             from dolo.numeric.grids import SmolyakGrid
@@ -183,6 +188,7 @@ class SymbolicModel:
             raise Exception("Unknown grid type.")
 
         return grid
+
 
 def get_type(d):
     try:
@@ -198,7 +204,7 @@ def get_address(data, address, default=None):
     if isinstance(address, list):
         found = [get_address(data, e, None) for e in address]
         found = [f for f in found if f is not None]
-        if len(found)>0:
+        if len(found) > 0:
             return found[0]
         else:
             return default
@@ -210,6 +216,7 @@ def get_address(data, address, default=None):
             return default
     return data
 
+
 #
 # smodel = SymbolicModel(data)
 # smodel.data.get('symbols')
@@ -220,12 +227,11 @@ def get_address(data, address, default=None):
 #
 # print(grid)
 
-
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")
 
-def decode_complementarity(comp, control):
 
+def decode_complementarity(comp, control):
     '''
     # comp can be either:
     - None
@@ -237,17 +243,17 @@ def decode_complementarity(comp, control):
     try:
         res = regex.match(comp).groups()
     except:
-        raise Exception("Unable to parse complementarity condition '{}'".format(comp))
+        raise Exception(
+            "Unable to parse complementarity condition '{}'".format(comp))
     res = [r.strip() for r in res]
     if res[1] != control:
-        msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(comp, control, res[1])
+        msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(
+            comp, control, res[1])
         raise Exception(msg)
     return [res[0], res[2]]
 
 
-
 class Model(SymbolicModel):
-
     def __init__(self, data):
 
         self.data = data
@@ -264,16 +270,14 @@ class Model(SymbolicModel):
         self.set_changed()
         self.data['calibration'].update(kwargs)
 
-
     @property
     def calibration(self):
         if self.__calibration__ is None:
             calibration_dict = super(self.__class__, self).get_calibration()
             from dolo.compiler.misc import CalibrationDict, calibration_to_vector
             calib = calibration_to_vector(self.symbols, calibration_dict)
-            self.__calibration__ = CalibrationDict(self.symbols, calib)        #
+            self.__calibration__ = CalibrationDict(self.symbols, calib)  #
         return self.__calibration__
-
 
     @property
     def exogenous(self):
@@ -286,7 +290,6 @@ class Model(SymbolicModel):
         if self.__domain__ is None:
             self.__domain__ = super(self.__class__, self).get_domain()
         return self.__domain__
-
 
     def __compile_functions__(self):
 
@@ -311,17 +314,16 @@ class Model(SymbolicModel):
         for funname in funnames:
 
             fff = get_factory(self, funname)
-            print(fff)
-            fun, gufun = make_method_from_factory(fff, vectorize=True, debug=debug)
+            fun, gufun = make_method_from_factory(
+                fff, vectorize=True, debug=debug)
             n_output = len(fff.content)
-            functions[funname] = standard_function(gufun, n_output )
-            original_gufunctions[funname] = gufun # basic gufun function
-            original_functions[funname] = fun     # basic numba fun
+            functions[funname] = standard_function(gufun, n_output)
+            original_gufunctions[funname] = gufun  # basic gufun function
+            original_functions[funname] = fun  # basic numba fun
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
         self.functions = functions
-
 
     def __str__(self):
 
@@ -363,14 +365,15 @@ class Model(SymbolicModel):
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
                 if val is None:
-                    ss += u" {eqn:2} : {eqs}\n".format(eqn=str(i+1), eqs=eq)
+                    ss += u" {eqn:2} : {eqs}\n".format(eqn=str(i + 1), eqs=eq)
                 else:
                     if abs(val) < 1e-8:
                         val = 0
                     vals = '{:.4f}'.format(val)
                     if abs(val) > 1e-8:
                         vals = colored(vals, 'red')
-                    ss += u" {eqn:2} : {vals} : {eqs}\n".format(eqn=str(i+1), vals=vals, eqs=eq)
+                    ss += u" {eqn:2} : {vals} : {eqs}\n".format(
+                        eqn=str(i + 1), vals=vals, eqs=eq)
             ss += "\n"
         s += ss
 
@@ -400,8 +403,10 @@ class Model(SymbolicModel):
         <td>filename</td>
         <td>{filename}</td>
         </tr>
-        </table>""".format(name=infos['name'], type=infos['type'], filename=infos['filename'].replace("<","&lt").replace(">","&gt"))
-
+        </table>""".format(
+            name=infos['name'],
+            type=infos['type'],
+            filename=infos['filename'].replace("<", "&lt").replace(">", "&gt"))
 
         # Equations and residuals
         resids = self.residuals()
@@ -415,7 +420,8 @@ class Model(SymbolicModel):
         definitions = {'definitions': tmp}
         equations.update(definitions)
 
-        variables = sum([e for k,e in self.symbols.items() if k != 'parameters'], [])
+        variables = sum(
+            [e for k, e in self.symbols.items() if k != 'parameters'], [])
         table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
 
         for eq_type in equations:
@@ -430,18 +436,20 @@ class Model(SymbolicModel):
                 else:
                     val = resids[eq_type][i]
                     if abs(val) > 1e-8:
-                        vals = '<span style="color: red;">{:.4f}</span>'.format(val)
+                        vals = '<span style="color: red;">{:.4f}</span>'.format(
+                            val)
                     else:
                         vals = '{:.3f}'.format(val)
                 if '|' in eq:
                     # keep only lhs for now
-                    eq, comp = str.split(eq,'|')
+                    eq, comp = str.split(eq, '|')
                 lat = eq2tex(variables, eq)
                 lat = '${}$'.format(lat)
                 line = [lat, vals]
-                h = eq_type if i==0 else ''
-                fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(h, *line)
-        #         print(fmt_line)
+                h = eq_type if i == 0 else ''
+                fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
+                    h, *line)
+                #         print(fmt_line)
                 eq_lines.append(fmt_line)
             table += str.join("\n", eq_lines)
         table = "<table>{}</table>".format(table)
