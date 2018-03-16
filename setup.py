@@ -1,39 +1,29 @@
 from setuptools import setup, find_packages
-from distutils.extension import Extension
-
-import numpy as np
 
 # get version number
-exec( open('dolo/version.py').read())
+exec(open('dolo/version.py').read())
 
 setup(
-
-    name = "dolo",
-    version = __version__,
-    packages = find_packages(),
-
-    package_data={'dolo.compiler':["recipes.yaml"]},
-
+    name="dolo",
+    version=__version__,
+    packages=find_packages(),
+    package_data={'dolo.compiler': ["recipes.yaml"]},
     test_suite='dolo.tests',
-
-    include_dirs = [np.get_include()],
-
-    scripts = ['bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo', 'bin/dolo-lint'],
-
-    install_requires = ["pyyaml", "numba", "numpy", "sympy","scipy","quantecon",
-                        "pandas", "interpolation", "ipython", "ruamel.yaml", "xarray"],
-
-    extras_require = {
-            'plots':  ["matplotlib"],
+    scripts=[
+        'bin/dolo-recs', 'bin/dolo-matlab', 'bin/dolo-julia', 'bin/dolo',
+        'bin/dolo-lint'
+    ],
+    install_requires=[
+        "pyyaml", "numba", "numpy", "sympy", "scipy", "quantecon", "pandas",
+        "interpolation", "ruamel.yaml", "xarray"
+    ],
+    extras_require={
+        'interactive': ['ipython'],
+        'plots': ["matplotlib"],
     },
-
-    author = "Pablo Winant",
-    author_email = "pablo.winant@gmail.com",
-
-    description = 'Economic modelling in Python',
-
-    license = 'BSD-2',
-
-    url = 'http://albop.github.com/dolo/',
-
+    author="Pablo Winant",
+    author_email="pablo.winant@gmail.com",
+    description='Economic modelling in Python',
+    license='BSD-2',
+    url='http://albop.github.com/dolo/',
 )
