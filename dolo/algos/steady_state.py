@@ -1,11 +1,15 @@
+from dolo.compiler.model import Model
+from typing import Dict, List
+import numpy as np
 
-def residuals(model, calib=None):
+from dolo.compiler.misc import CalibrationDict
+
+def residuals(model:Model, calib=None)->Dict[str,List[float]]:
 
     if calib is None:
         calib = model.calibration
 
-    from collections import OrderedDict
-    res = OrderedDict()
+    res = dict()
 
     m = calib['exogenous']
     s = calib['states']
@@ -23,3 +27,27 @@ def residuals(model, calib=None):
         res['value'] = vfun(m,s,x,v,m,s,x,v,p) - v
 
     return res
+
+def find_steady_state(model):
+
+    n_s = len(model.calibration['states'])
+    n_x = len(model.calibration['controls'])
+
+    m = model.calibration['exogenous']
+    p = model.calibration['parameters']
+
+    def fobj(v):
+        s = v[:n_s]
+        x = v[n_s:]
+        d = dict(states=s, controls=x, exogenous=m, parameters=p)
+        res = residuals(model,d)
+        return np.concatenate([res['transition'],res['arbitrage']])
+
+    calib = model.calibration
+    x0 = np.concatenate([calib['states'],calib['controls']])
+    import scipy.optimize
+    sol = scipy.optimize.root(fobj, x0)
+    res = sol.x
+
+    d = dict(exogenous=m, states=res[:n_s],controls=res[n_s:],parameters=p)
+    return CalibrationDict(model.symbols, d)
