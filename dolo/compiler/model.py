@@ -26,12 +26,28 @@ class SymbolicModel:
         vars = self.variables + [*self.definitions.keys()]
         d = dict()
         for g, v in self.data['equations'].items():
-            l = []
+            ll = []
             for eq in v:
                 if "|" in eq:
                     eq = eq.split("|")[0]
-                l.append(sanitize(eq, variables=vars))
-            d[g] = l
+                ll.append(sanitize(eq, variables=vars))
+            d[g] = ll
+
+        if "controls_lb" not in d:
+            for ind, g in enumerate(("controls_lb", "controls_ub")):
+                eqs = []
+                for i, eq in enumerate(self.data['equations']['arbitrage']):
+                    if "|" not in eq:
+                        if ind == 0:
+                            eq = "-inf"
+                        else:
+                            eq = "inf"
+                    else:
+                        comp = eq.split("|")[1]
+                        v = self.symbols["controls"][i]
+                        eq = decode_complementarity(comp, v)[ind]
+                    eqs.append(eq)
+                d[g] = eqs
         return d
 
     @property
@@ -304,10 +320,6 @@ class Model(SymbolicModel):
 
         funnames = [*self.equations.keys()] + ['auxiliary']
 
-        for x in ("controls_lb", "controls_ub"):
-            if x not in self.equations:
-                funnames.append(x)
-
         import dolo.config
         debug = dolo.config.debug
 
@@ -351,8 +363,6 @@ class Model(SymbolicModel):
         for eqgroup in res.keys():
             if eqgroup == 'auxiliary':
                 continue
-            if eqgroup == 'dynare':
-                eqlist = equations
             if eqgroup == 'definitions':
                 eqlist = equations[eqgroup]
                 # Update the residuals section with the right number of empty

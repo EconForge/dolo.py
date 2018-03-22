@@ -3,7 +3,7 @@ import ruamel.yaml as ry
 
 from dolo.misc.display import read_file_or_url
 import yaml
-from collections import OrderedDict
+
 
 def yaml_import(fname, check=True, check_only=False):
 
@@ -12,7 +12,7 @@ def yaml_import(fname, check=True, check_only=False):
     if check:
         from dolo.linter import lint
         output = lint(txt)
-        if len(output)>0:
+        if len(output) > 0:
             print(output)
 
     if check_only:
@@ -26,8 +26,7 @@ def yaml_import(fname, check=True, check_only=False):
     from dolo.compiler.model import Model
 
     return Model(data)
-
-
+    # from dolo.compiler.model import SymbolicModel
 
 
 if __name__ == "__main__":
@@ -48,21 +47,19 @@ if __name__ == "__main__":
     print(model.get_calibration(['beta']))
     model.set_calibration(beta=0.95)
 
-    print( model.get_calibration(['beta']))
-
+    print(model.get_calibration(['beta']))
 
     print(model)
 
-    s = model.calibration['states'][None,:]
-    x = model.calibration['controls'][None,:]
-    e = model.calibration['shocks'][None,:]
+    s = model.calibration['states'][None, :]
+    x = model.calibration['controls'][None, :]
+    e = model.calibration['shocks'][None, :]
 
-    p = model.calibration['parameters'][None,:]
+    p = model.calibration['parameters'][None, :]
 
-    S = model.functions['transition'](s,x,e,p)
-    lb = model.functions['controls_lb'](s,p)
-    ub = model.functions['controls_ub'](s,p)
-
+    S = model.functions['transition'](s, x, e, p)
+    lb = model.functions['controls_lb'](s, p)
+    ub = model.functions['controls_ub'](s, p)
 
     print(S)
 

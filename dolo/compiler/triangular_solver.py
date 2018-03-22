@@ -15,8 +15,9 @@ def triangular_solver(incidence):
 
     while (steps < max_steps) and len(solved) < n:
 
-        possibilities = [i for i in range(n) if (
-            i not in solved) and (len(current[i]) == 0)]
+        possibilities = [
+            i for i in range(n) if (i not in solved) and (len(current[i]) == 0)
+        ]
 
         for i in possibilities:
             for e in current:
@@ -48,12 +49,9 @@ def get_incidence(sdict):
     return incidence
 
 
-from collections import OrderedDict
-
-
 def solve_triangular_system(system, values=None, context=None):
 
-    system = OrderedDict(system)
+    system = dict(system)
 
     var_order = list(system.keys())
 
@@ -62,7 +60,6 @@ def solve_triangular_system(system, values=None, context=None):
     sol_order = triangular_solver(ll)
 
     d = copy.copy(values) if values else {}
-
 
     import math
     d['nan'] = float('nan')
@@ -83,9 +80,9 @@ def solve_triangular_system(system, values=None, context=None):
 
         except Exception as e:  # in case d[v] is an int
 
-            raise(e)
+            raise (e)
 
-    resp = OrderedDict([(v, d[v]) for v in system.keys()])
+    resp = dict([(v, d[v]) for v in system.keys()])
 
     return resp
 
@@ -105,7 +102,6 @@ def get_atoms(string):
 
 
 class FindNames(NodeVisitor):
-
     def __init__(self):
         self.names = []
 

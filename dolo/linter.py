@@ -3,13 +3,11 @@ import json
 import ruamel.yaml as ry
 from ruamel.yaml.comments import CommentedSeq
 from dolo.compiler.symbolic import check_expression
-from collections import OrderedDict
 from dolo.compiler.recipes import recipes
 from dolo.misc.termcolor import colored
 
 
 class Compare:
-
     def __init__(self):
         self.d = {}
 
@@ -119,7 +117,7 @@ class ModelException(Exception):
 def check_symbol_validity(s):
     import ast
     val = ast.parse(s).body[0].value
-    assert(isinstance(val, ast.Name))
+    assert (isinstance(val, ast.Name))
 
 
 def check_symbols(data):
@@ -145,13 +143,11 @@ def check_symbols(data):
             l0, c0, l1, c1 = cm_symbols.lc.data[key]
             exc = ModelException(
                 "Unknown symbol type '{}' for model type '{}'".format(
-                    key, model_type
-                )
-            )
+                    key, model_type))
             exc.pos = (l0, c0, l1, c1)
             # print(l0,c0,l1,c1)
             exceptions.append(exc)
-            assert(isinstance(values, CommentedSeq))
+            assert (isinstance(values, CommentedSeq))
 
         for i, v in enumerate(values):
             (l0, c0) = values.lc.data[i]
@@ -168,9 +164,7 @@ def check_symbols(data):
                 ll = already_declared[v]
                 exc = ModelException(
                     "Symbol '{}' already declared as '{}'. (pos {})".format(
-                        v, ll[0], (ll[1][0] + 1, ll[1][1])
-                    )
-                )
+                        v, ll[0], (ll[1][0] + 1, ll[1][1])))
                 exc.pos = (l0, c0, l1, c1)
                 exceptions.append(exc)
             else:
@@ -190,7 +184,8 @@ def check_equations(data):
     specs = recipe['specs']
 
     for eq_type in specs.keys():
-        if (eq_type not in equations) and (not specs[eq_type].get('optional', True)):
+        if (eq_type not in equations) and (not specs[eq_type].get(
+                'optional', True)):
             exc = ModelException("Missing equation type {}.".format(eq_type))
             exc.pos = pos0
             exceptions.append(exc)
@@ -219,8 +214,9 @@ def check_equations(data):
     for eq_type in [k for k in equations.keys() if k not in unknown]:
 
         for n, eq in enumerate(equations[eq_type]):
-            eq = eq.replace('<=', '<').replace(
-                '==', '=').replace('=', '==').replace('<', '<=')
+            eq = eq.replace('<=', '<').replace('==',
+                                               '=').replace('=', '==').replace(
+                                                   '<', '<=')
             # print(eq)
             pos = equations[eq_type].lc.data[n]
             try:
@@ -228,21 +224,23 @@ def check_equations(data):
 
             except SyntaxError as e:
                 exc = ModelException("Syntax Error.")
-                exc.pos = [pos[0], pos[1] + e.offset,
-                           pos[0], pos[1] + e.offset]
+                exc.pos = [
+                    pos[0], pos[1] + e.offset, pos[0], pos[1] + e.offset
+                ]
                 exceptions.append(exc)
 
         # TEMP: incorrect ordering
         if specs[eq_type].get('target'):
             for n, eq in enumerate(equations[eq_type]):
-                eq = eq.replace('<=', '<').replace(
-                    '==', '=').replace('=', '==').replace('<', '<=')
+                eq = eq.replace('<=', '<').replace('==', '=').replace(
+                    '=', '==').replace('<', '<=')
                 pos = equations[eq_type].lc.data[n]
                 lhs_name = str.split(eq, '=')[0].strip()
                 target = specs[eq_type]['target'][0]
                 if lhs_name not in data['symbols'][target]:
                     exc = ModelException(
-                        "Undeclared assignement target '{}'. Add it to '{}'.".format(lhs_name, target))
+                        "Undeclared assignement target '{}'. Add it to '{}'.".
+                        format(lhs_name, target))
                     exc.pos = [pos[0], pos[1], pos[0], pos[1] + len(lhs_name)]
                     exceptions.append(exc)
                 # if n>len(data['symbols'][target]):
@@ -250,9 +248,11 @@ def check_equations(data):
                     right_name = data['symbols'][target][n]
                     if lhs_name != right_name:
                         exc = ModelException(
-                            "Left hand side should be '{}' instead of '{}'.".format(right_name, lhs_name))
-                        exc.pos = [pos[0], pos[1], pos[
-                            0], pos[1] + len(lhs_name)]
+                            "Left hand side should be '{}' instead of '{}'.".
+                            format(right_name, lhs_name))
+                        exc.pos = [
+                            pos[0], pos[1], pos[0], pos[1] + len(lhs_name)
+                        ]
                         exceptions.append(exc)
         # temp
     return exceptions
@@ -269,16 +269,17 @@ def check_definitions(data):
     exceptions = []
     known_symbols = sum(data['symbols'].values(), [])
 
-    allowed_symbols = {v: (0,) for v in known_symbols}  # TEMP
+    allowed_symbols = {v: (0, ) for v in known_symbols}  # TEMP
     for p in data['symbols']['parameters']:
-        allowed_symbols[p] = (0,)
+        allowed_symbols[p] = (0, )
 
-    new_definitions = OrderedDict()
+    new_definitions = dict()
     for k, v in definitions.items():
         pos = definitions.lc.data[k]
         if k in known_symbols:
             exc = ModelException(
-                'Symbol {} has already been defined as a model symbol.'.format(k))
+                'Symbol {} has already been defined as a model symbol.'.format(
+                    k))
             exc.pos = pos
             exceptions.append(exc)
             continue
@@ -306,10 +307,12 @@ def check_definitions(data):
                 name, t, offset, err_type = [pb[0], pb[1], pb[2], pb[3]]
                 if err_type == 'timing_error':
                     exc = Exception(
-                        'Timing for variable {} could not be determined.'.format(pb[0]))
+                        'Timing for variable {} could not be determined.'.
+                        format(pb[0]))
                 elif err_type == 'incorrect_timing':
                     exc = Exception(
-                        'Variable {} cannot have time {}. (Allowed: {})'.format(name, t, pb[4]))
+                        'Variable {} cannot have time {}. (Allowed: {})'.
+                        format(name, t, pb[4]))
                 elif err_type == 'unknown_function':
                     exc = Exception(
                         'Unknown variable/function {}.'.format(name))
@@ -325,7 +328,7 @@ def check_definitions(data):
 
             new_definitions[k] = v
 
-            allowed_symbols[k] = (0,)  # TEMP
+            allowed_symbols[k] = (0, )  # TEMP
             # allowed_symbols[k] = None
 
         except SyntaxError as e:
@@ -367,8 +370,8 @@ def check_calibration(data):
 
 
 def check_all(data):
-
-    def serious(exsc): return ('error' in [e.type for e in exsc])
+    def serious(exsc):
+        return ('error' in [e.type for e in exsc])
 
     exceptions = check_infos(data)
     if serious(exceptions):
@@ -390,14 +393,10 @@ def check_all(data):
 
 def human_format(err):
     err_type = err['type']
-    err_type = colored(err_type, color=(
-        'red' if err_type == 'error' else 'yellow'))
+    err_type = colored(
+        err_type, color=('red' if err_type == 'error' else 'yellow'))
     err_range = str([e + 1 for e in err['range'][0]])[1:-1]
-    return '{:7}: {:6}: {}'.format(
-        err_type,
-        err_range,
-        err['text']
-    )
+    return '{:7}: {:6}: {}'.format(err_type, err_range, err['text'])
 
 
 def check_infos(data):
@@ -405,8 +404,8 @@ def check_infos(data):
     if 'model_type' in data:
         model_type = data['model_type']
         if model_type not in ['dtcc', 'dtmscc', 'dtcscc', 'dynare']:
-            exc = ModelException(
-                'Uknown model type: {}.'.format(str(model_type)))
+            exc = ModelException('Uknown model type: {}.'.format(
+                str(model_type)))
             exc.pos = data.lc.data['model_type']
             exc.type = 'error'
             exceptions.append(exc)
@@ -453,10 +452,13 @@ def lint(txt, source='<string>', format='human'):
             except:
                 err_type = 'error'
             output.append({
-                'type': err_type,
-                'source': source,
+                'type':
+                err_type,
+                'source':
+                source,
                 'range': ((k.pos[0], k.pos[1]), (k.pos[2], k.pos[3])),
-                'text': k.args[0]
+                'text':
+                k.args[0]
             })
 
     if format == 'json':

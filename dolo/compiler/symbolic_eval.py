@@ -5,14 +5,14 @@ from dolo.numeric.discretization import tensor_markov
 # from dolo.compiler.language import minilang
 from dolo.compiler.language import minilang, functions
 
-class NumericEval:
 
+class NumericEval:
     def __init__(self, d, minilang=minilang):
 
-        self.d = d # dictionary of substitutions
-        for k,v in d.items():
-            assert(isinstance(k, str))
-        for k,v in functions.items():
+        self.d = d  # dictionary of substitutions
+        for k, v in d.items():
+            assert (isinstance(k, str))
+        for k, v in functions.items():
             d[k] = v
 
         self.minilang = minilang
@@ -45,7 +45,7 @@ class NumericEval:
     def eval_float(self, s):
 
         return s
-    
+
     def eval_scalarfloat(self, s):
 
         return float(s)
@@ -73,8 +73,7 @@ class NumericEval:
 
     def eval_ordereddict(self, s):
 
-        from collections import OrderedDict
-        res = OrderedDict()
+        res = dict()
         for k in s.keys():
             v = self.eval(s[k])
             res[k] = v
@@ -89,7 +88,7 @@ class NumericEval:
         array_out = numpy.zeros_like(array_in, dtype=float)
         for i in range(array_in.shape[0]):
             for j in range(array_in.shape[1]):
-                array_out[i,j] = self.eval(array_in[i,j])
+                array_out[i, j] = self.eval(array_in[i, j])
         return array_out
 
     def eval_nonetype(self, none):
@@ -102,21 +101,16 @@ if __name__ == '__main__':
 
     import numpy
 
-    from collections import OrderedDict
-    options = OrderedDict(
-        smin= ['x',0.0],
-        smax= ['y','x'],
-        orders= [40,40],
-        markov=dict(a=12.0, b=0.9)
-    )
-
+    options = dict(
+        smin=['x', 0.0],
+        smax=['y', 'x'],
+        orders=[40, 40],
+        markov=dict(a=12.0, b=0.9))
 
     d = {'x': 0.01, 'y': 10.0}
-    print( NumericEval(d)(options) )
+    print(NumericEval(d)(options))
 
-
-
-        # define a markov chain in yaml
+    # define a markov chain in yaml
     txt = '''
 tensor:
 

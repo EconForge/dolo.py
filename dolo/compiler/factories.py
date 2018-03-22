@@ -16,16 +16,20 @@ from dolang.symbolic import time_shift
 from dolang.symbolic import ExpressionSanitizer
 from dolang.factory import FlatFunctionFactory
 
+
 def get_name(e):
     return ast.parse(e).body[0].value.func.id
+
 
 def reorder_preamble(pr):
     import sympy
     from dolang.triangular_solver import solve_triangular_system
     unknowns = [*pr.keys()]
-    incidence = [[str(e) for e in sympy.sympify((exp)).atoms()] for exp in pr.values()]
+    incidence = [[str(e) for e in sympy.sympify((exp)).atoms()]
+                 for exp in pr.values()]
     sol = solve_triangular_system(dict(zip(unknowns, incidence)))
     return dict([(k, pr[k]) for k in sol.keys()])
+
 
 def get_factory(model, eq_type: str):
 
@@ -33,36 +37,29 @@ def get_factory(model, eq_type: str):
 
     from dolo.compiler.recipes import recipes
     from dolang.symbolic import stringify, stringify_symbol
-    import re
 
-    regex = re.compile(r"\s*([^\|\s][^\|]*[^\|\s])\s*(\|([^\|\s][^\|]*[^\|\s])|\s*)")
-    if eq_type in ('controls_lb', 'controls_ub') and (eq_type not in model.equations):
-        eqs = []
-        ind = ('controls_lb', 'controls_ub').index(eq_type)
-        for i,eq in enumerate(model.equations['arbitrage']):
-            if "|" not in eq:
-                if ind==0:
-                    eq = "-inf"
-                else:
-                    eq = "inf"
-            else:
-                comp = eq.split("|")[1]
-                v = model.symbols["controls"][i]
-                eq = decode_complementarity(comp, v)[ind]
-            eqs.append(eq)
-        specs = {'eqs': recipes['dtcc']['specs']['arbitrage']['complementarities']['left-right']}
-    elif eq_type == "auxiliary":
-        eqs = [('{}({})'.format(s,0)) for s in model.symbols['auxiliaries']]
-        specs = {'eqs': [['exogenous', 0, 'm'], ['states', 0, 's'], ['controls', 0, 'x'],['parameters', 0, 'p']]}
+    equations = model.equations
+
+    if eq_type == "auxiliary":
+        eqs = [('{}({})'.format(s, 0)) for s in model.symbols['auxiliaries']]
+        specs = {
+            'eqs': [['exogenous', 0, 'm'], ['states', 0, 's'],
+                    ['controls', 0, 'x'], ['parameters', 0, 'p']]
+        }
     else:
-        eqs = model.equations[eq_type]
-        eqs = [regex.match(eq).group(1) for eq in eqs]
-        specs = recipes['dtcc']['specs'][eq_type]
+        eqs = equations[eq_type]
+        if eq_type in ('controls_lb', 'controls_ub'):
+            specs = {
+                'eqs':
+                recipes['dtcc']['specs']['arbitrage']['complementarities'][
+                    'left-right']
+            }
+        else:
+            specs = recipes['dtcc']['specs'][eq_type]
 
-
-
-    preamble_tshift = set([s[1] for s in specs['eqs'] if s[0]=='states'])
-    preamble_tshift = preamble_tshift.intersection(set([s[1] for s in specs['eqs'] if s[0]=='controls']))
+    preamble_tshift = set([s[1] for s in specs['eqs'] if s[0] == 'states'])
+    preamble_tshift = preamble_tshift.intersection(
+        set([s[1] for s in specs['eqs'] if s[0] == 'controls']))
 
     args = []
     for sg in specs['eqs']:
@@ -72,16 +69,16 @@ def get_factory(model, eq_type: str):
             args.append([(s, sg[1]) for s in model.symbols[sg[0]]])
     args = [[stringify_symbol(e) for e in vg] for vg in args]
 
-    arguments = dict( zip([sg[2] for sg in specs['eqs']], args) )
-
+    arguments = dict(zip([sg[2] for sg in specs['eqs']], args))
 
     if 'target' in specs:
         sg = specs['target']
         targets = [(s, sg[1]) for s in model.symbols[sg[0]]]
-        eqs = [eq.split('=')[1] for eq in eqs]
+        eqs = [eq.split('==')[1] for eq in eqs]
     else:
-        eqs = [("({1})-({0})".format(*eq.split('=')) if '=' in eq else eq) for eq in eqs]
-        targets = [('out{}'.format(i),0) for i in range(len(eqs))]
+        eqs = [("({1})-({0})".format(*eq.split('==')) if '==' in eq else eq)
+               for eq in eqs]
+        targets = [('out{}'.format(i), 0) for i in range(len(eqs))]
 
     eqs = [str.strip(eq) for eq in eqs]
     eqs = [dolang.parse_string(eq) for eq in eqs]
@@ -100,7 +97,7 @@ def get_factory(model, eq_type: str):
             val = model.definitions[k]
             val = es.visit(dolang.parse_string(val))
             for t in preamble_tshift:
-                s = stringify_symbol((k,t))
+                s = stringify_symbol((k, t))
                 vv = stringify(time_shift(val, t))
                 defs[s] = dolang.to_source(vv)
 

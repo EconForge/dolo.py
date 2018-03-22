@@ -2,18 +2,23 @@ import time
 import numpy as np
 import numpy
 import scipy.optimize
-from collections import OrderedDict
 from dolo.numeric.processes import DiscretizedIIDProcess
 # from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
 from dolo.numeric.decision_rule import DecisionRule, ConstantDecisionRule
 from dolo.numeric.grids import Grid, CartesianGrid, SmolyakGrid, UnstructuredGrid
 from dolo.misc.itprinter import IterationsPrinter
 
+
 def constant_policy(model):
     return ConstantDecisionRule(model.calibration["controls"])
 
-def value_iteration(model, grid={}, tol=1e-6, maxit=500,
-                 maxit_howard=20, verbose=False):
+
+def value_iteration(model,
+                    grid={},
+                    tol=1e-6,
+                    maxit=500,
+                    maxit_howard=20,
+                    verbose=False):
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.
@@ -51,8 +56,9 @@ def value_iteration(model, grid={}, tol=1e-6, maxit=500,
     process = model.exogenous
     dprocess = process.discretize()
 
-    n_ms = dprocess.n_nodes()   # number of exogenous states
-    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
+    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_mv = dprocess.n_inodes(
+        0)  # this assume number of integration nodes is constant
 
     endo_grid = model.get_grid(**grid)
 
@@ -86,19 +92,21 @@ def value_iteration(model, grid={}, tol=1e-6, maxit=500,
     tol_x = 1e-5
     tol_v = 1e-7
 
-    itprint = IterationsPrinter(('N', int), ('Error_V', float), ('Gain_V', float),
-                                ('Error_x', float), ('Gain_x', float), ('Eval_n', int), ('Time', float), verbose=verbose)
+    itprint = IterationsPrinter(
+        ('N', int), ('Error_V', float), ('Gain_V', float), ('Error_x', float),
+        ('Gain_x', float), ('Eval_n', int), ('Time', float),
+        verbose=verbose)
     itprint.print_header('Start value function iterations.')
 
-
-    while (it<maxit) and (err_v>tol or err_x>tol_x):
+    while (it < maxit) and (err_v > tol or err_x > tol_x):
 
         t_start = time.time()
         it += 1
 
         mdr.set_values(controls_0)
-        if it>2:
-            ev = evaluate_policy(model, mdr, initial_guess=mdrv, verbose=False, details=True)
+        if it > 2:
+            ev = evaluate_policy(
+                model, mdr, initial_guess=mdrv, verbose=False, details=True)
         else:
             ev = evaluate_policy(model, mdr, verbose=False, details=True)
 
@@ -119,7 +127,8 @@ def value_iteration(model, grid={}, tol=1e-6, maxit=500,
                 bnds = [e for e in zip(lb, ub)]
 
                 def valfun(xx):
-                    return -choice_value(transition, felicity, i_m, s, xx, mdrv, dprocess, parms, discount)[0]
+                    return -choice_value(transition, felicity, i_m, s, xx,
+                                         mdrv, dprocess, parms, discount)[0]
 
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
                 controls[i_m, n, :] = res.x
@@ -129,7 +138,7 @@ def value_iteration(model, grid={}, tol=1e-6, maxit=500,
         err_x = abs(controls - controls_0).max()
         err_v = abs(values - values_0).max()
         t_end = time.time()
-        elapsed = t_end-t_start
+        elapsed = t_end - t_start
 
         values_0 = values
         controls_0 = controls
@@ -140,13 +149,14 @@ def value_iteration(model, grid={}, tol=1e-6, maxit=500,
         err_x_0 = err_x
         err_v_0 = err_v
 
-        itprint.print_iteration(N=it,
-                                Error_V=err_v,
-                                Gain_V=gain_v,
-                                Error_x=err_x,
-                                Gain_x=gain_x,
-                                Eval_n=ev.iterations,
-                                Time=elapsed)
+        itprint.print_iteration(
+            N=it,
+            Error_V=err_v,
+            Gain_V=gain_v,
+            Error_x=err_x,
+            Gain_x=gain_x,
+            Eval_n=ev.iterations,
+            Time=elapsed)
 
     itprint.print_finished()
 
@@ -166,12 +176,11 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
         prob = dprocess.iweight(i_ms, I_ms)
         S = transition(m, s, x, M, parms)
         V = drv.eval_is(I_ms, S)[0]
-        cont_v += prob*V
-    return felicity(m, s, x, parms) + beta*cont_v
+        cont_v += prob * V
+    return felicity(m, s, x, parms) + beta * cont_v
 
 
 class EvaluationResult:
-
     def __init__(self, solution, iterations, tol, error):
         self.solution = solution
         self.iterations = iterations
@@ -179,8 +188,17 @@ class EvaluationResult:
         self.error = error
 
 
-def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, initial_guess=None, hook=None, integration_orders=None, details=False, interp_type='cubic'):
-
+def evaluate_policy(model,
+                    mdr,
+                    tol=1e-8,
+                    maxit=2000,
+                    grid={},
+                    verbose=True,
+                    initial_guess=None,
+                    hook=None,
+                    integration_orders=None,
+                    details=False,
+                    interp_type='cubic'):
     """Compute value function corresponding to policy ``dr``
 
     Parameters:
@@ -204,8 +222,9 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
     process = model.exogenous
     dprocess = process.discretize()
 
-    n_ms = dprocess.n_nodes() # number of exogenous states
-    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
+    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_mv = dprocess.n_inodes(
+        0)  # this assume number of integration nodes is constant
 
     x0 = model.calibration['controls']
     v0 = model.calibration['values']
@@ -250,8 +269,9 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
     it = 0
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format( 'N',' Error', 'Gain','Time')
-        stars = '-'*len(headline)
+        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} |'.format(
+            'N', ' Error', 'Gain', 'Time')
+        stars = '-' * len(headline)
         print(stars)
         print(headline)
         print(stars)
@@ -262,17 +282,18 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
 
     verbit = (verbose == 'full')
 
-    while err>tol and it<maxit:
+    while err > tol and it < maxit:
 
         it += 1
 
         t_start = time.time()
 
         mdrv.set_values(values_0.reshape(sh_v))
-        values = update_value(val, g, grid, controls, values_0, mdr, mdrv, dprocess, parms).reshape((-1,n_v))
-        err = abs(values.reshape(sh_v)-values_0).max()
+        values = update_value(val, g, grid, controls, values_0, mdr, mdrv,
+                              dprocess, parms).reshape((-1, n_v))
+        err = abs(values.reshape(sh_v) - values_0).max()
 
-        err_SA = err/err_0
+        err_SA = err / err_0
         err_0 = err
 
         values_0 = values.reshape(sh_v)
@@ -281,7 +302,8 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
         elapsed = t_finish - t_start
 
         if verbose:
-            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'.format(it, err, err_SA, elapsed))
+            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} |'.format(
+                it, err, err_SA, elapsed))
 
     # values_0 = values.reshape(sh_v)
 
@@ -289,7 +311,7 @@ def evaluate_policy(model, mdr, tol=1e-8,  maxit=2000, grid={}, verbose=True, in
 
     if verbose:
         print(stars)
-        print("Elapsed: {} seconds.".format(t2-t1))
+        print("Elapsed: {} seconds.".format(t2 - t1))
         print(stars)
 
     if not details:
@@ -303,8 +325,9 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
     N = s.shape[0]
     n_s = s.shape[1]
 
-    n_ms = dprocess.n_nodes() # number of exogenous states
-    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
+    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_mv = dprocess.n_inodes(
+        0)  # this assume number of integration nodes is constant
 
     res = np.zeros_like(v)
 
@@ -326,6 +349,6 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
             VM = drv.eval_ijs(i_ms, I_ms, S)
             rr = val(m, s, xm, vm, M, S, XM, VM, parms)
 
-            res[i_ms, :, :] += prob*rr
+            res[i_ms, :, :] += prob * rr
 
     return res

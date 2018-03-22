@@ -1,10 +1,9 @@
-from collections import OrderedDict
 import time
 
-class IterationsPrinter:
 
+class IterationsPrinter:
     def __init__(self, *knames, verbose=False):
-        knames = OrderedDict(knames)
+        knames = dict(knames)
         names = []
         types = []
         fmts = []
@@ -12,7 +11,7 @@ class IterationsPrinter:
             names.append(k)
             types.append(v)
             if v == int:
-                mm = max([4,len(k)])
+                mm = max([4, len(k)])
                 # print(mm)
                 fmts.append("{{:{}}}".format(mm))
             elif v == float:
@@ -22,15 +21,14 @@ class IterationsPrinter:
         self.names = names
         self.types = types
         self.fmts = fmts
-        self.width = len( fmt_str.format(*[0 for i in self.names]) )
+        self.width = len(fmt_str.format(*[0 for i in self.names]))
         self.fmt_str = fmt_str
         self.t_start = time.time()
-
 
     def print_line(self):
         if not self.verbose:
             return
-        print("-"*self.width)
+        print("-" * self.width)
 
     def print_header(self, msg=None):
         if not self.verbose:
@@ -38,7 +36,7 @@ class IterationsPrinter:
         self.print_line()
         if msg is not None:
             ll = '| ' + msg
-            print(ll + ' '*(self.width-len(ll)-1) + '|')
+            print(ll + ' ' * (self.width - len(ll) - 1) + '|')
             self.print_line()
         title_str = ''
         for i, v in enumerate(self.types):
@@ -63,6 +61,6 @@ class IterationsPrinter:
         elapsed = time.time() - self.t_start
         line = '| Elapsed: {:.2f} seconds.'.format(elapsed)
         self.print_line()
-        print(line + ' '*(self.width-len(line)-1) + '|')
+        print(line + ' ' * (self.width - len(line) - 1) + '|')
         self.print_line()
         print()

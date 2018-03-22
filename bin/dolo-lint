@@ -4,17 +4,15 @@ import argparse
 import ruamel.yaml as ry
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 # requires conda install -c conda-forge ruamel.yaml=0.11.7
-from collections import OrderedDict
 
 parser = argparse.ArgumentParser(description='Dolo command line')
-parser.add_argument('--format',default='human')
+parser.add_argument('--format', default='human')
 parser.add_argument('infile', type=argparse.FileType('r'))
 args = parser.parse_args()
 
 ff = args.infile
 format = args.format
 txt = ff.read()
-
 
 from dolo.linter import lint
 
