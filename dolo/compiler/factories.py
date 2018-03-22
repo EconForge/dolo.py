@@ -31,7 +31,17 @@ def reorder_preamble(pr):
     return dict([(k, pr[k]) for k in sol.keys()])
 
 
-def get_factory(model, eq_type: str):
+def shift_spec(specs, tshift):
+    ss = dict()
+    if 'target' in specs:
+        e = specs['target']
+        ss['target'] = [e[0], e[1] + tshift, e[2]]
+    ss['eqs'] = [([e[0], e[1] + tshift, e[2]] if e[0] != 'parameters' else e)
+                 for e in specs['eqs']]
+    return ss
+
+
+def get_factory(model, eq_type: str, tshift: int = 0):
 
     from dolo.compiler.model import decode_complementarity
 
@@ -56,6 +66,8 @@ def get_factory(model, eq_type: str):
             }
         else:
             specs = recipes['dtcc']['specs'][eq_type]
+
+    specs = shift_spec(specs, tshift=tshift)
 
     preamble_tshift = set([s[1] for s in specs['eqs'] if s[0] == 'states'])
     preamble_tshift = preamble_tshift.intersection(
@@ -84,6 +96,8 @@ def get_factory(model, eq_type: str):
     eqs = [dolang.parse_string(eq) for eq in eqs]
     es = ExpressionSanitizer(model.variables)
     eqs = [es.visit(eq) for eq in eqs]
+
+    eqs = [time_shift(eq, tshift) for eq in eqs]
     eqs = [stringify(eq) for eq in eqs]
     eqs = [dolang.to_source(eq) for eq in eqs]
 
