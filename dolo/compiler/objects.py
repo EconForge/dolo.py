@@ -3,7 +3,6 @@ import numpy as np
 from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
 from dolo.numeric.processes import IIDProcess
 from dolo.numeric.grids import CartesianGrid, SmolyakGrid
-from collections import dict
 
 Normal = MvNormal
 MarkovChain = DiscreteMarkovProcess
