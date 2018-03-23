@@ -24,8 +24,8 @@ def _shocks_to_epsilons(model, shocks, T):
         for (i, k) in enumerate(model.symbols["exogenous"]):
             if k in shocks:
                 this_shock = shocks[k]
-                epsilons[:len(this_shock) - 1, i] = this_shock[1:]
-                epsilons[(len(this_shock) - 1):, i] = this_shock[-1]
+                epsilons[:len(this_shock), i] = this_shock
+                epsilons[len(this_shock):, i] = this_shock[-1]
             else:
                 # otherwise set to value in calibration
                 epsilons[:, i] = model.calibration["exogenous"][i]
@@ -123,19 +123,12 @@ def deterministic_solve(model,
 
     """
 
-    # TODO:
-
-    # if model.model_spec == 'fga':
-    #     from dolo.compiler.converter import GModel_fg_from_fga
-    #     model = GModel_fg_from_fga(model)
-
     # definitions
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
 
     epsilons = _shocks_to_epsilons(model, shocks, T)
 
-    print(epsilons)
     # final initial and final steady-states consistent with exogenous shocks
     if start_states is None:
         start_states = model.calibration
