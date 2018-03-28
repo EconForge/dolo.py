@@ -49,15 +49,16 @@ def _shocks_to_epsilons(model, shocks, T):
     return epsilons
 
 
-def deterministic_solve(model,
-                        shocks=None,
-                        start_states=None,
-                        T=100,
-                        ignore_constraints=False,
-                        maxit=100,
-                        initial_guess=None,
-                        verbose=False,
-                        tol=1e-6):
+def deterministic_solve(
+        model,
+        shocks=None,
+        s1=None,
+        T=100,
+        ignore_constraints=False,
+        maxit=100,
+        initial_guess=None,
+        verbose=True,
+        tol=1e-6):
     """
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
@@ -129,29 +130,34 @@ def deterministic_solve(model,
 
     epsilons = _shocks_to_epsilons(model, shocks, T)
 
-    # final initial and final steady-states consistent with exogenous shocks
-    if start_states is None:
-        start_states = model.calibration
+    m0 = epsilons[0, :]
 
-    if isinstance(start_states, dict):
-        # at least that part is clear
-        start_equilibrium = start_states
-        start_s = start_equilibrium['states']
-        start_x = start_equilibrium['controls']
-        final_s = start_equilibrium['states']
-        final_x = start_equilibrium['controls']
-    elif isinstance(start_states, np.ndarray):
-        start_s = start_states
-        start_x = model.calibration['controls']
-        final_s = model.calibration['states']
-        final_x = model.calibration['controls']
+    if s1 is None:
+        # if no initial state is given, we solve for date t=0 separately
+        from dolo.algos.steady_state import find_steady_state
+        start_state = find_steady_state(model, m=m0)
+        s0 = start_state['states']
+        x0 = start_state['controls']
+        s1 = s0
+    else:
+        s1 = np.array(s1)
+        s0 = model.calibration['states'] * np.nan
+        x0 = model.calibration['controls'] * np.nan
 
-    final = np.concatenate([final_s, final_x])
-    start = np.concatenate([start_s, start_x])
+    from dolo.misc.dprint import dprint
+    dprint(s1)
+    # initial guesses
 
-    if verbose:
-        print("Initial states : {}".format(start_s))
-        print("Final controls : {}".format(final_x))
+    x1_g = model.calibration['controls']  # we can do better here
+    sT_g = model.calibration['controls']  # we can do better here
+    xT_g = model.calibration['controls']  # we can do better here
+
+    start = np.concatenate([s1, x1_g])
+    final = np.concatenate([sT_g, xT_g])
+
+    # if verbose:
+    #     print("Initial states : {}".format(start_s))
+    #     print("Final controls : {}".format(final_x))
 
     p = model.calibration['parameters']
 
@@ -161,16 +167,18 @@ def deterministic_solve(model,
 
     else:
         if isinstance(initial_guess, pd.DataFrame):
+            raise Exception("Not implemented.")
+            initial_guess = initial_guess[1:]
             initial_guess = np.array(initial_guess).T.copy()
         initial_guess = initial_guess[:, :n_s + n_x]
-        initial_guess[0, :n_s] = start_s
-        initial_guess[-1, n_s:] = final_x
+        initial_guess[0, :n_s] = s1
+        initial_guess[-1, n_s:] = xT_g
 
     sh = initial_guess.shape
 
     if model.x_bounds and not ignore_constraints:
         initial_states = initial_guess[:, :n_s]
-        [lb, ub] = [u(initial_states, p) for u in model.x_bounds]
+        [lb, ub] = [u(epsilons, initial_states, p) for u in model.x_bounds]
         lower_bound = initial_guess * 0 - np.inf
         lower_bound[:, n_s:] = lb
         upper_bound = initial_guess * 0 + np.inf
@@ -186,24 +194,13 @@ def deterministic_solve(model,
         lower_bound = None
         upper_bound = None
 
-    nn = sh[0] * sh[1]
-
-    def fobj(vec):
-        o = det_residual(model, vec.reshape(sh), start_s, final_x, epsilons)[0]
-        return o.ravel()
-
     if not ignore_constraints:
 
         def ff(vec):
             return det_residual(
-                model,
-                vec.reshape(sh),
-                start_s,
-                final_x,
-                epsilons,
-                jactype='sparse')
+                model, vec.reshape(sh), s1, xT_g, epsilons, jactype='sparse')
 
-        x0 = initial_guess.ravel()
+        v0 = initial_guess.ravel()
         sol, nit = ncpsolve(
             ff,
             lower_bound.ravel(),
@@ -220,13 +217,17 @@ def deterministic_solve(model,
 
         def ff(vec):
             return det_residual(
-                model, vec.reshape(sh), start_s, final_x, epsilons,
+                model, vec.reshape(sh), s1, xT_g, epsilons,
                 diff=False).ravel()
 
-        x0 = initial_guess.ravel()
-        sol = root(ff, x0, jac=False)
-        res = ff(sol.x)
+        v0 = initial_guess.ravel()
+        sol = root(ff, v0, jac=False)
         sol = sol.x.reshape(sh)
+
+    sx = np.concatenate([s0, x0])
+    sol = sol[:-1, :]
+
+    sol = np.concatenate([sx[None, :], sol], axis=0)
 
     if 'auxiliary' in model.functions:
         colnames = (model.symbols['states'] + model.symbols['controls'] +
@@ -351,41 +352,3 @@ def det_residual(model,
             # scipy bug ? I don't get the same with csr
 
         return [res, jac]
-
-
-if __name__ == '__main__':
-
-    # this example computes the response of the rbc economy to a series of
-    # expected productivity shocks. investment is bounded by an exogenous value
-    # 0.2, so that investment is constrained in the first periods
-
-    # TODO: propose a meaningful economic example
-
-    from dolo import yaml_import
-
-    m = yaml_import("../../../examples/models/compat/Figv4_1191.yaml")
-    T = 100
-    g_list = [0.2] * 10 + [0.4]
-
-    # first try using a list
-    sol1 = deterministic_solve(m, shocks=g_list)
-
-    # then try using a 1d array
-    sol2 = deterministic_solve(m, shocks=np.asarray(g_list))
-
-    # then try using a 2d array
-    g_shock = np.array(g_list)[:, None]
-    sol3 = deterministic_solve(m, shocks=g_shock)
-
-    # now try using a dict
-    sol4 = deterministic_solve(m, shocks={"g": g_list})
-
-    # now try using a DataFrame
-    sol5 = deterministic_solve(m, shocks=pd.DataFrame({"g": g_list}))
-
-    # check that they are all the same
-    for s in [sol2, sol3, sol4, sol5]:
-        assert max(abs(sol1 - s).max()) == 0.0
-
-    m2 = yaml_import("../../../examples/models/compat/rmt3_ch11.yaml")
-    sol = deterministic_solve(m, shocks={"g": [0.2] * 10 + [0.4]}, T=T)
