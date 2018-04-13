@@ -127,58 +127,51 @@ def deterministic_solve(
     # definitions
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
+    p = model.calibration['parameters']
 
     epsilons = _shocks_to_epsilons(model, shocks, T)
 
     m0 = epsilons[0, :]
 
+    # get initial steady-state
+    from dolo.algos.steady_state import find_steady_state
+    # TODO: use initial_guess for steady_state
+    # TODO:
+
     if s1 is None:
-        # if no initial state is given, we solve for date t=0 separately
-        from dolo.algos.steady_state import find_steady_state
         start_state = find_steady_state(model, m=m0)
         s0 = start_state['states']
         x0 = start_state['controls']
-        s1 = s0
+        m1 = epsilons[1,:]
+        s1 = model.functions['transition'](m0, s0, x0, m1, p)
     else:
+        # x0 = model.calibration['states']*np.nan
+        # s0 = model.calibration['states']*np.nan
         s1 = np.array(s1)
-        s0 = model.calibration['states'] * np.nan
-        x0 = model.calibration['controls'] * np.nan
-
-    from dolo.misc.dprint import dprint
-    dprint(s1)
-    # initial guesses
 
     x1_g = model.calibration['controls']  # we can do better here
-    sT_g = model.calibration['controls']  # we can do better here
+    sT_g = model.calibration['states']  # we can do better here
     xT_g = model.calibration['controls']  # we can do better here
 
-    start = np.concatenate([s1, x1_g])
-    final = np.concatenate([sT_g, xT_g])
-
-    # if verbose:
-    #     print("Initial states : {}".format(start_s))
-    #     print("Final controls : {}".format(final_x))
-
-    p = model.calibration['parameters']
 
     if initial_guess is None:
+        start = np.concatenate([s1, x1_g])
+        final = np.concatenate([sT_g, xT_g])
         initial_guess = np.row_stack(
-            [start * (1 - l) + final * l for l in linspace(0.0, 1.0, T + 1)])
+            [start * (1 - l) + final * l for l in linspace(0.0, 1.0, T)])
 
     else:
         if isinstance(initial_guess, pd.DataFrame):
-            raise Exception("Not implemented.")
-            initial_guess = initial_guess[1:]
-            initial_guess = np.array(initial_guess).T.copy()
+            initial_guess = np.array(initial_guess[model.symbols['states']+model.symbols['controls']])
+        initial_guess = initial_guess[1:,:]
         initial_guess = initial_guess[:, :n_s + n_x]
-        initial_guess[0, :n_s] = s1
-        initial_guess[-1, n_s:] = xT_g
 
     sh = initial_guess.shape
 
+
     if model.x_bounds and not ignore_constraints:
         initial_states = initial_guess[:, :n_s]
-        [lb, ub] = [u(epsilons, initial_states, p) for u in model.x_bounds]
+        [lb, ub] = [u(epsilons[1:,:], initial_states, p) for u in model.x_bounds]
         lower_bound = initial_guess * 0 - np.inf
         lower_bound[:, n_s:] = lb
         upper_bound = initial_guess * 0 + np.inf
@@ -198,7 +191,7 @@ def deterministic_solve(
 
         def ff(vec):
             return det_residual(
-                model, vec.reshape(sh), s1, xT_g, epsilons, jactype='sparse')
+                model, vec.reshape(sh), s1, xT_g, epsilons[1:, :], jactype='sparse')
 
         v0 = initial_guess.ravel()
         sol, nit = ncpsolve(
@@ -225,9 +218,10 @@ def deterministic_solve(
         sol = sol.x.reshape(sh)
 
     sx = np.concatenate([s0, x0])
-    sol = sol[:-1, :]
+    # sol = sol[:-1, :]
 
     sol = np.concatenate([sx[None, :], sol], axis=0)
+    # epsilons = np.concatenate([epsilons[:1,:], epsilons], axis=0)
 
     if 'auxiliary' in model.functions:
         colnames = (model.symbols['states'] + model.symbols['controls'] +
