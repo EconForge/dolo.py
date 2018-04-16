@@ -145,8 +145,8 @@ def deterministic_solve(
         m1 = epsilons[1,:]
         s1 = model.functions['transition'](m0, s0, x0, m1, p)
     else:
-        # x0 = model.calibration['states']*np.nan
-        # s0 = model.calibration['states']*np.nan
+        s0 = model.calibration['states']*np.nan
+        x0 = model.calibration['controls']*np.nan
         s1 = np.array(s1)
 
     x1_g = model.calibration['controls']  # we can do better here
