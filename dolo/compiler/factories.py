@@ -83,6 +83,9 @@ def get_factory(model, eq_type: str, tshift: int = 0):
 
     arguments = dict(zip([sg[2] for sg in specs['eqs']], args))
 
+    # temp
+    eqs = [eq.replace("==","=").replace("=","==") for eq in eqs]
+
     if 'target' in specs:
         sg = specs['target']
         targets = [(s, sg[1]) for s in model.symbols[sg[0]]]

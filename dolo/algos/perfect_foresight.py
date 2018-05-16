@@ -58,6 +58,7 @@ def deterministic_solve(
         maxit=100,
         initial_guess=None,
         verbose=True,
+        solver='ncpsolve',
         tol=1e-6):
     """
     Computes a perfect foresight simulation using a stacked-time algorithm.
@@ -194,15 +195,26 @@ def deterministic_solve(
                 model, vec.reshape(sh), s1, xT_g, epsilons[1:, :], jactype='sparse')
 
         v0 = initial_guess.ravel()
-        sol, nit = ncpsolve(
-            ff,
-            lower_bound.ravel(),
-            upper_bound.ravel(),
-            initial_guess.ravel(),
-            verbose=verbose,
-            maxit=maxit,
-            tol=tol,
-            jactype='sparse')
+        if solver=='ncpsolve':
+            sol, nit = ncpsolve(
+                ff,
+                lower_bound.ravel(),
+                upper_bound.ravel(),
+                initial_guess.ravel(),
+                verbose=verbose,
+                maxit=maxit,
+                tol=tol,
+                jactype='sparse')
+        else:
+            from dolo.numeric.extern.lmmcp import lmmcp
+            sol = lmmcp(
+                lambda u: ff(u)[0],
+                lambda u: ff(u)[1].todense(),
+                lower_bound.ravel(),
+                upper_bound.ravel(),
+                initial_guess.ravel(),
+                verbose=verbose)
+            nit = -1
 
         sol = sol.reshape(sh)
 

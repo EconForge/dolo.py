@@ -440,9 +440,9 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
         elif Indexset[i - 1] == 1.:
             # TODO : hyp : the maximand is a scalar
             denom1 = np.maximum(
-                null, np.sqrt(((x[i - 1] - lb[i - 1])**2. + Fx[i - 1]**2.)))
+                null, np.sqrt(((x[i - 1] - lb[i - 1])**2 + Fx[i - 1]**2)))
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2. + np.dot(DFx[i - 1, :], z)**2.)))
+                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
             if beta_l[i - 1] == 0.:
                 Da[i - 1] = (x[i - 1] - lb[i - 1]) / denom1 - 1.
                 Db[i - 1] = Fx[i - 1] / denom1 - 1.
@@ -456,11 +456,11 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
             else:
                 H2[i - 1, :] = 0.
 
-        elif Indexset[i - 1] == 2.:
+        elif Indexset[i - 1] == 2:
             denom1 = np.maximum(
-                null, np.sqrt(((ub[i - 1] - x[i - 1])**2. + Fx[i - 1]**2.)))
+                null, np.sqrt(((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2)))
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2. + np.dot(DFx[i - 1, :], z)**2.)))
+                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
             if beta_u[i - 1] == 0.:
                 Da[i - 1] = (ub[i - 1] - x[i - 1]) / denom1 - 1.
                 Db[i - 1] = -Fx[i - 1] / denom1 - 1.
@@ -480,18 +480,18 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
             ci = 0.
             di = 0.
             phi = -ub[i - 1] + x[i - 1] + Fx[i - 1] + np.sqrt(
-                ((ub[i - 1] - x[i - 1])**2. + Fx[i - 1]**2.))
+                ((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2))
             denom1 = np.maximum(null,
                                 np.sqrt(
-                                    ((x[i - 1] - lb[i - 1])**2. + phi**2.)))
+                                    ((x[i - 1] - lb[i - 1])**2 + phi**2)))
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2. + np.dot(DFx[i - 1, :], z)**2.)))
+                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
             denom3 = np.maximum(
-                null, np.sqrt(((ub[i - 1] - x[i - 1])**2. + Fx[i - 1]**2.)))
+                null, np.sqrt(((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2)))
             denom4 = np.maximum(
                 null,
-                np.sqrt((z[i - 1]**2. + (np.dot(ci, z[i - 1]) + np.dot(
-                    np.dot(di, DFx[i - 1, :]), z))**2.)))
+                np.sqrt((z[i - 1]**2 + (np.dot(ci, z[i - 1]) + np.dot(
+                    np.dot(di, DFx[i - 1, :]), z))**2)))
 
             if beta_u[i - 1] == 0.:
                 ci = (x[i - 1] - ub[i - 1]) / denom3 + 1
@@ -511,9 +511,9 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
             Da[i - 1] = ai + np.dot(bi, ci)
             Db[i - 1] = np.dot(bi, di)
             if np.logical_and(alpha_l[i - 1] == 1., alpha_u[i - 1] == 1.):
-                H2[i - 1, :] = np.dot(-lb[i - 1] - ub[i - 1] + 2. * x[i - 1],
+                H2[i - 1, :] = np.dot(-lb[i - 1] - ub[i - 1] + 2 * x[i - 1],
                                       DFx[i - 1, :]) + np.dot(
-                                          2. * Fx[i - 1], ei)
+                                          2 * Fx[i - 1], ei)
             else:
                 if alpha_l[i - 1] == 1.:
                     H2[i - 1, :] = np.dot(x[i - 1] - lb[i - 1],
