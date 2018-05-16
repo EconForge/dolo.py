@@ -28,7 +28,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
     return res
 
 
-def time_iteration(model, initial_guess=None, with_complementarities=True,
+def time_iteration(model, initial_guess=None, dprocess=None, with_complementarities=True,
                         verbose=True, grid={},
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
 
@@ -63,8 +63,8 @@ def time_iteration(model, initial_guess=None, with_complementarities=True,
         if verbose:
             print(t)
 
-    process = model.exogenous
-    dprocess = process.discretize()
+    if dprocess is None:
+        dprocess = model.exogenous.discretize()
 
     n_ms = dprocess.n_nodes() # number of exogenous states
     n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
