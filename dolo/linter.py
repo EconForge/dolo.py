@@ -267,7 +267,7 @@ def check_definitions(data):
         return []
 
     exceptions = []
-    known_symbols = sum(data['symbols'].values(), [])
+    known_symbols = sum([[*v] for v in data['symbols'].values()], [])
 
     allowed_symbols = {v: (0, ) for v in known_symbols}  # TEMP
     for p in data['symbols']['parameters']:
@@ -424,12 +424,14 @@ def check_infos(data):
     return exceptions
 
 
-def lint(txt, source='<string>', format='human'):
+def lint(txt, source='<string>', format='human', catch_exception=False):
 
     # raise ModelException if it doesn't work correctly
     try:
         data = ry.load(txt, ry.RoundTripLoader)
-    except:
+    except Exception as exc:
+        if not catch_exception:
+            raise exc
         return []  # should return parse error
 
     if not ('symbols' in data or 'equations' in data or 'calibration' in data):
@@ -439,7 +441,8 @@ def lint(txt, source='<string>', format='human'):
         try:
             exceptions = check_all(data)
         except Exception as e:
-            # raise(e)
+            if not catch_exception:
+                raise(e)
             exc = ModelException("Linter Error: Uncaught Exception.")
             exc.pos = [0, 0, 0, 0]
             exc.type = 'error'
