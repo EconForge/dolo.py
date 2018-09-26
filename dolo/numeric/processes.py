@@ -23,20 +23,20 @@ def choice(x, n, cumul):
 
 
 @jit
-def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
+def simulate_markov_chain(nodes, transitions, i_0, N, T):
 
     n_states = nodes.shape[0]
 
 #    start = numpy.array( (i_0,)*n_exp )
-    simul = numpy.zeros( (horizon, n_exp), dtype=int)
+    simul = numpy.zeros( (T, N), dtype=int)
     simul[0,:] = i_0
-    rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
+    rnd = numpy.random.rand(T*N).reshape((T,N))
 
     cumuls = transitions.cumsum(axis=1)
     cumuls = numpy.ascontiguousarray(cumuls)
 
-    for t in range(horizon-1):
-        for i in range(n_exp):
+    for t in range(T-1):
+        for i in range(N):
             s = simul[t,i]
             p = cumuls[s,:]
             simul[t+1,i] = choice(rnd[t,i], n_states, p)
@@ -169,12 +169,20 @@ class DiscreteMarkovProcess(DiscretizedProcess):
     def iweight(self, i:int, j:int): # scalar
         return self.transitions[i,j]
 
-    def simulate(self, N, T, i0=0, stochastic=True):
+    def simulate_indices(self, N, T, i0=0, stochastic=True, return_indices=False):
         if stochastic:
             inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
         else:
             inds = np.zeros((T,N), dtype=int) + i0
-        return self.values[inds]
+        return inds
+
+    def simulate(self, N, T, i0=0, stochastic=True, return_indices=False):
+        inds = self.simulate_indices(N,T,i0=i0,stochastic=stochastic)
+        vals = self.values[inds]
+        if not return_indices:
+            return vals
+        else:
+            return (vals, inds)
 #
 # class MarkovChain(list):
 #

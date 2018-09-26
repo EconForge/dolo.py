@@ -44,7 +44,7 @@ from dolo.numeric.processes import DiscreteMarkovProcess
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
 
 def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
-        driving_process=None, seed=42, stochastic=True):
+        driving_process=None, seed=None, stochastic=True):
     '''
     Simulate a model using the specified decision rule.
 
@@ -104,8 +104,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             if i0 is None:
                 i0 = 0
             dp = model.exogenous.discretize() ## TODO (nothing guarantee the processes match)
-            m_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic)
-            i_simul = find_index(m_simul, dp.values)
+            m_simul, i_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic, return_indices=True)
             sim_type = 'discrete'
             m0 = dp.node(i0)
             x0 = dr.eval_is(i0, s0)
@@ -123,16 +122,21 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     f = model.functions['arbitrage']
     g = model.functions['transition']
 
-    numpy.random.seed(seed)
-    from dolo.misc.dprint import dprint
+    if seed is not None:
+        numpy.random.seed(seed)
+
+
     mp = m0
     for i in range(T):
         m = m_simul[i,:,:]
         s = s_simul[i,:,:]
         if sim_type=='discrete':
             i_m = i_simul[i,:]
-            xx = [dr.eval_is(i_m[ii], s[ii,:]) for ii in range(s.shape[0])]
-            x = np.row_stack(xx)
+            x = np.zeros((N,n_x))
+            inds = np.unique(i_m)
+            for k in inds:
+                args = np.argwhere(inds==k).ravel()
+                x[args,:] = dr.eval_is(k,s[args,:])
         else:
             x = dr.eval_ms(m, s)
 
@@ -155,6 +159,10 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
         l = [m_simul, s_simul, x_simul, a_simul]
         varnames = model.symbols['exogenous'] + model.symbols['states'] + model.symbols[
             'controls'] + model.symbols['auxiliaries']
+
+    if sim_type=='discrete':
+        l = [i_simul[:,:,None]] + l
+        varnames = ['_i'] + varnames
 
     simul = numpy.concatenate(l, axis=2)
 
