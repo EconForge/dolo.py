@@ -91,7 +91,10 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     s_simul = numpy.zeros((T, N, n_s))
     x_simul = numpy.zeros((T, N, n_x))
 
-    s_simul[0, :, :] = s0[None, :]
+    if s0.ndim==1:
+        s_simul[0, :, :] = s0[None, :]
+    else:
+        s_simul[0, :, :] = s0
 
     # are we simulating a markov chain or a continuous process ?
     if driving_process is not None:
@@ -107,7 +110,9 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             m_simul, i_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic, return_indices=True)
             sim_type = 'discrete'
             m0 = dp.node(i0)
-            x0 = dr.eval_is(i0, s0)
+            # x0 = dr.eval_is(i0, s0)
+            x0 = np.column_stack([dr.eval_is(i0[ii],s0[ii,:]) for ii in range(len(i0))])
+            # x0 = dr.eval_is(i0, s0)
 
         else:
             process = model.exogenous ## TODO (nothing guarantee the processes match)
@@ -132,10 +137,10 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
         s = s_simul[i,:,:]
         if sim_type=='discrete':
             i_m = i_simul[i,:]
-            x = np.zeros((N,n_x))
+            x = np.zeros((N,n_x))+0.2
             inds = np.unique(i_m)
             for k in inds:
-                args = np.argwhere(inds==k).ravel()
+                args = np.where(i_m==k)[0]
                 x[args,:] = dr.eval_is(k,s[args,:])
         else:
             x = dr.eval_ms(m, s)
