@@ -30,7 +30,7 @@ class Domain(dict):
 # class CartesianGrid:
 #
 #     def __init__(self, min=None, max=None, n=None):
-#
+#jit
 #         self.orders = np.array(orders, dtype=int)
 #         if min is None:
 #             min = np.zeros(len(n)) + 0.0
