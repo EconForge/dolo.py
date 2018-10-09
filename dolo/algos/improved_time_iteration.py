@@ -227,10 +227,10 @@ def radius_jac(res,dres,jres,fut_S,dumdr,tol=1e-10,maxit=1000,verbose=False):
 
 from dolo import dprint
 
-def improved_time_iteration(model, method='jac', initial_dr=None,
+def improved_time_iteration(model,  initial_dr=None, method='gmres',
             interp_type='spline', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
-            complementarities=True, compute_radius=False, invmethod='gmres'):
+            complementarities=True, compute_radius=False):
 
     def vprint(*args, **kwargs):
         if verbose:
@@ -346,7 +346,6 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
         res = res.reshape(sh_x)
         dres = dres.reshape((sh_x[0],sh_x[1], sh_x[2],sh_x[2]))
         junk, jres, fut_S = euler_residuals(f,g,s,x,ddr,dp,parms, diff=False, with_jres=True,set_dr=False, jres=jres, S_ij=S_ij)
-
         # if there are complementerities, we modify derivatives
         if complementarities:
             res,dres,jres = smooth(res,dres,jres,x-lb)
@@ -372,7 +371,7 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
         t2 = time.time()
 
         # new version
-        if invmethod=='gmres':
+        if method=='gmres':
             import scipy.sparse.linalg
             ddx = solve_gu(dres.copy(), res.copy())
             L = Operator(jres,fut_S,ddr_filt)

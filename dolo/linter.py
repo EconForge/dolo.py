@@ -432,7 +432,7 @@ def lint(txt, source='<string>', format='human', catch_exception=False):
     except Exception as exc:
         if not catch_exception:
             raise exc
-            
+
     if not ('symbols' in data or 'equations' in data or 'calibration' in data):
         # this is probably not a yaml filename
         output = []

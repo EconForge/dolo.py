@@ -11,7 +11,7 @@ class SymbolicModel:
     @property
     def symbols(self):
         auxiliaries = [k for k in self.definitions.keys()]
-        symbols = {sg: [*self.data['symbols'][sg]] for sg in self.data['symbols'].keys()} 
+        symbols = {sg: [*self.data['symbols'][sg]] for sg in self.data['symbols'].keys()}
         symbols['auxiliaries'] = auxiliaries
         return symbols
 
