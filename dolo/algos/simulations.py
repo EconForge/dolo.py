@@ -111,7 +111,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             sim_type = 'discrete'
             m0 = dp.node(i0)
             # x0 = dr.eval_is(i0, s0)
-            x0 = np.column_stack([dr.eval_is(i0[ii],s0[ii,:]) for ii in range(len(i0))])
+            x0 = np.column_stack([dr.eval_is(i_simul[0,ii],s_simul[0, :, :]) for ii in range(len(i_simul[0,:]))])
             # x0 = dr.eval_is(i0, s0)
 
         else:
