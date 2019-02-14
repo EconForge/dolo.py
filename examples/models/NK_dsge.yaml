@@ -5,7 +5,7 @@ symbols:
   states: [Delta__L, a, cp]
   controls: [c, n, F1, F2]
   expectations: [m1]
-  shocks: [u__a, u__tau]
+  exogenous: [u__a, u__tau]
   parameters: [beta, psi, epsilon, phi, theta, tau, chi, sig_a, rho__a, rho__tau, sig_tau]
 
 definitions:

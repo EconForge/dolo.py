@@ -282,7 +282,7 @@ from numpy import sqrt
 from dolo.numeric.serial_operations import serial_multiplication as smul
 #
 # from interpolation.linear_bases.basis_uniform_cubic_splines import UniformSplineBasis
-# from interpolation.linear_bases.product import TensorBase
+# from interpolation.linear_base    s.product import TensorBase
 from dolo.numeric.serial_operations import serial_multiplication as smult
 
 
