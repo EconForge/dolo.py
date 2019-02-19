@@ -79,7 +79,7 @@ domain:
 
 options:
     grid: !Cartesian
-        n: [10, 10]
+        n: [20, 20]
 # options:
 #     grid: !Smolyak
 #         mu: 3
