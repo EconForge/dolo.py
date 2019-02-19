@@ -14,7 +14,7 @@ setup(
         'bin/dolo-lint'
     ],
     install_requires=[
-        "pyyaml", "numba", "numpy", "sympy", "scipy", "quantecon", "pandas",
+        "dolang", "pyyaml", "numba", "numpy", "sympy", "scipy", "quantecon", "pandas",
         "interpolation", "ruamel.yaml", "xarray"
     ],
     extras_require={

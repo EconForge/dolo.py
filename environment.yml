@@ -1,6 +1,7 @@
 name: dolo_env
 dependencies:
 - ipython
+- jupyterlab
 - numba
 - numexpr
 - numpy
@@ -17,5 +18,6 @@ dependencies:
 - statsmodels
 - matplotlib
 - xarray
+- altair
 # - pip:
 #   - sphinx-better-theme==0.13
