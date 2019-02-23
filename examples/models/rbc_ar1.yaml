@@ -1,0 +1,86 @@
+name: Real Business Cycle
+
+symbols:
+
+   exogenous: [z]
+   states: [k]
+   controls: [n, i]
+   expectations: [m]
+   values: [V]
+   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
+   rewards: [u]
+
+definitions:
+    y: exp(z)*k^alpha*n^(1-alpha)
+    c: y - i
+    rk: alpha*y/k
+    w: (1-alpha)*y/n
+
+equations:
+
+    arbitrage:
+        - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 <= i <= inf
+        # - V0 = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta) + beta*V0(1) |  -100000<=V0<=100000
+
+    transition:
+        - k = (1-delta)*k(-1) + i(-1)
+
+    value:
+        - V = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta) + beta*V(1)
+
+    felicity:
+        - u =  c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+
+    expectation:
+        - m = beta/c(1)^sigma*(1-delta+rk(1))
+
+    direct_response:
+        - n = ((1-alpha)*exp(z)*k^alpha*m/chi)^(1/(eta+alpha))
+        - i = exp(z)*k^alpha*n^(1-alpha) - (m)^(-1/sigma)
+
+calibration:
+
+    # parameters
+    beta: 0.99
+    phi: 1
+    delta : 0.025
+    alpha : 0.33
+    rho : 0.8
+    sigma: 5
+    eta: 1
+    sig_z: 0.016
+    zbar: 0
+    chi : w/c^sigma/n^eta
+    c_i: 1.5
+    c_y: 0.5
+    e_z: 0.0
+    m: 0
+    V0: (c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta))/(1-beta)
+
+    # endogenous variables
+    n: 0.33
+    z: zbar
+    rk: 1/beta-1+delta
+    w: (1-alpha)*exp(z)*(k/n)^(alpha)
+    k: n/(rk/alpha)^(1/(1-alpha))
+    y: exp(z)*k^alpha*n^(1-alpha)
+    i: delta*k
+    c: y - i
+    V: log(c)/(1-beta)
+    u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+
+
+
+
+exogenous: !VAR1
+    rho: 0.8
+    Sigma: [[sig_z^2]]
+    N: 5
+
+domain:
+    k: [k*0.5, k*1.5]
+
+options:
+    grid: !Cartesian
+        orders: [20]

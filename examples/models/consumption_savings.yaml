@@ -1,0 +1,37 @@
+symbols:
+    exogenous: [y]
+    states: [w]
+    controls: [c]
+    parameters: [β, γ, σ, ρ, r]
+
+
+equations:
+
+    transition:
+        - w = exp(y) + (w(-1)-c(-1))*r
+
+    arbitrage:
+        - ( β*(c(1)/c)^(-γ)*r-1 ) | 0.0<=c<=w
+
+calibration:
+    β: 0.96
+    γ: 4.0
+    σ: 0.1
+    ρ: 0.0
+    r: 1.02
+
+    w: 1.0
+    ξ: 0.0
+    c: 0.9*w
+
+domain:
+    w: [0.1, 4.0]
+
+exogenous: !AR1
+    rho: 0.9
+    Sigma: [[σ^2]]
+
+
+options:
+    grid: !Cartesian
+        orders: [50]
