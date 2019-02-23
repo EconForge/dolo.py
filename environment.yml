@@ -1,4 +1,7 @@
 name: dolo_env
+channels:
+- conda-forge
+- defaults
 dependencies:
 - ipython
 - jupyterlab
