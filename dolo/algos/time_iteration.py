@@ -39,18 +39,24 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
 
     Parameters
     ----------
-    model : NumericModel
-        "dtmscc" model to be solved
+    model : Model
+        model to be solved
     verbose : boolean
         if True, display iterations
-    initial_dr : decision rule
+    initial_guess : decision rule
         initial guess for the decision rule
+    dprocess : DiscretizedProcess (model.exogenous.discretize())
+        discretized process to be used
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
     grid: grid options
+        overload the values set in `options:grid` section
     maxit: maximum number of iterations
     inner_maxit: maximum number of iteration for inner solver
     tol: tolerance criterium for successive approximations
+    hook: Callable
+        function to be called within each iteration, useful for debugging purposes
+
 
     Returns
     -------

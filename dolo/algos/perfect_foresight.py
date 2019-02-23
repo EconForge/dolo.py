@@ -100,9 +100,8 @@ def deterministic_solve(
         (see below) it is assumed that that particular shock will
         remain at the final given value for the duration of the
         simulaiton.
-    start_states : ndarray or dict
-        a vector with the value of initial states, or a calibration
-        dictionary with the initial values of states and controls
+    s1 : ndarray or dict
+        a vector with the value of initial states
     T : int
         horizon for the perfect foresight simulation
     maxit : int

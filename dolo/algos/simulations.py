@@ -49,7 +49,8 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     Simulate a model using the specified decision rule.
 
     Parameters
-    ---------
+    ----------
+    
     model: NumericModel
 
     dr: decision rule

@@ -87,20 +87,6 @@ Any model file must be syntactically correct in the Yaml sense, before the
 content is analysed further. More information about the YAML syntax can be found
 on the `YAML website <http://www.yaml.org/>`_, especially from the `language specification <http://www.yaml.org/>`_.
 
-Model types
------------
-
-Note, that dolo currently allows to define three types of models:
-
-- `dynare models` for which a set of first order conditions are perturbated around a steady-state
-
-- `continous states - continous controls` (CSCC models) that can be solve on a compact state-space, possibly with occasionally binding constraints
-
-- `mixed states - continuous controls` (MSCC models) : a variant of the former category where some of the states follow an exogenous discrete markov process
-
-Those models, differ by the type of equations they require, but the general principles are the same for all of them. Here we abstract from the differences and present only the common principles. Section [] presents these various models more in detail.
-..
-.. The compiler part of dolo takes a model written in a YAML format, and converts it to a Python object, that is compliant with a simple API. Hence, models can be written either using YAML files, or directly using Python syntax.
 
 Example
 -------
@@ -128,8 +114,9 @@ A dolo model consists in the following 4 or 5 parts:
 - a `symbols` section where all symbols used in the model must be defined
 - an `equations` containing the list of equations
 - a `calibration` section providing numeric values for the symbols
+- a `domain` section, with the information about the solution domain
 - an `options` section containing additional informations
-- a `covariances` or `markov_chain` section where exogenous shocks are defined
+- an `exogenous` section where exogenous shocks are defined.
 
 These section have context dependent rules. We now review each of them in detail:
 
@@ -145,28 +132,19 @@ Symbols are sorted by type as in the following example:
 .. code:: yaml
 
   symbols:
-    variables: [a, b]
-    shocks: [e]
+    states: [a, b]
+    controls: [u, v]
+    exogenous: [e]
     parameters: [rho]
 
 Note that each type of symbol is associated with a symbol list (as `[a,b]`).
-
 
 .. note::
 
   A common mistake consists in forgetting the commas, and use spaces only. This doesn't work since two symbols are recognized as one.
 
-The expected types depend on the model that is being written:
-
-- For Dynare models, all endogenous variables must be listed as `variables` with the exogenous shocks being listed as `shocks` (as in the example above).
-
-.. note::
-
-  The `variables`, `shocks` and `parameters` keywords correspond to the `var`, `varexo` and `param` keywords in Dynare respectively.
-
-- Global models require the definition of the parameters, and to provide a list
-of `states` and `controls`. Mixed states model also require `markov_states` that follow a discrete markov chain, while continuous states model need to identify the i.i.d `shocks` that hit the model. If the corresponding equations are given (see next subsection) optional symbols can also be defined. Among them: `values`, `expectations`.
-
+The exact list of symbols to declare depends on which algorithm is meant to be used. In general, one needs to supply at least *states* (endogenous states),
+*exogenous* (for exogenous shocks), *controls* for decision variables, and *parameters* for scalar parameters, that the model can depend on.
 
 Declaration of equations
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -267,94 +245,81 @@ All symbols that are defined in the `symbols` section but do not appear in the c
 
     No clear policy has been established yet about how to deal with undeclared symbols in the calibration section. Avoid them.
 
-Shock specification
-~~~~~~~~~~~~~~~~~~~
+Domain section
+~~~~~~~~~~~~~~
 
-The way shocks are specified depends on the type of model. They are constructed using a the rules for mini-languages defined in section [ref].
+The domain section contains boundaries for each endogenous state as in the following example:
 
-Distribution
+```
+.. code:: yaml
+
+    domain:
+        k: [0.5*k, 2*k]
+        z: [-σ_z*3, σ_z*3]
+```
+
+.. note:: In the above example, values can refer to the calibration dictionary. Hence, `0.5*k` means `50%` of steady-state capital. Keys, are not replaced.
+
+Exogenous shocks specification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The type of exogenous shock associated to a model determines the kind of decision rule, whih will be obtained by the solvers.
+Shocks can pertain to one of the following categories: continuous i.i.d. shocks (Normal law), continous autocorrelated process (VAR1 process)
+or a discrete markov chain. The type of the shock is specified using yaml type annotations (starting with exclamation mark)
+ The exogenous shock section can refer to parameters specified in the calibration section. Here are some Examples
+for each type of shock:
+
+Normal
 ............
 
 For Dynare and continuous-states models, one has to specifiy a multivariate distribution of the i.i.d. process for the vector of ``shocks`` (otherwise shocks are assumed to be constantly 0). This is done in the distribution section. A gaussian distrubution (only one supported so far), is specified by supplying the covariance matrix as a list of list as in the following example.
 
 .. code:: yaml
 
-    distribution:
+    exogenous: !Normal:
+        Sigma: [ [sigma_1, 0.0],
+                [0.0, sigma_2] ]
 
-        Normal: [
-                [sigma_1, 0.0],
-                [0.0, sigma_2]
-            ]
+.. note:: The shocks syntax is currently rather unforgiving. Normal shocks expect a covariance matrix (i.e. a list of list) and the keyword is `Sigma`, not `sigma`.
 
 Markov chains
 .............
 
-When the model is driven by an exogenous discrete markov chain, that is for DTMSCC models, shocks are defined in the ``discrete_transition`` section. The objects allowed in this section are: `MarkovChain, AR1, MarkovTensor`
+Markov chains are constructed by providing a list of nodes and a transition matrix.
 
- markov chain can be constructed in several ways:
+.. code:: yaml
 
-   - by listing directly a list of states, and a transition matrix as in :
+    exogenous: !MarkovChain
+        values: [[-0.01, 0.1],[0.01, 0.1]]
+        transitions: [[0.9, 0.1], [0.1, 0.9]]
 
-        .. code:: yaml
+It is also possible to combine markov chains together.
 
-            discrete_transition:
-                MarkovChain:   # a markov chain is defined by providing:
-                    - [ [0.0, -0.02]           # a list of markov states
-                        [0.0,  0.02]
-                        [-0.1, 0.02]]
-                    - [ [ 0.98, 0.01, 0.01],   # a transition matrix
-                        [ 0.10, 0.01, 0.90],
-                        [ 0.05, 0.05, 0.90] ]
+.. code:: yaml
 
-    - by using primitives to construct a discretized process from an AR1:
-
-        .. code:: yaml
-
-            discrete_transition:
-                AR1:
-                    rho: 0.9
-                    sigma: [
-                            [0.01, 0.001]
-                            [0.001, 0.02]
-                        ]
-                    N: 3
-                    method: rouwenhorst   # the alternative is tauchen
-
-    - by combining two processes together:
-
-        .. code:: yaml
-
-            discrete_transition:
-                MarkovTensor:
-                    - AR1:
-                        rho: 0.9
-                        sigma: [
-                                [0.01, 0.001]
-                                [0.001, 0.02]
-                            ]
-                        N: 3
-                        method: rouwenhorst   # the alternative is tauchen
-                    - AR1:
-                        rho: 0.9
-                        sigma: 0.01
-                        N: 2
-                        method: rouwenhorst   # the alternative is tauchen
+    exogenous: !MarkovTensor:
+        - !MarkovChain
+            values: [[-0.01, 0.1],[0.01, 0.1]]
+            transitions: [[0.9, 0.1], [0.1, 0.9]]
+        - !MarkovChain
+            values: [[-0.01, 0.1],[0.01, 0.1]]
+            transitions: [[0.9, 0.1], [0.1, 0.9]]
 
 
 Options
 ~~~~~~~
 
-The `options` section contains all informations necessary to solve the model. It can also contain arbitrary additional informations. The section follows the mini-language convention, with all calibrated values replaced by scalars and all keywords allowed.
+The `options` section contains all informations necessary to solve the model. It can also contain arbitrary additional informations. The section follows the mini-language convention,
+with all calibrated values replaced by scalars and all keywords allowed.
 
 Global solutions require the definition of an approximation space. The lower, upper bounds and approximation orders (number of nodes in each dimension) are defined as in the following example:
 
 .. code:: yaml
 
     options:
-        Approximation:
-            a: [ 1-2*asig_z, k*0.9 ]
-            b: [ 1+2*asig_z, k*1.1 ]
-            orders: [10, 50]
+        grid: !Cartesian
+            n: [10, 50]
         arbitrary_information
 
-This reads as follows: the upper and lower bounds for the productivity process are 1 minus and plus two times its asymptotic standard deviation. The boundaries for the capital level are defined by a 10% bracket around its steady-state value (or the one defined in the calibration section). 10 points are used to discretize the state-space for the productivity process and 50 are used for the capital level.
+.. note:: Grid information indicates how to discretize the domain (here as a 10x50 cartesian grid) is currently coded in the general options section. It will probably be moved in a self contained
+section in the future.

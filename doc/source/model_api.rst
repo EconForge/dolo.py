@@ -21,14 +21,15 @@ The object contains few meta-data:
 .. code:: yaml
 
     display( model.name )  # -> Real Business Cycles
-    display( model.model_type )   # -> `dtmscc`
+    display( model.model_type )   # -> `dtcc`
     display( model.model_specs )   # -> `(f,g,v)`
 
 The ``model.name`` field contains a possibly long string identifying the model.
-The ``model_type`` field is either ``'dtmscc'``, ``'dtcscc'`` or ``'dynare'`` depending on the convention used.
 The ``'model.model_features'`` field summarizes which equations types are provided which determines the solution algorithms that can be used to solve the model. Here ``(f,g,v)`` means that ``arbitrage`` (short ``f``), ``transition`` (short ``g``) and ``value`` equations were provided meaning that time-iteration or value function iteration can both be used to solve the model. When using a yaml files, the ``model_type` and ``model_specs`` properties are automatically set.
 
-The various attributes of the model directly echoe the the sections from the Yaml file.
+..note:: ``model_type`` field is now always ``dtcc``. Older model types (``'dtmscc'``, ``'dtcscc'``, ``'dynare'``) are not used anymore.
+
+The various attributes of the model directly echo the sections from the Yaml file.
 
 Symbols
 +++++++
@@ -48,11 +49,14 @@ Symbols are held in the `model.symbols` dictionary, with each symbol type mappin
 Calibration
 +++++++++++
 
-Each models stores a calibration dictionary as `model.calibration`. This one consists in an OrderedDictionary, with the same keys as the ``model.symbols`` dictionary. The values are vectors (1d numpy arrays) of values for each symbol group. For instance the following code will print the calibrated values of the parameters:
+Each models stores a calibration dictionary as `model.calibration`. This one consists in a special dictionary object, with the same keys as the ``model.symbols`` dictionary.
+The values are vectors (1d numpy arrays) of values for each symbol group. For instance the following code will print the calibrated values of the parameters:
 
 .. code:: python
 
     print( zip( model.symbols['parameters'], model.calibration['parameters'] ) )
+
+In order to get a ``(key,values)`` of all the parameters of the model, one can call ``model.calibration.flat``.
 
 It is possible to get the value of one or many symbols, using the .get_calibration method:
 
@@ -62,12 +66,13 @@ It is possible to get the value of one or many symbols, using the .get_calibrati
 
     display( model.get_calibration( ['k', 'delta'] ))  #  -> [2.9, 0.08]
 
-The solution routines, look up at the values in model.calibration to evaluate
-parameters or steady-state values. In order to change these values it is not recommended to modify these values though. It is preferable to use the ``model.set_calibration()`` routine instead. This one takes either a dict as an argument, or a set of keyword arguments. Both calls are valid:
+One uses the ``model.set_calibration()`` routine to change the calibration of the model.  This one takes either a dict as an argument, or a set of keyword arguments. Both calls are valid:
 
 .. code:: yaml
 
     model.set_calibration( {'delta':0.01} )
+
+    model.set_calibration( {'i': 'delta*k'} )
 
     model.set_calibration( delta=0.08, k=2.8 )
 
@@ -155,13 +160,10 @@ The vectorized evaluation is optimized so that it is much faster to make a vecto
     In the preceding example, the parameters are constant for all evaluations, yet they are repeated. This is not mandatory, and the call ``f(vec_s, vec_x, vec_S, vec_X, p)`` should work exactly as if `p` had been repeated along the first axis. We follow there numba's ``guvectorize`` conventions, even though they slightly differ from numpy's ones.
 
 
-Distribution and markov_chain objects
-+++++++++++++++++++++++++++++++++++++
+Exogenous shock
++++++++++++++++
 
-Mixed states and continuous states models specify the structure of the stochastic innovations using a markov chain or a covariance matrix respectively.
-These are accessed in the ``model.covariances`` and ``model.exogenous`` respectively. If not relevant, these structures are set to ``None``.
-A covariance matrix, is a square array, with as the number of rows given by the number of shocks. A Markov chain is a list, where the the first element enumerates values taken by discrete states, line by line, while the second element holds the stochastic matrix whose element :math:`i,j` is the probability to jump from the `i`-th state to the `j`-th one.
-
+The `exogenous` field contains information about the driving process. To get its default, discretize version, one can call `model.exogenous.discretize()`.
 
 
 

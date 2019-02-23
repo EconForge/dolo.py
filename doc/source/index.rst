@@ -8,7 +8,7 @@ What is dolo ?
 
     Dolo understand several types of nonlinear models with occasionnally binding constraints (with or without exogenous discrete shocks), as well as local pertubations models, like Dynare. It is a very adequate tool to study zero-lower bound issues, or sudden-stop problems, for instance.
 
-    Sophisticated solution routines are available: local perturbations up to fifth order, perfect foresight solution, policy iteration, value iteration. Most of these solutions are either parallelized or vectorized. They are written in pure Python, and can easily be inspected or adapted.
+    Sophisticated solution routines are available: local perturbations up to third order, perfect foresight solution, policy iteration, value iteration. Most of these solutions are either parallelized or vectorized. They are written in pure Python, and can easily be inspected or adapted.
 
     Thanks to the simple and consistent Python API for models, it is possible to write models in pure Python, or to implement other solution algorithms on top it.
 
@@ -25,5 +25,5 @@ What is dolo ?
     model_specification
 
     algos
+    inspect
     examples
-    faq

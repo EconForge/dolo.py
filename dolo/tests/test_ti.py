@@ -4,7 +4,7 @@ def test_vfi():
     from dolo import yaml_import
     from dolo.algos.time_iteration import time_iteration
 
-    model_iid = yaml_import('examples/models/rbc_dtcc_iid.yaml')
+    model_iid = yaml_import('examples/models/rbc_iid.yaml')
 
     mdr = time_iteration(model_iid, with_complementarities=False)
     drv = evaluate_policy(model_iid, mdr)

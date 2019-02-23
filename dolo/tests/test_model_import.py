@@ -13,8 +13,7 @@ def model_evaluation(compiler='numpy', data_layout='columns'):
 
     from dolo import yaml_import
 
-    #model = yaml_import('examples/models/compat/rbc_fg.yaml', compiler=compiler, order=data_layout)
-    model = yaml_import('examples/models/rbc_dtcc_iid.yaml')
+    model = yaml_import('examples/models/rbc_iid.yaml')
 
     s0 = model.calibration['states']
     x0 = model.calibration['controls']

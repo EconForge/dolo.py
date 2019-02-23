@@ -31,3 +31,7 @@ The stacked system of equations satisfied by the solution is:
  +-------------------------------------------------+------------------------------------------------------------------------------+
 
 The system is solved using a nonlinear solver.
+
+.. note:: TODO: explain the subtle timing convention converning the exogenous shock.
+
+.. autofunction:: dolo.algos.perfect_foresight.deterministic_solve

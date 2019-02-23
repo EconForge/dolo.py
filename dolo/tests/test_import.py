@@ -5,9 +5,9 @@ from dolo.algos.value_iteration import constant_policy
 def test_import():
 
     filenames = [
-        "examples/models/rbc_dtcc_iid.yaml",
-        "examples/models/rbc_dtcc_mc.yaml",
-        # "examples/models/rbc_dtcc_ar1.yaml"
+        "examples/models/rbc_iid.yaml",
+        "examples/models/rbc_mc.yaml",
+        # "examples/models/rbc_ar1.yaml"
     ]
 
     for fname in filenames:
