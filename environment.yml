@@ -1,9 +1,6 @@
 name: dolo_env
-channels:
-- conda-forge
 dependencies:
 - ipython
-- jupyterlab
 - numba
 - numexpr
 - numpy
@@ -20,6 +17,5 @@ dependencies:
 - statsmodels
 - matplotlib
 - xarray
-- altair
 # - pip:
 #   - sphinx-better-theme==0.13
