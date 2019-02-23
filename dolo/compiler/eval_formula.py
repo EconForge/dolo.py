@@ -17,7 +17,6 @@ def eval_formula(expr: str, dataframe=None, context=None):
     context: dict or CalibrationDict
     '''
 
-    print("Evaluating: {}".format(expr))
     if context is None:
         dd = {}  # context dictionary
     elif isinstance(context, CalibrationDict):
@@ -32,8 +31,7 @@ def eval_formula(expr: str, dataframe=None, context=None):
     expr_ast = parse_string(expr).value
     variables = list_variables(expr_ast)
     nexpr = stringify(expr_ast)
-    print(expr)
-    print(variables)
+
 
     dd['log'] = log
     dd['exp'] = exp
@@ -43,11 +41,10 @@ def eval_formula(expr: str, dataframe=None, context=None):
         import pandas as pd
         for (k, t) in variables:
             dd[stringify_symbol((k, t))] = dataframe[k].shift(t)
-        dd['t'] = pd.Series(dataframe.index, index=dataframe.index)
+        dd['t_'] = pd.Series(dataframe.index, index=dataframe.index)
 
     expr = to_source(nexpr)
-    print(expr)
-    print(dd.keys())
+
     res = eval(expr, dd)
 
     return res

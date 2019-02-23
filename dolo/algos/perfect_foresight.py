@@ -221,13 +221,18 @@ def deterministic_solve(
     else:
 
         def ff(vec):
-            return det_residual(
-                model, vec.reshape(sh), s1, xT_g, epsilons,
-                diff=False).ravel()
+            ll = det_residual(
+                model, vec.reshape(sh), s1, xT_g, epsilons[1:, :],
+                diff=True)
+            return(ll)
 
         v0 = initial_guess.ravel()
-        sol = root(ff, v0, jac=False)
-        sol = sol.x.reshape(sh)
+        # from scipy.optimize import root
+        # sol = root(ff, v0, jac=True)
+        # sol = sol.x.reshape(sh)
+        from dolo.numeric.optimize.newton import newton
+        sol, nit = newton(ff, v0, jactype='sparse')
+        sol = sol.reshape(sh)
 
     sx = np.concatenate([s0, x0])
     # sol = sol[:-1, :]
