@@ -1,0 +1,39 @@
+symbols:
+    exogenous: [perm, tran]
+    states: [m]
+    controls: [c]
+    parameters: [β, γ, σ_perm, σ_tran, ρ, R, Γ]
+
+
+equations:
+
+    transition:
+        - m = 0.01+exp(tran) + (m(-1)-c(-1))*(R/exp(perm))
+
+    arbitrage:
+        - ( β*((c(1)*exp(perm))/c)^(-γ)*R-1 ) | 0.0<=c<=m
+
+calibration:
+    β: 0.90
+    Γ: 1.03
+    γ: 2.0
+    σ_perm: 0.1
+    σ_tran: 0.1
+    ρ: 0.0
+    R: 1.04
+
+    m: 1.0
+    ξ: 0.0
+    c: 0.9*m
+
+domain:
+    m: [0.01, 10.0]
+
+exogenous: !AR1
+    rho: 0.0
+    Sigma: [[σ_perm^2, 0], [0, σ_tran^2]]
+
+
+options:
+    grid: !Cartesian
+        orders: [50]
