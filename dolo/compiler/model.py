@@ -283,7 +283,9 @@ class Model(SymbolicModel):
         self.__exogenous__ = None
         self.__calibration__ = None
 
-    def set_calibration(self, **kwargs):
+    def set_calibration(self, *pargs, **kwargs):
+        if len(pargs)==1:
+            self.set_calibration(**pargs[0])
         self.set_changed()
         self.data['calibration'].update(kwargs)
 
