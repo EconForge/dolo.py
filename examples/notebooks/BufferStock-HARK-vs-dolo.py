@@ -243,7 +243,7 @@ from dolo import *
 # Dolo defines models using "model files" whose syntax is specified in the documentation
 
 # %%
-model_dolo = yaml_import("../models/bufferstock.yaml")
+model_dolo = yaml_import("../models/bufferstock-with-expectations.yaml")
 print( model_dolo )
 
 # %%
@@ -313,6 +313,7 @@ model_HARK = IndShockConsumerType(**base_params_dolo,cycles=0) # cycles=0 indica
 
 # %%
 # Solve the HARK model 
+model_HARK.updateIncomeProcess()
 model_HARK.solve()
 model_HARK.unpackcFunc()
 

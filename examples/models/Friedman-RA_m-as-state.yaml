@@ -1,0 +1,81 @@
+name: Friedman-RA
+
+symbols:
+
+   exogenous:    [lΨ, lΘ] # Ψ is the persistent shock, Θ is transitory, l means log
+   states:       [lP, m]
+   controls:     [c]
+   expectations: [μ]
+   values:       [V]
+   parameters:   [β, ρ, δ, α, lPmean, σ_lΨ, lΘmean, σ_lΘ]
+   rewards:      [u]
+
+definitions:
+    Ψ: exp(lΨ)
+    Θ: exp(lΘ)
+    P: exp(lP)
+    a: m-c
+
+equations:
+
+    arbitrage:
+       - 1 -  β*(1-δ+α*((a/Ψ(1))^(α-1))*(Θ(1)^(1-α)))*(Ψ(1)*c(1)/c)^(-ρ)  | 0.0 <= c <= m # Liquidity constraint 
+
+    transition:
+        - lP = lP(-1) + lΨ
+        - m = ((a(-1)/exp(lΨ))^α)*exp(lΘ)^(α-1)+(1-δ)*(a(-1)/exp(lΨ)) # oddly, can't sub Θ(1) for exp(lΘ(1)) (same with Ψ) though it works in arbitrage
+
+    value:
+        - V = (c^(1-ρ))/(1-ρ) + β*V(1)
+
+    felicity:
+        - u =  (c^(1-ρ))/(1-ρ)
+
+# Turned off because causes a strange error about how numba can't tell what type a is
+#    expectation:
+#       -  μ =(1-δ+α*((a/exp(lΨ(1)))^(α-1))*(exp(lΘ(1))^(1-α)))*(exp(lΨ(1))*c(1)/c)^(-ρ) 
+
+calibration:
+
+    # parameters
+    β : 0.99
+    δ : 0.025
+    α : 0.33
+    ρ: 5
+    σ_lΨ: 0.01
+    lPmean: 0
+    σ_lΘ: 0.01
+    lΘ: 0.00
+    lΘmean: 0.00
+    c_i: 1.5
+    c_y: 0.5
+    lΨ: 0.0
+
+    # endogenous variables initial values for solution (many unused)
+    lP: lPmean
+    r: 1/β-1
+    R: 1+r
+    w: (1-α)*(Θ^(1-α))*(k/(Θ))^(α)
+    k: (α/((1/β)+δ-1))^(1/(1-α))
+    y: k^α*(Θ)^(1-α)-δ*k
+    c: y
+    u: c^(1-ρ)/(1-ρ) 
+    V: u/(1-β)
+    μ: (R*β)*c^(-ρ)
+    m: (k^α)*(exp(lΘ)^(1-α))+(1-δ)*k
+    
+exogenous: !Normal
+    Sigma: [[σ_lΨ^2, 0.00]
+           ,[0.00   , σ_lΘ^2]]
+
+domain:
+    lP: [-2*σ_lΨ^0.5,  2*σ_lΨ^0.5]
+    m: [ m*0.5, m*1.5]
+
+options:
+    grid: !Cartesian
+        n: [20, 20]
+# options:
+#     grid: !Smolyak
+#         mu: 3
+#         # orders: [5, 50]

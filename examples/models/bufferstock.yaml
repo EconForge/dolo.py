@@ -27,12 +27,12 @@ calibration:
     c: 0.9*m
 
 domain:
-    m: [0.0, 100.0]
+    m: [0.0, 1000.0]
 
 exogenous: !Normal
-    Sigma: [[σ_perm^2, 0], [0, σ_tran^2]]
-
+    Sigma: [[σ_perm^2,         0]
+           ,[0,        σ_tran^2]]
 
 options:
     grid: !Cartesian
-        orders: [100]
+        orders: [1000]
