@@ -175,7 +175,7 @@ The (separable) value equation defines the value :math:`v_t` of a given policy a
 
     v_t = u(s_t,x_t) + \beta E_t \left[ v_{t+1} \right]
 
-This gives rise to the Bellman eqution:
+This gives rise to the Bellman equation:
 
     .. math::
 
@@ -269,7 +269,7 @@ The optimal controls must also satisfy bounds that are function of states. There
                 n = 0
 
     Specifying the lower bound on labour actually has no effect since agents endogeneously choose to work a positive amount of time in order to produce some consumption goods.
-    As for upper bounds, it is not necessary to impose some: the maximum amount of investment is limited by the Inada conditions on consumption. As for labour ``n``, it can be arbitrarly large without creating any paradox. Thus the upper bounds are omitted (and internally treated as infinite values).
+    As for upper bounds, it is not necessary to impose some: the maximum amount of investment is limited by the Inada conditions on consumption. As for labour ``n``, it can be arbitrarily large without creating any paradox. Thus the upper bounds are omitted (and internally treated as infinite values).
 
 Euler equation
 ..............
@@ -286,7 +286,7 @@ A general formulation of the Euler equation is:
     0 = E_t \left[ f(s_t, x_t, s_{t+1}, x_{t+1}) \right]
 
 Note that the Euler equation and the boundaries interact via
-"complentarity equations". Evaluated at one given state, with
+"complementarity equations". Evaluated at one given state, with
 the vector of controls :math:`x=(x_1, ..., x_i, ..., x_{n_x})`, the
 Euler equation gives us the residuals :math:`r=(f_1, ..., f_i, ...,
 f_{n_x})`.
@@ -471,7 +471,7 @@ Terminal conditions
     - name: `terminal_condition`
     - short name: `f_T_2`
 
-Sometimes the terminal condition is given as an explicity choicie for the controls in the last period. This defines function :math:`f^{T,\star}` such that:
+Sometimes the terminal condition is given as an explicit choice for the controls in the last period. This defines function :math:`f^{T,\star}` such that:
 
 .. math::
 
@@ -489,7 +489,7 @@ Sometimes the terminal condition is given as an explicity choicie for the contro
 ..
 .. The definitions for this class of models differ from the former ones
 .. by the fact that states are split into exogenous and discrete markov states,
-.. and endogenous continous states as before. Most of the definition can be readily
+.. and endogenous continuous states as before. Most of the definition can be readily
 .. transposed by replacing only the state variables.
 ..
 .. State-space and solution
@@ -808,6 +808,6 @@ Sometimes the terminal condition is given as an explicity choicie for the contro
 ..
 .. Some autodetection is possible. For instance, some equations appearing
 .. in
-.. ``f`` fonctions, can be promoted (or downgraded) to expectational
+.. ``f`` functions, can be promoted (or downgraded) to expectational
 .. equation, based
 .. on incidence analysis.
