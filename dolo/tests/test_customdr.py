@@ -1,6 +1,6 @@
 def test_custom_dr():
 
-    from dolo import yaml_import
+    from dolo import yaml_import, simulate, time_iteration
     import numpy as np
     from dolo.numeric.decision_rule import CustomDR
 
