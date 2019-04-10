@@ -58,7 +58,7 @@ from matplotlib import pyplot as plt
 # ## The problem
 
 # %%
-model = yaml_import("bufferstock_IID.yaml")
+model = yaml_import("../models/bufferstock.yaml")
 
 # %%
 dr0 = time_iteration(model)
@@ -89,15 +89,6 @@ model = yaml_import('bufferstock_IID.yaml')
 # %%
 model.data['calibration']['max_m'] = 10.0
 model.data['domain']['m'] = [0,'max_m']
-
-# %%
-dir(model.exogenous.discretize())
-
-# %%
-dir(model.exogenous.discretize())
-
-# %%
-model.exogenous.discretize().integration_weights
 
 # %%
 σ_perm = model.get_calibration()['σ_perm']
@@ -245,4 +236,5 @@ plt.grid()
 # Remark: it is also possible to supply any other initial decision rule, as simple rule, by supplying as initial guess an object which implements the method `.eval_is`
 
 # %%
+
 

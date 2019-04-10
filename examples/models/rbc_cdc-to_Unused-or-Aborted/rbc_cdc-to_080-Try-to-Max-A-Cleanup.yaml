@@ -1,0 +1,89 @@
+name: Real Business Cycle
+
+symbols:
+
+   exogenous: [e_lP, lΘ]
+   states: [lP, k]
+   controls: [a]
+   expectations: [μ]
+   values: [V]
+   parameters: [β, ρ, η, δ, α, ω, lPmean, σ_lP, lΘmean, σ_lΘ, n] # , χ
+   rewards: [u]
+
+definitions:
+    P: exp(lP)
+    Θ: exp(lΘ)
+    y: k^α*(n*P*Θ)^(1-α)-δ*k
+    c: y + k - a
+    m: k + y
+    rk: -δ+α*(y+δ*k)/k
+    R: 1+rk
+    w: (1-α)**((P*Θ)**(1-α))*(y+δ*k)/(n*P*Θ)
+
+equations:
+
+    arbitrage:
+        - 1 - β*(c(1)/c)^(-ρ)*R  | 0.0 <= a <= k^α*(n*P*Θ)^(1-α)+(1-δ)*k
+
+    transition:
+        - lP = ω*lP(-1) + e_lP
+        - k = k(-1) + y(-1) - c(-1)
+
+    value:
+        - V = c^(1-ρ)/(1-ρ) + β*V(1)
+
+    felicity:
+        - u =  c^(1-ρ)/(1-ρ)
+
+    expectation:
+        - μ = β/c(1)^ρ*(1+rk(1))
+
+#    direct_response:
+#        - c = μ^(-1/ρ)
+
+calibration:
+
+    # parameters
+    a: (α/((1/β)+δ-1))**(1/(1-α))
+    β : 0.99
+    δ : 0.025
+    α : 0.33
+    ω : 0.8
+    ρ: 5
+    η: 1
+    σ_lP: 0.00016
+    lPmean: 0
+    σ_lΘ: 0.00001
+    lΘ: 0.00
+    lΘmean: 0.00
+    c_i: 1.5
+    c_y: 0.5
+    e_lP: 0.0
+
+    # endogenous variables
+    n: 1.0
+    lP: lPmean
+    rk: 1/β-1
+    w: (1-α)*((P*Θ)^(1-α))*(k/(n*P*Θ))^(α)
+    k: (α/((1/β)+δ-1))**(1/(1-α))
+    y: k^α*(P*Θ*n)^(1-α)-δ*k
+    c: y
+    V: ((c^(1-ρ))/(1-ρ))/(1-β)
+    u: c^(1-ρ)/(1-ρ) 
+    μ: β/c^ρ*(1+rk)
+    
+exogenous: !Normal
+    Sigma: [[σ_lP**2, 0.00]
+           ,[0.00   , σ_lΘ**2]]
+
+domain:
+    lP: [-2*σ_lP/(1-ω^2)^0.5,  2*σ_lP/(1-ω^2)^0.5]
+    k: [ k*0.5, k*1.5]
+
+options:
+    grid: !Cartesian
+        n: [20, 20]
+# options:
+#     grid: !Smolyak
+#         mu: 3
+#         # orders: [5, 50]

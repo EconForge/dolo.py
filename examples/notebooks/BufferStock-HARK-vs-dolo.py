@@ -243,12 +243,12 @@ from dolo import *
 # Dolo defines models using "model files" whose syntax is specified in the documentation
 
 # %%
-model_dolo = yaml_import("../models/bufferstock-with-expectations.yaml")
+model_dolo = yaml_import("../models/bufferstock.yaml")
 print( model_dolo )
 
 # %%
 # Set a maximum value of the market resources ratio m for use in both models
-max_m = 1000
+max_m = 500
 model_dolo.data['calibration']['max_m'] = max_m
 model_dolo.data['domain']['m'] = [0,'max_m']
 
@@ -315,13 +315,15 @@ model_HARK = IndShockConsumerType(**base_params_dolo,cycles=0) # cycles=0 indica
 # Solve the HARK model 
 model_HARK.updateIncomeProcess()
 model_HARK.solve()
+model_HARK.UnempPrb = 0.05
 model_HARK.unpackcFunc()
 
 # %%
+
 # Plot the results: Green is perfect foresight, red is HARK, black is dolo
 tab = tabulate(model_dolo, dr, 'm')
 plt.plot(tab['m'],tab['c'])     # This is pretty cool syntax
-m = np.ndarray.tolist(np.array(tab.values.tolist())[:,2]) # Is there an easier way to get the points in m?
+m = tab.iloc[:,2]
 c_m  = model_HARK.cFunc[0](m)   
 # cPF uses the analytical formula for the perfect foresight solution
 cPF = (np.array(m)-1+1/(1-PermGroFac/Rfree))*((Rfree-(Rfree * DiscFac)**(1/CRRA))/Rfree)

@@ -1,0 +1,90 @@
+name: StickyE-RA-Permanent
+
+symbols:
+
+   exogenous:    [lΨ, lΘ] # Ψ is the persistent shock, Θ is transitory, l means log
+   states:       [lP, k]
+   controls:     [c]
+   expectations: [μ]
+   values:       [V]
+   parameters:   [β, ρ, δ, α, lPmean, σ_lΨ, lΘmean, σ_lΘ, n]
+   rewards:      [u]
+
+definitions:
+    P: exp(lP)
+    Θ: exp(lΘ)
+    y: (k^α)*(Θ^(1-α))-δ*k
+#    R: 1-δ+α*(k^(α-1))*(Θ^(1-α))
+#    m: (k^α)*(Θ^(1-α))+(1-δ)*k
+    m: y+k
+#    a: m-c
+#    w: (1-α)*(Θ^(-α))*k^α
+
+equations:
+
+    arbitrage:
+       - 1 -  β*(1-δ+α*(((m-c)/exp(lΨ(1)))^(α-1))*(exp(lΘ(1))^(1-α)))*               (exp(lΨ(1))*c(1)/c)^(-ρ)  | 0.0 <= c <= 3.0 #k^α*(exp(lΘ))^(1-α)+(1-δ)*k # c needs to be less than everything
+
+    transition:
+        - lP = lP(-1) + lΨ
+        - k = (m(-1)-c(-1))/exp(lΨ)
+#        - m = (((m(-1)-c(-1))/exp(lΨ))^α)*exp(lΘ)^(α-1)+(1-δ)*((m(-1)-c(-1))/exp(lΨ))
+
+    value:
+        - V = (c^(1-ρ))/(1-ρ) + β*V(1)
+
+    felicity:
+        - u =  (c^(1-ρ))/(1-ρ)
+
+#    expectation:
+#        - μ = (    R(1)            /exp(lΨ(1)))                    *(exp(lΨ(1)*c(1))^(-ρ))
+#       -  μ =(1-δ+α*(((m-c)/exp(lΨ(1)))^(α-1))*(exp(lΘ(1))^(1-α)))*(exp(lΨ(1))*c(1)/c)^(-ρ)  | 0.0 <= c <= 3.0 #k^α*(exp(lΘ))^(1-α)+(1-δ)*k # c needs to be less than everything
+#        - μ =(((α*((m-c)/exp(lΨ(1)))^(α-1))*exp(lΘ(1))^(1-α)+(1-δ)))*(exp(lΨ(1)*c(1))^(-ρ))
+
+calibration:
+
+    # parameters
+    β : 0.99
+    δ : 0.025
+    α : 0.33
+    ρ: 5
+    σ_lΨ: 0.00016
+    lPmean: 0
+    σ_lΘ: 0.016
+    lΘ: 0.00
+    lΘmean: 0.00
+    c_i: 1.5
+    c_y: 0.5
+    lΨ: 0.0
+
+    # endogenous variables initial values for solution
+    n: 1.0
+    lP: lPmean
+    r: 1/β-1
+    R: 1+r
+#    w: (1-α)*(Θ^(1-α))*(k/(Θ))^(α)
+    k: (α/((1/β)+δ-1))^(1/(1-α))
+    y: k^α*(P*Θ*n)^(1-α)-δ*k
+    c: y
+    u: c^(1-ρ)/(1-ρ) 
+    V: u/(1-β)
+    μ: (R*β)*c^(-ρ)
+#    m: (k^α)*(exp(lΘ)**(1-α))+(1-δ)*k
+
+    
+exogenous: !Normal
+    Sigma: [[σ_lΨ^2, 0.00]
+           ,[0.00   , σ_lΘ^2]]
+
+domain:
+    lP: [-2*σ_lΨ^0.5,  2*σ_lΨ^0.5]
+    k: [ k*0.5, k*1.5]
+#    m: [ m*0.5, m*1.5]
+
+options:
+    grid: !Cartesian
+        n: [20, 20]
+# options:
+#     grid: !Smolyak
+#         mu: 3
+#         # orders: [5, 50]

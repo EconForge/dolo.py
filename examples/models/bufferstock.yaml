@@ -11,7 +11,7 @@ equations:
         - m = exp(tran) + (m(-1)-c(-1))*(R/(Γ*exp(perm)))
 
     arbitrage:
-        - (R*β*((c(1)*exp(perm)*Γ)/c)^(-ρ)-1 ) | 0.0<=c<=m
+        - (R*β*((c(1)*exp(perm(1))*Γ)/c)^(-ρ)-1 ) | 0.0<=c<=m
 
 calibration:
     β: 0.96
@@ -23,7 +23,6 @@ calibration:
     perm: 1.0
     tran: 1.0
     m: 1.0
-    ξ: 0.0
     c: 0.9*m
 
 domain:

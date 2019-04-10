@@ -1,0 +1,88 @@
+name: Real Business Cycle - No Labor Choice, Permanent shocks
+
+symbols:
+
+   exogenous: [e_lP, lT]
+   states: [lP, k]
+   controls: [i]
+   expectations: [μ]
+   values: [V]
+   parameters: [β, ρ, η, χ, δ, α, ω, lPbar, σ_lP, lTbar, σ_lT, n]
+   rewards: [u]
+
+definitions:
+    y: k^α*(n*exp(lP)*exp(lT))^(1-α)
+    m: y-δ*k
+    c: m - i
+    rk: -δ+α*y/k
+    w: (1-α)**((exp(lP)*exp(lT))**(1-α))*y/(n*exp(lP)*exp(lT))
+
+equations:
+
+    arbitrage:
+        - 1 - β*(c/c(1))^(ρ)*(1+rk(1))  | 0.0 <= i <= inf
+
+    transition:
+        - lP = ω*lP(-1) + e_lP
+        - k = k(-1) + i(-1)
+
+    value:
+        - V = c^(1-ρ)/(1-ρ) + β*V(1)
+
+    felicity:
+        - u =  c^(1-ρ)/(1-ρ)
+
+    expectation:
+        - μ = (1-δ+rk(1))*β*(c(1)^(-ρ))
+
+    direct_response:
+        - i = k^α*(n*exp(lP)*exp(lT))^(1-α)-δ*k - (μ)^(-1/ρ)
+
+calibration:
+
+    # parameters
+    n : 1
+    β : 0.99
+    δ : 0.025
+    α : 0.33
+    ω : 0.99
+    ρ: 5
+    η: 1
+    σ_lP: 0.016
+    σ_lT: 0.016
+    lPbar: 0
+    lTbar: 0
+    χ : w/c^ρ/n^η
+    c_i: 1.5
+    c_y: 0.5
+    e_lP: 0.0
+    lT: 0.0
+
+    # endogenous variables
+    lP: lPbar
+    lT: lTbar
+    rk: 1/β-1+δ
+    w: (1-α)*((exp(lP)*exp(lT))^(1-α))*(k/(n*exp(lP)*exp(lT)))^(α)
+    k: (n*exp(lP)*exp(lT))/(rk/α)^(1/(1-α))
+    y: k^α*(exp(lP)*exp(lT)*n)^(1-α)
+    i: δ*k
+    c: y - i
+    V: log(c)/(1-β)
+    u: c^(1-ρ)/(1-ρ)
+    μ: (1-δ+rk)*β*c^(-ρ)
+
+exogenous: !Normal
+    Sigma: [[σ_lP**2,0.]
+           ,[0.,σ_lT**2]]
+
+domain:
+    lP: [-2*σ_lP/(1-ω^2)^0.5,  2*σ_lP/(1-ω^2)^0.5]
+    k: [ k*0.5, k*1.5]
+
+options:
+    grid: !Cartesian
+        n: [20, 20]
+# options:
+#     grid: !Smolyak
+#         μ: 3
+#         # orders: [5, 50]
