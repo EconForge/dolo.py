@@ -112,6 +112,7 @@ class MvNormal(IIDProcess):
             orders = self.orders
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
         [x, w] = gauss_hermite_nodes(orders, self.Sigma, mu=self.mu)
+        x = np.row_stack( [(e + self.mu) for e in x] )
         return DiscretizedIIDProcess(x,w)
 
     def simulate(self, N, T, m0=None, stochastic=True):
@@ -208,7 +209,7 @@ class MarkovProduct(DiscreteMarkovProcess):
 
 class VAR1(DiscreteMarkovProcess):
 
-    def __init__(self, rho=None, Sigma=None, N=3):
+    def __init__(self, rho=None, Sigma=None, mu=None, N=3):
 
         self.Sigma = np.atleast_2d(Sigma)
         d = self.Sigma.shape[0]
@@ -219,7 +220,10 @@ class VAR1(DiscreteMarkovProcess):
             self.rho = np.diag(rho)
         else:
             self.rho = rho
-        self.mu = np.zeros(d)
+        if mu is None:
+            self.mu = np.zeros(d)
+        else:
+            self.mu = np.array(mu, dtype=float)
         self.d = d
 
     def discretize(self, N=3):
@@ -236,16 +240,20 @@ class VAR1(DiscreteMarkovProcess):
 
         [P,Q] = multidimensional_discretization(rho[0,0], Sigma, N=N)
 
+        P += self.mu[None,:]
+
         return DiscreteMarkovProcess(values=P, transitions=Q)
 
 
     def simulate(self, N, T, m0=None, stochastic=True):
+
         d = self.d
+
         if m0 is None:
             m0 = np.zeros(d)
         from numpy.random import multivariate_normal
         Sigma = self.Sigma
-        mu = self.mu
+        mu = self.mu*0
         if stochastic:
             innov = multivariate_normal(mu, Sigma, N*T)
         else:
@@ -254,8 +262,11 @@ class VAR1(DiscreteMarkovProcess):
         rho = self.rho
         sim = np.zeros((T,N,d))
         sim[0,:,:] = m0[None,:]
-        for t in range(1,sim.shape[0]-1):
+        for t in range(1,sim.shape[0]):
             sim[t,:,:] = sim[t-1,:,:]@rho.T + innov[t,:,:]
+
+        sim += self.mu[None,None,:]
+
         return sim
 
     def response(self, T, impulse):
@@ -265,4 +276,5 @@ class VAR1(DiscreteMarkovProcess):
         rho = self.rho
         for t in range(1,irf.shape[0]):
             irf[t,:] = rho@irf[t-1,:]
+        irf += self.mu[None,:]
         return irf
