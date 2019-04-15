@@ -5,6 +5,6 @@ from dolo.algos.simulations import simulate, response, tabulate, plot_decision_r
 from dolo.algos.value_iteration import evaluate_policy, value_iteration
 from dolo.algos.improved_time_iteration import improved_time_iteration
 from dolo.algos.steady_state import residuals
-from dolo.algos.perturbation import perturbate
+from dolo.algos.perturbation import perturb
 
-approximate_controls = perturbate
+approximate_controls = perturb

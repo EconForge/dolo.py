@@ -145,11 +145,11 @@ def approximate_1st_order(g_s, g_x, g_e, f_s, f_x, f_S, f_X):
     except Exception as e:
         raise GeneralizedEigenvaluesError(diag_S=diag_S, diag_T=diag_T)
 
+    eigval_s = sorted(eigval, reverse=False)
     if max(eigval[:n_s]) >= 1 and min(eigval[n_s:]) < 1:
         # BK conditions are met
         pass
     else:
-        eigval_s = sorted(eigval, reverse=True)
         ev_a = eigval_s[n_s-1]
         ev_b = eigval_s[n_s]
         cutoff = (ev_a - ev_b)/2
@@ -179,10 +179,13 @@ def approximate_1st_order(g_s, g_x, g_e, f_s, f_x, f_S, f_X):
     A = g_s + g_x @ C
     B = g_e
 
-    return C
+    return C, eigval_s
 
-def perturbate(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
-                         solve_steady_state=False, order=1):
+from .results import AlgoResult, PerturbationResult
+
+
+def perturb(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
+                         solve_steady_state=False, order=1, details=True):
     """Compute first order approximation of optimal controls
 
     Parameters:
@@ -220,7 +223,7 @@ def perturbate(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
 
     G_s, G_x, G_e, F_s, F_x, F_S, F_X = get_derivatives(model, steady_state=steady_state)
 
-    C = approximate_1st_order(G_s, G_x, G_e, F_s, F_x, F_S, F_X)
+    C, eigvals = approximate_1st_order(G_s, G_x, G_e, F_s, F_x, F_S, F_X)
 
     m = steady_state['exogenous']
     s = steady_state['states']
@@ -237,4 +240,16 @@ def perturbate(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
     elif isinstance(process, MvNormal):
         C_m = None
         C_s = C
-    return BivariateTaylor(m,s,x,C_m,C_s)
+    dr = BivariateTaylor(m,s,x,C_m,C_s)
+    if not details:
+        return dr
+    else:
+        return PerturbationResult(
+            dr,
+            eigvals,
+            True, # otherwise an Exception should have been raised already
+            True, # otherwise an Exception should have been raised already
+            True  # otherwise an Exception should have been raised already
+        )
+
+perturbate = perturb
