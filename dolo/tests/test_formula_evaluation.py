@@ -4,11 +4,11 @@ def test_eval_formula():
     from dolo import yaml_import, time_iteration, simulate
     import dolo.config
 
-    from dolo import perturbate
+    from dolo import perturb
 
     model = yaml_import('examples/models/rbc.yaml')
 
-    dr = perturbate(model)
+    dr = perturb(model)
     sim = simulate(model, dr)
     sim = sim.sel(N=0)
     sim = sim.to_pandas()

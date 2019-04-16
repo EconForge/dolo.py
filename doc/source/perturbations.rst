@@ -1,4 +1,4 @@
 Perturbation
 ............
 
-.. autofunction:: dolo.algos.perturbation.perturbate
+.. autofunction:: dolo.algos.perturbation.perturb

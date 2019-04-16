@@ -251,5 +251,3 @@ def perturb(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
             True, # otherwise an Exception should have been raised already
             True  # otherwise an Exception should have been raised already
         )
-
-perturbate = perturb
