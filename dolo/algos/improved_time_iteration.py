@@ -226,11 +226,13 @@ def radius_jac(res,dres,jres,fut_S,dumdr,tol=1e-10,maxit=1000,verbose=False):
 
 
 from dolo import dprint
+from .results import AlgoResult, ImprovedTimeIterationResult
 
 def improved_time_iteration(model, method='jac', initial_dr=None,
             interp_type='spline', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
-            complementarities=True, compute_radius=False, invmethod='gmres'):
+            complementarities=True, compute_radius=False, invmethod='gmres',
+            details=True):
 
     def vprint(*args, **kwargs):
         if verbose:
@@ -424,15 +426,31 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
     ddr.set_values(x)
 
     itprint.print_finished()
-    if compute_radius:
+
+    # if compute_radius:
+    #     return ddx,L
+    #     lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
+    #     return ddr, lam, lam_max, lambdas
+    # else:
+    if not details:
+        return ddr
+    else:
         ddx = solve_gu(dres.copy(), res.copy())
         L = Operator(jres,fut_S,ddr_filt)
-        return ddx,L
-        lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
-        return ddr, lam, lam_max, lambdas
-    else:
-        return ddr
-
+        lam = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+        lam = abs(lam[0])
+        # lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
+        return ImprovedTimeIterationResult(
+            ddr,
+            it,
+            err_0,
+            err_2,
+            err_0<tol,
+            complementarities,
+            lam,
+            None,
+            L
+        )
 
 
 def euler_residuals(f, g, s, x, dr, dp, p_, diff=True, with_jres=False,

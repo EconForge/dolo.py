@@ -12,13 +12,15 @@ from dolo.misc.itprinter import IterationsPrinter
 def constant_policy(model):
     return ConstantDecisionRule(model.calibration["controls"])
 
+from .results import AlgoResult, ValueIterationResult
 
 def value_iteration(model,
                     grid={},
                     tol=1e-6,
                     maxit=500,
                     maxit_howard=20,
-                    verbose=False):
+                    verbose=False,
+                    details=True):
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.
@@ -71,6 +73,7 @@ def value_iteration(model,
     n_x = len(x0)
 
     mdr = constant_policy(model)
+    
     controls_0 = np.zeros((n_ms, N, n_x))
     for i_ms in range(n_ms):
         controls_0[i_ms, :, :] = mdr.eval_is(i_ms, grid)
@@ -164,7 +167,23 @@ def value_iteration(model,
     mdr.set_values(controls)
     mdrv.set_values(values_0)
 
-    return mdr, mdrv
+    if not details:
+        return mdr, mdrv
+    else:
+        return ValueIterationResult(
+            mdr,             #:AbstractDecisionRule
+            mdrv,            #:AbstractDecisionRule
+            it,              #:Int
+            dprocess,        #:AbstractDiscretizedProcess
+            err_x<tol_x,     #:Bool
+            tol_x,           #:Float64
+            err_x,           #:Float64
+            err_v<tol_v,     #:Bool
+            tol_v,           #:Float64
+            err_v,           #:Float64
+            None,            #log:     #:ValueIterationLog
+            None             #trace:   #:Union{Nothing,IterationTrace
+        )
 
 
 def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):

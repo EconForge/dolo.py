@@ -28,9 +28,12 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
     return res
 
 
+from .results import TimeIterationResult, AlgoResult
+
+
 def time_iteration(model, initial_guess=None, dprocess=None, with_complementarities=True,
                         verbose=True, grid={},
-                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None) :
+                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False):
 
     '''
     Finds a global solution for ``model`` using backward time-iteration.
@@ -93,6 +96,8 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
     if initial_guess is None:
         controls_0[:, :, :] = x0[None,None,:]
     else:
+        if isinstance(initial_guess, AlgoResult):
+            initial_guess = initial_guess.dr
         try:
             for i_m in range(n_ms):
                 controls_0[i_m, :, :] = initial_guess(i_m, grid)
@@ -194,33 +199,17 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
         print("Elapsed: {} seconds.".format(t2-t1))
         print(stars)
 
-    return mdr
+    if not details:
+        return mdr
 
-
-if __name__ == '__main__':
-
-    from dolo import *
-    model = yaml_import("../../../examples/models/compat/rbc_mfga.yaml")
-    print(model.calibration['states'])
-    print(model.calibration_dict)
-    print(model.exogenous)
-
-
-    initial_guess_symbolic = [
-        'i = delta*k',
-        'n = 0.33'
-    ]
-
-    from dolo.compiler.function_compiler_ast import compile_function_ast
-    from dolo.compiler.function_compiler import standard_function
-
-    arg_names = [
-        ['exogenous',0,'m'],
-        ['states',0,'s'],
-        ['parameters',0,'p']
-    ]
-
-    fun = compile_function_ast(initial_guess_symbolic, model.symbols, arg_names,'initial_guess')
-    ff = standard_function(fun, len(initial_guess_symbolic))
-
-    sol = time_iteration(model, initial_guess=ff)
+    return TimeIterationResult(
+        mdr,
+        it,
+        with_complementarities,
+        dprocess,
+        err<tol, # x_converged: bool
+        tol, # x_tol
+        err, #: float
+        None,  # log: object # TimeIterationLog
+        None   # trace: object #{Nothing,IterationTrace}
+    )

@@ -42,6 +42,7 @@ def find_index(sim, values):
 
 from dolo.numeric.processes import DiscreteMarkovProcess
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
+from dolo.algos.results import AlgoResult
 
 def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
         driving_process=None, seed=42, stochastic=True):
@@ -50,7 +51,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
 
     Parameters
     ----------
-    
+
     model: NumericModel
 
     dr: decision rule
@@ -79,6 +80,8 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
            is the number of variables.
     '''
 
+    if isinstance(dr, AlgoResult):
+        dr = dr.dr
 
     calib = model.calibration
     parms = numpy.array(calib['parameters'])
@@ -172,6 +175,9 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
 
     import numpy
 
+    if isinstance(dr, AlgoResult):
+        dr = dr.dr
+
     states_names = model.symbols['states']
     controls_names = model.symbols['controls']
     index = states_names.index(str(state))
@@ -232,8 +238,13 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     return df
 
 def tabulate_2d(model, dr, states=None, i0=0, s0=None, n=[12,13]):
+
     import numpy
     import xarray as xr
+
+    if isinstance(dr, AlgoResult):
+        dr = dr.dr
+
     if s0 is None:
         s0 = model.calibration["states"]
     if states is None:
@@ -300,6 +311,9 @@ def plot3d(tab, varname):
 
 
 def plot_decision_rule(plot_controls=None,**kwargs):
+
+    if isinstance(dr, AlgoResult):
+        dr = dr.dr
 
     df = tabulate(dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=None)
 

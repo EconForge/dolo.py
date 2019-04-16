@@ -4,7 +4,7 @@ from dolo.compiler.derivatives import get_model_derivatives
 from typing import List
 from numpy import ndarray
 
-def perturbate(model, order=1, return_dr=True, steady_state=None, verbose=True):
+def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
 
     from dolo.numeric.processes import IIDProcess
 
@@ -89,7 +89,7 @@ class PerturbationProblem:
     def order(self):
         return len(self.f)-1
 
-approximate_controls = perturbate
+approximate_controls = perturb
 
 def state_perturb(problem: PerturbationProblem, verbose=True):
     """Computes a Taylor approximation of decision rules, given the supplied derivatives.
