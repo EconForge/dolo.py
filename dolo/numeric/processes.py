@@ -66,34 +66,35 @@ class DiscretizedProcess:
 
 class GDP(DiscretizedProcess):
 
-    def __init__(self, nodes, inodes, iweights):
-        self.nodes = nodes
-        self.inodes = inodes
-        self.iweights= iweights
+    def __init__(self, nodes, inodes, iweights, grid=None):
+        self.__nodes__ = nodes
+        self.__inodes__ = inodes
+        self.__iweights__= iweights
+        self.__grid__=grid
 
     #def discretize_gdp(self):
     #    return self
 
     def grid(self):
-        return EmptyGrid()
+        return self.__grid__
 
     def n_nodes(self)->int:
-        return self.nodes.shape[0]
+        return self.__nodes__.shape[0]
 
     def node(self, i: int): #->List:
-        return self.nodes[i,:]
+        return self.__nodes__[i,:]
 
     def nodes(self):
-        return self.nodes
+        return self.__nodes__
 
     def n_inodes(self, i: int): #->int:
-        return self.inodes.shape[1]
+        return self.__inodes__.shape[1]
 
     def inode(self, i, j): #->List:
-        return self.inodes[i,j]
+        return self.__inodes__[i,j]
 
     def iweight(self, i, j): #->float:
-        return self.iweights[i,j]
+        return self.__iweights__[i,j]
 
 
 class DiscretizedIIDProcess(DiscretizedProcess):
@@ -276,7 +277,6 @@ class VAR1(DiscreteMarkovProcess):
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
 
-
     def discretize_gdp(self):
 
         Σ = self.Sigma
@@ -307,15 +307,17 @@ class VAR1(DiscreteMarkovProcess):
         min = -n_std*(σ/(np.sqrt(1-ρ**2)))
         max = n_std*(σ/(np.sqrt(1-ρ**2)))
 
+        from .grids import CartesianGrid
+        grid = CartesianGrid([min],[max],[n_nodes])
+
         nodes = np.linspace(min,max,n_nodes)[:,None]
         iweights = weights[None,:].repeat(n_nodes,axis=0)
-        #integration_nodes = np.zeros((n_nodes, n_integration_nodes))[:,:,None]
-        integration_nodes = np.zeros((n_nodes, n_integration_nodes))
+        integration_nodes = np.zeros((n_nodes, n_integration_nodes))[:,:,None]
         for i in range(n_nodes):
             for j in range(n_integration_nodes):
-                integration_nodes[i,j] =  ρ*nodes[i] + epsilons[j]
+                integration_nodes[i,j,:] =  ρ*nodes[i,:] + epsilons[j]
 
-        return GDP(nodes=nodes,inodes=integration_nodes,iweights=iweights)
+        return GDP(nodes,integration_nodes,iweights,grid=grid)
         #return (nodes,integration_nodes,iweights)
 
 
