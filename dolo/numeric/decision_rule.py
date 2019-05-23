@@ -100,7 +100,7 @@ class DecisionRule(CallableDecisionRule):
             from scipy.linalg import lu_solve
             from numpy import linalg
             self.thetas = lu_solve( self.sg.lu_fact, x[0] )
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
+        elif isinstance(self.exo_grid, (EmptyGrid, CartesianGrid)) and isinstance(self.endo_grid, CartesianGrid):
             full_grid = self.full_grid
             min = full_grid.min
             max = full_grid.max

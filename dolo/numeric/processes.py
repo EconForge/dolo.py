@@ -74,7 +74,7 @@ class GDP(DiscretizedProcess):
 
     #def discretize_gdp(self):
     #    return self
-
+    @property
     def grid(self):
         return self.__grid__
 
