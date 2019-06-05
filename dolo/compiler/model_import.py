@@ -19,10 +19,16 @@ def yaml_import(fname, check=True, check_only=False):
         return output
 
     txt = txt.replace('^', '**')
-
-    data = ry.load(txt, ry.RoundTripLoader)
+    
+    try:
+        data = ry.load(txt, ry.RoundTripLoader)
+    except ry.YAMLError as ye:
+        raise ConfigurationError('failed to parse config') from ye
+    
     data['filename'] = fname
 
+   
+    
     from dolo.compiler.model import Model
 
     return Model(data)
