@@ -8,7 +8,17 @@ import yaml
 def yaml_import(fname, check=True, check_only=False):
 
     txt = read_file_or_url(fname)
+    txt = txt.replace('^', '**')
 
+    try:
+        data = ry.load(txt, ry.RoundTripLoader)
+    except AttributeError as ex:
+        print ("Error while parsing YAML file. Probably Syntax error in your model file : ", ex )
+        pass
+    
+    data = ry.load(txt, ry.RoundTripLoader)
+    
+    
     if check:
         from dolo.linter import lint
         output = lint(txt)
@@ -18,9 +28,7 @@ def yaml_import(fname, check=True, check_only=False):
     if check_only:
         return output
 
-    txt = txt.replace('^', '**')
 
-    data = ry.load(txt, ry.RoundTripLoader)
     data['filename'] = fname
 
     from dolo.compiler.model import Model
