@@ -1,0 +1,34 @@
+#Aiyagari
+#Idiosyncratic YAML
+
+name: Aiyagari
+
+symbols:
+
+    states: [a]
+    exogenous: [z, r, w]
+    parameters: [beta, B, a_max]
+    controls: [i]
+    
+equations:
+
+    arbitrage:
+        - 1-beta*r(1)*(r*a+w*z-i)/(r(+1)*a(+1)+w(+1)*z(+1)-i(+1)) | -B <= i <= r*a+w*z
+        
+    transition:
+        - a = i(-1)
+
+calibration:
+    beta: 0.96
+    B: 1e-10
+    a_max: 20.
+    a: a_max/10
+    i: a
+    
+domain:
+    a: [-B, a_max]
+
+options:
+    grid:
+        type: Cartesian
+        orders: [200]

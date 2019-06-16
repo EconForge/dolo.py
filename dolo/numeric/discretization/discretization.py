@@ -165,7 +165,7 @@ def tensor_markov( *args ):
         m2 = args[1]
         tail = args[2:]
         prod = tensor_markov(m1,m2)
-        return tensor_markov( prod, tail )
+        return tensor_markov( prod, *tail )
 
     elif len(args) == 2:
 
