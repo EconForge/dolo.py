@@ -63,6 +63,40 @@ class ContinuousProcess(Process):
 class DiscretizedProcess:
     pass
 
+
+class GDP(DiscretizedProcess):
+
+    def __init__(self, nodes, inodes, iweights, grid=None):
+        self.__nodes__ = nodes
+        self.__inodes__ = inodes
+        self.__iweights__= iweights
+        self.__grid__=grid
+
+    #def discretize_gdp(self):
+    #    return self
+    @property
+    def grid(self):
+        return self.__grid__
+
+    def n_nodes(self)->int:
+        return self.__nodes__.shape[0]
+
+    def node(self, i: int): #->List:
+        return self.__nodes__[i,:]
+
+    def nodes(self):
+        return self.__nodes__
+
+    def n_inodes(self, i: int): #->int:
+        return self.__inodes__.shape[1]
+
+    def inode(self, i, j): #->List:
+        return self.__inodes__[i,j]
+
+    def iweight(self, i, j): #->float:
+        return self.__iweights__[i,j]
+
+
 class DiscretizedIIDProcess(DiscretizedProcess):
 
     def __init__(self, nodes, weights):
@@ -189,7 +223,6 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 #         self.extend([P, Q]) # compatibility fix
 # #
 
-
 class MarkovProduct(DiscreteMarkovProcess):
 
     def __init__(self, M1=None, M2=None):
@@ -243,6 +276,49 @@ class VAR1(DiscreteMarkovProcess):
         P += self.mu[None,:]
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
+
+    def discretize_gdp(self):
+
+        Σ = self.Sigma
+        ρ = self.rho
+
+        n_nodes = 3
+        n_std = 2.5
+        n_integration_nodes = 5
+
+        try:
+            assert(Σ.shape[0]==1)
+        except:
+            raise Exception("Not implemented.")
+
+        try:
+            assert(ρ.shape[0]==ρ.shape[1]==1)
+        except:
+            raise Exception("Not implemented.")
+
+        ρ = ρ[0,0]
+        σ = np.sqrt(Σ[0,0])
+
+
+        from dolo.numeric.discretization import gauss_hermite_nodes
+
+        epsilons, weights = gauss_hermite_nodes([n_integration_nodes], Σ)
+
+        min = -n_std*(σ/(np.sqrt(1-ρ**2)))
+        max = n_std*(σ/(np.sqrt(1-ρ**2)))
+
+        from .grids import CartesianGrid
+        grid = CartesianGrid([min],[max],[n_nodes])
+
+        nodes = np.linspace(min,max,n_nodes)[:,None]
+        iweights = weights[None,:].repeat(n_nodes,axis=0)
+        integration_nodes = np.zeros((n_nodes, n_integration_nodes))[:,:,None]
+        for i in range(n_nodes):
+            for j in range(n_integration_nodes):
+                integration_nodes[i,j,:] =  ρ*nodes[i,:] + epsilons[j]
+
+        return GDP(nodes,integration_nodes,iweights,grid=grid)
+        #return (nodes,integration_nodes,iweights)
 
 
     def simulate(self, N, T, m0=None, stochastic=True):

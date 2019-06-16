@@ -11,6 +11,9 @@ from dolo.numeric.misc import mlinspace
 
 class Grid:
 
+    def __mul__(self, rgrid):
+        return cat_grids(self, rgrid)
+        
     def nodes(self):
         return self.__nodes__
 
@@ -19,6 +22,7 @@ class Grid:
 
     def node(self, i):
         return self.__nodes__[i,:]
+
 
 class EmptyGrid(Grid):
 
@@ -68,6 +72,7 @@ class CartesianGrid(Grid):
         else:
             self.n = np.array(n, dtype=int)
         self.__nodes__ = mlinspace(self.min, self.max, self.n)
+
 
 
 class NonUniformCartesianGrid(Grid):

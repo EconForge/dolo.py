@@ -87,7 +87,7 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
 
     exo_grid = dprocess.grid
 
-    mdr = DecisionRule(exo_grid, endo_grid)
+    mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess)
 
     grid = mdr.endo_grid.nodes()
     N = grid.shape[0]
