@@ -7,6 +7,7 @@ from dolo.misc.itprinter import IterationsPrinter
 from numba import jit
 import numpy
 import time
+import scipy.sparse.linalg
 
 from operator import mul
 from functools import reduce
@@ -231,7 +232,7 @@ from .results import AlgoResult, ImprovedTimeIterationResult
 def improved_time_iteration(model, method='jac', initial_dr=None,
             interp_type='spline', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
-            complementarities=True, compute_radius=False, invmethod='gmres',
+            complementarities=True, compute_radius=False, invmethod='iti',
             details=True):
 
     def vprint(*args, **kwargs):
@@ -375,7 +376,6 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
 
         # new version
         if invmethod=='gmres':
-            import scipy.sparse.linalg
             ddx = solve_gu(dres.copy(), res.copy())
             L = Operator(jres,fut_S,ddr_filt)
             n0 = L.counter
@@ -437,6 +437,7 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
     else:
         ddx = solve_gu(dres.copy(), res.copy())
         L = Operator(jres,fut_S,ddr_filt)
+
         lam = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
         lam = abs(lam[0])
         # lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
