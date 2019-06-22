@@ -224,20 +224,16 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 # #
 
 class MarkovProduct(DiscreteMarkovProcess):
-
-    def __init__(self, M1=None, M2=None):
-
-        self.M1 = M1
-        self.M2 = M2
-
+ 
+    def __init__(self, *args):
+ 
+        self.M = args
+         
     def discretize(self):
-
-        M1 = self.M1.discretize()
-        M2 = self.M2.discretize()
+ 
+        M = [(m.values, m.transitions) for m in self.M]
         from dolo.numeric.discretization import tensor_markov
-        [P, Q] = tensor_markov(
-            (M1.values, M1.transitions),
-            (M2.values, M2.transitions) )
+        [P, Q] = tensor_markov( *M )
         return DiscreteMarkovProcess(Q,P)
 
 class VAR1(DiscreteMarkovProcess):

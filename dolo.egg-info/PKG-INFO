@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: dolo
+Version: 0.4.9.9
+Summary: Economic modelling in Python
+Home-page: http://albop.github.com/dolo/
+Author: Pablo Winant
+Author-email: pablo.winant@gmail.com
+License: BSD-2
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides-Extra: interactive
+Provides-Extra: plots

@@ -269,8 +269,8 @@ def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
     grid = model.get_grid()
 
     if interp_type == 'spline':
-        ddr = DecisionRule(dp.grid, grid)
-        ddr_filt = DecisionRule(dp.grid, grid)
+        ddr = DecisionRule(dp.grid, grid, dprocess=dp)
+        ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp)
     elif interp_type == 'smolyak':
         ddr = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         ddr_filt = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
