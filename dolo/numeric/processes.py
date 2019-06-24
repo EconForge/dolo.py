@@ -49,7 +49,11 @@ class Process:
     pass
 
 class IIDProcess(Process):
-    pass
+
+    def response(self, T, impulse):
+        irf = numpy.zeros((T,self.d))
+        irf[1,:] = impulse[None,:]
+        return irf
 
 class DiscreteProcess(Process):
     pass
@@ -61,7 +65,13 @@ class ContinuousProcess(Process):
 #     pass
 
 class DiscretizedProcess:
-    pass
+
+    def iteritems(self, i, eps=1e-16):
+        for j in range(self.n_inodes(i)):
+            w = self.iweight(i,j)
+            if w>eps:
+                x = self.inode(i,j)
+                yield (w,x)
 
 
 class GDP(DiscretizedProcess):
@@ -159,14 +169,6 @@ class MvNormal(IIDProcess):
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
-    def response(self, T, impulse):
-        from numpy.random import multivariate_normal
-        Sigma = self.Sigma
-        mu = self.mu
-        irf = numpy.zeros((T,len(mu)))
-        irf[1,:] = impulse[None,:]
-        return irf
-
 
 
 class DiscreteMarkovProcess(DiscretizedProcess):
@@ -224,13 +226,13 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 # #
 
 class MarkovProduct(DiscreteMarkovProcess):
- 
+
     def __init__(self, *args):
- 
+
         self.M = args
-         
+
     def discretize(self):
- 
+
         M = [(m.values, m.transitions) for m in self.M]
         from dolo.numeric.discretization import tensor_markov
         [P, Q] = tensor_markov( *M )
