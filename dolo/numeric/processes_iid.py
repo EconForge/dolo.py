@@ -144,7 +144,7 @@ class Uniform(UnivariateIIDProcess):
     def discretize(self, N=5):
 
         # do we want to include the boundaries here ?
-        a,b = self.a, self.b
+        a, b = self.a, self.b
         xvec = np.linspace(a, b, N+1)
         x = (b-a)/2/N + xvec[:-1]
         w = x*0+1/N

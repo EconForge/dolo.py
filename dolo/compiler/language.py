@@ -68,6 +68,13 @@ class SmolyakGrid(LanguageElement):
 class Domain(LanguageElement):
     baseclass = objects.Domain
 
+from dolo.numeric.processes_iid import UNormal, Uniform
+
+class UNormal(LanguageElement):
+    baseclass = UNormal
+
+class Uniform(LanguageElement):
+    baseclass = Uniform
 
 # aliases
 class Smolyak(SmolyakGrid):
@@ -85,7 +92,9 @@ minilang = [
     Cartesian,
     CartesianGrid,
     SmolyakGrid,
-    Domain
+    Domain,
+    UNormal,
+    Uniform
 ]
 
 # import yaml

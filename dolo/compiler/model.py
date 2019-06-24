@@ -155,13 +155,17 @@ class SymbolicModel:
         calibration = self.get_calibration()
         type = get_type(exo)
 
-        from dolo.compiler.language import Normal, AR1, MarkovChain
+        from dolo.compiler.language import Normal, AR1, MarkovChain, Uniform, UNormal
         if type == "Normal":
             exog = Normal(**exo)
         elif type in ("AR1", "VAR1"):
             exog = AR1(**exo)
         elif type == "MarkovChain":
             exog = MarkovChain(**exo)
+        elif type == "Uniform":
+            exog = Uniform(**exo)
+        elif type == "UNormal":
+            exog = UNormal(**exo)
         else:
             raise Exception("Unknown exogenous type {}.".format(type))
         d = exog.eval(d=calibration)
