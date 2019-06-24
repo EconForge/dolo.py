@@ -229,7 +229,7 @@ def radius_jac(res,dres,jres,fut_S,dumdr,tol=1e-10,maxit=1000,verbose=False):
 from dolo import dprint
 from .results import AlgoResult, ImprovedTimeIterationResult
 
-def improved_time_iteration(model, method='jac', initial_dr=None,
+def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
             interp_type='spline', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
             complementarities=True, compute_radius=False, invmethod='iti',
@@ -259,7 +259,8 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
 
     parms = model.calibration['parameters']
 
-    dp = model.exogenous.discretize()
+    if dp is None:
+        dp = model.exogenous.discretize()
 
     n_m = max(dp.n_nodes(),1)
 
@@ -268,8 +269,8 @@ def improved_time_iteration(model, method='jac', initial_dr=None,
     grid = model.get_grid()
 
     if interp_type == 'spline':
-        ddr = DecisionRule(dp.grid, grid)
-        ddr_filt = DecisionRule(dp.grid, grid)
+        ddr = DecisionRule(dp.grid, grid, dprocess=dp)
+        ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp)
     elif interp_type == 'smolyak':
         ddr = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         ddr_filt = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
