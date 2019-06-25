@@ -48,6 +48,23 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 class Process:
     pass
 
+class Product:
+    def __init__(self, l=[]):
+        self.processes = l
+
+    def discretize(self, to='mc', options={}):
+
+        if isinstance(options, dict):
+            kwargs = [options]*len(self.processes)
+        else:
+            assert(len(options)==len(self.processes))
+        if to=='mc':
+            return MarkovProduct(*[e.discretize(to='mc', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='mc')
+        else:
+            raise Exception("Not implemented.")
+
+
+
 class IIDProcess(Process):
 
     def response(self, T, impulse):
@@ -61,6 +78,30 @@ class DiscreteProcess(Process):
 class ContinuousProcess(Process):
     pass
 
+
+class ConstantProcess(Process):
+
+    def __init__(self, μ=None):
+
+        if isinstance(μ, (float, int)):
+             μ = [μ]
+        self.μ = np.array(μ)
+        assert(self.μ.ndim==1)
+        self.d = len(self.μ)
+
+    def discretize(self, to='mc'):
+
+        if to!='mc':
+            raise Exception("Not implemented")
+        else:
+            nodes = self.μ[None,:]
+            transitions = np.array([[1.0]])
+            return DiscreteMarkovProcess(transitions, nodes)
+
+class AggregateProcess(ConstantProcess):
+
+    # that is a dummy class
+    pass
 # class VAR1(ContinuousProcess):
 #     pass
 
@@ -151,7 +192,9 @@ class MvNormal(IIDProcess):
         assert(self.Sigma.shape[0] == self.d)
         assert(self.orders.shape[0] == self.d)
 
-    def discretize(self, orders=None):
+    def discretize(self, to='iid', orders=None):
+        if to!="iid":
+            raise Exception("Not Implemented")
         if orders is None:
             orders = self.orders
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
@@ -231,14 +274,25 @@ class MarkovProduct(DiscreteMarkovProcess):
 
         self.M = args
 
-    def discretize(self):
+    def discretize(self, to='mc'):
 
         M = [(m.values, m.transitions) for m in self.M]
         from dolo.numeric.discretization import tensor_markov
         [P, Q] = tensor_markov( *M )
         return DiscreteMarkovProcess(Q,P)
 
-class VAR1(DiscreteMarkovProcess):
+class GDPProduct(DiscreteMarkovProcess):
+
+    def __init__(self, *args):
+
+        self.M = args
+
+    def discretize(self, to='gdp'):
+
+        pass
+
+
+class VAR1(ContinuousProcess):
 
     def __init__(self, rho=None, Sigma=None, mu=None, N=3):
 
@@ -257,7 +311,13 @@ class VAR1(DiscreteMarkovProcess):
             self.mu = np.array(mu, dtype=float)
         self.d = d
 
-    def discretize(self, N=3):
+    def discretize(self, N=3, to='mc', **kwargs):
+        if to=='mc':
+            return self.discretize_mc(N=N, **kwargs)
+        elif to=='gdp':
+            return self.discretize_gdp(N=N, **kwargs)
+
+    def discretize_mc(self, N=3):
 
         rho = self.rho
         Sigma = self.Sigma
@@ -275,12 +335,12 @@ class VAR1(DiscreteMarkovProcess):
 
         return DiscreteMarkovProcess(values=P, transitions=Q)
 
-    def discretize_gdp(self):
+    def discretize_gdp(self, N=3):
 
         Σ = self.Sigma
         ρ = self.rho
 
-        n_nodes = 3
+        n_nodes = N
         n_std = 2.5
         n_integration_nodes = 5
 

@@ -22,6 +22,8 @@ class LanguageElement(dict):
     @classmethod
     def constructor(cls, loader, node):
         value = loader.construct_mapping(node)
+        print("Constructing")
+        print(value.__class__)
         return cls(**value)
 
     def check(self):
@@ -68,6 +70,7 @@ class SmolyakGrid(LanguageElement):
 class Domain(LanguageElement):
     baseclass = objects.Domain
 
+from dolo.numeric.processes import ConstantProcess, AggregateProcess, Product
 from dolo.numeric.processes_iid import UNormal, Uniform
 
 class UNormal(LanguageElement):
@@ -75,6 +78,15 @@ class UNormal(LanguageElement):
 
 class Uniform(LanguageElement):
     baseclass = Uniform
+
+class ConstantProcess(LanguageElement):
+    baseclass = ConstantProcess
+
+class AggregateProcess(LanguageElement):
+    baseclass = AggregateProcess
+
+class Product(LanguageElement):
+    baseclass = Product
 
 # aliases
 class Smolyak(SmolyakGrid):
@@ -94,13 +106,11 @@ minilang = [
     SmolyakGrid,
     Domain,
     UNormal,
-    Uniform
+    Uniform,
+    ConstantProcess,
+    AggregateProcess,
+    Product
 ]
-
-# import yaml
-# for C in minilang:
-#     k = C.__name__
-#     yaml.add_constructor('!{}'.format(k), C.constructor)
 
 
 if __name__ == '__main__':

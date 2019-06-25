@@ -155,7 +155,8 @@ class SymbolicModel:
         calibration = self.get_calibration()
         type = get_type(exo)
 
-        from dolo.compiler.language import Normal, AR1, MarkovChain, Uniform, UNormal
+        # this is utterly, completely stupid! Who wrote it?
+        from dolo.compiler.language import Normal, AR1, MarkovChain, Uniform, UNormal, ConstantProcess, AggregateProcess, Product
         if type == "Normal":
             exog = Normal(**exo)
         elif type in ("AR1", "VAR1"):
@@ -166,6 +167,32 @@ class SymbolicModel:
             exog = Uniform(**exo)
         elif type == "UNormal":
             exog = UNormal(**exo)
+        elif type == "ConstantProcess":
+            exog = ConstantProcess(**exo)
+        elif type == "AggregateProcess":
+            exog = AggregateProcess(**exo)
+        elif type =='Product':
+            subshocks = []
+            for exs in exo:
+                type = get_type(exs)
+                if type == "Normal":
+                    exog = Normal(**exs)
+                elif type in ("AR1", "VAR1"):
+                    exog = AR1(**exs)
+                elif type == "MarkovChain":
+                    exog = MarkovChain(**exs)
+                elif type == "Uniform":
+                    exog = Uniform(**exs)
+                elif type == "UNormal":
+                    exog = UNormal(**exs)
+                elif type == "ConstantProcess":
+                    exog = ConstantProcess(**exs)
+                elif type == "AggregateProcess":
+                    exog = AggregateProcess(**exs)
+                else:
+                    raise Exception("Unknown Process Type")
+                subshocks.append(exog)
+            exog = Product({'l':subshocks})
         else:
             raise Exception("Unknown exogenous type {}.".format(type))
         d = exog.eval(d=calibration)
