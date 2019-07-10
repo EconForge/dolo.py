@@ -76,7 +76,7 @@ def greek_tolerance(fun):
 
 
 
-from scipy.stats import norm
+from scipy.stats import norm, uniform, lognorm
 from matplotlib import pyplot as plt
 import numpy as np
 from dataclasses import dataclass
@@ -85,6 +85,25 @@ from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, Disc
 
 class UnivariateIIDProcess(IIDProcess):
     d = 1
+
+    def discretize(self, N=5, method='equiprobable'):
+        if method=='gauss-hermite':
+            return self.__discretize_gh__(N=N)
+        elif method=='equiprobable':
+            return self.__discretize_ep__(N=N)
+        else:
+            raise Exception("Unknown discretization method.")
+
+    def __discretize_ep__(self, N=5): #Equiprobable
+
+        # this could be implemented once for all univariate processes which have a ppf
+        xvec = np.linspace(0, 1, N+1)
+        quantiles = 1/N/2 + xvec[:-1]
+        x = self.ppf(quantiles)
+        x = x[:,None]
+        w = (1/(N))*np.ones(N)
+        return DiscretizedIIDProcess(x, w)
+
 
 @dataclass
 class UNormal(UnivariateIIDProcess):
@@ -98,6 +117,10 @@ class UNormal(UnivariateIIDProcess):
         self.σ = float(σ)
         self.μ = 0.0 if μ is None else float(μ)
 
+    def ppf(self, quantiles):
+        x = norm.ppf(quantiles, loc=self.μ, scale=self.σ)
+        return x
+
     def discretize(self, N=5, method='gauss-hermite'):
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
@@ -106,21 +129,12 @@ class UNormal(UnivariateIIDProcess):
         else:
             raise Exception("Unknown discretization method.")
 
+
     def __discretize_gh__(self, N=5): # Gauss-Hermite
 
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
         [x, w] = gauss_hermite_nodes(N, np.array([[self.σ**2]]), mu=self.μ)
         x = np.row_stack( [(e + self.μ) for e in x] )
-        return DiscretizedIIDProcess(x, w)
-
-    def __discretize_ep__(self, N=5): #Equiprobable
-
-        # this could be implemented once for all univariate processes which have a ppf
-        xvec = np.linspace(0, 1, N+1)
-        quantiles = 1/N/2 + xvec[:-1]
-        x = norm.ppf(quantiles, loc=self.μ, scale=self.σ)
-        x = x[:,None]
-        w = (1/(N))*np.ones(N)
         return DiscretizedIIDProcess(x, w)
 
     def simulate(self, N, T, m0=None, stochastic=True):
@@ -141,15 +155,9 @@ class Uniform(UnivariateIIDProcess):
     a: float
     b: float
 
-    def discretize(self, N=5):
-
-        # do we want to include the boundaries here ?
-        a, b = self.a, self.b
-        xvec = np.linspace(a, b, N+1)
-        x = (b-a)/2/N + xvec[:-1]
-        w = x*0+1/N
-        x = x[:,None]
-        return DiscretizedIIDProcess(x, w)
+    def ppf(self, quantiles):
+        x = uniform.ppf(quantiles, loc=self.a, scale=self.b)
+        return x
 
 
     def simulate(self, N, T, m0=None, stochastic=True):
@@ -173,12 +181,33 @@ class Uniform(UnivariateIIDProcess):
 @dataclass
 class LogNormal(UnivariateIIDProcess):
 
+
+
+    # parametrization a lognormal random variable Y is in terms of
+    # the mean, μ, and standard deviation, σ, of the unique normally distributed random variable X
+    # such that exp(X) = Y.
+
     μ: float # log-mean μ
     σ: float # scale σ
 
-    def discretize(self):
 
-        pass
+    @greek_tolerance
+    def __init__(self, σ:float=None, μ:float=None):
+        self.σ = float(σ)
+        self.μ = 0.0 if μ is None else float(μ)
+
+    # From scipy: defined as lognorm.pdf(x, s, loc, scale)
+    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html#scipy.stats.lognorm
+
+    # A common parametrization for a lognormal random variable Y is in terms of
+    # the mean, mu, and standard deviation, sigma, of the unique normally distributed random variable X
+    #such that exp(X) = Y.
+    #This parametrization corresponds to setting s = sigma and scale = exp(mu).
+
+    def ppf(self, quantiles):
+        x = lognorm.ppf(quantiles, s=self.σ, loc=self.μ, scale=np.exp(self.μ))
+        return x
+
 
           # method: See hark
           # Makes an equiprobable distribution by
