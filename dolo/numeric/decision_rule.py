@@ -221,3 +221,73 @@ class DecisionRule(CallableDecisionRule):
             raise Exception("Not Implemented.")
 
         return out
+
+
+import dolang
+import dolang.symbolic
+from dolang.symbolic import stringify_symbol
+from dolo.numeric.decision_rule import CallableDecisionRule
+from dolang.factory import FlatFunctionFactory
+from dolang.function_compiler import make_method_from_factory
+
+class CustomDR(CallableDecisionRule):
+
+    def __init__(self, values, model=None):
+
+        from dolang.symbolic import sanitize, stringify
+
+        exogenous = model.symbols['exogenous']
+        states = model.symbols['states']
+        controls = model.symbols['controls']
+        parameters = model.symbols['parameters']
+
+        preamble = dict([(s, values[s]) for s in values.keys() if s not in controls])
+        equations = [values[s] for s in controls]
+
+        variables = exogenous + states + controls + [*preamble.keys()]
+
+        preamble_str = dict()
+
+        for k in [*preamble.keys()]:
+            v = preamble[k]
+            if '(' not in k:
+                vv = f'{k}(0)'
+            else:
+                vv = k
+
+            preamble_str[stringify(vv)] = stringify(sanitize(v, variables))
+
+        # let's reorder the preamble
+        from dolang.triangular_solver import get_incidence, triangular_solver
+        incidence = get_incidence(preamble_str)
+        sol = triangular_solver(incidence)
+        kk = [*preamble_str.keys()]
+        preamble_str = dict([(kk[k], preamble_str[kk[k]]) for k in sol])
+
+        equations = [dolang.symbolic.sanitize(eq, variables) for eq in equations]
+        equations_strings = [dolang.stringify(eq, variables) for eq in equations]
+
+        args = dict([
+            ('m', [(e,0) for e in exogenous]),
+            ('s', [(e,0) for e in states]),
+            ('p', [e for e in parameters])
+        ])
+
+        args = dict( [(k,[stringify_symbol(e) for e in v]) for k,v in args.items()] )
+
+        targets = [stringify_symbol((e,0)) for e in controls]
+
+        eqs = dict([ (targets[i], eq) for i, eq in enumerate(equations_strings) ])
+
+        fff = FlatFunctionFactory(preamble_str, eqs, args, 'custom_dr')
+
+        fun, gufun = make_method_from_factory(fff)
+
+        self.p = model.calibration['parameters']
+        self.exo_grid = model.exogenous.discretize() # this is never used
+        self.endo_grid = model.get_grid()
+        self.gufun = gufun
+
+    def eval_ms(self, m, s):
+
+        return self.gufun(m, s, self.p)
