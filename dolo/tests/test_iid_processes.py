@@ -1,68 +1,55 @@
-from matplotlib import pyplot as plt
-import scipy
-from scipy.integrate import quad
-from dolo.numeric.processes_iid import *
+def test_unormal():
 
-σ = 0.1
-μ = 0.2
+    import scipy
+    from scipy.integrate import quad
+    from dolo.numeric.processes_iid import UNormal, Uniform
 
-norm = UNormal(mu=μ, sigma=σ)
-norm2 = UNormal(μ=μ, σ=σ)
+    import numpy as np
 
-norm.discretize()
+    σ = 0.1
+    μ = 0.2
 
-unif = Uniform(-1, 2)
+    norm = UNormal(mu=μ, sigma=σ)
+    norm2 = UNormal(μ=μ, σ=σ)
 
-dp = unif.discretize(N=10)
+    norm.discretize()
 
-nodes = np.array([x for (w,x) in dp.iteritems(0)])
+    unif = Uniform(-1, 2)
 
-plt.plot(nodes, nodes*0,'.')
-plt.xlim(-1,2)
-plt.grid()
+    dp = unif.discretize(N=10)
 
+    nodes = np.array([x for (w,x) in dp.iteritems(0)])
 
-
-res_gh = norm.discretize(10)
-res_ep = norm.discretize(10, method='equiprobable')
-
-for (w,x) in res_ep.iteritems(0):
-    print(w,x)
+    assert nodes.ndim == 2
 
 
-# neglect integration nodes whose probability is smaller than 1e-5
-for (w,x) in res_gh.iteritems(0,eps=1e-5):
-    print(w,x)
+    res_gh = norm.discretize(10)
+    res_ep = norm.discretize(10, method='equiprobable')
 
-def f(x):
-    return x**2
-
-
-val = quad(lambda u: f(u)/np.sqrt(2*np.pi*σ**2)*np.exp(-(u-μ)**2/(2*σ**2)), -5, 5)
+    for (w,x) in res_ep.iteritems(0):
+        print(w,x)
 
 
-v0 = sum([f(x)*w for (w,x) in res_gh.iteritems(0)])
-v1 = sum([f(x)*w for (w,x) in res_ep.iteritems(0)])
+    # neglect integration nodes whose probability is smaller than 1e-5
+    for (w,x) in res_gh.iteritems(0,eps=1e-5):
+        print(w,x)
 
-print(v0, v1, val)
-
-sim = norm.simulate(10000,2)
-
-sim.mean()
-sim.std()
+    def f(x):
+        return x**2
 
 
-
-dis = norm.discretize(N=50, method='equiprobable')
-
-weights, nodes = np.array( [*zip(*[*dis.iteritems(0)])] )
+    val = quad(lambda u: f(u)/np.sqrt(2*np.pi*σ**2)*np.exp(-(u-μ)**2/(2*σ**2)), -5, 5)
 
 
-plt.plot(nodes, nodes*0, '.')
-xl = plt.xlim()
+    v0 = sum([f(x)*w for (w,x) in res_gh.iteritems(0)])
+    v1 = sum([f(x)*w for (w,x) in res_ep.iteritems(0)])
 
 
-xvec = np.linspace(xl[0], xl[1], 100)
-pdf = scipy.stats.norm.pdf(xvec)
-plt.plot(xvec, pdf)
-plt.grid()
+    sim = norm.simulate(10000,2)
+
+    sim.mean()
+    sim.std()
+
+    dis = norm.discretize(N=50, method='equiprobable')
+
+    weights, nodes = np.array( [*zip(*[*dis.iteritems(0)])] )

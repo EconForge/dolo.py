@@ -133,7 +133,7 @@ def check_symbols(data):
 
     symbols = data['symbols']
     cm_symbols = symbols
-    model_type = data['model_type']
+    model_type = 'dtcc'
 
     already_declared = {}  # symbol: symbol_type, position
 
@@ -142,7 +142,7 @@ def check_symbols(data):
         if key not in known_symbol_types[model_type]:
             l0, c0, l1, c1 = cm_symbols.lc.data[key]
             exc = ModelException(
-                "Unknown symbol type '{}' for model type '{}'".format(
+                "Unknown symbol type '{}'".format(
                     key, model_type))
             exc.pos = (l0, c0, l1, c1)
             # print(l0,c0,l1,c1)
@@ -427,12 +427,16 @@ def check_infos(data):
 def lint(txt, source='<string>', format='human', catch_exception=False):
 
     # raise ModelException if it doesn't work correctly
-    try:
-        data = ry.load(txt, ry.RoundTripLoader)
-    except Exception as exc:
-        if not catch_exception:
-            raise exc
-        return []  # should return parse error
+    if isinstance(txt, str):
+        try:
+            data = ry.load(txt, ry.RoundTripLoader)
+        except Exception as exc:
+            if not catch_exception:
+                raise exc
+            return []  # should return parse error
+    else:
+        # txt is then assumed to be a ruamel structure
+        data = txt
 
     if not ('symbols' in data or 'equations' in data or 'calibration' in data):
         # this is probably not a yaml filename

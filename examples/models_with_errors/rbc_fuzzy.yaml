@@ -8,7 +8,7 @@ symbols:
    controls: [i, n]
    auxiliaries: [y, c, rk, w]
    values: [V]
-   shocks: [e_z]
+   exogenous: [e_z]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z ]
 
 
@@ -64,16 +64,14 @@ calibration:
 
 
 
+domain:
+    z: [ 1-2*sig_z, 1+2*sig_z]
+    k: [ k*0.9, k*1.1 ]
 
 options:
 
-    Approximation:
-        a: [ 1-2*sig_z, k*0.9 ]
-        b: [ 1+2*sig_z, k*1.1 ]
-        orders: [10, 50]
+    grid: !Cartesian
+        n: [10, 50]
 
-    distribution:
-
-        Normal:
-
-            [ [ sig_z**2] ]
+exogenous: !Normal:
+    Sigma: [ [ sig_z**2] ]

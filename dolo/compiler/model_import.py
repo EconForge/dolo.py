@@ -12,22 +12,18 @@ def yaml_import(fname, check=True, check_only=False):
 
     try:
         data = ry.load(txt, ry.RoundTripLoader)
-    except AttributeError as ex:
-        print ("Error while parsing YAML file. Probably Syntax error in your model file : ", ex )
-        pass
-    
-    data = ry.load(txt, ry.RoundTripLoader)
-    
-    
+    except Exception as ex:
+        print ("Error while parsing YAML file. Probable syntax error in your model file : ", fname )
+        raise ex
+
     if check:
         from dolo.linter import lint
-        output = lint(txt)
+        output = lint(data, source=fname)
         if len(output) > 0:
             print(output)
 
     if check_only:
         return output
-
 
     data['filename'] = fname
 

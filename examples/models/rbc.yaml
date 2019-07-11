@@ -70,8 +70,8 @@ calibration:
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
     m: beta/c^sigma*(1-delta+rk)
 
-exogenous: !Normal
-    Sigma: [[sig_z**2]]
+exogenous: !UNormal
+    σ: 0.01
 
 domain:
     z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
