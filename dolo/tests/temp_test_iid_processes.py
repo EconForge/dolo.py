@@ -9,6 +9,10 @@ from dolo.numeric.processes_iid import *
 μ = 0.2
 N = 10
 
+x=2
+
+assert(x==2)
+
 ## Polynomial
 def f(x):
     return x**2
@@ -54,12 +58,10 @@ plt.show()
 
 
 ########################################################################
-########################################################################
 
 ## Compute expectation of the normally distributed variable
 
-expval = quad(lambda x: f(x)/np.sqrt(2*np.pi*σ**2)*np.exp(-(x-μ)**2/(2*σ**2)), -np.inf,np.inf)
-expval_normal = expval[0]
+expval_normal = quad(lambda x: f(x)/np.sqrt(2*np.pi*σ**2)*np.exp(-(x-μ)**2/(2*σ**2)), -np.inf,np.inf)[0]
 
 ## Compute the mean of random draws
 expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
@@ -76,16 +78,18 @@ expval_gh
 expval_ep
 expval_MC
 
+assert(abs(expval_gh-expval_normal)<0.1)
+assert(abs(expval_ep-expval_normal)<0.1)
 
 
 ##################################################################
 ############################# UNIFORM ###########################
 ##################################################################
 
-a = -3
-b = 10 #### CANNOT PUT 0
+a = -1
+b = 1 #### CANNOT PUT 0
 distUni = Uniform(a, b)
-disUni = distUni.discretize_uni(N=10)
+disUni = distUni.discretize(N=10)
 ### Here there is an issue with the uniform
 
 ## Random draws
@@ -117,39 +121,12 @@ expval_ep = np.array([f(disUni.inode(0,j))*disUni.iweight(0,j) for j in range(di
 expval_ep
 expval_MC
 
-## Compa
-
-
-
-
-
-
-
-
-
-
-
-from matplotlib import pyplot as plt
-import scipy
-from scipy.integrate import quad
-import scipy.special as special
-import numpy as np
-from dolo.numeric.processes_iid import *
-
-σ = 0.1
-μ = 0.2
-N = 10
-
-## Polynomial
-def f(x):
-    return x**2
-
-
 ##################################################################
 ############################# LOGNORMAL ###########################
 ##################################################################
 
-μ, σ = 3., 1.
+σ = 1
+μ = 3
 
 logn = LogNormal(μ=μ, σ=σ)
 logn.μ
@@ -177,14 +154,14 @@ weights_Log, nodes_Log = np.array( [*zip(*[*disLog.iteritems(0)])] )
 plt.plot(nodes_Log, nodes_Log*0, '.')
 xl = plt.xlim()
 xvec = np.linspace(xl[0], xl[1], 100)
+xvec
 pdf = scipy.stats.lognorm.pdf(xvec,s=σ, loc=μ, scale=np.exp(μ) )
 plt.plot(xvec, pdf)
 plt.grid()
 
+
 ## Compute the mean of random draws
 expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
-expval_MC
-
 
 # Compute ∑(f(ϵ)*w_ϵ) for each discretization method
 expval_ep = np.array([f(disLog.inode(0,j))*disLog.iweight(0,j) for j in range(disLog.n_inodes(0))]).sum()

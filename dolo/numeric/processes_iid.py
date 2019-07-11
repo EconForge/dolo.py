@@ -105,6 +105,8 @@ class UnivariateIIDProcess(IIDProcess):
         return DiscretizedIIDProcess(x, w)
 
 
+
+
 @dataclass
 class UNormal(UnivariateIIDProcess):
 
@@ -155,8 +157,12 @@ class Uniform(UnivariateIIDProcess):
     a: float
     b: float
 
+    def __init__(self, a:float=None, b:float=None):
+        self.a = float(a)
+        self.b = float(b)
+
     def ppf(self, quantiles):
-        x = uniform.ppf(quantiles, loc=self.a, scale=self.b)
+        x = uniform.ppf(quantiles, loc=self.a, scale=(self.b-self.a))
         return x
 
 
@@ -194,7 +200,7 @@ class LogNormal(UnivariateIIDProcess):
     @greek_tolerance
     def __init__(self, σ:float=None, μ:float=None):
         self.σ = float(σ)
-        self.μ = 0.0 if μ is None else float(μ)
+        self.μ = float(μ)
 
     # From scipy: defined as lognorm.pdf(x, s, loc, scale)
     # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html#scipy.stats.lognorm
@@ -204,8 +210,9 @@ class LogNormal(UnivariateIIDProcess):
     #such that exp(X) = Y.
     #This parametrization corresponds to setting s = sigma and scale = exp(mu).
 
+
     def ppf(self, quantiles):
-        x = lognorm.ppf(quantiles, s=self.σ, loc=self.μ, scale=np.exp(self.μ))
+        x = lognorm.ppf(quantiles, s=self.σ, loc=0, scale=np.exp(self.μ))
         return x
 
 
