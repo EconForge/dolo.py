@@ -1,7 +1,7 @@
 def get_derivatives(model, steady_state=None):
 
     from dolo.numeric.processes import VAR1
-    from dolo.numeric.processes import MvNormal
+    from dolo.numeric.processes import MvNormal, IIDProcess
 
     import numpy as np
 
@@ -42,7 +42,7 @@ def get_derivatives(model, steady_state=None):
         F_S = np.column_stack([f_M, f_S])
         F_x = f_x
         F_X = f_X
-    elif isinstance(process, MvNormal):
+    elif isinstance(process, IIDProcess):
         G_s = g_s
         G_x = g_x
         G_e = g_m
@@ -50,6 +50,8 @@ def get_derivatives(model, steady_state=None):
         F_S = f_S
         F_x = f_x
         F_X = f_X
+    else:
+        raise Exception(f"Not implemented: perturbation for shock {process.__class__}")
 
     return G_s, G_x, G_e, F_s, F_x, F_S, F_X
 
@@ -230,14 +232,13 @@ def perturb(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
     x = steady_state['controls']
 
     from dolo.numeric.processes import VAR1
-    from dolo.numeric.processes import MvNormal
-
+    from dolo.numeric.processes import MvNormal, IIDProcess
     process = model.exogenous
 
     if isinstance(process, VAR1):
         C_m = C[:,:len(m)]
         C_s = C[:,len(m):]
-    elif isinstance(process, MvNormal):
+    elif isinstance(process, IIDProcess):
         C_m = None
         C_s = C
     dr = BivariateTaylor(m,s,x,C_m,C_s)

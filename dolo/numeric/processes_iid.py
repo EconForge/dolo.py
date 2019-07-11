@@ -33,7 +33,7 @@ def greek_tolerance(fun):
 ## Common probability distributions:
 ## https://blog.cloudera.com/blog/2015/12/common-probability-distributions-the-data-scientists-crib-sheet/
 ##
-## Distributions.jl:
+## Distributions.jl:(args, kwargs))
 ## https://juliastats.github.io/Distributions.jl/stable/
 ##
 ## Scipy.stats:
