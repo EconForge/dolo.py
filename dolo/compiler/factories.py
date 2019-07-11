@@ -26,9 +26,9 @@ def reorder_preamble(pr):
     from dolang.triangular_solver import solve_triangular_system
     unknowns = [*pr.keys()]
     incidence = [[str(e) for e in sympy.sympify((exp)).atoms()]
-                 for exp in pr.values()]
+    for exp in pr.values()]
     sol = solve_triangular_system(dict(zip(unknowns, incidence)))
-    return dict([(k, pr[k]) for k in sol.keys()])
+    return dict([(k, pr[k]) for k in sol])
 
 
 def shift_spec(specs, tshift):
