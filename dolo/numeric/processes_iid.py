@@ -76,7 +76,7 @@ def greek_tolerance(fun):
 
 
 
-from scipy.stats import norm, uniform, lognorm
+from scipy.stats import norm, uniform, lognorm, beta
 from matplotlib import pyplot as plt
 import numpy as np
 from dataclasses import dataclass
@@ -238,9 +238,14 @@ class Beta(UnivariateIIDProcess):
     α: float
     β: float
 
-    def discretize(self):
 
-        pass
+    def __init__(self, α:float=None, β:float=None):
+        self.α = float(α)
+        self.β = float(β)
+
+    def ppf(self, quantiles):
+        x = beta.ppf(quantiles, self.α, self.β)
+        return x
 
         # method: In hark utilities
           #reference https://github.com/econ-ark/HARK/blob/d99393973554b1cf830c6285e6da59d98ff242ff/HARK/utilities.py

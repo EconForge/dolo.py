@@ -125,8 +125,8 @@ expval_MC
 ############################# LOGNORMAL ###########################
 ##################################################################
 
-σ = 1
-μ = 3
+σ = 0.1
+μ = 0.3
 
 logn = LogNormal(μ=μ, σ=σ)
 logn.μ
@@ -171,6 +171,148 @@ expval_MC
 
 
 
+
+
+
+
+
+##################################################################
+############################# BETA ###########################
+##################################################################
+
+
+
+α = 2
+β = 5
+
+distbeta = Beta(α, β)
+disbeta = distbeta.discretize(N=10)
+### Here there is an issue with the uniform
+
+## Random draws
+M=1000
+s_MC = np.random.beta(α, β, M)
+
+count, bins, ignored = plt.hist(s_MC, 10, density=True)
+x = np.linspace(min(bins), max(bins), 10000)
+pdf = scipy.stats.beta.pdf(x,α, β)
+plt.plot(x, pdf, linewidth=2, color='r')
+plt.axis('tight')
+plt.show()
+
+## Plot Equiprobable
+weights_beta, nodes_beta = np.array( [*zip(*[*disbeta.iteritems(0)])] )
+plt.plot(nodes_beta, nodes_beta*0, '.')
+xl = plt.xlim()
+xvec = np.linspace(xl[0], xl[1], 100)
+pdf = scipy.stats.beta.pdf(xvec,α, β)
+plt.plot(xvec, pdf)
+plt.grid()
+
+
+## Compute the mean of random draws
+expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+
+# Compute ∑(f(ϵ)*w_ϵ) for each discretization method
+expval_ep = np.array([f(disbeta.inode(0,j))*disbeta.iweight(0,j) for j in range(disbeta.n_inodes(0))]).sum()
+
+expval_ep
+expval_MC
+
+
+
+
+
+#################################################################################
+############################ SOME EXTRA STUFF  ##################################
+#################################################################################
+#################################################################################
+
+
+
+logn = LogNormal(μ=μ, σ=σ)
+logn.μ
+logn.σ
+
+dp = logn.discretize(N=10)
+dp2 = logn.discretize(N=10, method='equiprobable')
+
+
+nodes = np.array([x for (w,x) in dp.iteritems(0)])
+
+plt.plot(nodes, nodes*0,'.')
+plt.xlim(-1,2)
+plt.grid()
+
+
+
+res_gh = n.discretize(10)
+res_ep = n.discretize(10, method='equiprobable')
+
+for (w,x) in res_ep.iteritems(0):
+    print(w,x)
+
+
+# neglect integration nodes whose probability is smaller than 1e-5
+for (w,x) in res_gh.iteritems(0,eps=1e-5):
+    print(w,x)
+
+def f(x):
+    return x**2
+
+
+val = quad(lambda u: f(u)/np.sqrt(2*np.pi*σ**2)*np.exp(-(u-μ)**2/(2*σ**2)), -5, 5)
+
+
+v0 = sum([f(x)*w for (w,x) in res_gh.iteritems(0)])
+v1 = sum([f(x)*w for (w,x) in res_ep.iteritems(0)])
+
+print(v0, v1, val)
+
+sim = norm.simulate(10000,2)
+
+sim.mean()
+sim.std()
+
+
+
+dis = n.discretize(N=50, method='equiprobable')
+
+weights, nodes = np.array( [*zip(*[*dis.iteritems(0)])] )
+
+
+plt.plot(nodes, nodes*0, '.')
+xl = plt.xlim()
+
+
+xvec = np.linspace(xl[0], xl[1], 100)
+pdf = scipy.stats.norm.pdf(xvec)
+plt.plot(xvec, pdf)
+plt.grid()
+
+
+from scipy.stats import beta
+import matplotlib.pyplot as plt
+import numpy as np
+a = 2
+b = 2
+x = np.arange (-50, 50, 0.1)
+y = beta.pdf(x,a,b, scale=100, loc=-50)
+plt.plot(x,y)
+
+
+
+from scipy.stats import beta
+import matplotlib.pyplot as plt
+import numpy as np
+a =  2
+b = 4
+x = np.linspace(-50, 50, 100)
+y1 = beta.pdf(x,2, 2, scale=100, loc=-50)
+y2 = beta.pdf(x,3, 3, scale=100, loc=-50)
+y3 = beta.pdf(x, 4,4, scale=100, loc=-50)
+
+plt.plot(x, y1, "-", x, y2, "r--", x, y3, "g--")
 
 
 

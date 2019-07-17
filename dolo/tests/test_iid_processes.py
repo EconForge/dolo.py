@@ -48,3 +48,15 @@ def test_Lognormal():
     s_MC = np.random.lognormal(μ, σ, M)
     expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
     assert(abs(expval_ep-expval_MC)<0.1)
+
+
+def test_beta():
+    α = 2
+    β = 5
+    distbeta = Beta(α, β)
+    disbeta = distbeta.discretize(N=10)
+    expval_ep = np.array([f(disbeta.inode(0,j))*disbeta.iweight(0,j) for j in range(disbeta.n_inodes(0))]).sum()
+    M=1000
+    s_MC = np.random.beta(α, β, M)
+    expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+    assert(abs(expval_ep-expval_MC)<0.1)
