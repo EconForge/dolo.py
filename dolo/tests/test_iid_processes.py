@@ -1,55 +1,64 @@
-def test_unormal():
 
-    import scipy
-    from scipy.integrate import quad
-    from dolo.numeric.processes_iid import UNormal, Uniform
+import unittest
+import scipy
+from scipy.integrate import quad
+import numpy as np
+from dolo.numeric.processes_iid import *
 
-    import numpy as np
-
-    σ = 0.1
-    μ = 0.2
-
-    norm = UNormal(mu=μ, sigma=σ)
-    norm2 = UNormal(μ=μ, σ=σ)
-
-    norm.discretize()
-
-    unif = Uniform(-1, 2)
-
-    dp = unif.discretize(N=10)
-
-    nodes = np.array([x for (w,x) in dp.iteritems(0)])
-
-    assert nodes.ndim == 2
-
-
-    res_gh = norm.discretize(10)
-    res_ep = norm.discretize(10, method='equiprobable')
-
-    for (w,x) in res_ep.iteritems(0):
-        print(w,x)
-
-
-    # neglect integration nodes whose probability is smaller than 1e-5
-    for (w,x) in res_gh.iteritems(0,eps=1e-5):
-        print(w,x)
+## Polynomial
+def f(x):
+    return x**2
 
     def f(x):
         return x**2
 
+def test_UNormal():
+    σ = 0.1
+    μ = 0.2
+    N = 10
+    distNorm = UNormal(mu=μ, sigma=σ)
+    disNorm_gh = distNorm.discretize()
+    disNorm_ep = distNorm.discretize(N=N, method='equiprobable')
+    expval_gh = np.array([f(disNorm_gh.inode(0,j))*disNorm_gh.iweight(0,j) for j in range(disNorm_gh.n_inodes(0))]).sum()
+    expval_ep = np.array([f(disNorm_ep.inode(0,j))*disNorm_ep.iweight(0,j) for j in range(disNorm_ep.n_inodes(0))]).sum()
+    expval_normal = quad(lambda x: f(x)/np.sqrt(2*np.pi*σ**2)*np.exp(-(x-μ)**2/(2*σ**2)), -np.inf,np.inf)[0]
+    M=1000
+    s_MC = np.random.normal(μ, σ, M)
+    expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+    assert(abs(expval_gh-expval_normal)<0.1)
+    assert(abs(expval_ep-expval_normal)<0.1)
 
-    val = quad(lambda u: f(u)/np.sqrt(2*np.pi*σ**2)*np.exp(-(u-μ)**2/(2*σ**2)), -5, 5)
+def test_Uniform():
+    a = -1
+    b = 1
+    distUni = Uniform(a, b)
+    disUni = distUni.discretize(N=10)
+    expval_ep = np.array([f(disUni.inode(0,j))*disUni.iweight(0,j) for j in range(disUni.n_inodes(0))]).sum()
+    M=1000
+    s_MC = np.random.uniform(a, b, M)
+    expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+    assert(abs(expval_ep-expval_MC)<0.1)
+
+def test_Lognormal():
+    σ = 1
+    μ = 3
+    logn = LogNormal(μ=μ, σ=σ)
+    distLog = LogNormal(μ, σ)
+    disLog = distLog.discretize(N=10)
+    expval_ep = np.array([f(disLog.inode(0,j))*disLog.iweight(0,j) for j in range(disLog.n_inodes(0))]).sum()
+    M=1000
+    s_MC = np.random.lognormal(μ, σ, M)
+    expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+    assert(abs(expval_ep-expval_MC)<0.1)
 
 
-    v0 = sum([f(x)*w for (w,x) in res_gh.iteritems(0)])
-    v1 = sum([f(x)*w for (w,x) in res_ep.iteritems(0)])
-
-
-    sim = norm.simulate(10000,2)
-
-    sim.mean()
-    sim.std()
-
-    dis = norm.discretize(N=50, method='equiprobable')
-
-    weights, nodes = np.array( [*zip(*[*dis.iteritems(0)])] )
+def test_beta():
+    α = 2
+    β = 5
+    distbeta = Beta(α, β)
+    disbeta = distbeta.discretize(N=10)
+    expval_ep = np.array([f(disbeta.inode(0,j))*disbeta.iweight(0,j) for j in range(disbeta.n_inodes(0))]).sum()
+    M=1000
+    s_MC = np.random.beta(α, β, M)
+    expval_MC = np.array([f(s_MC[j]) for j in range(0,M)]).sum() / M
+    assert(abs(expval_ep-expval_MC)<0.1)
