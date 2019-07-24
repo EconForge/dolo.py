@@ -40,10 +40,9 @@ def test_Uniform():
     assert(abs(expval_ep-expval_MC)<0.1)
 
 def test_Lognormal():
-    σ = 1
-    μ = 3
-    logn = LogNormal(μ=μ, σ=σ)
-    distLog = LogNormal(μ, σ)
+    σ = 0.1
+    μ = 0.3
+    distLog = LogNormal(μ=μ, σ=σ)
     disLog = distLog.discretize(N=10)
     expval_ep = np.array([f(disLog.inode(0,j))*disLog.iweight(0,j) for j in range(disLog.n_inodes(0))]).sum()
     M=1000
