@@ -226,16 +226,6 @@ def get_address(data, address, default=None):
     return data
 
 
-#
-# smodel = SymbolicModel(data)
-# smodel.data.get('symbols')
-# smodel.get_calibration()
-# smodel.get_domain()
-# smodel.get_exogenous()
-# grid = smodel.get_grid()
-#
-# print(grid)
-
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")
 

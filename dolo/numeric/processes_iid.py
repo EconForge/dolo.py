@@ -79,6 +79,79 @@ class UnivariateIIDProcess(IIDProcess):
         return DiscretizedIIDProcess(x, w)
 
 
+@language_element
+@dataclass
+class Bernouilli(UnivariateIIDProcess):
+
+    π: float=0.5
+
+    signature = {'π': 'float'} # this is redundant for now
+
+    @greek_tolerance
+    def __init__(self, π:float=None):
+        self.π = float(π)
+
+    def discretize(self):
+        x = np.array([[0],[1]])
+        w = np.array([1-self.π, self.π])
+        return DiscretizedIIDProcess(x, w)
+
+    def simulate(self, N, T, stochastic=True):
+
+        from numpy.random import choice
+        ch = np.array([0, 1])
+        p = np.array([1-self.π, self.π])
+        sim = choice(ch, size=T*N, p=p)
+        return sim.reshape((T,N,1))
+
+
+class UIIDMixture(UnivariateIIDProcess):
+
+    def __init__(self, index, distributions):
+        # index is a distribution which takes discrete values
+        # distributions is a map from each of these values to a distribution
+        self.index = index
+        self.distributions = distributions
+
+    def discretize(self):
+
+        inddist = self.index.discretize()
+        nodes = []
+        weights = []
+        for i in range(inddist.n_inodes(0)):
+            wind = inddist.iweight(0,i)
+            xind = inddist.inode(0,i)
+            dist = self.distributions[int(xind)].discretize()
+            for j in range(dist.n_inodes(0)):
+                w = dist.iweight(0,j)
+                x = dist.inode(0,j)
+                nodes.append(float(x))
+                weights.append(wind*w)
+        nodes = np.array(nodes)
+        weights = np.array(weights)
+        return DiscretizedIIDProcess(nodes[:,None], weights)
+
+    def simulate(self, N, T):
+
+        # stupid approach
+        choices = self.index.simulate(N,T)
+        draws = [dist.simulate(N,T) for dist in self.distributions.values()]
+        draw = sum([(i==choices)*draws[i] for i in range(len(draws))])
+        return draw
+
+
+
+@language_element
+def Mixture(index=None, distributions=None):
+
+    for dist in distributions.values():
+        if not (isinstance(dist, UnivariateIIDProcess)):
+            raise Exception("Only mixtures of 1d iid processes are supported so far.")
+    return UIIDMixture(index, distributions)
+    # not clear what we might do with non-iid
+
+Mixture.signature = {'index': 'intprocess', 'distributions': 'Dict[int,IIDProcesses]'}
+
 
 @language_element
 @dataclass
@@ -86,7 +159,7 @@ class UNormal(UnivariateIIDProcess):
 
     μ: float=0.0
     σ: float=1.0
-    signature = {'μ': 'float', 'σ': 'float'} # this is redundant for now
+    signature = {'μ': 'Optional[float]', 'σ': 'float'} # this is redundant for now
 
 
     @greek_tolerance

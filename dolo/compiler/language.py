@@ -58,7 +58,12 @@ class Language:
 
     def get_signature(self, tag):
         i = self.object_names.index(tag[1:])
-        return self.signatures[i]
+        obj = self.objects[i]
+        try:
+            sig = obj.signature
+        except:
+            sig = None
+        return sig
 
 LANG = Language()
 
@@ -103,6 +108,8 @@ def eval_data(data: 'ruamel_structure', calibration={}):
 
     elif isinstance(data, CommentedMap):
 
+
+
         if data.tag is not None and data.tag.value=='!Function':
             return eval_function(data, calibration)
 
@@ -114,10 +121,11 @@ def eval_data(data: 'ruamel_structure', calibration={}):
             raise ModelError(msg)
 
         if tag.value is not None:
-
+            print(tag.value)
             # check argument names (ignore types for now)
             objclass = LANG.get_from_tag(tag.value)
             signature = LANG.get_signature(tag.value)
+            print(signature)
             sigkeys =  [*signature.keys()]
             for a in data.keys():
                 ## TODO account for repeated greek arguments
