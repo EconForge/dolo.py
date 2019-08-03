@@ -268,7 +268,8 @@ class Model(SymbolicModel):
 
         self.data = data
         self.model_type = 'dtcc'
-        self.__compile_functions__()
+        self.__functions__ = None
+        # self.__compile_functions__()
         self.set_changed()
 
     def set_changed(self):
@@ -331,7 +332,13 @@ class Model(SymbolicModel):
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
-        self.functions = functions
+        self.__functions__ = functions
+
+    @property
+    def functions(self):
+        if self.__functions__ is None:
+            self.__compile_functions__()
+        return self.__functions__
 
     def __str__(self):
 

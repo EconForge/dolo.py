@@ -5,11 +5,11 @@ from dolo.config import *
 import dolo.compiler.objects
 import dolo.numeric.processes
 import dolo.numeric.processes_iid
-import dolo.numeric.grids
+# import dolo.numeric.grids
 del dolo.compiler.objects
 del dolo.numeric.processes
 del dolo.numeric.processes_iid
-del dolo.numeric.grids
+# del dolo.numeric.grids
 
 from dolo.compiler.model_import import yaml_import
 from dolo.misc.display import pcat

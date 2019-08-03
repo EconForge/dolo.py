@@ -13,7 +13,7 @@ class Grid:
 
     def __mul__(self, rgrid):
         return cat_grids(self, rgrid)
-        
+
     def nodes(self):
         return self.__nodes__
 
@@ -93,7 +93,6 @@ class SmolyakGrid(Grid):
 
     def __init__(self, min, max, mu=2):
 
-        print(min, max, mu)
         from interpolation.smolyak import SmolyakGrid as ISmolyakGrid
         min = np.array(min)
         max = np.array(max)
@@ -101,7 +100,6 @@ class SmolyakGrid(Grid):
         self.max = max
         self.mu = mu
         d = len(min)
-        print(mu)
         sg = ISmolyakGrid(d, mu, lb=min, ub=max)
         self.sg = sg
         self.__nodes__ = sg.grid
