@@ -137,6 +137,7 @@ distLog = LogNormal(μ, σ)
 disLog = distLog.discretize(N=10)
 ### Here there is an issue with the uniform
 
+
 ## Random draws
 M=1000
 s_MC = np.random.lognormal(μ, σ, M)
@@ -155,9 +156,21 @@ plt.plot(nodes_Log, nodes_Log*0, '.')
 xl = plt.xlim()
 xvec = np.linspace(xl[0], xl[1], 100)
 xvec
-pdf = scipy.stats.lognorm.pdf(xvec,s=σ, loc=μ, scale=np.exp(μ) )
+pdf = scipy.stats.lognorm.pdf(xvec,s=σ, loc=μ)
 plt.plot(xvec, pdf)
+pdf2 = (np.exp(-(np.log(x) - μ)**2 / (2 * σ**2))  / (x * σ * np.sqrt(2 * np.pi)))
+plt.plot(x, pdf2)
 plt.grid()
+
+
+xvec = np.linspace(0,1,100)
+ppf0 = scipy.stats.lognorm.ppf(xvec,s=σ, loc=μ, scale=np.exp(μ) )
+ppf1 = distLog.ppf(xvec)
+
+plt.plot(xvec, ppf0)
+plt.plot(xvec, ppf1)
+
+
 
 
 ## Compute the mean of random draws

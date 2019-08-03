@@ -76,7 +76,6 @@ calibration:
 exogenous: !VAR1
     rho: 0.8
     Sigma: [[sig_z^2]]
-    N: 5
 
 domain:
     k: [k*0.5, k*1.5]

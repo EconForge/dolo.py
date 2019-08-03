@@ -1,15 +1,21 @@
-import numpy as np
+# import numpy as np
+#
+# from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
+from dolo.numeric.processes_iid import *
+# from dolo.numeric.grids import CartesianGrid, SmolyakGrid
+# Normal = MvNormal
+# MarkovChain = DiscreteMarkovProcess
+# AR1 = VAR1
+#
+from dataclasses import dataclass
+from dolo.compiler.language import language_element
+# not sure we'll keep that
+import typing
+from typing import List, Union
+Scalar = Union[int, float]
 
-from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
-from dolo.numeric.processes import IIDProcess
-from dolo.numeric.grids import CartesianGrid, SmolyakGrid
-
-Normal = MvNormal
-MarkovChain = DiscreteMarkovProcess
-
-AR1 = VAR1
-
-
+# not really a language element though
+# @language_element
 class Domain(dict):
     def __init__(self, **kwargs):
         super().__init__()
@@ -26,43 +32,62 @@ class Domain(dict):
         return np.array([self[e][1] for e in self.states])
 
 
+# these are dummy objects so far
 #
-# class CartesianGrid:
+# @language_element
+# @dataclass
+# class UNormal:
+#     mu: float
+#     sigma: float
+#     signature = {'mu': 'float', 'sigma': 'float'}
 #
-#     def __init__(self, min=None, max=None, n=None):
-#
-#         self.orders = np.array(orders, dtype=int)
-#         if min is None:
-#             min = np.zeros(len(n)) + 0.0
-#         if max is None:
-#             max = np.zeros(len(n)) + 1.0
-#     if not (interpolation in ('spline','cspline')):
-#         raise Exception("Interpolation method '{}' is not implemented for cartesian grids.")
-#     self.interpolation = interpolation
-#     self.__grid__ = None
-#
-# @property
-# def grid(self):
-#     if self.__grid__ is None:
-#         from dolo.numeric.misc import mlinspace
-#         self.__grid__ = mlinspace(self.a, self.b, self.orders)
-#     return self.__grid__
 
-#
-# from interpolation.smolyak import SmolyakGrid # as SmolyakGridO
 
-# class SmolyakGrid(SmolyakGridO):
-#
-#     def __init__(self, mu=2):
-#
-#         d = max([len(e) for e in [a,b,orders]])
-#
-#         # if interpolation not in ('chebychev','polynomial'):
-#         #     raise Exception("Interpolation method '{}' is not implemented for Smolyak grids.")
-#         # self.interpolation = interpolation
-#         # super().__init__(d,mu)
+@language_element
+@dataclass
+class MvNormal:
+    Mu: List[float]
+    Sigma: List[List[float]]
+    signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
 
-if __name__ == '__main__':
 
-    normal = Normal(sigma=[[0.3]])
-    print(normal.discretize())
+@language_element
+def Matrix(*lines):
+    vec = np.array(lines)
+    assert(vec.ndim==2)
+    return vec
+
+
+@language_element
+def Vector(*els):
+    vec = np.array(els)
+    assert(vec.ndim==1)
+    return vec
+
+#%%
+
+@language_element
+class Conditional:
+
+    signature = {'condition': None, 'type': None, 'arguments': None}
+
+    def __init__(self, condition, type, arguments):
+        self.condition = condition
+        self.type = type
+        self.arguments = arguments
+
+
+@language_element
+class Product:
+
+    def __init__(self, *args: List):
+        self.factors = args
+
+
+@language_element
+class Add:
+
+    signature = Scalar
+
+    def __init__(self, a, b):
+        self.terms = (a,b)

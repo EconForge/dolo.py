@@ -1,14 +1,12 @@
 import numpy as np
-
 import numpy
-
-
-# from dolo import *
 import pickle
-
-# should be moved to markov
+from typing import List, Optional
 from numba import jit, njit
 from dolo.numeric.grids import EmptyGrid, CartesianGrid, UnstructuredGrid
+
+from dolo.compiler.language import greek_tolerance
+from dolo.compiler.language import language_element
 
 @njit
 def choice(x, n, cumul):
@@ -48,22 +46,6 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 class Process:
     pass
 
-class Product:
-    def __init__(self, l=[]):
-        self.processes = l
-
-    def discretize(self, to='mc', options={}):
-
-        if isinstance(options, dict):
-            kwargs = [options]*len(self.processes)
-        else:
-            assert(len(options)==len(self.processes))
-        if to=='mc':
-            return MarkovProduct(*[e.discretize(to='mc', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='mc')
-        else:
-            raise Exception("Not implemented.")
-
-
 
 class IIDProcess(Process):
 
@@ -79,8 +61,31 @@ class ContinuousProcess(Process):
     pass
 
 
+@language_element
+class Product:
+
+    def __init__(self, *l):
+        self.processes = l
+
+    def discretize(self, to='mc', options={}):
+
+        if isinstance(options, dict):
+            kwargs = [options]*len(self.processes)
+        else:
+            assert(len(options)==len(self.processes))
+        if to=='mc':
+            return MarkovProduct(*[e.discretize(to='mc', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='mc')
+        else:
+            raise Exception("Not implemented.")
+
+
+
+@language_element
 class ConstantProcess(Process):
 
+    signature = {'μ': 'Vector'}
+
+    @greek_tolerance
     def __init__(self, μ=None):
 
         if isinstance(μ, (float, int)):
@@ -98,6 +103,7 @@ class ConstantProcess(Process):
             transitions = np.array([[1.0]])
             return DiscreteMarkovProcess(transitions, nodes)
 
+@language_element
 class AggregateProcess(ConstantProcess):
 
     # that is a dummy class
@@ -174,45 +180,51 @@ class DiscretizedIIDProcess(DiscretizedProcess):
         return self.integration_weights[j]
 
 
+@language_element
 class MvNormal(IIDProcess):
 
-    def __init__(self, Sigma=None, orders=None, mu=None):
+    signature = {"Σ": 'Matrix', 'μ':  'Optional[Vector]'}
 
-        self.Sigma = np.atleast_2d( np.array(Sigma, dtype=float) )
-        self.d = len(self.Sigma)
-        if orders is None:
-            self.orders = np.array([5]*self.d)
-        else:
-            self.orders = np.array(orders, dtype=int)
+    @greek_tolerance
+    def __init__(self, Σ=None, μ=None):
+
+        Sigma = Σ
+        mu = μ
+
+        self.Σ = np.atleast_2d( np.array(Sigma, dtype=float) )
+        self.d = len(self.Σ)
         if mu is None:
-            self.mu = np.array([0.0]*self.d)
+            self.μ = np.array([0.0]*self.d)
         else:
-            self.mu = np.array(mu, dtype=float)
-        assert(self.Sigma.shape[0] == self.d)
-        assert(self.Sigma.shape[0] == self.d)
-        assert(self.orders.shape[0] == self.d)
+            self.μ = np.array(mu, dtype=float)
+        assert(self.Σ.shape[0] == self.d)
+        assert(self.Σ.shape[0] == self.d)
 
-    def discretize(self, to='iid', orders=None):
+    def discretize(self, to='iid', N=None):
         if to!="iid":
             raise Exception("Not Implemented")
-        if orders is None:
-            orders = self.orders
+        if N is None:
+            N  = 5
+        if isinstance(N,int):
+            N = [N]*self.d
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
-        [x, w] = gauss_hermite_nodes(orders, self.Sigma, mu=self.mu)
-        x = np.row_stack( [(e + self.mu) for e in x] )
+        [x, w] = gauss_hermite_nodes(N, self.Σ, mu=self.μ)
+        x = np.row_stack( [(e + self.μ) for e in x] )
         return DiscretizedIIDProcess(x,w)
 
     def simulate(self, N, T, m0=None, stochastic=True):
         from numpy.random import multivariate_normal
-        Sigma = self.Sigma
-        mu = self.mu
+        Sigma = self.Σ
+        mu = self.μ
         if stochastic:
             sim = multivariate_normal(mu, Sigma, N*T)
         else:
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
-
+@language_element
+class Normal(MvNormal):
+    pass
 
 class DiscreteMarkovProcess(DiscretizedProcess):
 
@@ -255,7 +267,13 @@ class DiscreteMarkovProcess(DiscretizedProcess):
         else:
             inds = np.zeros((T,N), dtype=int) + i0
         return self.values[inds]
-#
+
+
+@language_element
+class MarkovChain(DiscreteMarkovProcess):
+
+    signature = {'transitions': 'Matrix', 'values': 'Matrix'}
+
 # class MarkovChain(list):
 #
 #     def __init__(self, P=None, Q=None):
@@ -292,9 +310,17 @@ class GDPProduct(DiscreteMarkovProcess):
         pass
 
 
+@language_element
 class VAR1(ContinuousProcess):
 
-    def __init__(self, rho=None, Sigma=None, mu=None, N=3):
+    signature = {"ρ": 'float','Σ': 'Matrix', 'μ': 'Optional[Vector]'}
+
+    @greek_tolerance
+    def __init__(self, ρ=None, Σ=None, μ=None):
+
+        rho = ρ
+        Sigma = Σ
+        mu = μ
 
         self.Sigma = np.atleast_2d(Sigma)
         d = self.Sigma.shape[0]

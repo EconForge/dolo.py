@@ -71,6 +71,7 @@ calibration:
     m: beta/c^sigma*(1-delta+rk)
 
 exogenous: !UNormal
+    μ: 0.0
     σ: 0.01
 
 domain:

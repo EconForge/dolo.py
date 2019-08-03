@@ -1,31 +1,4 @@
-# GREEK TOLERANCE
-
-greek_translation = {
-   'sigma': 'σ',
-   'rho': 'ρ',
-   'mu': 'μ'
-}
-
-def greekify_dict(arg):
-   dd = dict()
-   for k in arg:
-       if k in greek_translation:
-           key = greek_translation[k]
-       else:
-           key = k
-       if key in dd:
-           raise Exception(f"key {key} defined twice")
-       dd[key] = arg[k]
-   return dd
-
-
-def greek_tolerance(fun):
-
-   def f(*pargs, **args):
-       nargs = greekify_dict(args)
-       return fun(*pargs, **nargs)
-
-   return f
+from dolo.compiler.language import greek_tolerance, language_element
 
 
 ## Useful Links
@@ -83,6 +56,7 @@ from dataclasses import dataclass
 
 from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, DiscretizedIIDProcess
 
+
 class UnivariateIIDProcess(IIDProcess):
     d = 1
 
@@ -106,12 +80,13 @@ class UnivariateIIDProcess(IIDProcess):
 
 
 
-
+@language_element
 @dataclass
 class UNormal(UnivariateIIDProcess):
 
     μ: float=0.0
     σ: float=1.0
+    signature = {'μ': 'float', 'σ': 'float'} # this is redundant for now
 
 
     @greek_tolerance
@@ -150,12 +125,14 @@ class UNormal(UnivariateIIDProcess):
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
+@language_element
 @dataclass
 class Uniform(UnivariateIIDProcess):
 
     # uniform distribution over an interval [a,b]
     a: float
     b: float
+    signature = {'a': 'float', 'b': 'float'}
 
     def __init__(self, a:float=None, b:float=None):
         self.a = float(a)
@@ -184,6 +161,7 @@ class Uniform(UnivariateIIDProcess):
           #weights ("pmf" in Hark : Discrete points for discrete probability mass function.)
         #Probability associated with each point in grid (nodes)
 
+@language_element
 @dataclass
 class LogNormal(UnivariateIIDProcess):
 
@@ -195,7 +173,7 @@ class LogNormal(UnivariateIIDProcess):
 
     μ: float # log-mean μ
     σ: float # scale σ
-
+    signature: {'μ': 'float', 'σ': 'float'}
 
     @greek_tolerance
     def __init__(self, σ:float=None, μ:float=None):
@@ -228,7 +206,7 @@ class LogNormal(UnivariateIIDProcess):
           #weights
         #Probability associated with each point in grid (nodes)
 
-
+@language_element
 @dataclass
 class Beta(UnivariateIIDProcess):
 
@@ -238,6 +216,7 @@ class Beta(UnivariateIIDProcess):
     α: float
     β: float
 
+    signature = {'α': 'float', 'β': 'float'}
 
     def __init__(self, α:float=None, β:float=None):
         self.α = float(α)
