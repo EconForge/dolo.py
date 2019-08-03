@@ -67,17 +67,37 @@ class Product:
     def __init__(self, *l):
         self.processes = l
 
-    def discretize(self, to='mc', options={}):
+    def discretize(self, to=None, options={}):
 
         if isinstance(options, dict):
             kwargs = [options]*len(self.processes)
         else:
             assert(len(options)==len(self.processes))
+
+        if to is None:
+            if isinstance(self.processes[0], IIDProcess):
+                to = 'iid'
+            elif isinstance(self.processes[0], DiscreteProcess):
+                to = 'mc'
+            else:
+                to = 'gdp'
+
         if to=='mc':
             return MarkovProduct(*[e.discretize(to='mc', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='mc')
+        elif to=='gdp':
+            return GDPProduct(*[e.discretize(to='gdp', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='gdp')
+        elif to=='iid':
+            # return IIDProduct(*[e.discretize(to='iid', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='iid')
+            return IIDProduct(*[e for i,e in enumerate(self.processes)]).discretize(to='iid')
         else:
             raise Exception("Not implemented.")
 
+    def simulate(self, N, T, m0=None, stochastic=True):
+
+        if m0 is not None:
+            raise Exception("Not implemented")
+        sims = [p.simulate(N, T, m0=None, stochastic=stochastic) for p in self.processes]
+        return np.concatenate(sims, axis=2)
 
 
 @language_element
@@ -308,6 +328,33 @@ class GDPProduct(DiscreteMarkovProcess):
     def discretize(self, to='gdp'):
 
         pass
+
+
+class IIDProduct:
+
+    def __init__(self, *args):
+
+        self.factors = args
+
+    def discretize(self, to='iid'):
+
+        if to != 'iid':
+            raise Exception("Not implemented.")
+
+        facts = [a.discretize() for a in self.factors]
+
+        nn = [len(f.integration_weights) for f in facts]
+
+        from dolo.numeric.misc import cartesian
+
+        cart = cartesian([range(e) for e in nn])
+
+        nodes = np.concatenate([f.integration_nodes[cart[:,i],:] for i,f in enumerate(facts)], axis=1)
+        weights = facts[0].integration_weights
+        for f in facts[1:]:
+            weights = np.kron(weights, f.integration_weights)
+
+        return DiscretizedIIDProcess(nodes, weights)
 
 
 @language_element
