@@ -465,3 +465,17 @@ class VAR1(ContinuousProcess):
             irf[t,:] = rho@irf[t-1,:]
         irf += self.mu[None,:]
         return irf
+
+
+
+#### dummy class
+
+@language_element
+class Conditional(Process):
+
+    signature = {'condition': 'Any', 'type': 'Process', 'arguments': 'Function'}
+
+    def __init__(self, condition=None, type=None, arguments=None):
+        self.condition = condition
+        self.type = type
+        self.arguments = arguments
