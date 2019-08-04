@@ -1,5 +1,4 @@
 from dolang.symbolic import sanitize
-
 import copy
 
 
@@ -151,12 +150,34 @@ class SymbolicModel:
 
     def get_exogenous(self):
 
-        exo = self.data.get("exogenous", {})
+        if "exogenous" not in self.data:
+            return {}
+
+        exo = self.data['exogenous']
         calibration = self.get_calibration()
         from dolo.compiler.language import eval_data
         exogenous = eval_data(exo, calibration)
 
-        return exogenous
+        from ruamel.yaml.comments import CommentedMap
+        from dolo.numeric.processes import ProductProcess, Process
+        if isinstance(exogenous, Process):
+            # old style
+            return exogenous
+        else:
+            # new style
+            syms = self.symbols['exogenous']
+            # first we check that shocks are defined in the right order
+            ssyms = []
+            for k in exo.keys():
+                vars = [v.strip() for v in k.split(',')]
+                ssyms.append(vars)
+            ssyms = tuple(sum(ssyms, []))
+            if tuple(syms)!=ssyms:
+                from dolo.compiler.language import ModelError
+                lc = exo.lc
+                raise ModelError(f"{lc.line}:{lc.col}: 'exogenous' section. Shocks specification must match declaration order. Found {ssyms}. Expected{tuple(syms)}")
+
+            return ProductProcess(*exogenous.values())
 
 
     def get_grid(self):
