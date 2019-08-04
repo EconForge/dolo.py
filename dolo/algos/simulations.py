@@ -40,7 +40,6 @@ def find_index(sim, values):
             indices[n,t] = ind
     return indices
 
-from dolo.numeric.processes import DiscreteMarkovProcess
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
 from dolo.algos.results import AlgoResult
 

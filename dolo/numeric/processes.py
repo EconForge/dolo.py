@@ -46,7 +46,6 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
 class Process:
     pass
 
-
 class IIDProcess(Process):
 
     def response(self, T, impulse):
@@ -60,44 +59,6 @@ class DiscreteProcess(Process):
 class ContinuousProcess(Process):
     pass
 
-
-@language_element
-class Product:
-
-    def __init__(self, *l):
-        self.processes = l
-
-    def discretize(self, to=None, options={}):
-
-        if isinstance(options, dict):
-            kwargs = [options]*len(self.processes)
-        else:
-            assert(len(options)==len(self.processes))
-
-        if to is None:
-            if isinstance(self.processes[0], IIDProcess):
-                to = 'iid'
-            elif isinstance(self.processes[0], DiscreteProcess):
-                to = 'mc'
-            else:
-                to = 'gdp'
-
-        if to=='mc':
-            return MarkovProduct(*[e.discretize(to='mc', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='mc')
-        elif to=='gdp':
-            return GDPProduct(*[e.discretize(to='gdp', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='gdp')
-        elif to=='iid':
-            # return IIDProduct(*[e.discretize(to='iid', **kwargs[i]) for i,e in enumerate(self.processes)]).discretize(to='iid')
-            return IIDProduct(*[e for i,e in enumerate(self.processes)]).discretize(to='iid')
-        else:
-            raise Exception("Not implemented.")
-
-    def simulate(self, N, T, m0=None, stochastic=True):
-
-        if m0 is not None:
-            raise Exception("Not implemented")
-        sims = [p.simulate(N, T, m0=None, stochastic=stochastic) for p in self.processes]
-        return np.concatenate(sims, axis=2)
 
 
 @language_element
@@ -121,7 +82,7 @@ class ConstantProcess(Process):
         else:
             nodes = self.μ[None,:]
             transitions = np.array([[1.0]])
-            return DiscreteMarkovProcess(transitions, nodes)
+            return MarkovChain(transitions, nodes)
 
 @language_element
 class AggregateProcess(ConstantProcess):
@@ -246,7 +207,11 @@ class MvNormal(IIDProcess):
 class Normal(MvNormal):
     pass
 
-class DiscreteMarkovProcess(DiscretizedProcess):
+
+@language_element
+class MarkovChain(DiscretizedProcess, DiscreteProcess):
+
+    signature = {'transitions': 'Matrix', 'values': 'Matrix'}
 
     # transitions: 2d float array
     # values: 2d float array
@@ -255,8 +220,11 @@ class DiscreteMarkovProcess(DiscretizedProcess):
 
         self.transitions = np.array(transitions, dtype=np.float64)
         self.values = np.array(values, dtype=np.float64)
+        self.d = self.values.shape[1]
 
-    def discretize(self):
+    def discretize(self, to='mc'):
+        if to != 'mc':
+            raise Exception("Not implemented.")
         return self
 
     @property
@@ -281,7 +249,8 @@ class DiscreteMarkovProcess(DiscretizedProcess):
     def iweight(self, i:int, j:int): # scalar
         return self.transitions[i,j]
 
-    def simulate(self, N, T, i0=0, stochastic=True):
+    def simulate(self, N, T, i0=0, m0=None, stochastic=True):
+        # m0 is basically ignored
         if stochastic:
             inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
         else:
@@ -289,72 +258,83 @@ class DiscreteMarkovProcess(DiscretizedProcess):
         return self.values[inds]
 
 
+#%%
+
+
 @language_element
-class MarkovChain(DiscreteMarkovProcess):
+class ProductProcess:
 
-    signature = {'transitions': 'Matrix', 'values': 'Matrix'}
+    ### This class represents the product of processes
 
-# class MarkovChain(list):
-#
-#     def __init__(self, P=None, Q=None):
-#
-#         import numpy
-#         P = numpy.array(P, dtype=float)
-#         Q = numpy.array(Q, dtype=float)
-#         self.states = P
-#         self.transitions = Q
-#         self.extend([P, Q]) # compatibility fix
-# #
+    def __init__(self, *l):
+        self.processes = l
+        self.d = sum([e.d for e in self.processes])
 
-class MarkovProduct(DiscreteMarkovProcess):
+    def discretize(self, to=None, options={}):
 
-    def __init__(self, *args):
+        if isinstance(options, dict):
+            kwargs = [options]*len(self.processes)
+        else:
+            assert(len(options)==len(self.processes))
 
-        self.M = args
+        if to is None:
+            if isinstance(self.processes[0], IIDProcess):
+                to = 'iid'
+            elif isinstance(self.processes[0], DiscreteProcess):
+                to = 'mc'
+            else:
+                to = 'gdp'
 
-    def discretize(self, to='mc'):
+        if to =='iid':
+            fun = product_iid
+        elif to =='mc':
+            fun = product_mc
+        elif to =='gdp':
+            fun = product_gdp
 
-        M = [(m.values, m.transitions) for m in self.M]
+        # discretize children
+        discretized_processes = [e.discretize(to=to, **kwargs[i]) for i,e in enumerate(self.processes)]
+
+        return fun(discretized_processes)
+
+    def simulate(self, N, T, m0=None, stochastic=True):
+
+        if m0 is not None:
+            raise Exception("Not implemented")
+        sims = [p.simulate(N, T, m0=None, stochastic=stochastic) for p in self.processes]
+        return np.concatenate(sims, axis=2)
+
+@language_element
+def Product(*processes):
+    return ProductProcess(*processes)
+
+
+def product_mc(markov_chains: List[MarkovChain])->MarkovChain:
+
+        M = [(m.values, m.transitions) for m in markov_chains]
         from dolo.numeric.discretization import tensor_markov
         [P, Q] = tensor_markov( *M )
-        return DiscreteMarkovProcess(Q,P)
+        return MarkovChain(Q,P)
 
-class GDPProduct(DiscreteMarkovProcess):
+def product_gdp(gdps: List[GDP])->GDP:
 
-    def __init__(self, *args):
+    raise Exception("Not implemented")
 
-        self.M = args
+def product_iid(iids: List[DiscretizedIIDProcess])->DiscretizedIIDProcess:
 
-    def discretize(self, to='gdp'):
+    from dolo.numeric.misc import cartesian
 
-        pass
+    nn = [len(f.integration_weights) for f in iids]
 
+    cart = cartesian([range(e) for e in nn])
 
-class IIDProduct:
+    nodes = np.concatenate([f.integration_nodes[cart[:,i],:] for i,f in enumerate(iids)], axis=1)
+    weights = iids[0].integration_weights
+    for f in iids[1:]:
+        weights = np.kron(weights, f.integration_weights)
 
-    def __init__(self, *args):
+    return DiscretizedIIDProcess(nodes, weights)
 
-        self.factors = args
-
-    def discretize(self, to='iid'):
-
-        if to != 'iid':
-            raise Exception("Not implemented.")
-
-        facts = [a.discretize() for a in self.factors]
-
-        nn = [len(f.integration_weights) for f in facts]
-
-        from dolo.numeric.misc import cartesian
-
-        cart = cartesian([range(e) for e in nn])
-
-        nodes = np.concatenate([f.integration_nodes[cart[:,i],:] for i,f in enumerate(facts)], axis=1)
-        weights = facts[0].integration_weights
-        for f in facts[1:]:
-            weights = np.kron(weights, f.integration_weights)
-
-        return DiscretizedIIDProcess(nodes, weights)
 
 
 @language_element
@@ -406,7 +386,7 @@ class VAR1(ContinuousProcess):
 
         P += self.mu[None,:]
 
-        return DiscreteMarkovProcess(values=P, transitions=Q)
+        return MarkovChain(values=P, transitions=Q)
 
     def discretize_gdp(self, N=3):
 

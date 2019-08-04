@@ -60,7 +60,10 @@ from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, Disc
 class UnivariateIIDProcess(IIDProcess):
     d = 1
 
-    def discretize(self, N=5, method='equiprobable'):
+    def discretize(self,  N=5, method='equiprobable', to='iid'):
+        if to !='iid':
+            raise Exception("Not implemented")
+
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
         elif method=='equiprobable':
@@ -91,7 +94,9 @@ class Bernouilli(UnivariateIIDProcess):
     def __init__(self, π:float=None):
         self.π = float(π)
 
-    def discretize(self):
+    def discretize(self, to='iid'):
+        if to !='iid':
+            raise Exception("Not implemented")
         x = np.array([[0],[1]])
         w = np.array([1-self.π, self.π])
         return DiscretizedIIDProcess(x, w)
@@ -113,7 +118,10 @@ class UIIDMixture(UnivariateIIDProcess):
         self.index = index
         self.distributions = distributions
 
-    def discretize(self):
+    def discretize(self, to='iid'):
+
+        if to !='iid':
+            raise Exception("Not implemented")
 
         inddist = self.index.discretize()
         nodes = []
@@ -171,7 +179,11 @@ class UNormal(UnivariateIIDProcess):
         x = norm.ppf(quantiles, loc=self.μ, scale=self.σ)
         return x
 
-    def discretize(self, N=5, method='gauss-hermite'):
+    def discretize(self, N=5, method='gauss-hermite', to='iid'):
+
+        if to !='iid':
+            raise Exception("Not implemented")
+
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
         elif method=='equiprobable':
