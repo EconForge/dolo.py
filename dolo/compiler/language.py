@@ -154,7 +154,7 @@ def eval_data(data: 'ruamel_structure', calibration={}):
         for key, ch in data.items():
             evd = eval_data(ch, calibration=calibration)
             if tag.value is not None:
-                exptype = signature[key]
+                exptype = signature.get(key, None)
                 if exptype in ['Matrix', 'Optional[Matrix]']:
                     matfun = LANG.get_from_tag('!Matrix')
                     try:
