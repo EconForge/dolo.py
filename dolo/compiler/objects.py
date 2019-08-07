@@ -10,6 +10,7 @@ from dolo.numeric.processes_iid import *
 from dataclasses import dataclass
 from dolo.compiler.language import language_element
 # not sure we'll keep that
+import numpy as np
 import typing
 from typing import List, Union
 Scalar = Union[int, float]
@@ -85,9 +86,15 @@ class Product:
 
 
 @language_element
-class Add:
+def Matrix(*lines):
+    mat = np.array(lines, np.float64)
+    assert(mat.ndim==2)
+    return mat
 
-    signature = Scalar
 
-    def __init__(self, a, b):
-        self.terms = (a,b)
+
+@language_element
+def Vector(*elements):
+    mat = np.array(elements, np.float64)
+    assert(mat.ndim==1)
+    return mat

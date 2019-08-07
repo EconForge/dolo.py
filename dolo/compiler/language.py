@@ -109,7 +109,6 @@ def eval_data(data: 'ruamel_structure', calibration={}):
     elif isinstance(data, CommentedMap):
 
 
-
         if data.tag is not None and data.tag.value=='!Function':
             return eval_function(data, calibration)
 
@@ -151,7 +150,28 @@ def eval_data(data: 'ruamel_structure', calibration={}):
 
 
         # eval children
-        children = [eval_data(ch, calibration=calibration) for ch in data.values()]
+        children = []
+        for key, ch in data.items():
+            evd = eval_data(ch, calibration=calibration)
+            if tag.value is not None:
+                exptype = signature[key]
+                if exptype in ['Matrix', 'Optional[Matrix]']:
+                    matfun = LANG.get_from_tag('!Matrix')
+                    try:
+                        evd = matfun(*evd)
+                    except:
+                        lc = data.lc
+                        msg = f"Line {lc.line}, column {lc.col}. Argument '{key}' could not be converted to Matrix"
+                        raise ModelError(msg)
+                elif exptype in ['Vector', 'Optional[Vector]']:
+                    vectfun = LANG.get_from_tag('!Vector')
+                    try:
+                        evd = vectfun(*evd)
+                    except:
+                        lc = data.lc
+                        msg = f"Line {lc.line}, column {lc.col}. Argument '{key}' could not be converted to Vector"
+                        raise ModelError(msg)
+            children.append(evd)
 
         kwargs = {k: v for (k,v) in zip(data.keys(), children)}
         if tag.value is None:
