@@ -1,31 +1,4 @@
-# GREEK TOLERANCE
-
-greek_translation = {
-   'sigma': 'σ',
-   'rho': 'ρ',
-   'mu': 'μ'
-}
-
-def greekify_dict(arg):
-   dd = dict()
-   for k in arg:
-       if k in greek_translation:
-           key = greek_translation[k]
-       else:
-           key = k
-       if key in dd:
-           raise Exception(f"key {key} defined twice")
-       dd[key] = arg[k]
-   return dd
-
-
-def greek_tolerance(fun):
-
-   def f(*pargs, **args):
-       nargs = greekify_dict(args)
-       return fun(*pargs, **nargs)
-
-   return f
+from dolo.compiler.language import greek_tolerance, language_element
 
 
 ## Useful Links
@@ -83,10 +56,14 @@ from dataclasses import dataclass
 
 from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, DiscretizedIIDProcess
 
+
 class UnivariateIIDProcess(IIDProcess):
     d = 1
 
-    def discretize(self, N=5, method='equiprobable'):
+    def discretize(self,  N=5, method='equiprobable', to='iid'):
+        if to !='iid':
+            raise Exception("Not implemented")
+
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
         elif method=='equiprobable':
@@ -105,13 +82,92 @@ class UnivariateIIDProcess(IIDProcess):
         return DiscretizedIIDProcess(x, w)
 
 
+@language_element
+@dataclass
+class Bernouilli(UnivariateIIDProcess):
+
+    π: float=0.5
+
+    signature = {'π': 'float'} # this is redundant for now
+
+    @greek_tolerance
+    def __init__(self, π:float=None):
+        self.π = float(π)
+
+    def discretize(self, to='iid'):
+        if to !='iid':
+            raise Exception("Not implemented")
+        x = np.array([[0],[1]])
+        w = np.array([1-self.π, self.π])
+        return DiscretizedIIDProcess(x, w)
+
+    def simulate(self, N, T, stochastic=True):
+
+        from numpy.random import choice
+        ch = np.array([0, 1])
+        p = np.array([1-self.π, self.π])
+        sim = choice(ch, size=T*N, p=p)
+        return sim.reshape((T,N,1))
 
 
+class UIIDMixture(UnivariateIIDProcess):
+
+    def __init__(self, index, distributions):
+        # index is a distribution which takes discrete values
+        # distributions is a map from each of these values to a distribution
+        self.index = index
+        self.distributions = distributions
+
+    def discretize(self, to='iid'):
+
+        if to !='iid':
+            raise Exception("Not implemented")
+
+        inddist = self.index.discretize()
+        nodes = []
+        weights = []
+        for i in range(inddist.n_inodes(0)):
+            wind = inddist.iweight(0,i)
+            xind = inddist.inode(0,i)
+            dist = self.distributions[int(xind)].discretize()
+            for j in range(dist.n_inodes(0)):
+                w = dist.iweight(0,j)
+                x = dist.inode(0,j)
+                nodes.append(float(x))
+                weights.append(wind*w)
+        nodes = np.array(nodes)
+        weights = np.array(weights)
+        return DiscretizedIIDProcess(nodes[:,None], weights)
+
+    def simulate(self, N, T):
+
+        # stupid approach
+        choices = self.index.simulate(N,T)
+        draws = [dist.simulate(N,T) for dist in self.distributions.values()]
+        draw = sum([(i==choices)*draws[i] for i in range(len(draws))])
+        return draw
+
+
+
+@language_element
+def Mixture(index=None, distributions=None):
+
+    for dist in distributions.values():
+        if not (isinstance(dist, UnivariateIIDProcess)):
+            raise Exception("Only mixtures of 1d iid processes are supported so far.")
+    return UIIDMixture(index, distributions)
+    # not clear what we might do with non-iid
+
+Mixture.signature = {'index': 'intprocess', 'distributions': 'Dict[int,IIDProcesses]'}
+
+
+@language_element
 @dataclass
 class UNormal(UnivariateIIDProcess):
 
     μ: float=0.0
     σ: float=1.0
+    signature = {'μ': 'Optional[float]', 'σ': 'float'} # this is redundant for now
 
 
     @greek_tolerance
@@ -123,7 +179,11 @@ class UNormal(UnivariateIIDProcess):
         x = norm.ppf(quantiles, loc=self.μ, scale=self.σ)
         return x
 
-    def discretize(self, N=5, method='gauss-hermite'):
+    def discretize(self, N=5, method='gauss-hermite', to='iid'):
+
+        if to !='iid':
+            raise Exception("Not implemented")
+
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
         elif method=='equiprobable':
@@ -150,12 +210,14 @@ class UNormal(UnivariateIIDProcess):
             sim = mu[None,len(mu)].repeat(T*N,axis=0)
         return sim.reshape((T,N,len(mu)))
 
+@language_element
 @dataclass
 class Uniform(UnivariateIIDProcess):
 
     # uniform distribution over an interval [a,b]
     a: float
     b: float
+    signature = {'a': 'float', 'b': 'float'}
 
     def __init__(self, a:float=None, b:float=None):
         self.a = float(a)
@@ -184,6 +246,7 @@ class Uniform(UnivariateIIDProcess):
           #weights ("pmf" in Hark : Discrete points for discrete probability mass function.)
         #Probability associated with each point in grid (nodes)
 
+@language_element
 @dataclass
 class LogNormal(UnivariateIIDProcess):
 
@@ -195,7 +258,7 @@ class LogNormal(UnivariateIIDProcess):
 
     μ: float # log-mean μ
     σ: float # scale σ
-
+    signature: {'μ': 'float', 'σ': 'float'}
 
     @greek_tolerance
     def __init__(self, σ:float=None, μ:float=None):
@@ -228,7 +291,7 @@ class LogNormal(UnivariateIIDProcess):
           #weights
         #Probability associated with each point in grid (nodes)
 
-
+@language_element
 @dataclass
 class Beta(UnivariateIIDProcess):
 
@@ -238,6 +301,7 @@ class Beta(UnivariateIIDProcess):
     α: float
     β: float
 
+    signature = {'α': 'float', 'β': 'float'}
 
     def __init__(self, α:float=None, β:float=None):
         self.α = float(α)

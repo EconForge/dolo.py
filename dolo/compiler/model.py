@@ -1,5 +1,4 @@
 from dolang.symbolic import sanitize
-
 import copy
 
 
@@ -141,62 +140,45 @@ class SymbolicModel:
             raise Exception("Missing domain for states: {}.".format(
                 str.join(', ', missing)))
 
-        from dolo.compiler.language import Domain
-
-        d = Domain(**sdomain)
-        domain = d.eval(d=calibration)
+        from dolo.compiler.objects import Domain
+        from dolo.compiler.language import eval_data
+        sdomain = eval_data(sdomain, calibration)
+        domain = Domain(**sdomain)
         domain.states = states
 
         return domain
 
     def get_exogenous(self):
 
-        exo = self.data.get("exogenous", {})
-        calibration = self.get_calibration()
-        type = get_type(exo)
+        if "exogenous" not in self.data:
+            return {}
 
-        # this is utterly, completely stupid! Who wrote it?
-        from dolo.compiler.language import Normal, AR1, MarkovChain, Uniform, UNormal, ConstantProcess, AggregateProcess, Product
-        if type == "Normal":
-            exog = Normal(**exo)
-        elif type in ("AR1", "VAR1"):
-            exog = AR1(**exo)
-        elif type == "MarkovChain":
-            exog = MarkovChain(**exo)
-        elif type == "Uniform":
-            exog = Uniform(**exo)
-        elif type == "UNormal":
-            exog = UNormal(**exo)
-        elif type == "ConstantProcess":
-            exog = ConstantProcess(**exo)
-        elif type == "AggregateProcess":
-            exog = AggregateProcess(**exo)
-        elif type =='Product':
-            subshocks = []
-            for exs in exo:
-                type = get_type(exs)
-                if type == "Normal":
-                    exog = Normal(**exs)
-                elif type in ("AR1", "VAR1"):
-                    exog = AR1(**exs)
-                elif type == "MarkovChain":
-                    exog = MarkovChain(**exs)
-                elif type == "Uniform":
-                    exog = Uniform(**exs)
-                elif type == "UNormal":
-                    exog = UNormal(**exs)
-                elif type == "ConstantProcess":
-                    exog = ConstantProcess(**exs)
-                elif type == "AggregateProcess":
-                    exog = AggregateProcess(**exs)
-                else:
-                    raise Exception("Unknown Process Type")
-                subshocks.append(exog)
-            exog = Product({'l':subshocks})
+        exo = self.data['exogenous']
+        calibration = self.get_calibration()
+        from dolo.compiler.language import eval_data
+        exogenous = eval_data(exo, calibration)
+
+        from ruamel.yaml.comments import CommentedMap
+        from dolo.numeric.processes import ProductProcess, Process
+        if isinstance(exogenous, Process):
+            # old style
+            return exogenous
         else:
-            raise Exception("Unknown exogenous type {}.".format(type))
-        d = exog.eval(d=calibration)
-        return d
+            # new style
+            syms = self.symbols['exogenous']
+            # first we check that shocks are defined in the right order
+            ssyms = []
+            for k in exo.keys():
+                vars = [v.strip() for v in k.split(',')]
+                ssyms.append(vars)
+            ssyms = tuple(sum(ssyms, []))
+            if tuple(syms)!=ssyms:
+                from dolo.compiler.language import ModelError
+                lc = exo.lc
+                raise ModelError(f"{lc.line}:{lc.col}: 'exogenous' section. Shocks specification must match declaration order. Found {ssyms}. Expected{tuple(syms)}")
+
+            return ProductProcess(*exogenous.values())
+
 
     def get_grid(self):
 
@@ -265,16 +247,6 @@ def get_address(data, address, default=None):
     return data
 
 
-#
-# smodel = SymbolicModel(data)
-# smodel.data.get('symbols')
-# smodel.get_calibration()
-# smodel.get_domain()
-# smodel.get_exogenous()
-# grid = smodel.get_grid()
-#
-# print(grid)
-
 import re
 regex = re.compile("(.*)<=(.*)<=(.*)")
 
@@ -302,11 +274,13 @@ def decode_complementarity(comp, control):
 
 
 class Model(SymbolicModel):
+
     def __init__(self, data):
 
         self.data = data
         self.model_type = 'dtcc'
-        self.__compile_functions__()
+        self.__functions__ = None
+        # self.__compile_functions__()
         self.set_changed()
 
     def set_changed(self):
@@ -369,7 +343,13 @@ class Model(SymbolicModel):
 
         self.__original_functions__ = original_functions
         self.__original_gufunctions__ = original_gufunctions
-        self.functions = functions
+        self.__functions__ = functions
+
+    @property
+    def functions(self):
+        if self.__functions__ is None:
+            self.__compile_functions__()
+        return self.__functions__
 
     def __str__(self):
 

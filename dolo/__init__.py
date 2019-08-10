@@ -2,7 +2,14 @@ from dolo.version import __version_info__, __version__
 
 from dolo.config import *
 
-# from dolo.algos.simulations import simulate, plot_decision_rule
+import dolo.compiler.objects
+import dolo.numeric.processes
+import dolo.numeric.processes_iid
+# import dolo.numeric.grids
+del dolo.compiler.objects
+del dolo.numeric.processes
+del dolo.numeric.processes_iid
+# del dolo.numeric.grids
 
 from dolo.compiler.model_import import yaml_import
 from dolo.misc.display import pcat

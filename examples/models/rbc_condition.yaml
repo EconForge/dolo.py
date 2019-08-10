@@ -2,8 +2,8 @@ name: Real Business Cycle
 
 symbols:
 
-   exogenous: [z]
-   states: [k]
+   exogenous: [e_z, e_p]
+   states: [z, k]
    controls: [n, i]
    expectations: [m]
    values: [V]
@@ -19,11 +19,12 @@ definitions:
 equations:
 
     arbitrage:
-        - chi*n^eta*c^sigma - w                      | 0 <= n <= inf
-        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0 <= i <= inf
-        # - V0 = c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta) + beta*V0(1) |  -100000<=V0<=100000
+        - chi*n^eta*c^sigma - w                     | 0.0 <= n <= inf
+        - 1 - beta*(c/c(1))^(sigma)*(1-delta+rk(1))  | 0.0 <= i <= inf
+
 
     transition:
+        - z = rho*z(-1) + e_z
         - k = (1-delta)*k(-1) + i(-1)
 
     value:
@@ -42,7 +43,7 @@ equations:
 calibration:
 
     # parameters
-    beta: 0.99
+    beta : 0.99
     phi: 1
     delta : 0.025
     alpha : 0.33
@@ -55,8 +56,6 @@ calibration:
     c_i: 1.5
     c_y: 0.5
     e_z: 0.0
-    m: 0
-    V0: (c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta))/(1-beta)
 
     # endogenous variables
     n: 0.33
@@ -69,17 +68,42 @@ calibration:
     c: y - i
     V: log(c)/(1-beta)
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+    m: beta/c^sigma*(1-delta+rk)
 
+# exogenous: !Product
+#     - !UNormal
+#         σ: 0.01
+#     - !UNormal
+#         σ: 0.02
 
+# exogenous: !Product
+#     - !UNormal
+#         σ: 0.01
+#     - !UNormal
+#         σ: 0.02
+exogenous: !Conditional
+    condition: !UNormal
+        mu: 0.0
+        sigma: 0.2
+    type: Markov
+    arguments: !Function
+        arguments: [x]
+        value:
+          states: [0.1, 0.2]
+          transitions: !Matrix
+              [[1-0.1-x, 0.1+x],
+               [0.5,       0.5]]
 
-
-exogenous: !VAR1
-    rho: 0.8
-    Sigma: [[sig_z^2]]
+      # ])
 
 domain:
-    k: [k*0.5, k*1.5]
+    z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
+    k: [ k*0.5, k*1.5]
 
 options:
     grid: !Cartesian
-        orders: [20]
+        n: [20, 20]
+# options:
+#     grid: !Smolyak
+#         mu: 3
+#         # orders: [5, 50]
