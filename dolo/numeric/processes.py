@@ -262,7 +262,7 @@ class MarkovChain(DiscretizedProcess, DiscreteProcess):
 
 
 @language_element
-class ProductProcess:
+class ProductProcess(Process):
 
     ### This class represents the product of processes
 

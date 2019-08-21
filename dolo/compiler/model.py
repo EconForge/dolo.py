@@ -158,11 +158,14 @@ class SymbolicModel:
         from dolo.compiler.language import eval_data
         exogenous = eval_data(exo, calibration)
 
-        from ruamel.yaml.comments import CommentedMap
+        from ruamel.yaml.comments import CommentedMap, CommentedSeq
         from dolo.numeric.processes import ProductProcess, Process
         if isinstance(exogenous, Process):
             # old style
             return exogenous
+        elif isinstance(exo, list):
+            # old style (2)
+            return ProductProcess(*exogenous)
         else:
             # new style
             syms = self.symbols['exogenous']
