@@ -199,7 +199,10 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     svec = numpy.row_stack([s0]*n_steps)
     svec[:,index] = values
 
-    dp = model.exogenous.discretize()
+    try:
+        dp = dr.dprocess
+    except:
+        dp = model.exogenous.discretize()
 
     if (i0 is None) and (m0 is None):
         from dolo.numeric.grids import UnstructuredGrid
