@@ -192,6 +192,8 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
 
     controls_0 = controls.reshape(sh_c)
 
+    mdr.set_values(controls_0)
+    
     t2 = time.time()
 
     if verbose:
