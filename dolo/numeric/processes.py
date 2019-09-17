@@ -319,7 +319,7 @@ class ProductProcess(Process):
         else:
             assert(len(options)==len(self.processes))
             kwargs = options
-            
+
         if to is None:
             if isinstance(self.processes[0], IIDProcess):
                 to = 'iid'
