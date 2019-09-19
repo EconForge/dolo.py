@@ -74,11 +74,11 @@ def trembling_hand(A: 'N*n1*...nd', x: 'N*d', w: 'float'):
 
 # TODO: add default options for endo_grid, exo_grid, dp
 @multimethod
-def ergo_dist(model, dr):
-    return ergo_dist(model, dr, dr.exo_grid, dr.endo_grid, dr.dprocess)
+def ergodic_distribution(model, dr):
+    return ergodic_distribution(model, dr, dr.exo_grid, dr.endo_grid, dr.dprocess)
 
 @multimethod
-def ergo_dist(model, dr,
+def ergodic_distribution(model, dr,
         exo_grid: UnstructuredGrid,
         endo_grid: CartesianGrid,
         dp: MarkovChain,
@@ -127,11 +127,14 @@ def ergo_dist(model, dr,
         A[-1,:] = 1.0
         μ = np.linalg.solve(A,B)
 
-        return Π.reshape((N_m, N_s, N_m, N_s)), μ.reshape((N_m, N_s))
+        μ = μ.reshape((N_m,)+dims_s)
+        labels =  [np.linspace(endo_grid.min[i], endo_grid.max[i], endo_grid.n[i]) for i in range(len(endo_grid.max))]
+        μ = xarray.DataArray(μ, [('i_m', np.arange(N_m))] + list( {s: labels[i] for i,s in enumerate(model.symbols['states'])}.items() ) )
+        return Π.reshape((N_m, N_s, N_m, N_s)), μ
 
 
 @multimethod
-def ergo_dist(model, dr,
+def ergodic_distribution(model, dr,
         exo_grid: EmptyGrid,
         endo_grid: CartesianGrid,
         dp: DiscretizedIIDProcess,
@@ -174,7 +177,7 @@ def ergo_dist(model, dr,
         A[-1,:] = 1.0
         μ = np.linalg.solve(A,B)
         μ = μ.reshape(dims_s)
-        
+
         labels = [np.linspace(endo_grid.min[i], endo_grid.max[i], endo_grid.n[i]) for i in range(len(endo_grid.max))]
         μ = xarray.DataArray(μ, list( {s: labels[i] for i,s in enumerate(model.symbols['states'])}.items() ) )
 

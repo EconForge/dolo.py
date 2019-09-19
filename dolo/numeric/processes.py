@@ -85,6 +85,40 @@ class ConstantProcess(Process):
             return MarkovChain(transitions, nodes)
 
 @language_element
+class BiConstantProcess(Process):
+
+    signature = {'μ1': 'Vector', 'μ2': 'Vector'}
+
+    @greek_tolerance
+    def __init__(self, μ1=None, μ2=None):
+
+        if isinstance(μ1, (float, int)):
+             μ1 = [μ1]
+        self.μ1 = np.array(μ1)
+        if isinstance(μ2, (float, int)):
+             μ2 = [μ2]
+        self.μ2 = np.array(μ2)
+        assert(self.μ1.ndim==1)
+        assert(self.μ2.ndim==1)
+        assert(len(self.μ1)==len(self.μ2))
+        self.d = len(self.μ1)
+
+    def discretize(self, to='mc'):
+
+        if to=='mc':
+            nodes = np.concatenate([self.μ1[None,:],self.μ2[None,:]], axis=0)
+            transitions = np.array([[0, 1.0],[0,1]])
+            return MarkovChain(transitions, nodes)
+        if to=='gdp':
+            nodes = self.μ1[None,:]
+            inodes = self.μ2[None,None,:]
+            iweights = np.array([[1.0]])
+            return GDP(nodes, inodes, iweights)
+        else:
+            raise Exception("Not implemented")
+
+
+@language_element
 class AggregateProcess(ConstantProcess):
 
     # that is a dummy class
@@ -223,9 +257,17 @@ class MarkovChain(DiscretizedProcess, DiscreteProcess):
         self.d = self.values.shape[1]
 
     def discretize(self, to='mc'):
-        if to != 'mc':
+
+        if to =='gdp':
+            nodes = self.values.copy()
+            inodes = nodes[None,:,:].repeat(nodes.shape[0],axis=0)
+            iweights = self.transitions
+            return GDP(nodes, inodes, iweights)
+            return
+        elif to =='mc':
+            return self
+        else:
             raise Exception("Not implemented.")
-        return self
 
     @property
     def grid(self):
@@ -276,6 +318,7 @@ class ProductProcess(Process):
             kwargs = [options]*len(self.processes)
         else:
             assert(len(options)==len(self.processes))
+            kwargs = options
 
         if to is None:
             if isinstance(self.processes[0], IIDProcess):

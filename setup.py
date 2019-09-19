@@ -15,7 +15,7 @@ setup(
     ],
     install_requires=[
         "dolang", "pyyaml", "numba", "numpy", "sympy", "scipy", "quantecon", "pandas",
-        "interpolation", "ruamel.yaml", "xarray", "altair"
+        "interpolation", "ruamel.yaml", "xarray", "altair", "multimethod"
     ],
     extras_require={
         'interactive': ['ipython'],
