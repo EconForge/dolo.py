@@ -439,8 +439,11 @@ def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
         ddx = solve_gu(dres.copy(), res.copy())
         L = Operator(jres,fut_S,ddr_filt)
 
-        lam = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
-        lam = abs(lam[0])
+        if compute_radius:
+            lam = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+            lam = abs(lam[0])
+        else:
+            lam = np.nan
         # lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
         return ImprovedTimeIterationResult(
             ddr,
