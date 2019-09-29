@@ -26,7 +26,7 @@ def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
     n_states = nodes.shape[0]
 
 #    start = numpy.array( (i_0,)*n_exp )
-    simul = numpy.zeros( (horizon, n_exp), dtype=int)
+    simul = numpy.zeros( (horizon, n_exp), dtype=np.int32)
     simul[0,:] = i_0
     rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
 
@@ -75,13 +75,14 @@ class ConstantProcess(Process):
         assert(self.μ.ndim==1)
         self.d = len(self.μ)
 
-    def discretize(self, to='mc'):
+    def discretize(self, to='mc', **kwargs):
 
         if to!='mc':
             raise Exception("Not implemented")
         else:
-            nodes = self.μ[None,:]
-            transitions = np.array([[1.0]])
+            N = kwargs.get("N", 1)
+            nodes = self.μ[None,:].repeat(N, axis=0)
+            transitions = np.eye(N)
             return MarkovChain(transitions, nodes)
 
 @language_element
