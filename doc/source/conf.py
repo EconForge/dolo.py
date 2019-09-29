@@ -31,6 +31,7 @@ extensions = ['sphinx.ext.autosummary',
                 'sphinx.ext.mathjax',
                 # 'sphinx.ext.viewcode',
                 'sphinx.ext.graphviz',
+                'recommonmark',
                 # 'sphinx.ext.napoleon']
                 'numpydoc']
 
@@ -42,7 +43,7 @@ class_members_toctree = False
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst','.md']
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'

@@ -137,7 +137,6 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
     it = 0
 
     if with_complementarities:
-        vprint("Solving WITH complementarities.")
         lb = lb.reshape((-1,n_x))
         ub = ub.reshape((-1,n_x))
 
