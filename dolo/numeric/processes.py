@@ -4,6 +4,7 @@ import pickle
 from typing import List, Optional
 from numba import jit, njit
 from dolo.numeric.grids import EmptyGrid, CartesianGrid, UnstructuredGrid
+from random import random as rand
 
 from dolo.compiler.language import greek_tolerance
 from dolo.compiler.language import language_element
@@ -19,39 +20,35 @@ def choice(x, n, cumul):
             i += 1
     return i
 
+@njit
+def simulate_mc_indices(C, N, T, i0):
+    k = len(C)
+    out = np.zeros((T, N), dtype=np.int32)
+    out[0,:] = i0
+    for n in range(N):
+        for t in range(0,T-1):
+            ii = out[t, n]
+            options = C[ii]
+            x = rand()
+            ix = choice(x, k, options)
+            out[t+1, n] = ix
+    return out
 
-@jit
-def simulate_markov_chain(nodes, transitions, i_0, n_exp, horizon):
+def simulate_markov_chain(nodes, transitions, N, T, i0=None, return_values=False):
+    i0_ = np.zeros(N, dtype=np.int32)
+    if i0 is not None:
+        i0_[:] = i0
+    C = transitions.cumsum(axis=1)
+    indices = simulate_mc_indices(C, N, T, i0_)
+    if return_values:
+        values = np.reshape( np.concatenate( [Q[i,:][None,:] for i in indices.ravel()], axis=0 ), indices.shape + (-1,) )
+        return indices, values
+    else:
+        return indices
 
-    n_states = nodes.shape[0]
-
-#    start = numpy.array( (i_0,)*n_exp )
-    simul = numpy.zeros( (horizon, n_exp), dtype=np.int32)
-    simul[0,:] = i_0
-    rnd = numpy.random.rand(horizon* n_exp).reshape((horizon,n_exp))
-
-    cumuls = transitions.cumsum(axis=1)
-    cumuls = numpy.ascontiguousarray(cumuls)
-
-    for t in range(horizon-1):
-        for i in range(n_exp):
-            s = simul[t,i]
-            p = cumuls[s,:]
-            simul[t+1,i] = choice(rnd[t,i], n_states, p)
-
-    res = numpy.row_stack(simul)
-
-    return res
 
 class Process:
     pass
-
-class IIDProcess(Process):
-
-    def response(self, T, impulse):
-        irf = numpy.zeros((T,self.d))
-        irf[1,:] = impulse[None,:]
-        return irf
 
 class DiscreteProcess(Process):
     pass
@@ -59,10 +56,18 @@ class DiscreteProcess(Process):
 class ContinuousProcess(Process):
     pass
 
+class IIDProcess(ContinuousProcess): # this is dubious
+
+    def response(self, T, impulse):
+        irf = numpy.zeros((T,self.d))
+        irf[1,:] = impulse[None,:]
+        return irf
+
+
 
 
 @language_element
-class ConstantProcess(Process):
+class ConstantProcess:
 
     signature = {'μ': 'Vector'}
 
@@ -84,39 +89,6 @@ class ConstantProcess(Process):
             nodes = self.μ[None,:].repeat(N, axis=0)
             transitions = np.eye(N)
             return MarkovChain(transitions, nodes)
-
-@language_element
-class BiConstantProcess(Process):
-
-    signature = {'μ1': 'Vector', 'μ2': 'Vector'}
-
-    @greek_tolerance
-    def __init__(self, μ1=None, μ2=None):
-
-        if isinstance(μ1, (float, int)):
-             μ1 = [μ1]
-        self.μ1 = np.array(μ1)
-        if isinstance(μ2, (float, int)):
-             μ2 = [μ2]
-        self.μ2 = np.array(μ2)
-        assert(self.μ1.ndim==1)
-        assert(self.μ2.ndim==1)
-        assert(len(self.μ1)==len(self.μ2))
-        self.d = len(self.μ1)
-
-    def discretize(self, to='mc'):
-
-        if to=='mc':
-            nodes = np.concatenate([self.μ1[None,:],self.μ2[None,:]], axis=0)
-            transitions = np.array([[0, 1.0],[0,1]])
-            return MarkovChain(transitions, nodes)
-        if to=='gdp':
-            nodes = self.μ1[None,:]
-            inodes = self.μ2[None,None,:]
-            iweights = np.array([[1.0]])
-            return GDP(nodes, inodes, iweights)
-        else:
-            raise Exception("Not implemented")
 
 
 @language_element
@@ -295,7 +267,7 @@ class MarkovChain(DiscretizedProcess, DiscreteProcess):
     def simulate(self, N, T, i0=0, m0=None, stochastic=True):
         # m0 is basically ignored
         if stochastic:
-            inds = simulate_markov_chain(self.values, self.transitions, i0, N, T)
+            inds = simulate_markov_chain(self.values, self.transitions, N, T, i0=i0)
         else:
             inds = np.zeros((T,N), dtype=int) + i0
         return self.values[inds]
