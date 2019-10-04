@@ -133,9 +133,9 @@ class UIIDMixture(UnivariateIIDProcess):
             for j in range(dist.n_inodes(0)):
                 w = dist.iweight(0,j)
                 x = dist.inode(0,j)
-                nodes.append(float(x))
+                nodes.append(x)
                 weights.append(wind*w)
-        nodes = np.array(nodes)
+        nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
         weights = np.array(weights)
         return DiscretizedIIDProcess(nodes[:,None], weights)
 
@@ -168,7 +168,6 @@ class UNormal(UnivariateIIDProcess):
     μ: float=0.0
     σ: float=1.0
     signature = {'μ': 'Optional[float]', 'σ': 'float'} # this is redundant for now
-
 
     @greek_tolerance
     def __init__(self, σ:float=None, μ:float=None):
@@ -215,11 +214,11 @@ class UNormal(UnivariateIIDProcess):
 class Uniform(UnivariateIIDProcess):
 
     # uniform distribution over an interval [a,b]
-    a: float
-    b: float
+    a: float=0.0
+    b: float=1.0
     signature = {'a': 'float', 'b': 'float'}
 
-    def __init__(self, a:float=None, b:float=None):
+    def __init__(self, a:float=0.0, b:float=1.0):
         self.a = float(a)
         self.b = float(b)
 
@@ -256,12 +255,13 @@ class LogNormal(UnivariateIIDProcess):
     # the mean, μ, and standard deviation, σ, of the unique normally distributed random variable X
     # such that exp(X) = Y.
 
-    μ: float # log-mean μ
-    σ: float # scale σ
-    signature: {'μ': 'float', 'σ': 'float'}
+    μ: float=0.0
+    σ: float=1.0
+
+    signature = {'μ': 'Optional[float]', 'σ': 'float'} # this is redundant for now
 
     @greek_tolerance
-    def __init__(self, σ:float=None, μ:float=None):
+    def __init__(self, σ:float=0.0, μ:float=1.0):
         self.σ = float(σ)
         self.μ = float(μ)
 
