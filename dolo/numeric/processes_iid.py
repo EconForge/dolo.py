@@ -117,7 +117,7 @@ class IIDMixture(IIDProcess):
         # distributions is a map from each of these values to a distribution
         self.index = index
         self.distributions = distributions
-        ds = [e.d for e in self.distributions]
+        ds = [e.d for e in self.distributions.values()]
         assert(len(set(ds))==1)
         self.d = self.distributions[0].d
 
