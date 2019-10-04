@@ -67,7 +67,7 @@ class IIDProcess(ContinuousProcess): # this is dubious
 
 
 @language_element
-class ConstantProcess:
+class ConstantProcess(IIDProcess):
 
     signature = {'μ': 'Vector'}
 

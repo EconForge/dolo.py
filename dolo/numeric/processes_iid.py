@@ -110,7 +110,7 @@ class Bernouilli(UnivariateIIDProcess):
         return sim.reshape((T,N,1))
 
 
-class UIIDMixture(UnivariateIIDProcess):
+class IIDMixture(IIDProcess):
 
     def __init__(self, index, distributions):
         # index is a distribution which takes discrete values
@@ -153,9 +153,9 @@ class UIIDMixture(UnivariateIIDProcess):
 def Mixture(index=None, distributions=None):
 
     for dist in distributions.values():
-        if not (isinstance(dist, UnivariateIIDProcess)):
-            raise Exception("Only mixtures of 1d iid processes are supported so far.")
-    return UIIDMixture(index, distributions)
+        if not (isinstance(dist, IIDProcess)):
+            raise Exception("Only mixtures of iid processes are supported so far.")
+    return IIDMixture(index, distributions)
     # not clear what we might do with non-iid
 
 Mixture.signature = {'index': 'intprocess', 'distributions': 'Dict[int,IIDProcesses]'}
