@@ -80,15 +80,22 @@ class ConstantProcess:
         assert(self.μ.ndim==1)
         self.d = len(self.μ)
 
-    def discretize(self, to='mc', **kwargs):
+    def discretize(self, to='None', **kwargs):
 
-        if to!='mc':
-            raise Exception("Not implemented")
-        else:
+        if to == 'iid':
+            x = self.μ[None,:]
+            w = np.array([1.0])
+            return DiscretizedIIDProcess(x, w)
+
+        elif to == 'mc':
             N = kwargs.get("N", 1)
             nodes = self.μ[None,:].repeat(N, axis=0)
             transitions = np.eye(N)
             return MarkovChain(transitions, nodes)
+        else:
+            raise Exception("Not implemented")
+
+
 
 
 @language_element
