@@ -1,6 +1,6 @@
 import numpy
 import pandas
-from matplotlib import pyplot
+import xarray as xr
 import numpy as np
 from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import newton as newton_solver
@@ -43,7 +43,7 @@ def find_index(sim, values):
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
 from dolo.algos.results import AlgoResult
 
-def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
+def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
         driving_process=None, seed=42, stochastic=True):
     '''
     Simulate a model using the specified decision rule.
@@ -51,9 +51,11 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
     Parameters
     ----------
 
-    model: NumericModel
+    model: Model
 
     dr: decision rule
+
+    process:
 
     s0: ndarray
         initial state where all simulations start
@@ -98,23 +100,45 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
 
     # are we simulating a markov chain or a continuous process ?
     if driving_process is not None:
-        m_simul = driving_process
-        sim_type = 'continuous'
+        if len(driving_process.shape)==3:
+            m_simul = driving_process
+            sim_type = 'continuous'
+            x_simul[0,:,:] = dr.eval_ms(m0, s0)
+        elif len(driving_process.shape)==2:
+            i_simul = driving_process
+            nodes = dr.exo_grid.nodes()
+            m_simul = nodes[i_simul]
+            # inds = i_simul.ravel()
+            # m_simul = np.reshape( np.concatenate( [nodes[i,:][None,:] for i in inds.ravel()], axis=0 ), inds.shape + (-1,) )
+            sim_type = 'discrete'
+            x_simul[0,:,:] = dr.eval_is(i0, s0)
+        else:
+            raise Exception("Incorrect specification of driving values.")
         m0 = m_simul[0,:,:]
-        x_simul[0,:,:] = dr.eval_ms(m0, s0)
     else:
-        if isinstance(dr.exo_grid, UnstructuredGrid):
+        from dolo.numeric.processes import ContinuousProcess
+
+        if process is None:
+            if hasattr(dr,'dprocess') and hasattr(dr.dprocess, 'simulate'):
+                process = dr.dprocess
+            else:
+                process = model.exogenous
+
+        # detect type of simulation
+        if isinstance(process, ContinuousProcess):
+            sim_type = 'continuous'
+        else:
+            sim_type = 'discrete'
+
+        if sim_type =='discrete':
             if i0 is None:
                 i0 = 0
-            dp = model.exogenous.discretize() ## TODO (nothing guarantee the processes match)
+            dp = process
             m_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic)
             i_simul = find_index(m_simul, dp.values)
-            sim_type = 'discrete'
             m0 = dp.node(i0)
             x0 = dr.eval_is(i0, s0)
-
         else:
-            process = model.exogenous ## TODO (nothing guarantee the processes match)
             m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
             sim_type = 'continuous'
             if m0 is None:
@@ -122,12 +146,11 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             x0 = dr.eval_ms(m0, s0)
             x_simul[0, :, :] = x0[None, :]
 
-    fun = model.functions
     f = model.functions['arbitrage']
     g = model.functions['transition']
 
     numpy.random.seed(seed)
-    from dolo.misc.dprint import dprint
+
     mp = m0
     for i in range(T):
         m = m_simul[i,:,:]
@@ -140,16 +163,17 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
             x = dr.eval_ms(m, s)
 
         x_simul[i,:,:] = x
+
         ss = g(mp, s, x, m, parms)
         if i < T-1:
             s_simul[i + 1, :, :] = ss
         mp = m
 
-    if 'auxiliary' not in fun:  # TODO: find a better test than this
+    if 'auxiliary' not in model.functions:  # TODO: find a better test than this
         l = [s_simul, x_simul]
         varnames = model.symbols['states'] + model.symbols['controls']
     else:
-        aux = fun['auxiliary']
+        aux = model.functions['auxiliary']
         a_simul = aux(
             m_simul.reshape((N * T, -1)),
             s_simul.reshape((N * T, -1)),
@@ -161,7 +185,10 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
 
     simul = numpy.concatenate(l, axis=2)
 
-    import xarray as xr
+    if sim_type=='discrete':
+        varnames = ['_i_m'] + varnames
+        simul = np.concatenate([i_simul[:,:,None], simul], axis=2)
+
     data = xr.DataArray(
             simul,
             dims=['T','N','V'],
@@ -169,6 +196,7 @@ def simulate(model, dr, N=1, T=40, s0=None, i0=None, m0=None,
         )
 
     return data
+
 
 def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=None, **kwargs):
 
