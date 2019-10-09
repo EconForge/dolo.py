@@ -13,7 +13,7 @@ def yaml_import(fname, check=True, check_only=False):
     try:
         data = ry.load(txt, ry.RoundTripLoader)
     except Exception as ex:
-        print ("Error while parsing YAML file. Probable syntax error in your model file : ", fname )
+        print ("Error while parsing YAML file. Probable YAML syntax error in file : ", fname )
         raise ex
 
     if check:

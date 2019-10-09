@@ -132,7 +132,7 @@ class IIDMixture(IIDProcess):
         for i in range(inddist.n_inodes(0)):
             wind = inddist.iweight(0,i)
             xind = inddist.inode(0,i)
-            dist = self.distributions[int(xind)].discretize()
+            dist = self.distributions[int(xind)].discretize(to='iid')
             for j in range(dist.n_inodes(0)):
                 w = dist.iweight(0,j)
                 x = dist.inode(0,j)
@@ -140,7 +140,7 @@ class IIDMixture(IIDProcess):
                 weights.append(wind*w)
         nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
         weights = np.array(weights)
-        return DiscretizedIIDProcess(nodes[:,None], weights)
+        return DiscretizedIIDProcess(nodes, weights)
 
     def simulate(self, N, T):
 
