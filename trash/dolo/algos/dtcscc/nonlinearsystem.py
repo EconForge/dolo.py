@@ -7,7 +7,7 @@ from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.algos.dtcscc.time_iteration import create_interpolator
 
 
-def nonlinear_system(model, initial_dr=None, maxit=10, tol=1e-8,  grid={}, distribution={}, verbose=True):
+def nonlinear_system(model, dr0=None, maxit=10, tol=1e-8,  grid={}, distribution={}, verbose=True):
 
     '''
     Finds a global solution for ``model`` by solving one large system of equations
@@ -19,7 +19,7 @@ def nonlinear_system(model, initial_dr=None, maxit=10, tol=1e-8,  grid={}, distr
         "dtcscc" model to be solved
     verbose: boolean
         if True, display iterations
-    initial_dr: decision rule
+    dr0: decision rule
         initial guess for the decision rule
     maxit:  int
         maximum number of iterationsd
@@ -56,10 +56,10 @@ def nonlinear_system(model, initial_dr=None, maxit=10, tol=1e-8,  grid={}, distr
 
     grid = ms.grid
 
-    if initial_dr is None:
+    if dr0 is None:
         dr = approximate_controls(model)
     else:
-        dr = initial_dr
+        dr = dr0
 
     ms.set_values(dr(grid))
 

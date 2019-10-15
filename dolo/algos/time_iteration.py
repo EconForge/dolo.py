@@ -31,7 +31,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 from .results import TimeIterationResult, AlgoResult
 
 
-def time_iteration(model, initial_guess=None, dprocess=None, with_complementarities=True,
+def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
                         verbose=True, grid={},
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False):
 
@@ -46,7 +46,7 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
         model to be solved
     verbose : boolean
         if True, display iterations
-    initial_guess : decision rule
+    dr0 : decision rule
         initial guess for the decision rule
     dprocess : DiscretizedProcess (model.exogenous.discretize())
         discretized process to be used
@@ -93,18 +93,18 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
     N = grid.shape[0]
 
     controls_0 = numpy.zeros((n_ms, N, n_x))
-    if initial_guess is None:
+    if dr0 is None:
         controls_0[:, :, :] = x0[None,None,:]
     else:
-        if isinstance(initial_guess, AlgoResult):
-            initial_guess = initial_guess.dr
+        if isinstance(dr0, AlgoResult):
+            dr0 = dr0.dr
         try:
             for i_m in range(n_ms):
-                controls_0[i_m, :, :] = initial_guess(i_m, grid)
+                controls_0[i_m, :, :] = dr0(i_m, grid)
         except Exception:
             for i_m in range(n_ms):
                 m = dprocess.node(i_m)
-                controls_0[i_m, :, :] = initial_guess(m, grid)
+                controls_0[i_m, :, :] = dr0(m, grid)
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
@@ -192,7 +192,7 @@ def time_iteration(model, initial_guess=None, dprocess=None, with_complementarit
     controls_0 = controls.reshape(sh_c)
 
     mdr.set_values(controls_0)
-    
+
     t2 = time.time()
 
     if verbose:

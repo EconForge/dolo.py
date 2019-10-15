@@ -73,7 +73,7 @@ def value_iteration(model,
     n_x = len(x0)
 
     mdr = constant_policy(model)
-    
+
     controls_0 = np.zeros((n_ms, N, n_x))
     for i_ms in range(n_ms):
         controls_0[i_ms, :, :] = mdr.eval_is(i_ms, grid)
@@ -109,7 +109,7 @@ def value_iteration(model,
         mdr.set_values(controls_0)
         if it > 2:
             ev = evaluate_policy(
-                model, mdr, initial_guess=mdrv, verbose=False, details=True)
+                model, mdr, dr0=mdrv, verbose=False, details=True)
         else:
             ev = evaluate_policy(model, mdr, verbose=False, details=True)
 
@@ -213,7 +213,7 @@ def evaluate_policy(model,
                     maxit=2000,
                     grid={},
                     verbose=True,
-                    initial_guess=None,
+                    dr0=None,
                     hook=None,
                     integration_orders=None,
                     details=False,
@@ -255,8 +255,8 @@ def evaluate_policy(model,
     endo_grid = model.get_grid(**grid)
     exo_grid = dprocess.grid
 
-    if initial_guess is not None:
-        mdrv = initial_guess
+    if dr0 is not None:
+        mdrv = dr0
     else:
         mdrv = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
 
@@ -271,12 +271,12 @@ def evaluate_policy(model,
             controls[i_m, :, :] = mdr.eval_is(i_m, grid)
 
     values_0 = np.zeros((n_ms, N, n_v))
-    if initial_guess is None:
+    if dr0 is None:
         for i_m in range(n_ms):
             values_0[i_m, :, :] = v0[None, :]
     else:
         for i_m in range(n_ms):
-            values_0[i_m, :, :] = initial_guess.eval_is(i_m, grid)
+            values_0[i_m, :, :] = dr0.eval_is(i_m, grid)
 
     val = model.functions['value']
     g = model.functions['transition']

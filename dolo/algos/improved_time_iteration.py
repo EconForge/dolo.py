@@ -229,7 +229,7 @@ def radius_jac(res,dres,jres,fut_S,dumdr,tol=1e-10,maxit=1000,verbose=False):
 from dolo import dprint
 from .results import AlgoResult, ImprovedTimeIterationResult
 
-def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
+def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
             interp_type='spline', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
             complementarities=True, compute_radius=False, invmethod='iti',
@@ -259,6 +259,8 @@ def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
 
     parms = model.calibration['parameters']
 
+    dp = dprocess
+    
     if dp is None:
         dp = model.exogenous.discretize()
 
@@ -282,9 +284,9 @@ def improved_time_iteration(model, method='jac', initial_dr=None, dp=None,
     n_x = len(model.symbols['controls'])
     x0 = model.calibration['controls'][None,None,].repeat(n_m, axis=0).repeat(N,axis=1)
 
-    if initial_dr is not None:
+    if dr0 is not None:
         for i_m in range(n_m):
-            x0[i_m,:,:] = initial_dr.eval_is(i_m, s)
+            x0[i_m,:,:] = dr0.eval_is(i_m, s)
     ddr.set_values(x0)
 
     steps = 0.5**numpy.arange(maxbsteps)

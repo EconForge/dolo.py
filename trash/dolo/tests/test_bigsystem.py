@@ -12,7 +12,7 @@ def test_big_system():
     diff = (sol.__values__) - dr.__values__
     assert(abs(diff).max() < 1e-6)
 
-    sol_high_precision = nonlinear_system(model, grid={'type': 'smolyak', 'mu': 5}, initial_dr=sol)
+    sol_high_precision = nonlinear_system(model, grid={'type': 'smolyak', 'mu': 5}, dr0=sol)
 
     assert(sol_high_precision.grid.shape == (145, 2))
 

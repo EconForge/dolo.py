@@ -19,4 +19,4 @@ def test_custom_dr():
 
     sim = simulate(model, edr, s0=np.array([0.0, 8.0]))
 
-    time_iteration(model, initial_guess=edr)
+    time_iteration(model, dr0=edr)

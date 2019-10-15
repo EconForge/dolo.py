@@ -11,7 +11,7 @@ from interpolation.complete_poly import (CompletePolynomial,
     n_complete)
 
 
-def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
+def gssa(model, maxit=100, tol=1e-8, dr0=None, verbose=False,
          n_sim=10000, deg=3, damp=0.1, seed=42):
     """
     Sketch of algorithm:
@@ -57,10 +57,10 @@ def gssa(model, maxit=100, tol=1e-8, initial_dr=None, verbose=False,
     x0 = model.calibration["controls"]
 
     # construct initial decision rule if not supplied
-    if initial_dr is None:
+    if dr0 is None:
         drp = approximate_controls(model)
     else:
-        drp = initial_dr
+        drp = dr0
 
     # set up quadrature weights and nodes
     distrib = model.get_distribution()

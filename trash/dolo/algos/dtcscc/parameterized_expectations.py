@@ -7,7 +7,7 @@ from dolo.numeric.optimize.newton import (SerialDifferentiableFunction,
 from dolo.numeric.interpolation import create_interpolator
 
 
-def parameterized_expectations(model, verbose=False, initial_dr=None,
+def parameterized_expectations(model, verbose=False, dr0=None,
                                pert_order=1, with_complementarities=True,
                                grid={}, distribution={},
                                maxit=100, tol=1e-8, inner_maxit=100,
@@ -27,7 +27,7 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     verbose : boolean
         if True, display iterations
 
-    initial_dr : decision rule
+    dr0 : decision rule
         initial guess for the decision rule
 
     pert_order : {1}
@@ -76,15 +76,15 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
 
     N = grid.shape[0]
 
-    if initial_dr is None:
+    if dr0 is None:
         if pert_order == 1:
-            initial_dr = approximate_controls(model)
+            dr0 = approximate_controls(model)
 
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
 
     # Use initial decision rule to find initial expectation function
-    x_0 = initial_dr(grid)
+    x_0 = dr0(grid)
     x_0 = x_0.real  # just in case ...
 
     z_0 = np.zeros((N, len(model.symbols['expectations'])))
@@ -94,7 +94,7 @@ def parameterized_expectations(model, verbose=False, initial_dr=None,
     for i in range(weights.shape[0]):
         e = nodes[i, :]
         ssnext = g(grid, x_0, e, parms)
-        xxnext[:, :, i] = initial_dr(ssnext)
+        xxnext[:, :, i] = dr0(ssnext)
         z_0 += weights[i]*h(ssnext, xxnext[:, :, i], parms)
 
     t1 = time.time()
@@ -216,7 +216,7 @@ from dolo.algos.dtcscc.perturbations import approximate_controls
 from dolo.numeric.interpolation import create_interpolator
 
 
-def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
+def parameterized_expectations_direct(model, verbose=False, dr0=None,
                                       pert_order=1, grid={}, distribution={},
                                       maxit=100, tol=1e-8):
     '''
@@ -234,7 +234,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
         "dtcscc" model to be solved
     verbose : boolean
         if True, display iterations
-    initial_dr : decision rule
+    dr0 : decision rule
         initial guess for the decision rule
     pert_order : {1}
         if no initial guess is supplied, the perturbation solution at order
@@ -256,9 +256,9 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
     h = model.functions['expectation']
     parms = model.calibration['parameters']
 
-    if initial_dr is None:
+    if dr0 is None:
         if pert_order == 1:
-            initial_dr = approximate_controls(model)
+            dr0 = approximate_controls(model)
 
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
@@ -275,7 +275,7 @@ def parameterized_expectations_direct(model, verbose=False, initial_dr=None,
     N = grid.shape[0]
     z = np.zeros((N, len(model.symbols['expectations'])))
 
-    x_0 = initial_dr(grid)
+    x_0 = dr0(grid)
     x_0 = x_0.real  # just in case ...
     h_0 = h(grid, x_0, parms)
 
