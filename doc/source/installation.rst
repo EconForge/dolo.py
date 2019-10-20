@@ -74,7 +74,7 @@ The only step to setup the environment consists in choosing a folder to store th
 
 .. code::
 
-    `ipython notebook`
+    `jupyter notebook`
 
 
 .. figure:: .//figs//open_command_prompt.png

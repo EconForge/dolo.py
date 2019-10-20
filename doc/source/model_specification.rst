@@ -7,9 +7,9 @@ Variable types
 
 The following types of variables can be used in DTCSCC models:
 
+    -  ``shocks`` (``e``) (can be autocorrelated)
     -  ``states`` (``s``)
     -  ``controls`` (``x``)
-    -  ``shocks`` (``e``)
     -  ``auxiliaries`` (``y``)
     -  ``rewards`` (``r``)
     -  ``values`` (``v``)
@@ -21,17 +21,22 @@ Symbol types that are present in a model are always listed in that order.
 State-space
 ~~~~~~~~~~~
 
-Decisions are characterized by a vector :math:`s` of continuous variables, referred to as the states. The unknown vector of controls :math:`x` is a function :math:`\varphi` of the states
-such that:
+The unknown vector of controls :math:`x` is a function :math:`\varphi` of the states, both exogenous (:math`e`) and endogenous (:math`s`)
+In general we have:
 
 .. math::
 
-    x = \varphi(s)
+    x = \varphi(e, s)
+
+.. math::
+
+    In case shocks are iid, dolo looks for a decision rule :math`x=\varphi(s)`/
 
 The function :math:`\varphi` is typically approximated by the solution algorithm. It can be either a Taylor expansion, or an intepolating object (splines, smolyak). In both cases, it behaves like a numpy gufunc and can be called on a vector or a list of points:
 
 .. code:: python
 
+    # for an iid model
     dr = approximate_controls(model)
     s0 = model.calibration['states']
     dr(s0)                               # evaluates on a vector
@@ -48,19 +53,19 @@ The various equations that can be defined using these symbol types is summarized
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
 |    Function                       | Standard name                 | Short name | Definition                                    |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Transitions                       | ``transition``                | ``g``      | ``s = g(s(-1),x(-1),e)``                      |
+| Transitions                       | ``transition``                | ``g``      | ``s = g(e(-1), s(-1),x(-1),e)``                      |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Lower bound                       | ``controls_lb``               | ``lb``     | ``x_lb = lb(s)``                              |
+| Lower bound                       | ``controls_lb``               | ``lb``     | ``x_lb = lb(e, s)``                              |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Upper bound                       | ``controls_ub``               | ``ub``     | ``x_ub = ub(s)``                              |
+| Upper bound                       | ``controls_ub``               | ``ub``     | ``x_ub = ub(e, s)``                              |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Auxiliary                         | ``auxiliary``                 | ``a``      | ``y = a(s,x)``                                |
+| Auxiliary  (special block)        | ``auxiliary``                 | ``a``      | ``y = a(e,s,x)``                                |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Utility                           | ``utility``                   | ``u``      | ``r = u(s,x)``                                |
+| Utility                           | ``utility``                   | ``u``      | ``r = u(e,s,x)``                                |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
 | Value updating                    | ``value_updating``            | ``w``      | ``v = w(s,x,v,s(1),x(1),w(1))``               |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
-| Arbitrage                         | ``arbitrage``                 | ``f``      | ``0=f(s,x,e(1),s(1),x(1)``                    |
+| Arbitrage                         | ``arbitrage``                 | ``f``      | ``0=f(e,s,x,e(1),s(1),x(1))``                    |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
 | Expectations                      | ``expectation``               | ``h``      | ``z=h(s(1),x(1))``                            |
 +-----------------------------------+-------------------------------+------------+-----------------------------------------------+
@@ -80,13 +85,14 @@ When present these functions can be accessed from the ``model.functions`` dictio
 .. code:: python
 
     # recover steady-state values
+    e = model.calibration['exogenous']
     s = model.calibration['states']
     x = model.calibration['controls']
     p = model.calibration['parameters']
 
     # compute the vector of auxiliary variables
     a = model.functions['auxiliary']
-    y = (s,x,p)
+    y = a(e,s,x,p)
 
     # it should correspond to the calibrated values:
     calib_y = model.calibration['auxiliaries']
@@ -144,12 +150,15 @@ Auxiliary variables
     - name: `auxiliary`
     - short name: `a`
 
-In order to reduce the number of variables, it is useful to define
-auxiliary variables :math:`y_t` using a function :math:`a` such that:
+In order to reduce the number of variables, it is useful to define auxiliary variables :math:`y_t` using a function :math:`a` such that:
 
 .. math::
 
     y_t = a(s_t, x_t)
+
+.. note
+
+    Auxiliaries are now defined in the `definitions` block, separately from other equations.
 
 When they appear in an equation they are automatically substituted by
 the corresponding expression in :math:`s_t` and :math:`x_t`.
@@ -254,7 +263,7 @@ The optimal controls must also satisfy bounds that are function of states. There
 
 .. math::
 
-    \underline{b}(s_t) \leq x_t \leq \overline{b}(s_t)
+    \underline{b}(e_t, s_t) \leq x_t \leq \overline{b}(s_t)
 
 .. note::
 

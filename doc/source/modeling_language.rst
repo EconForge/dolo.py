@@ -101,7 +101,7 @@ This model can be loaded using the command:
 
 .. code:: python
 
-    model = yaml_import(`examples\global_models\example.yaml`)
+    model = yaml_import(`examples/models/rbc.yaml`)
 
 The function `yaml_import` (cross) will raise errors until the model satisfies basic compliance tests. [more of it below]. In the following subsections, we describe the various syntaxic rules prevailing while writing yaml files.
 
@@ -250,23 +250,27 @@ Domain section
 
 The domain section contains boundaries for each endogenous state as in the following example:
 
-```
+
 .. code:: yaml
 
     domain:
         k: [0.5*k, 2*k]
         z: [-σ_z*3, σ_z*3]
-```
 
 .. note:: In the above example, values can refer to the calibration dictionary. Hence, `0.5*k` means `50%` of steady-state capital. Keys, are not replaced.
 
 Exogenous shocks specification
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. note::
+
+    This section is out-of-date. Many more shocks options are allowed. See [dolark documentation](http://www.econforge.org/dolark/shocks/) for a more
+    recent description of the shocks.
+
 The type of exogenous shock associated to a model determines the kind of decision rule, whih will be obtained by the solvers.
 Shocks can pertain to one of the following categories: continuous i.i.d. shocks (Normal law), continous autocorrelated process (VAR1 process)
 or a discrete markov chain. The type of the shock is specified using yaml type annotations (starting with exclamation mark)
- The exogenous shock section can refer to parameters specified in the calibration section. Here are some Examples
+ The exogenous shock section can refer to parameters specified in the calibration section. Here are some examples
 for each type of shock:
 
 Normal
@@ -297,7 +301,7 @@ It is also possible to combine markov chains together.
 
 .. code:: yaml
 
-    exogenous: !MarkovTensor:
+    exogenous: !Product
         - !MarkovChain
             values: [[-0.01, 0.1],[0.01, 0.1]]
             transitions: [[0.9, 0.1], [0.1, 0.9]]
@@ -320,6 +324,3 @@ Global solutions require the definition of an approximation space. The lower, up
         grid: !Cartesian
             n: [10, 50]
         arbitrary_information
-
-.. note:: Grid information indicates how to discretize the domain (here as a 10x50 cartesian grid) is currently coded in the general options section. It will probably be moved in a self contained
-section in the future.

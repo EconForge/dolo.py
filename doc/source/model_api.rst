@@ -27,7 +27,9 @@ The object contains few meta-data:
 The ``model.name`` field contains a possibly long string identifying the model.
 The ``'model.model_features'`` field summarizes which equations types are provided which determines the solution algorithms that can be used to solve the model. Here ``(f,g,v)`` means that ``arbitrage`` (short ``f``), ``transition`` (short ``g``) and ``value`` equations were provided meaning that time-iteration or value function iteration can both be used to solve the model. When using a yaml files, the ``model_type` and ``model_specs`` properties are automatically set.
 
-..note:: ``model_type`` field is now always ``dtcc``. Older model types (``'dtmscc'``, ``'dtcscc'``, ``'dynare'``) are not used anymore.
+..note::
+
+    ``model_type`` field is now always ``dtcc``. Older model types (``'dtmscc'``, ``'dtcscc'``, ``'dynare'``) are not used anymore.
 
 The various attributes of the model directly echo the sections from the Yaml file.
 
@@ -49,36 +51,59 @@ Symbols are held in the `model.symbols` dictionary, with each symbol type mappin
 Calibration
 +++++++++++
 
-Each models stores a calibration dictionary as `model.calibration`. This one consists in a special dictionary object, with the same keys as the ``model.symbols`` dictionary.
+Each models stores calibration information as `model.calibration`. It is a special dictionary-like object,  which contains
+calibration information, that is values for parameters and initial values (or steady-state) for all other variables of the model.
+
+It is possible to retrieve one or several variables calibrations:
+
+.. code:: python
+
+    display( model.calibration['k'] ) #  ->  2.9
+    display( model.calibration['k', 'delta']  #  -> [2.9, 0.08]
+
+When a key coresponds to one of the symbols group, one gets one or several vectors of variables instead:
+
+.. code:: python
+
+    model.calibration['states'] # - > np.array([2.9, 0]) (values of states [z, k])
+    model.calibration['states', 'controls'] # -> [np.array([2.9, 0]), np.array([0.29, 1.0])] (values of states [z,k] and controls [i,n])
+
+
+To get regular dictionary mapping states groups and vectors, one can use the attributed `.grouped`
 The values are vectors (1d numpy arrays) of values for each symbol group. For instance the following code will print the calibrated values of the parameters:
 
 .. code:: python
 
-    print( zip( model.symbols['parameters'], model.calibration['parameters'] ) )
+    for (variable_group, variables) in model.calibration.items():
+        print(variables_group, variables)
 
-In order to get a ``(key,values)`` of all the parameters of the model, one can call ``model.calibration.flat``.
 
-It is possible to get the value of one or many symbols, using the .get_calibration method:
+In order to get a ``(key,values)`` of all the values of the model, one can call ``model.calibration.flat``.
 
 .. code:: python
 
-    display( model.get_calibration('k')) #  ->  2.9
+    for (variable_group, variables) in model.calibration.items():
+        print(variables_group, variables)
 
-    display( model.get_calibration( ['k', 'delta'] ))  #  -> [2.9, 0.08]
+
+.. note
+
+    The calibration object can contain values that are not symbols of the model. These values can be used to calibrate model parameters
+    and are also evaluated in the other yaml sections, using the supplied value.
+
 
 One uses the ``model.set_calibration()`` routine to change the calibration of the model.  This one takes either a dict as an argument, or a set of keyword arguments. Both calls are valid:
 
-.. code:: yaml
+.. code:: python
 
     model.set_calibration( {'delta':0.01} )
-
     model.set_calibration( {'i': 'delta*k'} )
-
     model.set_calibration( delta=0.08, k=2.8 )
+
 
 This method also understands symbolic expressions (as string) which makes it possible to define symbols as a function of other symbols:
 
-.. code:: yaml
+.. code:: python
 
     model.set_calibration(beta='1/(1+delta)')
     print(model.get_calibration('beta'))   # -> nan
@@ -86,8 +111,8 @@ This method also understands symbolic expressions (as string) which makes it pos
     model.set_calibration(delta=0.04)
     print(model.get_calibration(['beta', 'delta'])) # -> [0.96, 0.04]
 
-Under the hood, the method stores the symbolic relations between symbols. It is precisely equivalent
-to use the ``set_calibration`` method or to change the values in the yaml files. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.
+Under the hood, the method stores the symbolic relations between symbols. It is precisely equivalent to use the ``set_calibration`` method
+or to change the values in the yaml files. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.
 
 Functions
 +++++++++
@@ -105,10 +130,11 @@ Let's call the arbitrage function on the steady-state value, to see the residual
 
 .. code:: python
 
+    m = model.calibration['exogenous']
     s = model.calibration['states']
     x = model.calibration['controls']
     p = model.calibration['parameters']
-    res = f(s,x,s,x,p)
+    res = f(m,s,x,m,s,x,p)
     display(res)
 
 The output (``res``) is two element vector, representing the residuals of the two arbitrage equations at the steady-state. It should be full of zero. Is it ? Great !
@@ -117,21 +143,21 @@ By inspecting the arbitrage function ( ``f?`` ), one can see that its call api i
 
 .. code:: python
 
-    f(s,x,S,X,p,diff=False,out=None)
+    f(m,s,x,M,S,X,p,diff=False,out=None)
 
-Since ``s`` and ``x`` are the short names for states and controls, their values at date :math:`t+1` is denoted with ``S`` and ``X``. This simple convention prevails in most of dolo source code: when possible, vectors at date ``t`` are denoted with lowercase, while future vectors are with upper case. We have already commented the presence of the paramter vector ``p``.
+Since ``m``, ``s`` and ``x`` are the short names for exogenous shocks, states and controls, their values at date :math:`t+1` is denoted with ``S`` and ``X``. This simple convention prevails in most of dolo source code: when possible, vectors at date ``t`` are denoted with lowercase, while future vectors are with upper case. We have already commented the presence of the paramter vector ``p``.
 Now, the generated functions also gives the option to perform in place computations, when an output vector is given:
 
 .. code:: python
 
     out = numpy.ones(2)
-    f(s,x,s,x,p,out)   # out now contains zeros
+    f(m,s,x,m,s,x,p,out)   # out now contains zeros
 
 It is also possible to compute derivatives of the function by setting ``diff=True``. In that case, the residual and jacobians with respect to the various arguments are returned as a list:
 
 .. code:: python
 
-    r, r_s, r_x, r_S, r_X = f(s,x,s,x,p,diff=True)
+    r, r_m, r_s, r_x, r_M, r_S, r_X = f(m,s,x,m,s,x,p,diff=True)
 
 Since there are two states and two controls, the variables ``r_s, r_x, r_S, r_X`` are all 2 by 2 matrices.
 
@@ -141,27 +167,32 @@ The generated functions also allow for efficient vectorized evaluation. In order
 
     N = 10000
 
+    vec_m = m[None,:].repeat(N, axis=0) # we repeat each line N times
     vec_s = s[None,:].repeat(N, axis=0) # we repeat each line N times
     vec_x = x[None,:].repeat(N, axis=0)
     vec_X = X[None,:].repeat(N, axis=0)
     vec_p = p[None,:].repeat(N, axis=0)
+    # actually, except for vec_s, the function repeat is not need since broadcast rules apply
     vec_s[:,0] = linspace(2,4,N) # we provide various guesses for the steady-state capital
     vec_S = vec_s
 
-    out = f(vec_s,vec_x,vec_S,vec_X,vec_p)  # now a 10000 x 2 array
+    out = f(vec_m, vec_s,vec_x,vec_M, vec_S,vec_X,vec_p)  # now a 10000 x 2 array
 
-    out, out_s, out_x, out_S, out_X = f(vec_s,vec_x,vec_S,vec_X,vec_p)
+    out, out_m, out_s, out_x, out_M, out_S, out_X = f(vec_m, vec_s,vec_x, vec_m, vec_S,vec_X,vec_p)
+
 
 
 The vectorized evaluation is optimized so that it is much faster to make a vectorized call rather than iterate on each point. By default, this is achieved by using the excellent `numexpr` library.
 
 .. note::
 
-    In the preceding example, the parameters are constant for all evaluations, yet they are repeated. This is not mandatory, and the call ``f(vec_s, vec_x, vec_S, vec_X, p)`` should work exactly as if `p` had been repeated along the first axis. We follow there numba's ``guvectorize`` conventions, even though they slightly differ from numpy's ones.
+    In the preceding example, the parameters are constant for all evaluations, yet they are repeated. This is not mandatory, and the call ``f(vec_m, vec_s, vec_x, vec_M, vec_S, vec_X, p)`` should work exactly as if `p` had been repeated along the first axis. We follow there numba's ``guvectorize`` conventions, even though they slightly differ from numpy's ones.
 
 
 Exogenous shock
 +++++++++++++++
+
+TODO: expand
 
 The `exogenous` field contains information about the driving process. To get its default, discretize version, one can call `model.exogenous.discretize()`.
 
