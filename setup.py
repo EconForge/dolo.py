@@ -6,6 +6,7 @@ exec(open('dolo/version.py').read())
 setup(
     name="dolo",
     version=__version__,
+    python_requires='>=3.7',
     packages=find_packages(),
     package_data={'dolo.compiler': ["recipes.yaml"]},
     test_suite='dolo.tests',
