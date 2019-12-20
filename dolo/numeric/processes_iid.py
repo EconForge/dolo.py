@@ -90,7 +90,7 @@ class UnivariateIIDProcess(IIDProcess):
 
         w = (1/(N))*np.ones(N)
 
-        return DiscretizedIIDProcess(q, w)
+        return DiscretizedIIDProcess(q[:,None], w)
 
 @language_element
 @dataclass
