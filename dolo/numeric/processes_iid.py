@@ -60,27 +60,37 @@ from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, Disc
 class UnivariateIIDProcess(IIDProcess):
     d = 1
 
-    def discretize(self,  N=5, method='equiprobable', to='iid'):
+    def discretize(self,  N=5, method='equiprobable', mass_point = "median" ,to='iid'):
         if to !='iid':
             raise Exception("Not implemented")
 
         if method=='gauss-hermite':
             return self.__discretize_gh__(N=N)
         elif method=='equiprobable':
-            return self.__discretize_ep__(N=N)
+            return self.__discretize_ep__(N=N, mass_point=mass_point)
         else:
             raise Exception("Unknown discretization method.")
 
-    def __discretize_ep__(self, N=5): #Equiprobable
+    def __discretize_ep__(self, N=5, mass_point="median"): #Equiprobable
+        if mass_point == "median":
+            p = np.linspace(0.5/N,1-0.5/N,N)
+            q = self.ppf(p)
+        elif mass_point == "left":
+            p = np.linspace(0,1-1/N,N)
+            q = self.ppf(p)
+        elif mass_point == "middle":
+            p = np.linspace(0.,1,N+1)
+            q = self.ppf(p)
+            q = 0.5*(q[1:]+q[:-1])
+        elif mass_point == "right":
+            p = np.linspace(1/N,1,N)
+            q = self.ppf(p)
+        else:
+            raise Exception("Not implemented")
 
-        # this could be implemented once for all univariate processes which have a ppf
-        xvec = np.linspace(0, 1, N+1)
-        quantiles = 1/N/2 + xvec[:-1]
-        x = self.ppf(quantiles)
-        x = x[:,None]
         w = (1/(N))*np.ones(N)
-        return DiscretizedIIDProcess(x, w)
 
+        return DiscretizedIIDProcess(q, w)
 
 @language_element
 @dataclass
