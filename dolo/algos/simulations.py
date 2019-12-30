@@ -106,7 +106,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
             x_simul[0,:,:] = dr.eval_ms(m0, s0)
         elif len(driving_process.shape)==2:
             i_simul = driving_process
-            nodes = dr.exo_grid.nodes()
+            nodes = dr.exo_grid.nodes
             m_simul = nodes[i_simul]
             # inds = i_simul.ravel()
             # m_simul = np.reshape( np.concatenate( [nodes[i,:][None,:] for i in inds.ravel()], axis=0 ), inds.shape + (-1,) )
@@ -235,7 +235,7 @@ def tabulate(model, dr, state, bounds=None, n_steps=100, s0=None, i0=None, m0=No
     if (i0 is None) and (m0 is None):
         from dolo.numeric.grids import UnstructuredGrid
         if isinstance(dp.grid, UnstructuredGrid):
-            n_ms = dp.n_nodes()
+            n_ms = dp.n_nodes
             [q,r] = divmod(n_ms,2)
             i0 = q-1+r
         else:

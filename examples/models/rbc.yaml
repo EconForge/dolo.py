@@ -56,8 +56,6 @@ calibration:
     c_i: 1.5
     c_y: 0.5
     e_z: 0.0
-
-    # endogenous variables
     n: 0.33
     z: zbar
     rk: 1/beta-1+delta
@@ -69,17 +67,19 @@ calibration:
     V: log(c)/(1-beta)
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
     m: beta/c^sigma*(1-delta+rk)
+    kss: 10
 
 exogenous: !UNormal
-    σ: 0.01
+    sigma: 0.01
 
 domain:
     z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
-    k: [ k*0.5, k*1.5]
+    k: [ kss*0.5, kss*1.5]
 
 options:
     grid: !Cartesian
         n: [20, 20]
+    discrete_choices: [n]
 # options:
 #     grid: !Smolyak
 #         mu: 3

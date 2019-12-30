@@ -58,7 +58,7 @@ def value_iteration(model,
     process = model.exogenous
     dprocess = process.discretize()
 
-    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 
@@ -68,7 +68,7 @@ def value_iteration(model,
 
     mdrv = DecisionRule(exo_grid, endo_grid)
 
-    grid = mdrv.endo_grid.nodes()
+    grid = mdrv.endo_grid.nodes
     N = grid.shape[0]
     n_x = len(x0)
 
@@ -241,7 +241,7 @@ def evaluate_policy(model,
     process = model.exogenous
     dprocess = process.discretize()
 
-    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 
@@ -260,7 +260,7 @@ def evaluate_policy(model,
     else:
         mdrv = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
 
-    grid = mdrv.endo_grid.nodes()
+    grid = mdrv.endo_grid.nodes
     N = grid.shape[0]
 
     if isinstance(mdr, np.ndarray):
@@ -344,7 +344,7 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
     N = s.shape[0]
     n_s = s.shape[1]
 
-    n_ms = dprocess.n_nodes()  # number of exogenous states
+    n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 

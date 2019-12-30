@@ -130,12 +130,14 @@ class GDP(DiscretizedProcess):
     def grid(self):
         return self.__grid__
 
+    @property
     def n_nodes(self)->int:
         return self.__nodes__.shape[0]
 
     def node(self, i: int): #->List:
         return self.__nodes__[i,:]
 
+    @property
     def nodes(self):
         return self.__nodes__
 
@@ -159,6 +161,7 @@ class DiscretizedIIDProcess(DiscretizedProcess):
     def grid(self):
         return EmptyGrid()
 
+    @property
     def n_nodes(self): # integer
         return 1
 
@@ -253,12 +256,14 @@ class MarkovChain(DiscretizedProcess, DiscreteProcess):
     def grid(self):
         return UnstructuredGrid(self.values)
 
+    @property
     def n_nodes(self): # integer
         return self.values.shape[0]
 
     def node(self, i:int): # vector
         return self.values[i,:]
 
+    @property
     def nodes(self):
         return self.values
 

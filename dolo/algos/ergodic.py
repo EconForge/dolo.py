@@ -84,10 +84,10 @@ def ergodic_distribution(model, dr,
         dp: MarkovChain,
         compute_μ=True):
 
-    N_m = exo_grid.n_nodes()
-    N_s = endo_grid.n_nodes()
+    N_m = exo_grid.n_nodes
+    N_s = endo_grid.n_nodes
     dims_s = tuple(endo_grid.n) # we have N_s = prod(dims_s)
-    s = endo_grid.nodes()
+    s = endo_grid.nodes
 
     N = N_m*N_s
     Π = np.zeros((N_m, N_m, N_s) + dims_s)
@@ -140,9 +140,9 @@ def ergodic_distribution(model, dr,
         dp: DiscretizedIIDProcess,
         compute_μ=True):
 
-    N_s = endo_grid.n_nodes()
+    N_s = endo_grid.n_nodes
     dims_s = tuple(endo_grid.n) # we have N_s = prod(dims_s)
-    s = endo_grid.nodes()
+    s = endo_grid.nodes
 
     m = model.calibration['exogenous']
     Π = np.zeros((N_s,)+dims_s)

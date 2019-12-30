@@ -11,7 +11,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
     res = numpy.zeros_like(x)
 
-    for i_ms in range(dprocess.n_nodes()):
+    for i_ms in range(dprocess.n_nodes):
 
         # solving on grid for markov index i_ms
         m = numpy.tile(dprocess.node(i_ms),(N,1))
@@ -75,7 +75,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
     if dprocess is None:
         dprocess = model.exogenous.discretize()
 
-    n_ms = dprocess.n_nodes() # number of exogenous states
+    n_ms = dprocess.n_nodes # number of exogenous states
     n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
 
     x0 = model.calibration['controls']
@@ -89,7 +89,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
 
     mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess)
 
-    grid = mdr.endo_grid.nodes()
+    grid = mdr.endo_grid.nodes
     N = grid.shape[0]
 
     controls_0 = numpy.zeros((n_ms, N, n_x))
