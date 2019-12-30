@@ -26,7 +26,7 @@ def test_import():
 
         dprocess = model.exogenous.discretize()
 
-        print( dprocess.n_nodes() )
+        print( dprocess.n_nodes )
         print( dprocess.n_inodes(0) )
         print( dprocess.inode(0,0) )
         print( dprocess.node(0) )

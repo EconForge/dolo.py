@@ -264,7 +264,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
     if dp is None:
         dp = model.exogenous.discretize()
 
-    n_m = max(dp.n_nodes(),1)
+    n_m = max(dp.n_nodes,1)
 
     n_s = len(model.symbols['states'])
 
@@ -279,7 +279,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
         derivative_type = 'numerical'
 
     # s = ddr.endo_grid
-    s = grid.nodes()
+    s = grid.nodes
     N = s.shape[0]
     n_x = len(model.symbols['controls'])
     x0 = model.calibration['controls'][None,None,].repeat(n_m, axis=0).repeat(N,axis=1)
@@ -472,7 +472,7 @@ def euler_residuals(f, g, s, x, dr, dp, p_, diff=True, with_jres=False,
     n_s = s.shape[1]
     n_x = x.shape[2]
 
-    n_ms = max(dp.n_nodes(),1)   # number of markov states
+    n_ms = max(dp.n_nodes,1)   # number of markov states
     n_im = dp.n_inodes(0)
 
     res = numpy.zeros_like(x)

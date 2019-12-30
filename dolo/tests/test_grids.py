@@ -4,7 +4,7 @@ def test_grids():
     from dolo.numeric.grids import n_nodes, nodes, node
     print("Cartsian Grid")
     grid = CartesianGrid([0.1, 0.3], [9, 0.4], [50, 10])
-    print(grid.nodes())
+    print(grid.nodes)
     print(nodes(grid))
 
     print("UnstructuredGrid")

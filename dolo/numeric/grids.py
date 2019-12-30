@@ -14,9 +14,11 @@ class Grid:
     def __mul__(self, rgrid):
         return cat_grids(self, rgrid)
 
+    @property
     def nodes(self):
         return self.__nodes__
 
+    @property
     def n_nodes(self):
         return self.__nodes__.shape[0]
 
@@ -28,10 +30,14 @@ class EmptyGrid(Grid):
 
     type = 'empty'
 
+    @property
     def nodes(self):
         return None
+
+    @property
     def n_nodes(self):
         return 0
+
     def node(self, i):
         return None
 
@@ -42,9 +48,13 @@ class PointGrid(Grid):
     def __init__(self, point):
         self.point = np.array(point)
 
+    @property
     def nodes(self):
         return None
+
+    @property
     def n_nodes(self):
+
         return 1
     def node(self, i):
         return None
@@ -58,6 +68,7 @@ class UnstructuredGrid(Grid):
         self.min = nodes.min(axis=0)
         self.max = nodes.max(axis=0)
         self.__nodes__ = nodes
+        self.d = len(self.min)
 
 class CartesianGrid(Grid):
 
@@ -65,6 +76,7 @@ class CartesianGrid(Grid):
 
     def __init__(self, min, max, n=[]):
 
+        self.d = len(min)
         self.min = np.array(min, dtype=float)
         self.max = np.array(max, dtype=float)
         if len(n) == 0:
@@ -102,6 +114,7 @@ class SmolyakGrid(Grid):
         d = len(min)
         sg = ISmolyakGrid(d, mu, lb=min, ub=max)
         self.sg = sg
+        self.d = d
         self.__nodes__ = sg.grid
 
 def cat_grids(grid_1, grid_2):
@@ -118,14 +131,14 @@ def cat_grids(grid_1, grid_2):
 
 # compat
 def node(grid, i): return grid.node(i)
-def nodes(grid): return grid.nodes()
-def n_nodes(grid): return grid.n_nodes()
+def nodes(grid): return grid.nodes
+def n_nodes(grid): return grid.n_nodes
 
 if __name__ == "__main__":
 
     print("Cartsian Grid")
     grid = CartesianGrid([0.1, 0.3], [9, 0.4], [50, 10])
-    print(grid.nodes())
+    print(grid.nodes)
     print(nodes(grid))
 
     print("UnstructuredGrid")
