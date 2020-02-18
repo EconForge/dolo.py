@@ -20,7 +20,6 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
         calibration = steady_state
 
     [f, g] = get_model_derivatives(model, order=order, calibration=calibration)
-    #sigma = model.exogenous.Sigma
     sigma = model.exogenous.Σ
 
     problem = PerturbationProblem(f,g,sigma)
