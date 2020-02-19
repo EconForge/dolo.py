@@ -86,6 +86,7 @@ class DecisionRule(CallableDecisionRule):
         self.exo_grid = exo_grid
         self.endo_grid = endo_grid
         self.interp_method = interp_method
+        self.dprocess = dprocess
 
         self.__interp_method__ = interp_methods[interp_method]
 
@@ -109,6 +110,7 @@ class DecisionRule(CallableDecisionRule):
             aa = args + (None, None)
             fun = eval_s[tuple(map(type, aa))]
             self.__eval_s__ = fun
+            # self.__eval_is__ = lambda i, s: fun(s)
         except Exception as exc:
             pass
 
@@ -129,6 +131,20 @@ class DecisionRule(CallableDecisionRule):
 
     def eval_s(self, s):
         return self.__eval_s__(self, self.exo_grid, self.endo_grid, self.__interp_method__, s)
+
+    def eval_ijs(self, i, j, s):
+
+        if isinstance(self.exo_grid, UnstructuredGrid):
+            out = self.eval_is(j, s)
+        elif isinstance(self.exo_grid, EmptyGrid):
+            out =self.eval_s(s)
+        elif isinstance(self.exo_grid, CartesianGrid):
+            m = self.dprocess.inode(i, j)
+            out = self.eval_ms(m, s)
+        else:
+            raise Exception("Not Implemented.")
+
+        return out
 
 
 # this is *not* meant to be used by users
@@ -207,7 +223,7 @@ def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type:
 
 @multimethod
 def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
-    return [x[i].copy() for i in range(x.shape[0])]
+    return [x[i].reshape( tuple(endo_grid.n) + (-1,)).copy() for i in range(x.shape[0])]
 
 @multimethod
 def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
@@ -232,7 +248,7 @@ def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, 
     d = len(grid.n)
     # this gg could be stored as a member of itp
     gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
-    return [prefilter_cubic(gg, x[i]) for i in range(x.shape[0])]
+    return [prefilter_cubic(gg, x[i].reshape( tuple(grid.n) + (-1,))) for i in range(x.shape[0])]
 
 
 @multimethod
@@ -278,7 +294,7 @@ def get_coefficients(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_
     d = len(grid.n)
     # this gg could be stored as a member of itp
     gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
-    return prefilter_cubic(gg, x)
+    return prefilter_cubic(gg, x[0].reshape( tuple(grid.n) + (-1,)))
 
 
 @multimethod
@@ -292,6 +308,9 @@ def eval_s(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubi
 
     return eval_cubic(gg, coeffs, s)
 
+@multimethod
+def eval_is(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+    return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
 ####
 
