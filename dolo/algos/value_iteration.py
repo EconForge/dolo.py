@@ -194,7 +194,7 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
         M = dprocess.inode(i_ms, I_ms)
         prob = dprocess.iweight(i_ms, I_ms)
         S = transition(m, s, x, M, parms)
-        V = drv.eval_is(I_ms, S)[0]
+        V = drv(I_ms, S)[0]
         cont_v += prob * V
     return felicity(m, s, x, parms) + beta * cont_v
 
@@ -217,7 +217,7 @@ def evaluate_policy(model,
                     hook=None,
                     integration_orders=None,
                     details=False,
-                    interp_type='cubic'):
+                    interp_method='cubic'):
     """Compute value function corresponding to policy ``dr``
 
     Parameters:
@@ -258,7 +258,7 @@ def evaluate_policy(model,
     if dr0 is not None:
         mdrv = dr0
     else:
-        mdrv = DecisionRule(exo_grid, endo_grid, interp_type=interp_type)
+        mdrv = DecisionRule(exo_grid, endo_grid, interp_method=interp_method)
 
     grid = mdrv.endo_grid.nodes
     N = grid.shape[0]

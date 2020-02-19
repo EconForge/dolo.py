@@ -6,20 +6,313 @@ from dolo.numeric.grids import cat_grids, n_nodes, node
 from dolo.numeric.grids import UnstructuredGrid, CartesianGrid, SmolyakGrid, EmptyGrid
 from dolo.numeric.misc import mlinspace
 import scipy
+from dolo.numeric.grids import *
+# from dolo.numeric.decision_rule import CallableDecisionRule, cat_grids
+import numpy as np
 
 import numpy as np
+
+
+def filter_controls(a,b,ndims,controls):
+
+    from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
+
+    dinv = (b-a)/(ndims-1)
+    ndims = array(ndims)
+    n_m, N, n_x = controls.shape
+    coefs = zeros((n_m,) + tuple(ndims + 2) + (n_x,))
+    for i_m in range(n_m):
+        tt = filter_mcoeffs(a, b, ndims, controls[i_m, ...])
+        # for i_x in range(n_x):
+        coefs[i_m, ...] = tt
+    return coefs
+
+class Linear:
+    pass
+
+class Cubic:
+    pass
+
+class Chebychev:
+    pass
+
+interp_methods = {
+    'cubic': Cubic(),
+    'linear': Linear(),
+    'multilinear': Linear(),
+    'chebychev': Chebychev()
+}
+
+###
 
 class CallableDecisionRule:
 
     def __call__(self, *args):
         args = [np.array(e) for e in args]
         if len(args)==1:
-            return self.eval_s(args[0])
+            if args[0].ndim==1:
+                return self.eval_s(args[0][None,:])[0,:]
+            else:
+                return self.eval_s(args[0])
         elif len(args)==2:
             if args[0].dtype in ('int64','int32'):
-                return self.eval_is(args[0],args[1])
+                (i,s) = args
+                if s.ndim == 1:
+                    return self.eval_is(i, s[None,:])[0,:]
+                else:
+                    return self.eval_is(i, s)
+                return self.eval_is()
             else:
-                return self.eval_ms(args[0],args[1])
+                (m,s) = args[0],args[1]
+                if s.ndim == 1 and m.ndim == 1:
+                    return self.eval_ms(m[None,:], s[None,:])[0,:]
+                elif m.ndim == 1:
+                    m = m[None,:]
+                elif s.ndim == 1:
+                    s = s[None,:]
+                return self.eval_ms(m,s)
+
+
+class DecisionRule(CallableDecisionRule):
+
+    exo_grid: Grid
+    endo_grid: Grid
+
+    def __init__(self, exo_grid: Grid, endo_grid: Grid, interp_method='cubic', dprocess=None, values=None):
+
+        if interp_method not in interp_methods.keys():
+            raise Exception(f"Unknown interpolation type: {interp_method}. Try one of: {tuple(interp_methods.keys())}")
+
+        self.exo_grid = exo_grid
+        self.endo_grid = endo_grid
+        self.interp_method = interp_method
+        self.dprocess = dprocess
+
+        self.__interp_method__ = interp_methods[interp_method]
+
+        args = (self, exo_grid, endo_grid, interp_methods[interp_method])
+
+        try:
+            aa = args + (None, None)
+            fun = eval_ms[tuple(map(type, aa))]
+            self.__eval_ms__ = fun
+        except Exception as exc:
+            pass
+
+        try:
+            aa = args + (None, None)
+            fun = eval_is[tuple(map(type, aa))]
+            self.__eval_is__ = fun
+        except Exception as exc:
+            pass
+
+        try:
+            aa = args + (None, None)
+            fun = eval_s[tuple(map(type, aa))]
+            self.__eval_s__ = fun
+            # self.__eval_is__ = lambda i, s: fun(s)
+        except Exception as exc:
+            pass
+
+        fun = get_coefficients[tuple(map(type, args))]
+        self.__get_coefficients__ = fun
+
+        if values is not None:
+            self.set_values(values)
+
+    def set_values(self, x):
+        self.coefficients = self.__get_coefficients__(self, self.exo_grid, self.endo_grid, self.__interp_method__, x)
+
+    def eval_ms(self, m, s):
+        return self.__eval_ms__(self, self.exo_grid, self.endo_grid, self.__interp_method__, m, s)
+
+    def eval_is(self, i, s):
+        return self.__eval_is__(self, self.exo_grid, self.endo_grid, self.__interp_method__, i, s)
+
+    def eval_s(self, s):
+        return self.__eval_s__(self, self.exo_grid, self.endo_grid, self.__interp_method__, s)
+
+    def eval_ijs(self, i, j, s):
+
+        if isinstance(self.exo_grid, UnstructuredGrid):
+            out = self.eval_is(j, s)
+        elif isinstance(self.exo_grid, EmptyGrid):
+            out =self.eval_s(s)
+        elif isinstance(self.exo_grid, CartesianGrid):
+            m = self.dprocess.inode(i, j)
+            out = self.eval_ms(m, s)
+        else:
+            raise Exception("Not Implemented.")
+
+        return out
+
+
+# this is *not* meant to be used by users
+
+from multimethod import multimethod
+
+# Cartesian x Cartesian x Linear
+
+@multimethod
+def get_coefficients(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
+    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    xx = x.reshape(tuple(grid.n)+(-1,))
+    return xx
+
+
+@multimethod
+def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, m, s):
+
+    assert(m.ndim==s.ndim==2)
+
+    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    coeffs = itp.coefficients
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    from interpolation.splines import eval_linear
+
+    x = np.concatenate([m, s], axis=1)
+
+    return eval_linear(gg, coeffs, x)
+
+
+@multimethod
+def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+    m = exo_grid.node(i)[None,:]
+    return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
+
+
+# Cartesian x Cartesian x Cubic
+
+@multimethod
+def get_coefficients(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+
+    from interpolation.splines.prefilter_cubic import prefilter_cubic
+    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    x = x.reshape(tuple(grid.n)+(-1,))
+    d = len(grid.n)
+    # this gg could be stored as a member of itp
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    return prefilter_cubic(gg, x)
+
+@multimethod
+def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, m, s):
+
+    from interpolation.splines import eval_cubic
+
+    assert(m.ndim==s.ndim==2)
+
+    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    coeffs = itp.coefficients
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    x = np.concatenate([m, s], axis=1)
+
+    return eval_cubic(gg, coeffs, x)
+
+
+@multimethod
+def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+    m = exo_grid.node(i)[None,:]
+    return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
+
+
+
+# UnstructuredGrid x Cartesian x Linear
+
+@multimethod
+def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
+    return [x[i].reshape( tuple(endo_grid.n) + (-1,)).copy() for i in range(x.shape[0])]
+
+@multimethod
+def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+
+    from interpolation.splines import eval_linear
+    assert(s.ndim==2)
+
+    grid = endo_grid # one single CartesianGrid
+    coeffs = itp.coefficients[i]
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    return eval_linear(gg, coeffs, s)
+
+
+# UnstructuredGrid x Cartesian x Cubic
+
+@multimethod
+def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+    from interpolation.splines.prefilter_cubic import prefilter_cubic
+    grid = endo_grid # one single CartesianGrid
+    d = len(grid.n)
+    # this gg could be stored as a member of itp
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    return [prefilter_cubic(gg, x[i].reshape( tuple(grid.n) + (-1,))) for i in range(x.shape[0])]
+
+
+@multimethod
+def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+
+    from interpolation.splines import eval_cubic
+    assert(s.ndim==2)
+
+    grid = endo_grid # one single CartesianGrid
+    coeffs = itp.coefficients[i]
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    return eval_cubic(gg, coeffs, s)
+
+
+# UnstructuredGrid x Cartesian x Linear
+
+@multimethod
+def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
+    return [x[i].copy() for i in range(x.shape[0])]
+
+@multimethod
+def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+
+    from interpolation.splines import eval_linear
+    assert(s.ndim==2)
+
+    grid = endo_grid # one single CartesianGrid
+    coeffs = itp.coefficients[i]
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    return eval_linear(gg, coeffs, s)
+
+
+# Empty x Cartesian x Cubic
+
+@multimethod
+def get_coefficients(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+    from interpolation.splines.prefilter_cubic import prefilter_cubic
+    grid = endo_grid # one single CartesianGrid
+    d = len(grid.n)
+    # this gg could be stored as a member of itp
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    return prefilter_cubic(gg, x[0].reshape( tuple(grid.n) + (-1,)))
+
+
+@multimethod
+def eval_s(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, s):
+    from interpolation.splines import eval_cubic
+    assert(s.ndim==2)
+    grid = endo_grid # one single CartesianGrid
+    coeffs = itp.coefficients
+    d = len(grid.n)
+    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    return eval_cubic(gg, coeffs, s)
+
+@multimethod
+def eval_is(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+    return eval_s(itp, exo_grid, endo_grid, interp_type, s)
+
+####
 
 class ConstantDecisionRule(CallableDecisionRule):
 
@@ -39,188 +332,6 @@ class ConstantDecisionRule(CallableDecisionRule):
     def eval_ms(self, m, s):
         return self.eval_s(s)
 
-
-def filter_controls(a,b,ndims,controls):
-
-    from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
-
-    dinv = (b-a)/(ndims-1)
-    ndims = array(ndims)
-    n_m, N, n_x = controls.shape
-    coefs = zeros((n_m,) + tuple(ndims + 2) + (n_x,))
-    for i_m in range(n_m):
-        tt = filter_mcoeffs(a, b, ndims, controls[i_m, ...])
-        # for i_x in range(n_x):
-        coefs[i_m, ...] = tt
-    return coefs
-
-
-class DecisionRule(CallableDecisionRule):
-
-    def __init__(self, exo_grid, endo_grid, interp_type='cubic', dprocess=None):
-
-        self.exo_grid = exo_grid
-        self.endo_grid = endo_grid
-        self.interp_type = interp_type
-        self.dprocess = dprocess
-
-        if isinstance(self.exo_grid, (UnstructuredGrid, EmptyGrid)) and isinstance(self.endo_grid, SmolyakGrid):
-            min = self.endo_grid.min
-            max = self.endo_grid.max
-            d = len(min)
-            mu = self.endo_grid.mu
-            sg = SmolyakGrid0(d, mu, lb=min, ub=max) # That is really strange
-            sg.lu_fact = scipy.linalg.lu_factor(sg.B)
-            self.sg = sg
-            self.interp_type = 'chebychev'
-        else:
-            self.interp_type = 'cubic'
-
-    @property
-    def full_grid(self):
-        return cat_grids(self.exo_grid, self.endo_grid)
-
-    def set_values(self, x):
-
-        from interpolation.splines.filter_cubic import filter_data, filter_mcoeffs
-
-        x = np.array(x)
-
-        if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, CartesianGrid):
-            min = self.endo_grid.min
-            max = self.endo_grid.max
-            n = self.endo_grid.n
-            coeffs = filter_controls(min, max, n, x)
-            self.coefficients = coeffs
-        elif isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, SmolyakGrid):
-            from scipy.linalg import lu_solve
-            from numpy import linalg
-            self.thetas = [lu_solve( self.sg.lu_fact, v ) for v in x]
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, SmolyakGrid):
-            from scipy.linalg import lu_solve
-            from numpy import linalg
-            self.thetas = lu_solve( self.sg.lu_fact, x[0] )
-        elif isinstance(self.exo_grid, (EmptyGrid, CartesianGrid)) and isinstance(self.endo_grid, CartesianGrid):
-            full_grid = self.full_grid
-            min = full_grid.min
-            max = full_grid.max
-            n = full_grid.n
-            coeffs = filter_mcoeffs(min, max, n, x)
-            self.coefficients = coeffs
-        else:
-            raise Exception("Not implemented")
-        self.n_x = x.shape[-1]
-
-    def eval_is(self, i, s, out=None):
-
-        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
-
-        if s.ndim == 1:
-            return self.eval_is(i, s[None,:], out=out)[0,:]
-
-        s = np.atleast_2d(s)
-
-        if out is None:
-            N = s.shape[0]
-            out = zeros((N, self.n_x))
-
-        if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, CartesianGrid):
-            coeffs = self.coefficients[i]
-            min = self.endo_grid.min
-            max = self.endo_grid.max
-            n = self.endo_grid.n
-            vec_eval_cubic_splines(min, max, n, coeffs, s, out)
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, CartesianGrid):
-            self.eval_s(s, out=out)
-        elif isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, SmolyakGrid):
-            trans_points = self.sg.dom2cube(s)
-            Phi = build_B(self.sg.d, self.sg.mu, trans_points, self.sg.pinds)
-            theta = self.thetas[i]
-            out[...] =  Phi@theta
-        else:
-            raise Exception("Not Implemented.")
-
-        return out
-
-    def eval_ms(self, m, s, out=None):
-
-        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
-
-        if s.ndim==1 and m.ndim==1:
-            return self.eval_ms(m[None,:], s[None,:], out=out)[0,:]
-
-        s = np.atleast_2d(s)
-        m = np.atleast_2d(m)
-        if s.shape[0] == 1 and m.shape[0]>1:
-            s = s.repeat(m.shape[0], axis=0)
-        elif m.shape[0] == 1 and s.shape[0]>1:
-            m = m.repeat(s.shape[0], axis=0)
-
-
-        if out is None:
-            out = np.zeros((s.shape[0], self.n_x))
-
-        if isinstance(self.exo_grid, (EmptyGrid)) and isinstance(self.endo_grid, CartesianGrid):
-            self.eval_s(s, out=out)
-        elif isinstance(self.exo_grid, CartesianGrid) and isinstance(self.endo_grid, CartesianGrid):
-            v = np.concatenate([m,s], axis=1)
-            full_grid = self.full_grid
-            min = full_grid.min
-            max = full_grid.max
-            n = full_grid.n
-            coeffs = self.coefficients
-            vec_eval_cubic_splines(min, max, n, coeffs, v, out)
-        else:
-            raise Exception("Not Implemented.")
-
-        return out
-        # raise Exception("Not Implemented.")
-
-
-    def eval_s(self, s, out=None):
-
-        from interpolation.splines.eval_cubic import vec_eval_cubic_splines
-
-        if s.ndim==1:
-            return self.eval_s(s[None,:])[0,:]
-
-        s = np.atleast_2d(s)
-        if out is None:
-            out = np.zeros( (s.shape[0], self.n_x) )
-
-        if isinstance(self.exo_grid, (EmptyGrid, CartesianGrid)) and isinstance(self.endo_grid, CartesianGrid):
-            full_grid = self.full_grid
-            min = self.full_grid.min
-            max = self.full_grid.max
-            n = self.full_grid.n
-            coeffs = self.coefficients
-            vec_eval_cubic_splines(min, max, n, coeffs, s, out)
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, SmolyakGrid):
-            trans_points = self.sg.dom2cube(s)
-            Phi = build_B(self.sg.d, self.sg.mu, trans_points, self.sg.pinds)
-            theta = self.thetas
-            out[...] = Phi@theta
-        else:
-            raise Exception("Not Implemented.")
-
-        return out
-
-    def eval_ijs(self, i, j, s, out=None):
-
-        if out is None:
-            out = np.zeros((s.shape[0], self.n_x))
-
-        if isinstance(self.exo_grid, UnstructuredGrid) and isinstance(self.endo_grid, (CartesianGrid, SmolyakGrid)):
-            self.eval_is(j, s, out=out)
-        elif isinstance(self.exo_grid, EmptyGrid) and isinstance(self.endo_grid, (CartesianGrid,SmolyakGrid)):
-            self.eval_s(s, out=out)
-        elif isinstance(self.exo_grid, CartesianGrid) and isinstance(self.endo_grid, CartesianGrid):
-            m = self.dprocess.inode(i, j)
-            self.eval_ms(m, s, out=out)
-        else:
-            raise Exception("Not Implemented.")
-
-        return out
 
 
 import dolang
