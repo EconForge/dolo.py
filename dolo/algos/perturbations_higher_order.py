@@ -23,7 +23,6 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
     sigma = model.exogenous.Σ
 
     problem = PerturbationProblem(f,g,sigma)
-    print(len(problem.f))
 
     pert_sol = state_perturb(problem, verbose=verbose)
 
