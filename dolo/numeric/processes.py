@@ -364,6 +364,123 @@ def product_iid(iids: List[DiscretizedIIDProcess])->DiscretizedIIDProcess:
     return DiscretizedIIDProcess(nodes, weights)
 
 
+@language_element
+class AR1(ContinuousProcess):
+
+    signature = {"ρ": 'float','σ': 'float', 'μ': 'Optional[float]'}
+
+    @greek_tolerance
+    def __init__(self, ρ=None, σ=None, μ=None):
+
+        self.σ = σ
+        self.μ = μ
+        self.d = 1
+
+    def discretize(self, N=3, to='mc', **kwargs):
+        if to=='mc':
+            return self.discretize_mc(N=N, **kwargs)
+        elif to=='gdp':
+            return self.discretize_gdp(N=N, **kwargs)
+
+    def discretize_mc(self, N=3):
+
+        rho = np.array([[self.ρ]])
+        Sigma = np.array([[self.σ]])
+        μ = np.array([self.μ])
+
+        try:
+            assert(abs(np.eye(rho.shape[0])*rho[0,0]-rho).max() <= 1)
+        except:
+            raise Exception("When discretizing a Vector AR1 process, the autocorrelation coefficient must be as scalar. Found: {}".format(rho_array))
+
+        from dolo.numeric.discretization import multidimensional_discretization
+
+        [P,Q] = multidimensional_discretization(rho[0,0], Sigma, N=N)
+
+        P += μ[None,:]
+
+        return MarkovChain(values=P, transitions=Q)
+
+    def discretize_gdp(self, N=3):
+
+        Σ = np.array([[self.σ]])
+        ρ = self.ρ
+
+        n_nodes = N
+        n_std = 2.5
+        n_integration_nodes = 5
+
+        try:
+            assert(Σ.shape[0]==1)
+        except:
+            raise Exception("Not implemented.")
+
+        try:
+            assert(ρ.shape[0]==ρ.shape[1]==1)
+        except:
+            raise Exception("Not implemented.")
+
+        ρ = ρ[0,0]
+        σ = np.sqrt(Σ[0,0])
+
+
+        from dolo.numeric.discretization import gauss_hermite_nodes
+
+        epsilons, weights = gauss_hermite_nodes([n_integration_nodes], Σ)
+
+        min = -n_std*(σ/(np.sqrt(1-ρ**2)))
+        max = n_std*(σ/(np.sqrt(1-ρ**2)))
+
+        from .grids import CartesianGrid
+        grid = CartesianGrid([min],[max],[n_nodes])
+
+        nodes = np.linspace(min,max,n_nodes)[:,None]
+        iweights = weights[None,:].repeat(n_nodes,axis=0)
+        integration_nodes = np.zeros((n_nodes, n_integration_nodes))[:,:,None]
+        for i in range(n_nodes):
+            for j in range(n_integration_nodes):
+                integration_nodes[i,j,:] =  ρ*nodes[i,:] + epsilons[j]
+
+        return GDP(nodes,integration_nodes,iweights,grid=grid)
+        #return (nodes,integration_nodes,iweights)
+
+
+    def simulate(self, N, T, m0=None, stochastic=True):
+
+        Sigma = np.array([[self.σ]])
+        mu = np.array([self.μ])
+        rho = np.array([[self.ρ]])
+        d = self.d
+
+        if m0 is None:
+            m0 = np.zeros(d)
+        from numpy.random import multivariate_normal
+        if stochastic:
+            innov = multivariate_normal(mu, Sigma, N*T)
+        else:
+            innov = mu[None,len(mu)].repeat(T*N,axis=0)
+        innov = innov.reshape((T,N,d))
+        sim = np.zeros((T,N,d))
+        sim[0,:,:] = m0[None,:]
+        for t in range(1,sim.shape[0]):
+            sim[t,:,:] = sim[t-1,:,:]@rho.T + innov[t,:,:]
+
+        sim += μ[None,None,:]
+
+        return sim
+
+    def response(self, T, impulse):
+
+        d = self.d
+        rho = self.ρ
+        μ = self.μ
+
+        irf = np.zeros((T,d))
+        irf[0,:] = impulse
+        for t in range(1,irf.shape[0]):
+            irf[t,:] = rho@irf[t-1,:]
+        irf += μ[None,:]
+        return irf
 
 @language_element
 class VAR1(ContinuousProcess):
