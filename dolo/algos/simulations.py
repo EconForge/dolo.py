@@ -13,7 +13,10 @@ def response(model, dr, varname, T=40, impulse:float=None):
     i_exo = model.symbols["exogenous"].index(varname)
 
     if impulse is None:
-        impulse = numpy.sqrt( model.exogenous.Sigma[i_exo, i_exo] ) # works only for IID/AR1
+        try:
+            impulse = numpy.sqrt( model.exogenous.Σ[i_exo, i_exo] ) # works only for IID/AR1
+        except:
+            impulse = numpy.sqrt( model.exogenous.σ ) # works only for IID/AR1
 
     e1 = numpy.zeros(len(model.symbols["exogenous"]))
     e1[i_exo] = impulse
@@ -103,6 +106,8 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
         if len(driving_process.shape)==3:
             m_simul = driving_process
             sim_type = 'continuous'
+            if m0 is None:
+                m0 = model.calibration["exogenous"]
             x_simul[0,:,:] = dr.eval_ms(m0[None,:], s0[None,:])[0,:]
         elif len(driving_process.shape)==2:
             i_simul = driving_process
@@ -157,7 +162,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
         s = s_simul[i,:,:]
         if sim_type=='discrete':
             i_m = i_simul[i,:]
-            xx = [dr.eval_is(i_m[ii], s[ii,:]) for ii in range(s.shape[0])]
+            xx = [dr.eval_is(i_m[ii], s[ii,:][None,:])[0,:] for ii in range(s.shape[0])]
             x = np.row_stack(xx)
         else:
             x = dr.eval_ms(m, s)

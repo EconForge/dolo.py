@@ -377,19 +377,19 @@ class VAR1(ContinuousProcess):
         Sigma = Σ
         mu = μ
 
-        self.Sigma = np.atleast_2d(Sigma)
-        d = self.Sigma.shape[0]
+        self.Σ = np.atleast_2d(Sigma)
+        d = self.Σ.shape[0]
         rho = np.array(rho)
         if rho.ndim == 0:
-            self.rho = np.eye(d)*rho
+            self.ρ = np.eye(d)*rho
         elif rho.ndim ==1:
-            self.rho = np.diag(rho)
+            self.ρ = np.diag(rho)
         else:
-            self.rho = rho
+            self.ρ = rho
         if mu is None:
-            self.mu = np.zeros(d)
+            self.μ = np.zeros(d)
         else:
-            self.mu = np.array(mu, dtype=float)
+            self.μ = np.array(mu, dtype=float)
         self.d = d
 
     def discretize(self, N=3, to='mc', **kwargs):
@@ -400,8 +400,8 @@ class VAR1(ContinuousProcess):
 
     def discretize_mc(self, N=3):
 
-        rho = self.rho
-        Sigma = self.Sigma
+        rho = self.ρ
+        Sigma = self.Σ
 
         try:
             assert(abs(np.eye(rho.shape[0])*rho[0,0]-rho).max() <= 1)
@@ -412,14 +412,14 @@ class VAR1(ContinuousProcess):
 
         [P,Q] = multidimensional_discretization(rho[0,0], Sigma, N=N)
 
-        P += self.mu[None,:]
+        P += self.μ[None,:]
 
         return MarkovChain(values=P, transitions=Q)
 
     def discretize_gdp(self, N=3):
 
-        Σ = self.Sigma
-        ρ = self.rho
+        Σ = self.Σ
+        ρ = self.ρ
 
         n_nodes = N
         n_std = 2.5
@@ -467,20 +467,20 @@ class VAR1(ContinuousProcess):
         if m0 is None:
             m0 = np.zeros(d)
         from numpy.random import multivariate_normal
-        Sigma = self.Sigma
-        mu = self.mu*0
+        Sigma = self.Σ
+        mu = self.μ*0
         if stochastic:
             innov = multivariate_normal(mu, Sigma, N*T)
         else:
             innov = mu[None,len(mu)].repeat(T*N,axis=0)
         innov = innov.reshape((T,N,d))
-        rho = self.rho
+        rho = self.ρ
         sim = np.zeros((T,N,d))
         sim[0,:,:] = m0[None,:]
         for t in range(1,sim.shape[0]):
             sim[t,:,:] = sim[t-1,:,:]@rho.T + innov[t,:,:]
 
-        sim += self.mu[None,None,:]
+        sim += self.μ[None,None,:]
 
         return sim
 
@@ -488,10 +488,10 @@ class VAR1(ContinuousProcess):
         d = self.d
         irf = np.zeros((T,d))
         irf[0,:] = impulse
-        rho = self.rho
+        rho = self.ρ
         for t in range(1,irf.shape[0]):
             irf[t,:] = rho@irf[t-1,:]
-        irf += self.mu[None,:]
+        irf += self.μ[None,:]
         return irf
 
 

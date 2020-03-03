@@ -139,7 +139,7 @@ class DecisionRule(CallableDecisionRule):
         elif isinstance(self.exo_grid, EmptyGrid):
             out =self.eval_s(s)
         elif isinstance(self.exo_grid, CartesianGrid):
-            m = self.dprocess.inode(i, j)
+            m = self.dprocess.inode(i, j)[None,:].repeat(s.shape[0], axis=0)
             out = self.eval_ms(m, s)
         else:
             raise Exception("Not Implemented.")
