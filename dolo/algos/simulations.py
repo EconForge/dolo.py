@@ -103,7 +103,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
         if len(driving_process.shape)==3:
             m_simul = driving_process
             sim_type = 'continuous'
-            x_simul[0,:,:] = dr.eval_ms(m0, s0)
+            x_simul[0,:,:] = dr.eval_ms(m0[None,:], s0[None,:])[0,:]
         elif len(driving_process.shape)==2:
             i_simul = driving_process
             nodes = dr.exo_grid.nodes
@@ -111,7 +111,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
             # inds = i_simul.ravel()
             # m_simul = np.reshape( np.concatenate( [nodes[i,:][None,:] for i in inds.ravel()], axis=0 ), inds.shape + (-1,) )
             sim_type = 'discrete'
-            x_simul[0,:,:] = dr.eval_is(i0, s0)
+            x_simul[0,:,:] = dr.eval_is(i0, s0[None,:])[0,:]
         else:
             raise Exception("Incorrect specification of driving values.")
         m0 = m_simul[0,:,:]
@@ -137,13 +137,13 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
             m_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic)
             i_simul = find_index(m_simul, dp.values)
             m0 = dp.node(i0)
-            x0 = dr.eval_is(i0, s0)
+            x0 = dr.eval_is(i0, s0[None,:])[0,:]
         else:
             m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
             sim_type = 'continuous'
             if m0 is None:
                 m0 = model.calibration["exogenous"]
-            x0 = dr.eval_ms(m0, s0)
+            x0 = dr.eval_ms(m0[None,:], s0[None,:])[0,:]
             x_simul[0, :, :] = x0[None, :]
 
     f = model.functions['arbitrage']

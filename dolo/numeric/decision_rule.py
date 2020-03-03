@@ -312,6 +312,11 @@ def eval_s(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubi
 def eval_is(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
     return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
+@multimethod
+def eval_ms(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, m, s):
+    return eval_s(itp, exo_grid, endo_grid, interp_type, s)
+
+
 ####
 
 class ConstantDecisionRule(CallableDecisionRule):
