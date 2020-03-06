@@ -33,7 +33,7 @@ from .results import TimeIterationResult, AlgoResult
 
 def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
                         verbose=True, grid={},
-                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False):
+                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
 
     '''
     Finds a global solution for ``model`` using backward time-iteration.
@@ -83,11 +83,11 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
     n_x = len(x0)
     n_s = len(model.symbols['states'])
 
-    endo_grid = model.get_grid(**grid)
+    endo_grid = model.get_endo_grid(**grid)
 
     exo_grid = dprocess.grid
 
-    mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess)
+    mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method)
 
     grid = mdr.endo_grid.nodes
     N = grid.shape[0]
@@ -105,7 +105,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
             for i_m in range(n_ms):
                 m = dprocess.node(i_m)
                 controls_0[i_m, :, :] = dr0(m, grid)
-
+    
     f = model.functions['arbitrage']
     g = model.functions['transition']
 

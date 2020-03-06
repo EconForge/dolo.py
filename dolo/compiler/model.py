@@ -183,9 +183,7 @@ class SymbolicModel:
             return ProductProcess(*exogenous.values())
 
 
-    def get_grid(self):
-
-        states = self.symbols['states']
+    def get_endo_grid(self):
 
         # determine bounds:
         domain = self.get_domain()
@@ -204,13 +202,20 @@ class SymbolicModel:
 
         args = {'min': min, 'max': max}
         if grid_type.lower() in ('cartesian', 'cartesiangrid'):
-            # from dolo.numerid.grids import CartesianGrid
-            from dolo.numeric.grids import CartesianGrid
+            from dolo.numeric.grids import UniformCartesianGrid
             orders = get_address(self.data,
                                  ["options:grid:n", "options:grid:orders"])
             if orders is None:
                 orders = [20] * len(min)
-            grid = CartesianGrid(min=min, max=max, n=orders)
+            grid = UniformCartesianGrid(min=min, max=max, n=orders)
+        elif grid_type.lower() in ('nonuniformcartesian', 'nonuniformcartesiangrid'):
+            from dolo.compiler.language import eval_data
+            from dolo.numeric.grids import NonUniformCartesianGrid
+            calibration = self.get_calibration()
+            nodes = [eval_data(e, calibration) for e in self.data['options']['grid']]
+            print(nodes)
+            # each element of nodes should be a vector
+            return NonUniformCartesianGrid(nodes)
         elif grid_type.lower() in ('smolyak', 'smolyakgrid'):
             from dolo.numeric.grids import SmolyakGrid
             mu = get_address(self.data, ["options:grid:mu"])

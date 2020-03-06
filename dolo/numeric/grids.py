@@ -41,6 +41,9 @@ class EmptyGrid(Grid):
     def node(self, i):
         return None
 
+    def __add__(self, g):
+        return g
+
 class PointGrid(Grid):
 
     type = 'point'
@@ -72,22 +75,47 @@ class UnstructuredGrid(Grid):
 
 class CartesianGrid(Grid):
 
-    type = 'cartesian'
+    pass
+
+class UniformCartesianGrid(CartesianGrid):
+
+    type = 'UniformCartesian'
 
     def __init__(self, min, max, n=[]):
 
         self.d = len(min)
+
+        # this should be a tuple
         self.min = np.array(min, dtype=float)
         self.max = np.array(max, dtype=float)
         if len(n) == 0:
             self.n = np.zeros(n, dtype=int) + 20
         else:
             self.n = np.array(n, dtype=int)
+
+        # this should be done only on request.
         self.__nodes__ = mlinspace(self.min, self.max, self.n)
 
+    # def node(i:)
+        # pass
+
+    def __add__(self, g):
+
+        if not isinstance(g, UniformCartesianGrid):
+            raise Exception("Not implemented.")
+
+        n = np.array( tuple(self.n) + tuple(g.n))
+        min = np.array( tuple(self.min) + tuple(self.min) )
+        max = np.array( tuple(self.max) + tuple(self.max) )
+
+        return UniformCartesianGrid(min, max, n)
+
+    def __numba_repr__(self):
+        return tuple([(self.min[i], self.max[i], self.n[i]) for i in range(self.d)])
 
 
-class NonUniformCartesianGrid(Grid):
+
+class NonUniformCartesianGrid(CartesianGrid):
 
     type = "NonUniformCartesian"
 
@@ -95,7 +123,19 @@ class NonUniformCartesianGrid(Grid):
         list_of_nodes = [np.array(l) for l in list_of_nodes]
         self.min = [min(l) for l in list_of_nodes]
         self.max = [max(l) for l in list_of_nodes]
+        self.n = np.array([(len(e)) for e in list_of_nodes])
+        # this should be done only on request.
         self.__nodes__ = cartesian(list_of_nodes)
+        self.list_of_nodes = list_of_nodes # think of a better name
+
+    def __add__(self, g):
+
+        if not isinstance(g, NonUniformCartesianGrid):
+            raise Exception("Not implemented.")
+        return NonUniformCartesianGrid( self.list_of_nodes + g.list_of_nodes )
+
+    def __numba_repr__(self):
+        return tuple([np.array(e) for e in self.list_of_nodes])
 
 
 

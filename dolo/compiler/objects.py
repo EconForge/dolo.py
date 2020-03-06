@@ -1,17 +1,10 @@
-# import numpy as np
-#
-# from dolo.numeric.processes import MvNormal, DiscreteMarkovProcess, VAR1, MarkovProduct
 from dolo.numeric.processes_iid import *
-# from dolo.numeric.grids import CartesianGrid, SmolyakGrid
-# Normal = MvNormal
-# MarkovChain = DiscreteMarkovProcess
-# AR1 = VAR1
+
 #
 from dataclasses import dataclass
 from dolo.compiler.language import language_element
 # not sure we'll keep that
 import numpy as np
-import typing
 from typing import List, Union
 Scalar = Union[int, float]
 
@@ -52,18 +45,6 @@ class MvNormal:
     signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
 
 
-@language_element
-def Matrix(*lines):
-    vec = np.array(lines)
-    assert(vec.ndim==2)
-    return vec
-
-
-@language_element
-def Vector(*els):
-    vec = np.array(els)
-    assert(vec.ndim==1)
-    return vec
 
 #%%
 

@@ -51,7 +51,7 @@ def nonlinear_system(model, dr0=None, maxit=10, tol=1e-8,  grid={}, distribution
     distrib = model.get_distribution(**distribution)
     nodes, weights = distrib.discretize()
 
-    approx = model.get_grid(**grid)
+    approx = model.get_endo_grid(**grid)
     ms = create_interpolator(approx, approx.interpolation)
 
     grid = ms.grid
