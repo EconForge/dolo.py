@@ -1,2 +1,2 @@
 dolang
-multimethod
+multipledispatch

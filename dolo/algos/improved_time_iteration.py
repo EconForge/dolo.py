@@ -230,7 +230,7 @@ from dolo import dprint
 from .results import AlgoResult, ImprovedTimeIterationResult
 
 def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
-            interp_method='spline', mu=2, maxbsteps=10, verbose=False,
+            interp_method='cubic', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
             complementarities=True, compute_radius=False, invmethod='iti',
             details=True):
@@ -270,13 +270,15 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     grid = model.get_endo_grid()
 
-    if interp_method in ('spline', 'linear'):
+    if interp_method in ('cubic', 'linear'):
         ddr = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
         ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
     elif interp_method == 'smolyak':
         ddr = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         ddr_filt = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         derivative_type = 'numerical'
+    else:
+        raise Exception("Unsupported interpolation method.")
 
     # s = ddr.endo_grid
     s = grid.nodes

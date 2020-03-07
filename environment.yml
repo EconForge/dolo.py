@@ -17,5 +17,6 @@ dependencies:
 - statsmodels
 - matplotlib
 - xarray
+- multipledispatch
 # - pip:
 #   - sphinx-better-theme==0.13
