@@ -58,9 +58,36 @@ from dolo.numeric.processes import Process, IIDProcess, DiscretizedProcess, Disc
 
 
 class UnivariateIIDProcess(IIDProcess):
+    '''
+    A univariate, IID, continuous process.
+    '''
+    
     d = 1
 
     def discretize(self,  N=5, method='equiprobable', mass_point = "median" ,to='iid'):
+        '''
+        Returns a discretized version of this process.
+
+        Parameters
+        ----------
+        N : int
+            Number of point masses in the discretized distribution.
+
+        method : str
+            'equiprobable' or 'gauss-hermite'
+        
+        mass_point : str
+            'median', 'left', 'middle', or 'right'
+
+        to: str
+            e.g. 'iid'
+
+        Returns:
+        ------------
+        process : DiscretizedIIDProcess
+            A discretized IID process derived from this continuous
+            process.
+        '''
         if to !='iid':
             raise Exception("Not implemented")
 
@@ -91,6 +118,33 @@ class UnivariateIIDProcess(IIDProcess):
         w = (1/(N))*np.ones(N)
 
         return DiscretizedIIDProcess(q[:,None], w)
+
+    def simulate(self, N, T, stochastic=True):
+        '''
+        Draw an array of values from process.
+
+        Parameters
+        ----------
+        N : int
+            Number of draws in each row.
+
+        T: int
+            Number of rows.
+
+        stochastic: bool
+            
+
+        Returns:
+        ------------
+        draws : np.array
+             An N by T array fo draws from the process.
+        '''
+        # This is a dummy version of this method
+        from numpy.random import choice
+        ch = np.array([0])
+        p = np.array([1])
+        sim = choice(ch, size=T*N, p=p)
+        return sim.reshape((T,N,1))
 
 @language_element
 @dataclass
