@@ -1,8 +1,15 @@
 import numpy as np
+
+# doesn't seem to support keyword arguments yet
+# from multipledispatch import dispatch
+# multimethod = dispatch()
 from multimethod import multimethod
 from numba import generated_jit
 import xarray
 
+from dolo.compiler.model import Model
+from dolo.numeric.grids import UniformCartesianGrid
+from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.processes import MarkovChain, IIDProcess, DiscretizedIIDProcess
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid, EmptyGrid
 
@@ -74,13 +81,13 @@ def trembling_hand(A: 'N*n1*...nd', x: 'N*d', w: 'float'):
 
 # TODO: add default options for endo_grid, exo_grid, dp
 @multimethod
-def ergodic_distribution(model, dr):
+def ergodic_distribution(model: Model, dr: DecisionRule):
     return ergodic_distribution(model, dr, dr.exo_grid, dr.endo_grid, dr.dprocess)
 
 @multimethod
-def ergodic_distribution(model, dr,
+def ergodic_distribution(model: Model, dr: DecisionRule,
         exo_grid: UnstructuredGrid,
-        endo_grid: CartesianGrid,
+        endo_grid: UniformCartesianGrid,
         dp: MarkovChain,
         compute_μ=True):
 
@@ -134,7 +141,7 @@ def ergodic_distribution(model, dr,
 
 
 @multimethod
-def ergodic_distribution(model, dr,
+def ergodic_distribution(model: Model, dr: DecisionRule,
         exo_grid: EmptyGrid,
         endo_grid: CartesianGrid,
         dp: DiscretizedIIDProcess,
