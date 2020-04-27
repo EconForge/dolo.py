@@ -28,5 +28,8 @@ jobs:
       # - name: Code Quality
       #   run: poetry run black . --check
 
+      - name: Install dependencies
+        run: poetry install
+
       - name: Test with pytest
         run: poetry run pytest
