@@ -111,20 +111,20 @@ class DiskDictionary:
         filename = self.get_filename(key)
         try:
             with open(filename,'w') as f:
-                pickle.dump(value,f) 
+                pickle.dump(value,f)
         except TypeError as e:
             raise e
-            
+
     def get(self, item):
         import pickle
-        filename = self.get_filename(item)  
+        filename = self.get_filename(item)
         try:
             with open(filename) as f:
                 value = pickle.load(f)
                 return value
         except :
             return None
-    
+
 
 
 import collections
@@ -133,11 +133,11 @@ import collections
 def hashable(obj):
     if hasattr(obj,'flatten'): # for numpy arrays
         return tuple( obj.flatten().tolist() )
-    if isinstance(obj, collections.Hashable):
+    if isinstance(obj, collections.abc.Hashable):
         return obj
-    if isinstance(obj, collections.Mapping):
+    if isinstance(obj, collections.abc.Mapping):
         items = [(k,hashable(v)) for (k,v) in obj.items()]
         return frozenset(items)
-    if isinstance(obj, collections.Iterable):
+    if isinstance(obj, collections.abc.Iterable):
         return tuple([hashable(item) for item in obj])
     return TypeError(type(obj))

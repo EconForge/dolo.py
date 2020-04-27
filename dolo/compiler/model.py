@@ -283,13 +283,19 @@ def decode_complementarity(comp, control):
 
 class Model(SymbolicModel):
 
-    def __init__(self, data):
+    def __init__(self, data, check=True):
 
         self.data = data
         self.model_type = 'dtcc'
         self.__functions__ = None
         # self.__compile_functions__()
         self.set_changed()
+        if check:
+            self.calibration
+            self.domain
+            self.exogenous
+            self.x_bounds
+            self.functions
 
     def set_changed(self):
         self.__domain__ = None
