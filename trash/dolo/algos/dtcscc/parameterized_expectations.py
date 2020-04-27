@@ -65,7 +65,7 @@ def parameterized_expectations(model, verbose=False, dr0=None,
     if direct is True:
         d = model.functions['direct_response']
 
-    approx = model.get_grid(**grid)
+    approx = model.get_endo_grid(**grid)
     grid = approx.grid
     interp_type = approx.interpolation
     dr = create_interpolator(approx, interp_type)     # Interp for control
@@ -263,7 +263,7 @@ def parameterized_expectations_direct(model, verbose=False, dr0=None,
         if pert_order > 1:
             raise Exception("Perturbation order > 1 not supported (yet).")
 
-    approx = model.get_grid(**grid)
+    approx = model.get_endo_grid(**grid)
     grid = approx.grid
     interp_type = approx.interpolation
     dr = create_interpolator(approx, interp_type)

@@ -62,7 +62,7 @@ def value_iteration(model,
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 
-    endo_grid = model.get_grid(**grid)
+    endo_grid = model.get_endo_grid(**grid)
 
     exo_grid = dprocess.grid
 
@@ -252,7 +252,7 @@ def evaluate_policy(model,
     n_v = len(v0)
     n_s = len(model.symbols['states'])
 
-    endo_grid = model.get_grid(**grid)
+    endo_grid = model.get_endo_grid(**grid)
     exo_grid = dprocess.grid
 
     if dr0 is not None:

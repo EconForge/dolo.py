@@ -265,7 +265,7 @@ file: "{filename}\n'''.format(**self.infos)
                 domain.pop(k)
         return domain
 
-    def get_grid(model, **dis_opts):
+    def get_endo_grid(model, **dis_opts):
         import copy
         domain = model.get_domain()
         a = np.array([e[0] for e in domain.values()])

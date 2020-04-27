@@ -90,32 +90,11 @@ class DecisionRule(CallableDecisionRule):
 
         self.__interp_method__ = interp_methods[interp_method]
 
-        args = (self, exo_grid, endo_grid, interp_methods[interp_method])
-
-        try:
-            aa = args + (None, None)
-            fun = eval_ms[tuple(map(type, aa))]
-            self.__eval_ms__ = fun
-        except Exception as exc:
-            pass
-
-        try:
-            aa = args + (None, None)
-            fun = eval_is[tuple(map(type, aa))]
-            self.__eval_is__ = fun
-        except Exception as exc:
-            pass
-
-        try:
-            aa = args + (None, None)
-            fun = eval_s[tuple(map(type, aa))]
-            self.__eval_s__ = fun
-            # self.__eval_is__ = lambda i, s: fun(s)
-        except Exception as exc:
-            pass
-
-        fun = get_coefficients[tuple(map(type, args))]
-        self.__get_coefficients__ = fun
+        # here we could replace with a caching mechanism resolving dispatch in advance
+        self.__eval_ms__ = eval_ms
+        self.__eval_is__ = eval_is
+        self.__eval_s__ = eval_s
+        self.__get_coefficients__ = get_coefficients
 
         if values is not None:
             self.set_values(values)
@@ -149,26 +128,29 @@ class DecisionRule(CallableDecisionRule):
 
 # this is *not* meant to be used by users
 
-from multimethod import multimethod
+from multipledispatch import dispatch
+namespace = dict()
+multimethod = dispatch(namespace=namespace)
 
 # Cartesian x Cartesian x Linear
 
 @multimethod
-def get_coefficients(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
-    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+def get_coefficients(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
+    grid = exo_grid + endo_grid
     xx = x.reshape(tuple(grid.n)+(-1,))
     return xx
 
 
 @multimethod
-def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, m, s):
+def eval_ms(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, m: object, s: object):
 
     assert(m.ndim==s.ndim==2)
 
-    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    grid = exo_grid + endo_grid # one single CartesianGrid
+
     coeffs = itp.coefficients
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    gg = grid.__numba_repr__()
     from interpolation.splines import eval_linear
 
     x = np.concatenate([m, s], axis=1)
@@ -177,7 +159,7 @@ def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type:
 
 
 @multimethod
-def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+def eval_is(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, i: object, s: object):
     m = exo_grid.node(i)[None,:]
     return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
 
@@ -185,27 +167,25 @@ def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type:
 # Cartesian x Cartesian x Cubic
 
 @multimethod
-def get_coefficients(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+def get_coefficients(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, x: object):
 
     from interpolation.splines.prefilter_cubic import prefilter_cubic
-    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    grid = exo_grid + endo_grid # one single CartesianGrid
     x = x.reshape(tuple(grid.n)+(-1,))
-    d = len(grid.n)
-    # this gg could be stored as a member of itp
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    gg = grid.__numba_repr__()
     return prefilter_cubic(gg, x)
 
 @multimethod
-def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, m, s):
+def eval_ms(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, m: object, s: object):
 
     from interpolation.splines import eval_cubic
 
     assert(m.ndim==s.ndim==2)
 
-    grid = cat_grids(exo_grid, endo_grid) # one single CartesianGrid
+    grid = exo_grid + endo_grid # one single CartesianGrid
     coeffs = itp.coefficients
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+
+    gg = grid.__numba_repr__()
 
     x = np.concatenate([m, s], axis=1)
 
@@ -213,7 +193,7 @@ def eval_ms(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type:
 
 
 @multimethod
-def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+def eval_is(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Cubic, i: object, s: object):
     m = exo_grid.node(i)[None,:]
     return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
 
@@ -222,19 +202,16 @@ def eval_is(itp, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type:
 # UnstructuredGrid x Cartesian x Linear
 
 @multimethod
-def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
+def get_coefficients(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
     return [x[i].reshape( tuple(endo_grid.n) + (-1,)).copy() for i in range(x.shape[0])]
 
 @multimethod
-def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+def eval_is(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i: object, s: object):
 
     from interpolation.splines import eval_linear
     assert(s.ndim==2)
-
-    grid = endo_grid # one single CartesianGrid
     coeffs = itp.coefficients[i]
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    gg = endo_grid.__numba_repr__()
 
     return eval_linear(gg, coeffs, s)
 
@@ -242,78 +219,80 @@ def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_ty
 # UnstructuredGrid x Cartesian x Cubic
 
 @multimethod
-def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+def get_coefficients(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, x: object):
     from interpolation.splines.prefilter_cubic import prefilter_cubic
-    grid = endo_grid # one single CartesianGrid
-    d = len(grid.n)
-    # this gg could be stored as a member of itp
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
-    return [prefilter_cubic(gg, x[i].reshape( tuple(grid.n) + (-1,))) for i in range(x.shape[0])]
+    gg = endo_grid.__numba_repr__()
+    return [prefilter_cubic(gg, x[i].reshape( tuple(endo_grid.n) + (-1,))) for i in range(x.shape[0])]
 
 
 @multimethod
-def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+def eval_is(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Cubic, i: object, s: object):
 
     from interpolation.splines import eval_cubic
     assert(s.ndim==2)
-
-    grid = endo_grid # one single CartesianGrid
     coeffs = itp.coefficients[i]
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
-
+    gg = endo_grid.__numba_repr__()
     return eval_cubic(gg, coeffs, s)
 
 
 # UnstructuredGrid x Cartesian x Linear
 
 @multimethod
-def get_coefficients(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x):
+def get_coefficients(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
     return [x[i].copy() for i in range(x.shape[0])]
 
 @multimethod
-def eval_is(itp, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i, s):
+def eval_is(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, interp_type: Linear, i: object, s: object):
 
     from interpolation.splines import eval_linear
     assert(s.ndim==2)
 
-    grid = endo_grid # one single CartesianGrid
     coeffs = itp.coefficients[i]
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    gg = endo_grid.__numba_repr__()
 
     return eval_linear(gg, coeffs, s)
 
+# Empty x Cartesian x Linear
+
+@multimethod
+def get_coefficients(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
+    grid = exo_grid + endo_grid
+    xx = x.reshape(tuple(grid.n)+(-1,))
+    return xx
+
+@multimethod
+def eval_s(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Linear, s: object):
+    from interpolation.splines import eval_linear
+    assert(s.ndim==2)
+    coeffs = itp.coefficients
+    gg = endo_grid.__numba_repr__()
+    return eval_linear(gg, coeffs, s)
 
 # Empty x Cartesian x Cubic
 
 @multimethod
-def get_coefficients(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, x):
+def get_coefficients(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, x: object):
     from interpolation.splines.prefilter_cubic import prefilter_cubic
     grid = endo_grid # one single CartesianGrid
-    d = len(grid.n)
-    # this gg could be stored as a member of itp
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
+    gg = endo_grid.__numba_repr__()
     return prefilter_cubic(gg, x[0].reshape( tuple(grid.n) + (-1,)))
 
 
+
 @multimethod
-def eval_s(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, s):
+def eval_s(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, s: object):
     from interpolation.splines import eval_cubic
     assert(s.ndim==2)
-    grid = endo_grid # one single CartesianGrid
     coeffs = itp.coefficients
-    d = len(grid.n)
-    gg = tuple( [(grid.min[i], grid.max[i], grid.n[i]) for i in range(d)] )
-
+    gg = endo_grid.__numba_repr__()
     return eval_cubic(gg, coeffs, s)
 
 @multimethod
-def eval_is(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i, s):
+def eval_is(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i: object, s: object):
     return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
 @multimethod
-def eval_ms(itp, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, m, s):
+def eval_ms(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, m: object, s: object):
     return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
 
@@ -401,7 +380,7 @@ class CustomDR(CallableDecisionRule):
 
         self.p = model.calibration['parameters']
         self.exo_grid = model.exogenous.discretize() # this is never used
-        self.endo_grid = model.get_grid()
+        self.endo_grid = model.get_endo_grid()
         self.gufun = gufun
 
     def eval_ms(self, m, s):

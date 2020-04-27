@@ -230,7 +230,7 @@ from dolo import dprint
 from .results import AlgoResult, ImprovedTimeIterationResult
 
 def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
-            interp_type='spline', mu=2, maxbsteps=10, verbose=False,
+            interp_method='cubic', mu=2, maxbsteps=10, verbose=False,
             tol=1e-8, smaxit=500, maxit=1000,
             complementarities=True, compute_radius=False, invmethod='iti',
             details=True):
@@ -260,7 +260,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
     parms = model.calibration['parameters']
 
     dp = dprocess
-    
+
     if dp is None:
         dp = model.exogenous.discretize()
 
@@ -268,15 +268,17 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     n_s = len(model.symbols['states'])
 
-    grid = model.get_grid()
+    grid = model.get_endo_grid()
 
-    if interp_type == 'spline':
-        ddr = DecisionRule(dp.grid, grid, dprocess=dp)
-        ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp)
-    elif interp_type == 'smolyak':
+    if interp_method in ('cubic', 'linear'):
+        ddr = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
+        ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
+    elif interp_method == 'smolyak':
         ddr = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         ddr_filt = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
         derivative_type = 'numerical'
+    else:
+        raise Exception("Unsupported interpolation method.")
 
     # s = ddr.endo_grid
     s = grid.nodes

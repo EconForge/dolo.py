@@ -69,7 +69,7 @@ def omega(model, dr, n_exp=10000, grid={}, bounds=None,
     epsilons = np.random.multivariate_normal(mean, sigma, n_draws)
     weights = np.ones(epsilons.shape[0])/n_draws
 
-    approx = model.get_grid(**grid)
+    approx = model.get_endo_grid(**grid)
     a = approx.a
     b = approx.b
     orders = approx.orders
