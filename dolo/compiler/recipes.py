@@ -17,4 +17,4 @@ else:
 DATA_PATH = os.path.join(DIR_PATH, "recipes.yaml")
 
 with open(DATA_PATH) as f:
-  recipes = yaml.load(f)
+  recipes = yaml.safe_load(f)

@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "dolo"
+version = "0.4.10"
+description = "Economic Modeling in Python"
+authors = ["Winant Pablo <pablo.winant@gmail.com>"]
+license="BSD-2-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+interpolation = "2.1.4"
+dolang = "^0.0.8"
+numpy = "^1.18.3"
+ipython = "^7.13.0"
+pandas = "^1.0.3"
+pyyaml = "^5.3.1"
+matplotlib = "^3.2.1"
+"ruamel.yaml" = "^0.16.10"
+scipy = "^1.4.1"
+quantecon = "^0.4.7"
+multimethod = "^1.3"
+xarray = "^0.15.1"
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
