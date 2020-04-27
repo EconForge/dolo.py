@@ -32,7 +32,7 @@ jobs:
         run: pwd & ls
 
       - name: Check poetry installation
-        run: poetry show
+        run: poetry install 
 
       - name: Test with pytest
         run: poetry run pytest
