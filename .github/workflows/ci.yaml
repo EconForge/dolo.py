@@ -10,8 +10,8 @@ jobs:
     strategy:
       matrix:
         python-version: [ '3.7', '3.8' ]
-        
-    name: CI Python Version ${{ matrix.python-version }}
+
+    name: Dolo Python Version ${{ matrix.python-version }}
     steps:
 
       - uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
           architecture: x64
 
       - name: Install Poetry
-        uses: dschep/install-poetry-action@v1.3
+        uses: Gr1N/setup-poetry@v2
 
       # - name: Code Quality
       #   run: poetry run black . --check
