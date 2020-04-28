@@ -3,7 +3,7 @@ import numpy as np
 # doesn't seem to support keyword arguments yet
 # from multipledispatch import dispatch
 # multimethod = dispatch()
-from multimethod import multimethod
+from dolo.misc.multimethod import multimethod
 from numba import generated_jit
 import xarray
 
