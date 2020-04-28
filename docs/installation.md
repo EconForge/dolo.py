@@ -13,4 +13,4 @@ Dolo can be installed in several ways:
 
 ## Developper's installation
 
-We use `poetry` as package manager, so you probably need to install poetry before you start developing the package.
+Dolo uses `poetry` as package manager, so you probably need to install poetry before you start developing the package.
