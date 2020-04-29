@@ -20,12 +20,18 @@ jobs:
       - name: Install Poetry
         uses: Gr1N/setup-poetry@v2
 
-      - name: Deploy docs
+      - name: Deploy docs (1)
         run: |
           git config --global user.name albop
           git config --global user.email albop@users.noreply.github.com
           git remote rm origin
+
+      - name: Deploy docs (2)
+        run: |
           git remote add origin https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+
+      - name: Deploy docs (3)
+        run: |
           poetry run mkdocs gh-deploy --config-file ${GITHUB_WORKSPACE}/mkdocs.yml --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
