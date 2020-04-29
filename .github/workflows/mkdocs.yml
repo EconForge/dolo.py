@@ -1,9 +1,9 @@
 name: Publish docs via GitHub Pages
 
-on:
-  push:
-    branches:
-      - master
+on: push
+  # push:
+  #   branches:
+  #     - master
 jobs:
   build:
     name: Deploy docs
@@ -12,8 +12,16 @@ jobs:
       - name: Checkout master
         uses: actions/checkout@v1
 
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v2
+
+      - name: Add dependencies
+        run: >-
+          poetry add mkdocs pymdown-extensions python-markdown-math
+
       - name: Deploy docs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
+        run: >-
+          poetry run mkdocs gh-deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # CUSTOM_DOMAIN: optionaldomain.com
