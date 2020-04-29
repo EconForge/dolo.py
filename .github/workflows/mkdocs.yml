@@ -29,10 +29,13 @@ jobs:
       - name: Deploy docs (2)
         run: |
           git remote add origin https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+
+      - name: Test Poetry
+        run: |
+          poetry show
 
       - name: Deploy docs (3)
         run: |
           poetry run mkdocs gh-deploy --config-file ${GITHUB_WORKSPACE}/mkdocs.yml --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CUSTOM_DOMAIN: optionaldomain.com
