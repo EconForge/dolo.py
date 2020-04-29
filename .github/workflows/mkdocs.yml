@@ -17,6 +17,9 @@ jobs:
         with:
           python-version: 3.7
 
+      - name: Install Poetry
+        uses: Gr1N/setup-poetry@v2
+
       - name: Deploy docs
         uses: albop/mkdocs-deploy-gh-pages@master
         env:
