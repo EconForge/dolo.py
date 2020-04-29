@@ -34,7 +34,7 @@ jobs:
 
       - name: Test Poetry
         run: |
-          poetry show
+          poetry install
 
       - name: Deploy docs (3)
         run: |
