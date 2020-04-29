@@ -22,15 +22,15 @@ jobs:
 
       - name: Deploy docs (1)
         run: |
-          git config --global user.name albop
-          git config --global user.email albop@users.noreply.github.com
+          git config --global user.name "albop"
+          git config --global user.email "albop@users.noreply.github.com"
           git remote rm origin
 
       - name: Deploy docs (2)
         run: |
           git remote add origin https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+          PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
 
       - name: Test Poetry
         run: |
