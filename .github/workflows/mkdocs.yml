@@ -25,7 +25,7 @@ jobs:
           git config --global user.name "albop"
           git config --global user.email "albop@users.noreply.github.com"
           git remote rm origin
-          export remote_repo="https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" git remote add origin "${remote_repo}"
+          remote_repo="https://x-access-token:${PERSONAL_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" git remote add origin "${remote_repo}"
           poetry run mkdocs gh-deploy --config-file "${GITHUB_WORKSPACE}/mkdocs.yml" --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
