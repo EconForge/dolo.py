@@ -17,16 +17,8 @@ jobs:
         with:
           python-version: 3.7
 
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v2
-
-      - name: Add dependencies
-        run: >-
-          poetry add mkdocs pymdown-extensions python-markdown-math
-
       - name: Deploy docs
-        run: >-
-          poetry run mkdocs gh-deploy
+        uses: albop/mkdocs-deploy-gh-pages@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # CUSTOM_DOMAIN: optionaldomain.com
+          CUSTOM_DOMAIN: optionaldomain.com
