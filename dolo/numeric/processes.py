@@ -371,7 +371,7 @@ class AR1(ContinuousProcess):
 
     @greek_tolerance
     def __init__(self, ρ=None, σ=None, μ=None):
-
+        self.ρ = ρ
         self.σ = σ
         self.μ = μ
         self.d = 1
