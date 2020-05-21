@@ -374,6 +374,7 @@ class AR1(ContinuousProcess):
         self.ρ = ρ
         self.σ = σ
         self.μ = μ
+        self.μ = μ if μ is not None else 0.0
         self.d = 1
 
     def discretize(self, N=3, to='mc', **kwargs):
