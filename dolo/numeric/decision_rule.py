@@ -138,7 +138,7 @@ multimethod = dispatch(namespace=namespace)
 def get_coefficients(itp: object, exo_grid: CartesianGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
     grid = exo_grid + endo_grid
     xx = x.reshape(tuple(grid.n)+(-1,))
-    return xx
+    return xx.copy()
 
 
 @multimethod
@@ -258,7 +258,7 @@ def eval_is(itp: object, exo_grid: UnstructuredGrid, endo_grid: CartesianGrid, i
 def get_coefficients(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Linear, x: object):
     grid = exo_grid + endo_grid
     xx = x.reshape(tuple(grid.n)+(-1,))
-    return xx
+    return xx.copy()
 
 @multimethod
 def eval_s(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Linear, s: object):
