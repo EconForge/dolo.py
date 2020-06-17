@@ -25,10 +25,6 @@ class PureModel:
     exogenous: Process
     endo_grid: Grid
 
-    # this is a bit unfortunate
-    def get_endo_grid(self):
-        return self.endo_grid
-
 ###
 ### Symbols definitions
 ###

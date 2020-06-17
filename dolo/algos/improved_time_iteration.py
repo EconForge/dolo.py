@@ -268,7 +268,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     n_s = len(model.symbols['states'])
 
-    grid = model.get_endo_grid()
+    grid = model.endo_grid
 
     if interp_method in ('cubic', 'linear'):
         ddr = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)

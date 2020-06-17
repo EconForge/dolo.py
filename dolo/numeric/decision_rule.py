@@ -380,7 +380,7 @@ class CustomDR(CallableDecisionRule):
 
         self.p = model.calibration['parameters']
         self.exo_grid = model.exogenous.discretize() # this is never used
-        self.endo_grid = model.get_endo_grid()
+        self.endo_grid = model.endo_grid
         self.gufun = gufun
 
     def eval_ms(self, m, s):

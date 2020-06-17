@@ -182,8 +182,8 @@ class SymbolicModel:
 
             return ProductProcess(*exogenous.values())
 
-
-    def get_endo_grid(self):
+    @property
+    def endo_grid(self):
 
         # determine bounds:
         domain = self.get_domain()

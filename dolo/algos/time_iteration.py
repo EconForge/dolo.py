@@ -83,7 +83,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
     n_x = len(x0)
     n_s = len(model.symbols['states'])
 
-    endo_grid = model.get_endo_grid(**grid)
+    endo_grid = model.endo_grid
 
     exo_grid = dprocess.grid
 
