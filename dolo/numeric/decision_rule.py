@@ -287,12 +287,15 @@ def eval_s(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_ty
     gg = endo_grid.__numba_repr__()
     return eval_cubic(gg, coeffs, s)
 
+
+## an empty grid can be indexed by an integer or a vector
+
 @multimethod
-def eval_is(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, i: object, s: object):
+def eval_is(itp: object, exo_grid: EmptyGrid, endo_grid: object, interp_type: object, i: object, s: object):
     return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
 @multimethod
-def eval_ms(itp: object, exo_grid: EmptyGrid, endo_grid: CartesianGrid, interp_type: Cubic, m: object, s: object):
+def eval_ms(itp: object, exo_grid: EmptyGrid, endo_grid: object, interp_type: object, m: object, s: object):
     return eval_s(itp, exo_grid, endo_grid, interp_type, s)
 
 
