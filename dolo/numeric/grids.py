@@ -4,9 +4,11 @@ from quantecon import cartesian
 import numpy as np
 from numpy import zeros
 
+from typing import TypeVar, Generic, Dict
+T = TypeVar("T")
+S = TypeVar("S")
 
 def prod(l): return reduce(mul, l, 1.0)
-
 from dolo.numeric.misc import mlinspace
 
 class Grid:
@@ -24,6 +26,20 @@ class Grid:
 
     def node(self, i):
         return self.__nodes__[i,:]
+
+
+class ProductGrid(Grid, Generic[T, S]):
+
+    def __init__(self, g1: T, g2: S, names=None):
+        self.grids = [g1, g2]
+        self.names = names
+
+    def __getitem__(self, v):
+        return self.grids[self.names.index(v)]
+
+    def __repr__(self):
+        return str.join(" × ", [e.__repr__() for e in self.grids])
+
 
 
 class EmptyGrid(Grid):
