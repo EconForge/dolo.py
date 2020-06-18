@@ -10,8 +10,12 @@ class SymbolicModel:
 
     @property
     def symbols(self):
+        from .misc import LoosyDict, equivalent_symbols
+
         auxiliaries = [k for k in self.definitions.keys()]
-        symbols = {sg: [*self.data['symbols'][sg]] for sg in self.data['symbols'].keys()}
+        symbols = LoosyDict(equivalences=equivalent_symbols)
+        for sg in self.data['symbols'].keys():
+            symbols[sg] =  [*self.data['symbols'][sg]]
         symbols['auxiliaries'] = auxiliaries
         return symbols
 
@@ -336,8 +340,10 @@ class Model(SymbolicModel):
 
         from dolang.vectorize import standard_function
         from dolo.compiler.factories import get_factory
-
-        functions = {}
+        from .misc import LoosyDict
+        
+        equivalent_function_names = {'equilibrium': 'arbitrage', 'optimality': 'arbitrage'}
+        functions = LoosyDict(equivalences=equivalent_function_names)
         original_functions = {}
         original_gufunctions = {}
 

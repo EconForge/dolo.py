@@ -54,8 +54,29 @@ from dolo.compiler.misc import calibration_to_dict
 
 import copy
 
+equivalent_symbols = dict(actions="controls")
 
-class CalibrationDict(dict):
+class LoosyDict(dict):
+
+    def __init__(self, **kwargs):
+
+        kwargs = kwargs.copy()
+        if "equivalences" in kwargs.keys():
+            self.__equivalences__ = kwargs.pop("equivalences")
+        else:
+            self.__equivalences__ = dict()
+        super().__init__(**kwargs)
+
+    def __getitem__(self, p):
+
+        if p in self.__equivalences__.keys():
+            k = self.__equivalences__[p]
+        else:
+            k = p
+        return super().__getitem__(k)
+
+
+class CalibrationDict:
 
     # cb = CalibrationDict(symbols, calib)
     # calib['states'] -> array([ 1.        ,  9.35497829])
@@ -63,21 +84,19 @@ class CalibrationDict(dict):
     # calib['z'] - > 1.0
     # calib['z','y'] -> [1.0, 0.99505814380953039]
 
-    def __init__(self, symbols, calib):
-        superclass = super()
+    def __init__(self, symbols, calib, equivalences=equivalent_symbols):
         calib = copy.deepcopy(calib)
         for v in calib.values():
             v.setflags(write=False)
-        superclass.__init__(calib)
         self.symbols = symbols
         self.flat = calibration_to_dict(symbols, calib)
-        self.grouped = calib
+        self.grouped = LoosyDict(**{k:v for (k,v) in calib.items()}, equivalences=equivalences)
 
     def __getitem__(self, p):
         if isinstance(p, tuple):
             return [self[e] for e in p]
-        if p in self.symbols.keys():
-            return super().__getitem__(p)
+        if p in self.symbols.keys() or (p in self.grouped.__equivalences__.keys()):
+            return self.grouped[p]
         else:
             return self.flat[p]
 
