@@ -282,6 +282,7 @@ def decode_complementarity(comp, control):
 
 
 class Model(SymbolicModel):
+    """Model Object"""
 
     def __init__(self, data, check=True):
 

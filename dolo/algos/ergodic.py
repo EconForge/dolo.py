@@ -14,7 +14,7 @@ from dolo.numeric.processes import MarkovChain, IIDProcess, DiscretizedIIDProces
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid, EmptyGrid
 
 @generated_jit(nopython=True)
-def trembling_hand(A: 'N*n1*...nd', x: 'N*d', w: 'float'):
+def trembling_hand(A: 'N*n1*...*nd', x: 'N*d', w: 'float'):
 
     # we could generate that automatically for orders >=3
     if (A.ndim==2):

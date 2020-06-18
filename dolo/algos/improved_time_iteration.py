@@ -1,3 +1,5 @@
+"""Do I need a docstring here ?"""
+
 from .bruteforce_lib import *
 from .invert import *
 
@@ -106,6 +108,8 @@ def d_filt_dx(π,M_ij,S_ij,n_m,N,n_x,dumdr):
 from scipy.sparse.linalg import LinearOperator
 
 class Operator(LinearOperator):
+
+    """Special Linear Operator"""
 
     def __init__(self, M_ij, S_ij, dumdr):
         self.M_ij = M_ij

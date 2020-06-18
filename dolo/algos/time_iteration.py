@@ -1,3 +1,5 @@
+"""Time Iteration Algorithm"""
+
 import numpy
 from dolo import dprint
 from dolo.numeric.processes import DiscretizedIIDProcess
@@ -35,8 +37,8 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
                         verbose=True, grid={},
                         maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
 
-    '''
-    Finds a global solution for ``model`` using backward time-iteration.
+    '''    Finds a global solution for ``model`` using backward time-iteration.
+
 
     This algorithm iterates on the residuals of the arbitrage equations
 

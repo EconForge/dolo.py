@@ -1,4 +1,7 @@
 def get_derivatives(model, steady_state=None):
+    """The sum of two numbers.
+
+    """
 
     from dolo.numeric.processes import VAR1
     from dolo.numeric.processes import MvNormal, IIDProcess
