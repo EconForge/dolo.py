@@ -33,9 +33,8 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 from .results import TimeIterationResult, AlgoResult
 
 
-def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
-                        verbose=True, grid={},
-                        maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
+def time_iteration(model, dr0=None, with_complementarities=True,
+                        verbose=True, maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
 
     '''    Finds a global solution for ``model`` using backward time-iteration.
 
@@ -50,12 +49,8 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
         if True, display iterations
     dr0 : decision rule
         initial guess for the decision rule
-    dprocess : DiscretizedProcess (model.exogenous.discretize())
-        discretized process to be used
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
-    grid: grid options
-        overload the values set in `options:grid` section
     maxit: maximum number of iterations
     inner_maxit: maximum number of iteration for inner solver
     tol: tolerance criterium for successive approximations
@@ -74,8 +69,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
         if verbose:
             print(t)
 
-    if dprocess is None:
-        dprocess = model.exogenous.discretize()
+    grid, dprocess = model.discretize()
 
     n_ms = dprocess.n_nodes # number of exogenous states
     n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
@@ -85,14 +79,13 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
     n_x = len(x0)
     n_s = len(model.symbols['states'])
 
-    endo_grid = model.endo_grid
-
-    exo_grid = dprocess.grid
+    endo_grid = grid['endo']
+    exo_grid = grid['exo']
 
     mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method)
 
-    grid = mdr.endo_grid.nodes
-    N = grid.shape[0]
+    s = mdr.endo_grid.nodes
+    N = s.shape[0]
 
     controls_0 = numpy.zeros((n_ms, N, n_x))
     if dr0 is None:
@@ -102,11 +95,11 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
             dr0 = dr0.dr
         try:
             for i_m in range(n_ms):
-                controls_0[i_m, :, :] = dr0(i_m, grid)
+                controls_0[i_m, :, :] = dr0(i_m, s)
         except Exception:
             for i_m in range(n_ms):
                 m = dprocess.node(i_m)
-                controls_0[i_m, :, :] = dr0(m, grid)
+                controls_0[i_m, :, :] = dr0(m, s)
     
     f = model.functions['arbitrage']
     g = model.functions['transition']
@@ -122,8 +115,8 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
             m = numpy.repeat(m, N, axis=0)
             p = numpy.repeat(p, N, axis=0)
 
-            lb[i_m,:,:] = lb_fun(m, grid, p)
-            ub[i_m,:,:] = ub_fun(m, grid, p)
+            lb[i_m,:,:] = lb_fun(m, s, p)
+            ub[i_m,:,:] = ub_fun(m, s, p)
 
     else:
         with_complementarities = False
@@ -165,7 +158,7 @@ def time_iteration(model, dr0=None, dprocess=None, with_complementarities=True,
 
         mdr.set_values(controls_0.reshape(sh_c))
 
-        fn = lambda x: residuals_simple(f, g, grid, x.reshape(sh_c), mdr, dprocess, parms).reshape((-1,n_x))
+        fn = lambda x: residuals_simple(f, g, s, x.reshape(sh_c), mdr, dprocess, parms).reshape((-1,n_x))
         dfn = SerialDifferentiableFunction(fn)
 
         res = fn(controls_0)

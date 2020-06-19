@@ -144,10 +144,10 @@ class SymbolicModel:
             raise Exception("Missing domain for states: {}.".format(
                 str.join(', ', missing)))
 
-        from dolo.compiler.objects import Domain
+        from dolo.compiler.objects import CartesianDomain
         from dolo.compiler.language import eval_data
         sdomain = eval_data(sdomain, calibration)
-        domain = Domain(**sdomain)
+        domain = CartesianDomain(**sdomain)
         domain.states = states
 
         return domain
@@ -333,6 +333,14 @@ class Model(SymbolicModel):
         if self.__domain__ is None:
             self.__domain__ = super(self.__class__, self).get_domain()
         return self.__domain__
+
+    def discretize(self, grid_options={}, dprocess_options={}):
+        dprocess = self.exogenous.discretize(**dprocess_options)
+        endo_grid = self.domain.discretize(**grid_options)
+        from dolo.numeric.grids import ProductGrid
+        grid = ProductGrid(dprocess.grid, endo_grid, names=['exo', 'endo'])
+        return [grid, dprocess]
+
 
     def __compile_functions__(self):
 

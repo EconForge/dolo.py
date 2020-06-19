@@ -10,12 +10,23 @@ Scalar = Union[int, float]
 
 # not really a language element though
 # @language_element
-class Domain(dict):
+
+class Domain:
+    pass
+
+class CartesianDomain(Domain, dict):
+
     def __init__(self, **kwargs):
         super().__init__()
         for k, w in kwargs.items():
             v = kwargs[k]
             self[k] = np.array(v, dtype=float)
+
+    def discretize(self, n=None):
+        if n==None:
+            n = [10]*(len(self.min))
+        from dolo.numeric.grids import UniformCartesianGrid
+        return UniformCartesianGrid(self.min, self.max, n)
 
     @property
     def min(self):

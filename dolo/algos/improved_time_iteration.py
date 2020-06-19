@@ -263,29 +263,21 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     parms = model.calibration['parameters']
 
-    dp = dprocess
-
-    if dp is None:
-        dp = model.exogenous.discretize()
+    grid, dp = model.discretize() 
+    endo_grid = grid['endo']
+    exo_grid = grid['exo']
 
     n_m = max(dp.n_nodes,1)
-
     n_s = len(model.symbols['states'])
 
-    grid = model.endo_grid
-
     if interp_method in ('cubic', 'linear'):
-        ddr = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
-        ddr_filt = DecisionRule(dp.grid, grid, dprocess=dp, interp_method=interp_method)
-    elif interp_method == 'smolyak':
-        ddr = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
-        ddr_filt = SmolyakDecisionRule(n_m, grid.min, grid.max, mu)
-        derivative_type = 'numerical'
+        ddr = DecisionRule(dp.grid, endo_grid, dprocess=dp, interp_method=interp_method)
+        ddr_filt = DecisionRule(dp.grid, endo_grid, dprocess=dp, interp_method=interp_method)
     else:
         raise Exception("Unsupported interpolation method.")
 
     # s = ddr.endo_grid
-    s = grid.nodes
+    s = endo_grid.nodes
     N = s.shape[0]
     n_x = len(model.symbols['controls'])
     x0 = model.calibration['controls'][None,None,].repeat(n_m, axis=0).repeat(N,axis=1)

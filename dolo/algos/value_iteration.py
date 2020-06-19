@@ -15,7 +15,6 @@ def constant_policy(model):
 from .results import AlgoResult, ValueIterationResult
 
 def value_iteration(model,
-                    grid={},
                     tol=1e-6,
                     maxit=500,
                     maxit_howard=20,
@@ -29,8 +28,6 @@ def value_iteration(model,
     -----------
     model :
         "dtmscc" model. Must contain a 'felicity' function.
-    grid :
-        grid options
     dr :
         decision rule to evaluate
 
@@ -56,15 +53,17 @@ def value_iteration(model,
     r0 = felicity(m0, s0, x0, parms)
 
     process = model.exogenous
+
+    grid, dprocess = model.discretize() 
+    endo_grid = grid['endo']
+    exo_grid = grid['exo']
+
     dprocess = process.discretize()
 
     n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 
-    endo_grid = model.endo_grid
-
-    exo_grid = dprocess.grid
 
     mdrv = DecisionRule(exo_grid, endo_grid)
 
