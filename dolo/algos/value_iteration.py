@@ -58,8 +58,6 @@ def value_iteration(model,
     endo_grid = grid['endo']
     exo_grid = grid['exo']
 
-    dprocess = process.discretize()
-
     n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
@@ -67,15 +65,15 @@ def value_iteration(model,
 
     mdrv = DecisionRule(exo_grid, endo_grid)
 
-    grid = mdrv.endo_grid.nodes
-    N = grid.shape[0]
+    s = mdrv.endo_grid.nodes
+    N = s.shape[0]
     n_x = len(x0)
 
     mdr = constant_policy(model)
 
     controls_0 = np.zeros((n_ms, N, n_x))
     for i_ms in range(n_ms):
-        controls_0[i_ms, :, :] = mdr.eval_is(i_ms, grid)
+        controls_0[i_ms, :, :] = mdr.eval_is(i_ms, s)
 
     values_0 = np.zeros((n_ms, N, 1))
     # for i_ms in range(n_ms):
@@ -114,7 +112,7 @@ def value_iteration(model,
 
         mdrv = ev.solution
         for i_ms in range(n_ms):
-            values_0[i_ms, :, :] = mdrv.eval_is(i_ms, grid)
+            values_0[i_ms, :, :] = mdrv.eval_is(i_ms, s)
 
         values = values_0.copy()
         controls = controls_0.copy()
@@ -122,14 +120,14 @@ def value_iteration(model,
         for i_m in range(n_ms):
             m = dprocess.node(i_m)
             for n in range(N):
-                s = grid[n, :]
+                s_ = s[n, :]
                 x = controls[i_m, n, :]
-                lb = controls_lb(m, s, parms)
-                ub = controls_ub(m, s, parms)
+                lb = controls_lb(m, s_, parms)
+                ub = controls_ub(m, s_, parms)
                 bnds = [e for e in zip(lb, ub)]
 
                 def valfun(xx):
-                    return -choice_value(transition, felicity, i_m, s, xx,
+                    return -choice_value(transition, felicity, i_m, s_, xx,
                                          mdrv, dprocess, parms, discount)[0]
 
                 res = scipy.optimize.minimize(valfun, x, bounds=bnds)
