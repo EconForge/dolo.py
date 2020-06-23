@@ -3,8 +3,9 @@ def get_derivatives(model, steady_state=None):
 
     """
 
-    from dolo.numeric.processes import VAR1
-    from dolo.numeric.processes import MvNormal, IIDProcess
+    from dolo.numeric.processes import VAR1, IIDProcess
+    from dolo.numeric.distribution import Normal
+     
 
     import numpy as np
 
@@ -234,8 +235,8 @@ def perturb(model, verbose=False, steady_state=None, eigmax=1.0-1e-6,
     s = steady_state['states']
     x = steady_state['controls']
 
-    from dolo.numeric.processes import VAR1
-    from dolo.numeric.processes import MvNormal, IIDProcess
+    from dolo.numeric.processes import VAR1, IIDProcess
+    from dolo.numeric.distribution import MvNormal
     process = model.exogenous
 
     if isinstance(process, VAR1):

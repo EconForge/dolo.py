@@ -121,7 +121,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
             raise Exception("Incorrect specification of driving values.")
         m0 = m_simul[0,:,:]
     else:
-        from dolo.numeric.processes import ContinuousProcess
+        from dolo.numeric.processes import DiscreteProcess
 
         if process is None:
             if hasattr(dr,'dprocess') and hasattr(dr.dprocess, 'simulate'):
@@ -130,7 +130,7 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
                 process = model.exogenous
 
         # detect type of simulation
-        if isinstance(process, ContinuousProcess):
+        if not isinstance(process, DiscreteProcess):
             sim_type = 'continuous'
         else:
             sim_type = 'discrete'
@@ -145,6 +145,8 @@ def simulate(model, dr, process=None, N=1, T=40, s0=None, i0=None, m0=None,
             x0 = dr.eval_is(i0, s0[None,:])[0,:]
         else:
             m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
+            if isinstance(m_simul, xr.DataArray):
+                m_simul = m_simul.data
             sim_type = 'continuous'
             if m0 is None:
                 m0 = model.calibration["exogenous"]

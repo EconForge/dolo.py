@@ -62,7 +62,15 @@ class Process:
 
     @property
     def names(self):
-        return tuple(f"_x_{i}" for i in range(self.d))
+        try:
+            return self._names_
+        except:
+            self._names_ = tuple(f"_x_{i}" for i in range(self.d))
+            return self._names_
+
+    @names.setter
+    def names(self, v):
+        self._names_ = v
 
 # A discrete process is such that integration
 # can be computed exactly.
@@ -85,9 +93,9 @@ class IIDProcess(Process):
         xar = DataArray(irf, dims=coords.keys(), coords=coords)
         return xar
 
-    def simulate(self, T:int=100, N:int=10)->DataArray:
-        sim = self.draw((T+1)*N).reshape((T+1,N,-1))
-        coords = {'T': range(T+1), 'N': range(N), 'V': list(self.names)}
+    def simulate(self, N:int=10, T:int=100, i0=None, m0=None, stochastic=True)->DataArray:
+        sim = self.draw((T)*N).reshape((T,N,-1))
+        coords = {'T': range(T), 'N': range(N), 'V': list(self.names)}
         xar = DataArray(sim, dims=coords.keys(), coords=coords)
         return xar
 

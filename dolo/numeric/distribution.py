@@ -172,7 +172,7 @@ class FiniteDistribution(DiscreteDistribution):
 ###
 
 @language_element
-@dataclass
+##@dataclass
 class Bernouilli(DiscreteDistribution):
 
     π: float = 0.5
@@ -188,9 +188,13 @@ class Bernouilli(DiscreteDistribution):
         w = np.array([1-self.π, self.π])
         return FiniteDistribution(x, w)
 
+    def draw(self, N: int)->Matrix:
+        a = np.array([0,1])
+        c = np.random.choice(a, size=N)
+        return c.reshape((N,1))
 
 @language_element
-@dataclass
+##@dataclass
 class Binomial(DiscreteDistribution):
 
     π: float = 0.5
@@ -218,6 +222,11 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
     def ppf(self, quantiles: Vector) -> Vector:
         "Percentage Point Function (inverse CDF)"
         raise Exception(f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}")
+
+    def cdf(self, quantiles: Vector) -> Vector:
+        "Cumulative Distribution"
+        raise Exception(f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}")
+
 
     def discretize(self, N=5, method="equiprobable", mass_point="median"):
         """
@@ -269,7 +278,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
         return FiniteDistribution(q[:, None], w, origin=self)
 
 @language_element
-@dataclass
+##@dataclass
 class UNormal(UnivariateContinuousDistribution):
 
     μ: float=0.0
@@ -277,6 +286,7 @@ class UNormal(UnivariateContinuousDistribution):
 
     signature = {'μ': 'Optional[float]', 'σ': 'float'} # this is redundant for now
 
+    @greek_tolerance
     def __init__(self, σ:float=None, μ:float=None):
         self.σ = float(σ)
         self.μ = 0.0 if μ is None else float(μ)
@@ -285,12 +295,16 @@ class UNormal(UnivariateContinuousDistribution):
         x = norm.ppf(quantiles, loc=self.μ, scale=self.σ)
         return x
 
+    def cdf(self, x):
+        p = norm.cdf(x, loc=self.μ, scale=self.σ)
+        return p
+
     def draw(self, N):
 
         from numpy.random import multivariate_normal
         Sigma = np.array([[self.σ**2]])
         mu = np.array([self.μ])
-        sim = multivariate_normal(mu, Sigma)
+        sim = multivariate_normal(mu, Sigma, size=N)
         return sim.reshape((N,1))
 
     def integrate(self, fun) -> float:
@@ -313,7 +327,7 @@ class UNormal(UnivariateContinuousDistribution):
 
 
 @language_element
-@dataclass
+##@dataclass
 class Uniform(UnivariateContinuousDistribution):
 
     # uniform distribution over an interval [a,b]
@@ -328,6 +342,10 @@ class Uniform(UnivariateContinuousDistribution):
         x = uniform.ppf(quantiles, loc=self.a, scale=(self.b - self.a))
         return x
 
+    def cdf(self, x: Vector) -> Vector:
+        p = uniform.cdf(x, loc=self.a, scale=(self.b - self.a))
+        return p
+
     def draw(self, N)->Matrix:
         from numpy.random import uniform
         sim = uniform(self.a, self.b, N)
@@ -335,7 +353,7 @@ class Uniform(UnivariateContinuousDistribution):
 
 
 @language_element
-@dataclass
+#@dataclass
 class LogNormal(UnivariateContinuousDistribution):
 
 
@@ -414,7 +432,7 @@ class Beta(UnivariateContinuousDistribution):
 ###
 
 
-
+@language_element
 class Normal(ContinuousDistribution):
 
     Μ: Vector  # this is capital case μ, not M... 😭
@@ -422,6 +440,7 @@ class Normal(ContinuousDistribution):
 
     signature = {"Σ": 'Matrix', 'Μ':  'Optional[Vector]'}
 
+    @greek_tolerance
     def __init__(self, Σ=None, Μ=None):
 
         Sigma = Σ
@@ -466,9 +485,7 @@ class Normal(ContinuousDistribution):
     def __str__(self):
         return f"Normal(Μ={self.Μ},Σ={self.Σ})"
 
-class MvNormal(Normal):
-    ## TODO: find out what to do with this
-    pass
+MvNormal = Normal
 
 class ProductDistribution(ContinuousDistribution):
 
@@ -479,8 +496,36 @@ class ProductDistribution(ContinuousDistribution):
     #     # construction and return a multivariate normal object instead
     #     # of a product object
 
+    def __init__(self, distributions: List[Distribution]):
 
+        self.distributions = distributions
+        self.d = sum([dis.d for dis in distributions])
+        self.names = sum( [dis.names for dis in self.distributions], tuple() )
 
+    def discretize(self):
+
+        # TODO: pass some options
+        fids = [dis.discretize() for dis in self.distributions]
+        return product_iid(fids)
+
+    def draw(self, N: int)->Matrix:
+
+        return np.concatenate([dis.draw(N) for dis in self.distributions], axis=1)
+
+def product_iid(iids: List[FiniteDistribution])->FiniteDistribution:
+
+    from dolo.numeric.misc import cartesian
+
+    nn = [len(f.weights) for f in iids]
+
+    cart = cartesian([range(e) for e in nn])
+
+    nodes = np.concatenate([f.points[cart[:,i],:] for i,f in enumerate(iids)], axis=1)
+    weights = iids[0].weights
+    for f in iids[1:]:
+        weights = np.kron(weights, f.weights)
+
+    return FiniteDistribution(nodes, weights)
 
 ###
 ### Truncation and Mixtures
@@ -497,14 +542,27 @@ class Truncation(UnivariateContinuousDistribution, Generic[C]):
     def __init__(self, dist: C, lb=-np.inf, ub=np.inf):
 
         self.dist = dist
-        self.__min_ppf__, self.__max_ppf__ = self.dist.ppf([lb, ub])
+        if lb==-np.inf:
+            self.__min_q__ = 0.0
+        else:
+            self.__min_q__ = self.dist.cdf([lb])[0]
+        if ub==np.inf:
+            self.__max_q__ = 1.0
+        else:
+            self.__max_q__ = self.dist.cdf([ub])[0]
+
+    def draw(self, N: int):
+
+        # TODO: replace this stupid algo
+        raise Exception("Not Implemented")
 
     def ppf(self, quantiles: Vector) -> Vector:
 
-        q_lb = self.__min_ppf__
-        q_ub = self.__max_ppf__
+        q_lb = self.__min_q__
+        q_ub = self.__max_q__
 
-        return np.maximum(np.minimum(self.dist.ppf(quantiles), q_ub), q_lb)
+        q = q_lb + (q_ub-q_lb)*quantiles
+        return self.dist.ppf(q)
 
 
 class Mixture(ContinuousDistribution):
@@ -512,43 +570,41 @@ class Mixture(ContinuousDistribution):
     index: DiscreteDistribution  # values must be [0,1,..n]
     distributions: Tuple[UnivariateContinuousDistribution, ...]  # length musth be [n]
 
-    # def __init__(self, index, distributions):
-    #     # index is a distribution which takes discrete values
-    #     # distributions is a map from each of these values to a distribution
-    #     self.index = index
-    #     self.distributions = distributions
-    #     ds = [e.d for e in self.distributions.values()]
-    #     assert(len(set(ds))==1)
-    #     self.d = self.distributions[0].d
+    def __init__(self, index=None, distributions=None):
+        # index is a distribution which takes discrete values
+        # distributions is a map from each of these values to a distribution
+        self.index = index
+        self.distributions = distributions
+        ds = [e.d for e in self.distributions.values()]
+        assert(len(set(ds))==1)
+        self.d = self.distributions[0].d
+        # TODO: check all distributions have the same variable names
+        self.names = self.distributions[0].names
 
-    # def discretize(self, to='iid'):
+    def discretize(self):
 
-    #     if to !='iid':
-    #         raise Exception("Not implemented")
+        inddist = self.index.discretize()
+        nodes = []
+        weights = []
+        for i in range(inddist.n_inodes(0)):
+            wind = inddist.iweight(0,i)
+            xind = inddist.inode(0,i)
+            dist = self.distributions[int(xind)].discretize()
+            for j in range(dist.n_inodes(0)):
+                w = dist.iweight(0,j)
+                x = dist.inode(0,j)
+                nodes.append(x)
+                weights.append(wind*w)
+        nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
+        weights = np.array(weights)
+        return FiniteDistribution(nodes, weights)
 
-    #     inddist = self.index.discretize()
-    #     nodes = []
-    #     weights = []
-    #     for i in range(inddist.n_inodes(0)):
-    #         wind = inddist.iweight(0,i)
-    #         xind = inddist.inode(0,i)
-    #         dist = self.distributions[int(xind)].discretize(to='iid')
-    #         for j in range(dist.n_inodes(0)):
-    #             w = dist.iweight(0,j)
-    #             x = dist.inode(0,j)
-    #             nodes.append(x)
-    #             weights.append(wind*w)
-    #     nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
-    #     weights = np.array(weights)
-    #     return DiscretizedIIDProcess(nodes, weights)
+    def draw(self, N: int)->Matrix:
 
-    # def simulate(self, N, T):
+        # naive and overkill algorithm
+        inds = self.index.draw(N) # should be (N x 1) array
+        return sum([(inds==k)*dist.draw(N) for (k,dist) in self.distributions.items()])
 
-    #     # stupid approach
-    #     choices = self.index.simulate(N,T)
-    #     draws = [dist.simulate(N,T) for dist in self.distributions.values()]
-    #     draw = sum([(i==choices)*draws[i] for i in range(len(draws))])
-    #     return draw
 
 # @language_element
 # def Mixture(index=None, distributions=None):
@@ -561,17 +617,3 @@ class Mixture(ContinuousDistribution):
 
 # Mixture.signature = {'index': 'intprocess', 'distributions': 'Dict[int,IIDProcesses]'}
 
-def product_iid(iids: List[DiscretizedIIDProcess])->DiscretizedIIDProcess:
-
-    from dolo.numeric.misc import cartesian
-
-    nn = [len(f.integration_weights) for f in iids]
-
-    cart = cartesian([range(e) for e in nn])
-
-    nodes = np.concatenate([f.integration_nodes[cart[:,i],:] for i,f in enumerate(iids)], axis=1)
-    weights = iids[0].integration_weights
-    for f in iids[1:]:
-        weights = np.kron(weights, f.integration_weights)
-
-    return DiscretizedIIDProcess(nodes, weights)

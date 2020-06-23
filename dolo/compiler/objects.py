@@ -1,4 +1,4 @@
-from dolo.numeric.processes_iid import *
+from dolo.numeric.distribution import *
 
 #
 from dataclasses import dataclass
@@ -48,12 +48,12 @@ class CartesianDomain(Domain, dict):
 #
 
 
-@language_element
-@dataclass
-class MvNormal:
-    Mu: List[float]
-    Sigma: List[List[float]]
-    signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
+# @language_element
+# @dataclass
+# class MvNormal:
+#     Mu: List[float]
+#     Sigma: List[List[float]]
+#     signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
 
 
 

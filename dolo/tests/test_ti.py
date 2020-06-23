@@ -6,7 +6,8 @@ def test_vfi():
 
     model_iid = yaml_import('examples/models/rbc_iid.yaml')
 
-    mdr = time_iteration(model_iid, with_complementarities=False)
+    mdr = time_iteration(model_iid, with_complementarities=False, verbose=False)
     drv = evaluate_policy(model_iid, mdr)
 
     dr_iid = value_iteration(model_iid, verbose=True, maxit=5)
+

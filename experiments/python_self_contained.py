@@ -202,7 +202,7 @@ functions = {
 ### Exogenous process
 ###
 
-from dolo.numeric.processes_iid import UNormal
+from dolo.numeric.distribution import UNormal
 exogenous = UNormal(σ=0.001)
 
 ###

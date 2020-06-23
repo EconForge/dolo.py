@@ -3,7 +3,7 @@ import unittest
 import scipy
 from scipy.integrate import quad
 import numpy as np
-from dolo.numeric.processes_iid import *
+from dolo.numeric.distribution import *
 
 ## Polynomial
 def f(x):
