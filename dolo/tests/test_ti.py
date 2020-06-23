@@ -11,4 +11,3 @@ def test_vfi():
 
     dr_iid = value_iteration(model_iid, verbose=True, maxit=5)
 
-test_vfi()
