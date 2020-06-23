@@ -62,7 +62,6 @@ def value_iteration(model,
     n_mv = dprocess.n_inodes(
         0)  # this assume number of integration nodes is constant
 
-
     mdrv = DecisionRule(exo_grid, endo_grid)
 
     s = mdrv.endo_grid.nodes
@@ -161,6 +160,7 @@ def value_iteration(model,
     itprint.print_finished()
 
     mdr = DecisionRule(exo_grid, endo_grid)
+
     mdr.set_values(controls)
     mdrv.set_values(values_0)
 
@@ -236,7 +236,9 @@ def evaluate_policy(model,
     """
 
     process = model.exogenous
-    dprocess = process.discretize()
+    grid, dprocess = model.discretize()
+    endo_grid = grid['endo']
+    exo_grid = grid['exo']
 
     n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(
@@ -249,23 +251,21 @@ def evaluate_policy(model,
     n_v = len(v0)
     n_s = len(model.symbols['states'])
 
-    endo_grid = model.endo_grid
-    exo_grid = dprocess.grid
 
     if dr0 is not None:
         mdrv = dr0
     else:
         mdrv = DecisionRule(exo_grid, endo_grid, interp_method=interp_method)
 
-    grid = mdrv.endo_grid.nodes
-    N = grid.shape[0]
+    s = mdrv.endo_grid.nodes
+    N = s.shape[0]
 
     if isinstance(mdr, np.ndarray):
         controls = mdr
     else:
         controls = np.zeros((n_ms, N, n_x))
         for i_m in range(n_ms):
-            controls[i_m, :, :] = mdr.eval_is(i_m, grid)
+            controls[i_m, :, :] = mdr.eval_is(i_m, s)
 
     values_0 = np.zeros((n_ms, N, n_v))
     if dr0 is None:
@@ -273,7 +273,7 @@ def evaluate_policy(model,
             values_0[i_m, :, :] = v0[None, :]
     else:
         for i_m in range(n_ms):
-            values_0[i_m, :, :] = dr0.eval_is(i_m, grid)
+            values_0[i_m, :, :] = dr0.eval_is(i_m, s)
 
     val = model.functions['value']
     g = model.functions['transition']
@@ -305,7 +305,7 @@ def evaluate_policy(model,
         t_start = time.time()
 
         mdrv.set_values(values_0.reshape(sh_v))
-        values = update_value(val, g, grid, controls, values_0, mdr, mdrv,
+        values = update_value(val, g, s, controls, values_0, mdr, mdrv,
                               dprocess, parms).reshape((-1, n_v))
         err = abs(values.reshape(sh_v) - values_0).max()
 
