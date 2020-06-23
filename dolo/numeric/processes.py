@@ -1,10 +1,18 @@
 import numpy as np
 import numpy
 import pickle
+
+from typing import List, TypeVar, Generic, Union, Any, Callable # type: ignore
+from typing import Iterator, Tuple # type: ignore
 from typing import List, Optional
+Vector = List[float]
+Matrix = List[Vector]
+
 from numba import jit, njit
 from dolo.numeric.grids import EmptyGrid, CartesianGrid, UnstructuredGrid
 from random import random as rand
+
+from xarray import DataArray
 
 from dolo.compiler.language import greek_tolerance
 from dolo.compiler.language import language_element
@@ -48,23 +56,40 @@ def simulate_markov_chain(nodes, transitions, N, T, i0=None, return_values=False
 
 
 class Process:
-    pass
 
+    d: int  # number of dimensions
+    variables: Union[None, Tuple[str, ...]]  # names of variables (optional)
+
+    @property
+    def names(self):
+        return tuple(f"_x_{i}" for i in range(self.d))
+
+# A discrete process is such that integration
+# can be computed exactly.
 class DiscreteProcess(Process):
-    pass
+    
+    n: int
 
 class ContinuousProcess(Process):
     pass
 
-class IIDProcess(ContinuousProcess): # this is dubious
+class IIDProcess(Process):
 
-    def response(self, T, impulse):
-        irf = numpy.zeros((T,self.d))
+    def draw(self, n: int)->Vector:
+        raise Exception("Not Implemented")
+
+    def response(self, T, impulse)->DataArray:
+        irf = numpy.zeros((T+1,self.d))
         irf[1,:] = impulse[None,:]
-        return irf
+        coords = {'T': range(T+1), 'V': list(self.names)}
+        xar = DataArray(irf, dims=coords.keys(), coords=coords)
+        return xar
 
-
-
+    def simulate(self, T:int=100, N:int=10)->DataArray:
+        sim = self.draw((T+1)*N).reshape((T+1,N,-1))
+        coords = {'T': range(T+1), 'N': range(N), 'V': list(self.names)}
+        xar = DataArray(sim, dims=coords.keys(), coords=coords)
+        return xar
 
 @language_element
 class ConstantProcess(IIDProcess):
@@ -96,8 +121,6 @@ class ConstantProcess(IIDProcess):
             raise Exception("Not implemented")
 
 
-
-
 @language_element
 class AggregateProcess(ConstantProcess):
 
@@ -107,6 +130,12 @@ class AggregateProcess(ConstantProcess):
 #     pass
 
 class DiscretizedProcess:
+
+    def iweight(self, i: int, j: int)->float:
+        raise Exception("Not Implemented.")
+
+    def inode(self, i: int, j: int)->float:
+        raise Exception("Not Implemented.")
 
     def iteritems(self, i, eps=1e-16):
         for j in range(self.n_inodes(i)):
@@ -153,76 +182,31 @@ class GDP(DiscretizedProcess):
 
 class DiscretizedIIDProcess(DiscretizedProcess):
 
-    def __init__(self, nodes, weights):
-        self.integration_nodes = nodes
-        self.integration_weights = weights
+    def point(self, i:int)->int:
+        raise Exception("Not Implemented.")
+
+    def weight(self, i:int)->int:
+        raise Exception("Not Implemented.")
 
     @property
     def grid(self):
         return EmptyGrid()
 
     @property
-    def n_nodes(self): # integer
-        return 1
+    def n_nodes(self)->int:
+        return 1 # purely conventional
 
-    def node(self, i:int): # vector
-        return self.integration_nodes[0,:]*0
+    def node(self, i:int)->Vector:
+        return np.zeros(self.d)
 
-    def n_inodes(self, i:int): # integer
-        return self.integration_nodes.shape[0]
+    def n_inodes(self, i:int)->int:
+        return self.n
 
     def inode(self, i:int, j:int): # vector
-        return self.integration_nodes[j,:]
+        return self.point(j)
 
     def iweight(self, i:int, j:int): # scalar
-        return self.integration_weights[j]
-
-
-@language_element
-class MvNormal(IIDProcess):
-
-    signature = {"Σ": 'Matrix', 'μ':  'Optional[Vector]'}
-
-    @greek_tolerance
-    def __init__(self, Σ=None, μ=None):
-
-        Sigma = Σ
-        mu = μ
-
-        self.Σ = np.atleast_2d( np.array(Sigma, dtype=float) )
-        self.d = len(self.Σ)
-        if mu is None:
-            self.μ = np.array([0.0]*self.d)
-        else:
-            self.μ = np.array(mu, dtype=float)
-        assert(self.Σ.shape[0] == self.d)
-        assert(self.Σ.shape[0] == self.d)
-
-    def discretize(self, to='iid', N=None):
-        if to!="iid":
-            raise Exception("Not Implemented")
-        if N is None:
-            N  = 5
-        if isinstance(N,int):
-            N = [N]*self.d
-        from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
-        [x, w] = gauss_hermite_nodes(N, self.Σ, mu=self.μ)
-        x = np.row_stack( [(e + self.μ) for e in x] )
-        return DiscretizedIIDProcess(x,w)
-
-    def simulate(self, N, T, m0=None, stochastic=True):
-        from numpy.random import multivariate_normal
-        Sigma = self.Σ
-        mu = self.μ
-        if stochastic:
-            sim = multivariate_normal(mu, Sigma, N*T)
-        else:
-            sim = mu[None,len(mu)].repeat(T*N,axis=0)
-        return sim.reshape((T,N,len(mu)))
-
-@language_element
-class Normal(MvNormal):
-    pass
+        return self.weight(j)
 
 
 @language_element
