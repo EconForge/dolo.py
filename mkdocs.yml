@@ -7,11 +7,11 @@ nav:
     - Home: index.md
     - Install: installation.md
     - Model API: model_api.md
-    - API: mkapi/api/dolo
+    # - API: mkapi/api/dolo
 
 plugins:
   - search # necessary for search to work
-  - mkapi
+  # - mkapi
 
 markdown_extensions:
   - mdx_math
