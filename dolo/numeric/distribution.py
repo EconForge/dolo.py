@@ -148,6 +148,14 @@ class EquiprobableDistribution(DiscreteDistribution):
         w /= self.n
         return w
     
+    def point(self, i) -> float:
+
+        return self.points[i,:]
+
+    def weight(self, i) -> float:
+
+        return 1/self.n
+
     def draw(self, N: int) -> Matrix:
         import numpy.random
         inds = numpy.random.randint(low=0, high=self.n, size=N)
