@@ -129,6 +129,37 @@ class DiscreteDistribution(Distribution, DiscretizedIIDProcess):
         return sum(w * fun(x) for (w, x) in self.items())
 
 
+class EquiprobableDistribution(DiscreteDistribution):
+
+    points: Vector
+    
+    def __init__(self, points: Vector=None, origin: Union[Distribution, None]=None):
+
+        n,d = points.shape
+        self.d = d
+        self.n = n
+        self.points = points
+        self.origin = origin
+
+    @property
+    def weights(self) -> Vector:
+        # so that it can behave like a FiniteDistribution (notably for graphs)
+        w = np.ones(self.n)
+        w /= self.n
+        return w
+    
+    def draw(self, N: int) -> Matrix:
+        import numpy.random
+        inds = numpy.random.randint(low=0, high=self.n, size=N)
+        return self.points[inds, :]
+
+    def __repr__(self):
+        return f"EquiprobableDistribution(points={self.points.__repr__()}, origin={str(self.origin)})"
+
+    def __str__(self):
+        return f"EquiprobableDistribution(points={self.points}, origin={self.origin})"
+
+
 # Special kind of Discrete distributions characterized
 # by a list of points and a list of weights.
 class FiniteDistribution(DiscreteDistribution):
@@ -275,7 +306,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
 
         w = (1 / (N)) * np.ones(N)
 
-        return FiniteDistribution(q[:, None], w, origin=self)
+        return EquiprobableDistribution(q[:, None], origin=self)
 
 @language_element
 ##@dataclass
