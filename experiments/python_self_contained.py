@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 Vector = List[float]
 from dolang.vectorize import standard_function
-from dolo.numeric.processes import Process
-from dolo.numeric.grids import Grid
+from dolo.numeric.processes import Process, DiscretizedProcess
+from dolo.compiler.objects import Domain, CartesianDomain
+from dolo.numeric.grids import Grid, ProductGrid
 
 from dolo.compiler.misc import CalibrationDict, calibration_to_vector
-
+from numba import jit
 
 ###
 ### Model API
@@ -22,8 +23,24 @@ class PureModel:
     symbols: Dict[str, Vector]
     calibration: CalibrationDict
     functions: Dict[str, standard_function]
+    
+    # these are not accessed directly
+    domain: Domain
     exogenous: Process
-    endo_grid: Grid
+
+    def discretize(self, **kwargs)->Tuple[Grid, DiscretizedProcess]:
+        
+        # returns a discretized grid for exogenous and endogenous variables
+        # and a discretization of the exogenous process
+        
+        # it can be inherited from dolo.numeric.model.Model
+
+        dp = exogenous.discretize()
+        endo_grid = self.domain.discretize()
+        exo_grid = dp.grid
+        grid = ProductGrid(exo_grid,endo_grid,names=['exo','endo'])
+        return (grid, dp)
+
 
 ###
 ### Symbols definitions
@@ -68,7 +85,7 @@ calibration_strings = dict(
     c_y =  "0.5",
     e_z =  "0.0",
 
-    # = e"ndogenous variables",
+    # = "endogenous variables",
     n =  "0.33",
     z =  "zbar",
     rk =  "1/β-1+δ",
@@ -99,12 +116,7 @@ calibration
 
 # take and return "tuples" of floats because tuples are supposed 
 # to be easy to be optimzed away by the compiler
-# after the definition of the function, there is some boilerplate
-# to translate these functions into broadcastable ones, with 
-# optional numerical differentiation capabilities
-
-
-from numba import jit
+# after the definitiexogenous, gridt
 
 
 @jit(nopython=True)
@@ -183,7 +195,7 @@ def arbitrage_gu(m,s,x,M,S,X,p,out):
 transition_gu(m, s, x, m[None,:].repeat(10,axis=0), p)
 
 # we use another convenience function to get a function which
-# is able to compute derivatives
+# is able to computeexogenous, grid derivatives
 # I don't like this way to proceed, this should be rewritten
 # currently it is only used for perturbations anyway.
 
@@ -205,12 +217,19 @@ functions = {
 from dolo.numeric.distribution import UNormal
 exogenous = UNormal(σ=0.001)
 
-###
-### Discretized grid for endogenous states
-###
+# ###
+# ### Discretized grid for endogenous states
+# ###
 
-from dolo.numeric.grids import UniformCartesianGrid
-grid = UniformCartesianGrid(min=[-0.01, 5], max=[0.01, 15], n=[20, 20])
+# from dolo.numeric.grids import UniformCartesianGrid
+# grid = UniformCartesianGrid(min=[-0.01, 5], max=[0.01, 15], n=[20, 20])
+
+###
+### Domain for endogenous states
+
+
+
+domain = CartesianDomain(z=[-0.01, 0.01] , k=[5, 15])
 
 
 ###
@@ -220,7 +239,7 @@ grid = UniformCartesianGrid(min=[-0.01, 5], max=[0.01, 15], n=[20, 20])
 # now we should be able to solve the model using
 # any of the availables methods
 
-model = PureModel(symbols, calibration, functions, exogenous, grid)
+model = PureModel(symbols, calibration, functions, domain, exogenous)
 
 from dolo.algos.time_iteration import time_iteration
 from dolo.algos.perturbation import perturb
@@ -230,7 +249,7 @@ from dolo.algos.improved_time_iteration import improved_time_iteration
 dr0 = perturb(model)
 
 time_iteration(model)
-improved_time_iteration(model)
+
 
 simulate(model, dr0)
 

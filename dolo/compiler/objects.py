@@ -29,6 +29,11 @@ class CartesianDomain(Domain, dict):
         return UniformCartesianGrid(self.min, self.max, n)
 
     @property
+    def states(self):
+        l = tuple(self.keys())
+        return l
+
+    @property
     def min(self):
         return np.array([self[e][0] for e in self.states])
 

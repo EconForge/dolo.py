@@ -148,7 +148,6 @@ class SymbolicModel:
         from dolo.compiler.language import eval_data
         sdomain = eval_data(sdomain, calibration)
         domain = CartesianDomain(**sdomain)
-        domain.states = states
 
         return domain
 
