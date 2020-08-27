@@ -182,7 +182,7 @@ def eval_data(data: 'ruamel_structure', calibration={}):
 
     if isinstance(data, str):
         try:
-            val = eval(data, calibration)
+            val = eval(data.replace("^", "**"), calibration)
         except:
             warnings.warn("Impossible to evaluate expression")
             val = data

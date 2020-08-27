@@ -8,7 +8,8 @@ license="BSD-2-Clause"
 [tool.poetry.dependencies]
 python = "^3.7"
 interpolation = "^2.1.6"
-dolang = "^0.0.8"
+#dolang = "^0.0.8"
+dolang = {path="../dolang.py/"}
 numpy = "^1.16.0"
 ipython = "^7.13.0"
 pandas = "^1.0.3"

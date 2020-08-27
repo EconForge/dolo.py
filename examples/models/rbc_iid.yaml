@@ -70,8 +70,7 @@ calibration:
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
     m: beta/c^sigma*(1-delta+rk)
 
-exogenous: !VAR1
-    ρ: 0.9
+exogenous: !Normal
     Σ: [[sig_z**2]]
 
 domain:
