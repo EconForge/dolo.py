@@ -70,7 +70,7 @@ calibration:
     kss: 10
 
 exogenous: !UNormal
-    sigma: 0.01
+    sigma: [0.01, 0.3]
 
 domain:
     z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
