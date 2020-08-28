@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "dolo"
 version = "0.4.9.12"
+readme = "README.md"
 description = "Economic Modeling in Python"
 authors = ["Winant Pablo <pablo.winant@gmail.com>"]
 license="BSD-2-Clause"
