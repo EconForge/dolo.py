@@ -11,9 +11,10 @@ from ast import BinOp, Sub
 from typing import Dict
 
 import dolang
-from dolang import to_source, parse_string
+from dolang.grammar import str_expression
+from dolang.symbolic import parse_string
 from dolang.symbolic import time_shift
-from dolang.symbolic import ExpressionSanitizer
+from dolang.symbolic import Sanitizer
 from dolang.factory import FlatFunctionFactory
 
 
@@ -84,25 +85,29 @@ def get_factory(model, eq_type: str, tshift: int = 0):
     arguments = dict(zip([sg[2] for sg in specs['eqs']], args))
 
     # temp
-    eqs = [eq.replace("==","=").replace("=","==") for eq in eqs]
+    eqs = [eq.split("⟂")[0].strip() for eq in eqs]
 
     if 'target' in specs:
         sg = specs['target']
         targets = [(s, sg[1]) for s in model.symbols[sg[0]]]
-        eqs = [eq.split('==')[1] for eq in eqs]
+        eqs = [eq.split('=')[1] for eq in eqs]
     else:
-        eqs = [("({1})-({0})".format(*eq.split('==')) if '==' in eq else eq)
+        eqs = [("({1})-({0})".format(*eq.split('=')) if '=' in eq else eq)
                for eq in eqs]
         targets = [('out{}'.format(i), 0) for i in range(len(eqs))]
 
+    p = 9+9
     eqs = [str.strip(eq) for eq in eqs]
     eqs = [dolang.parse_string(eq) for eq in eqs]
-    es = ExpressionSanitizer(model.variables)
-    eqs = [es.visit(eq) for eq in eqs]
+    es = Sanitizer(variables=model.variables)
+    eqs = [es.transform(eq) for eq in eqs]
+
 
     eqs = [time_shift(eq, tshift) for eq in eqs]
+
     eqs = [stringify(eq) for eq in eqs]
-    eqs = [dolang.to_source(eq) for eq in eqs]
+
+    eqs = [str_expression(eq) for eq in eqs]
 
     targets = [stringify_symbol(e) for e in targets]
 
@@ -112,11 +117,11 @@ def get_factory(model, eq_type: str, tshift: int = 0):
         if '(' not in k:
             s = "{}(0)".format(k)
             val = model.definitions[k]
-            val = es.visit(dolang.parse_string(val))
+            val = es.transform(dolang.parse_string(val))
             for t in preamble_tshift:
                 s = stringify_symbol((k, t))
                 vv = stringify(time_shift(val, t))
-                defs[s] = dolang.to_source(vv)
+                defs[s] = str_expression(vv)
 
     preamble = reorder_preamble(defs)
 

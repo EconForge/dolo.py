@@ -31,25 +31,25 @@ class SymbolicModel:
         d = dict()
         for g, v in self.data['equations'].items():
             ll = []
+            # if g == 'direct_response':
+            #     l = 143+3
             for eq in v:
-                if "|" in eq:
-                    eq = eq.split("|")[0]
                 ll.append(sanitize(eq, variables=vars))
             d[g] = ll
 
         if "controls_lb" not in d:
             for ind, g in enumerate(("controls_lb", "controls_ub")):
                 eqs = []
-                for i, eq in enumerate(self.data['equations']['arbitrage']):
-                    if "|" not in eq:
+                for i, eq in enumerate(d['arbitrage']):
+                    if "⟂" not in eq:
                         if ind == 0:
                             eq = "-inf"
                         else:
                             eq = "inf"
                     else:
-                        comp = eq.split("|")[1]
+                        comp = eq.split("⟂")[1]
                         v = self.symbols["controls"][i]
-                        eq = decode_complementarity(comp, v)[ind]
+                        eq = decode_complementarity(comp, v+"[t]")[ind]
                     eqs.append(eq)
                 d[g] = eqs
         return d
@@ -216,7 +216,6 @@ class SymbolicModel:
             from dolo.numeric.grids import NonUniformCartesianGrid
             calibration = self.get_calibration()
             nodes = [eval_data(e, calibration) for e in self.data['options']['grid']]
-            print(nodes)
             # each element of nodes should be a vector
             return NonUniformCartesianGrid(nodes)
         elif grid_type.lower() in ('smolyak', 'smolyakgrid'):

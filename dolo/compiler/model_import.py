@@ -8,7 +8,7 @@ import yaml
 def yaml_import(fname, check=True, check_only=False):
 
     txt = read_file_or_url(fname)
-    txt = txt.replace('^', '**')
+
 
     try:
         data = ry.load(txt, ry.RoundTripLoader)

@@ -51,7 +51,11 @@ def get_incidence(sdict):
 
 def solve_triangular_system(system, values=None, context=None):
 
-    system = dict(system)
+    import copy
+    system = dict(copy.deepcopy(system))
+    for k,v in system.items():
+        if isinstance(v,str):
+            system[k] = v.replace("^","**")
 
     var_order = list(system.keys())
 

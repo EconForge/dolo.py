@@ -362,8 +362,8 @@ class CustomDR(CallableDecisionRule):
         kk = [*preamble_str.keys()]
         preamble_str = dict([(kk[k], preamble_str[kk[k]]) for k in sol])
 
-        equations = [dolang.symbolic.sanitize(eq, variables) for eq in equations]
-        equations_strings = [dolang.stringify(eq, variables) for eq in equations]
+        equations = [dolang.symbolic.sanitize(eq, variables=variables) for eq in equations]
+        equations_strings = [dolang.stringify(eq) for eq in equations]
 
         args = dict([
             ('m', [(e,0) for e in exogenous]),

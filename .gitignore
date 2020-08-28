@@ -2,3 +2,12 @@
 *.mypy_cache*
 *.ipynb_checkpoints*
 .vscode/settings.json
+doc/*
+*pickle
+*whl
+*tar.gz
+PKG-INFO
+*.txt
+site/*
+poetry.lock
+client_id

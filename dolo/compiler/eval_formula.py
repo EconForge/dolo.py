@@ -1,6 +1,7 @@
 # from ast import *
 from dolang.symbolic import stringify, stringify_symbol, parse_string, list_variables
-from dolang.codegen import to_source
+from dolang.grammar import str_expression
+
 from dolo.compiler.misc import CalibrationDict
 from numpy import log, exp
 
@@ -28,7 +29,7 @@ def eval_formula(expr: str, dataframe=None, context=None):
     for k in [*dd.keys()]:
         dd[stringify_symbol(k)] = dd[k]
 
-    expr_ast = parse_string(expr).value
+    expr_ast = parse_string(expr)
     variables = list_variables(expr_ast)
     nexpr = stringify(expr_ast)
 
@@ -43,7 +44,7 @@ def eval_formula(expr: str, dataframe=None, context=None):
             dd[stringify_symbol((k, t))] = dataframe[k].shift(t)
         dd['t_'] = pd.Series(dataframe.index, index=dataframe.index)
 
-    expr = to_source(nexpr)
+    expr = str_expression(nexpr)
 
     res = eval(expr, dd)
 
