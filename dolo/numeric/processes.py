@@ -118,7 +118,8 @@ class ConstantProcess(IIDProcess):
         if to == 'iid':
             x = self.μ[None,:]
             w = np.array([1.0])
-            return DiscretizedIIDProcess(x, w)
+            from .distribution import FiniteDistribution
+            return FiniteDistribution(x, w)
 
         elif to == 'mc':
             N = kwargs.get("N", 1)
@@ -306,6 +307,7 @@ class ProductProcess(Process):
                 to = 'gdp'
 
         if to =='iid':
+            from dolo.numeric.distribution import product_iid
             fun = product_iid
         elif to =='mc':
             fun = product_mc
@@ -340,20 +342,6 @@ def product_gdp(gdps: List[GDP])->GDP:
 
     raise Exception("Not implemented")
 
-def product_iid(iids: List[DiscretizedIIDProcess])->DiscretizedIIDProcess:
-
-    from dolo.numeric.misc import cartesian
-
-    nn = [len(f.integration_weights) for f in iids]
-
-    cart = cartesian([range(e) for e in nn])
-
-    nodes = np.concatenate([f.integration_nodes[cart[:,i],:] for i,f in enumerate(iids)], axis=1)
-    weights = iids[0].integration_weights
-    for f in iids[1:]:
-        weights = np.kron(weights, f.integration_weights)
-
-    return DiscretizedIIDProcess(nodes, weights)
 
 
 @language_element

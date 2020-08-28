@@ -33,7 +33,7 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 from .results import TimeIterationResult, AlgoResult
 
 
-def time_iteration(model, dr0=None, with_complementarities=True,
+def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
                         verbose=True, maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
 
     '''    Finds a global solution for ``model`` using backward time-iteration.
@@ -69,7 +69,12 @@ def time_iteration(model, dr0=None, with_complementarities=True,
         if verbose:
             print(t)
 
-    grid, dprocess = model.discretize()
+    if dprocess is not None:
+        from dolo.numeric.grids import ProductGrid
+        endo_grid = model.domain.discretize()
+        grid = ProductGrid(dprocess.grid, endo_grid, names=['exo', 'endo'])
+    else:
+        grid, dprocess = model.discretize()
 
     n_ms = dprocess.n_nodes # number of exogenous states
     n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant

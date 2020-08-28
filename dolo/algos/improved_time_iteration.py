@@ -263,16 +263,22 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     parms = model.calibration['parameters']
 
-    grid, dp = model.discretize() 
+    if dprocess is not None:
+        from dolo.numeric.grids import ProductGrid
+        endo_grid = model.domain.discretize()
+        grid = ProductGrid(dprocess.grid, endo_grid, names=['exo', 'endo'])
+    else:
+        grid, dprocess = model.discretize()
+
     endo_grid = grid['endo']
     exo_grid = grid['exo']
 
-    n_m = max(dp.n_nodes,1)
+    n_m = max(dprocess.n_nodes,1)
     n_s = len(model.symbols['states'])
 
     if interp_method in ('cubic', 'linear'):
-        ddr = DecisionRule(dp.grid, endo_grid, dprocess=dp, interp_method=interp_method)
-        ddr_filt = DecisionRule(dp.grid, endo_grid, dprocess=dp, interp_method=interp_method)
+        ddr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method)
+        ddr_filt = DecisionRule(exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method)
     else:
         raise Exception("Unsupported interpolation method.")
 
@@ -292,7 +298,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
     lb = x0.copy()
     ub = x0.copy()
     for i_m in range(n_m):
-        m = dp.node(i_m)
+        m = dprocess.node(i_m)
         lb[i_m,:] = x_lb(m, s, parms)
         ub[i_m,:] = x_ub(m, s, parms)
 
@@ -304,7 +310,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     ## memory allocation
 
-    n_im = dp.n_inodes(0) # we assume it is constant for now
+    n_im = dprocess.n_inodes(0) # we assume it is constant for now
 
     jres = numpy.zeros((n_m,n_im,N,n_x,n_x))
     S_ij = numpy.zeros((n_m,n_im,N,n_s))
@@ -344,12 +350,12 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
         from dolo.numeric.optimize.newton import SerialDifferentiableFunction
         sh_x = x.shape
         ff = SerialDifferentiableFunction(
-                lambda u: euler_residuals(f,g,s,u.reshape(sh_x),ddr,dp,parms, diff=False, with_jres=False,set_dr=False).reshape((-1,sh_x[2]))
+                lambda u: euler_residuals(f,g,s,u.reshape(sh_x),ddr,dprocess,parms, diff=False, with_jres=False,set_dr=False).reshape((-1,sh_x[2]))
             )
         res, dres = ff(x.reshape((-1,sh_x[2])))
         res = res.reshape(sh_x)
         dres = dres.reshape((sh_x[0],sh_x[1], sh_x[2],sh_x[2]))
-        junk, jres, fut_S = euler_residuals(f,g,s,x,ddr,dp,parms, diff=False, with_jres=True,set_dr=False, jres=jres, S_ij=S_ij)
+        junk, jres, fut_S = euler_residuals(f,g,s,x,ddr,dprocess,parms, diff=False, with_jres=True,set_dr=False, jres=jres, S_ij=S_ij)
 
         # if there are complementerities, we modify derivatives
         if complementarities:
@@ -396,7 +402,7 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
         t3 = time.time()
         for i_bckstps, lam in enumerate(steps):
             new_x = x-tot*lam
-            new_err = euler_residuals(f,g,s,new_x,ddr,dp,parms,diff=False,set_dr=True)
+            new_err = euler_residuals(f,g,s,new_x,ddr,dprocess,parms,diff=False,set_dr=True)
 
             if complementarities:
                 new_err = smooth_nodiff(new_err, new_x-lb)

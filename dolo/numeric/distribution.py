@@ -206,6 +206,21 @@ class FiniteDistribution(DiscreteDistribution):
         return f"FiniteDistribution(points={self.points}, weights={self.weights}, origin={self.origin})"
 
 
+def product_iid(iids: List[FiniteDistribution])->FiniteDistribution:
+
+    from dolo.numeric.misc import cartesian
+
+    nn = [len(f.weights) for f in iids]
+
+    cart = cartesian([range(e) for e in nn])
+
+    nodes = np.concatenate([f.points[cart[:,i],:] for i,f in enumerate(iids)], axis=1)
+    weights = iids[0].weights
+    for f in iids[1:]:
+        weights = np.kron(weights, f.weights)
+
+    return FiniteDistribution(nodes, weights)
+
 ###
 ### Discrete Distributions
 ###
