@@ -21,13 +21,13 @@ def filter(smin, smax, orders, controls):
 
 def calibration_to_vector(symbols, calibration_dict):
 
-    from dolo.compiler.triangular_solver import solve_triangular_system
+    from dolang.triangular_solver import solve_triangular_system
     from numpy import nan
-
     sol = solve_triangular_system(calibration_dict)
 
     calibration = dict()
     for group in symbols:
+        # t = numpy.array([sol.get(s, nan) for s in symbols[group]], dtype=float)
         t = numpy.array([sol.get(s, nan) for s in symbols[group]], dtype=float)
         calibration[group] = t
 

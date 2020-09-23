@@ -11,8 +11,9 @@ class SymbolicModel:
     @property
     def symbols(self):
         from .misc import LoosyDict, equivalent_symbols
+        from dolang.symbolic import remove_timing
 
-        auxiliaries = [k for k in self.definitions.keys()]
+        auxiliaries = [remove_timing(k) for k in self.definitions.keys()]
         symbols = LoosyDict(equivalences=equivalent_symbols)
         for sg in self.data['symbols'].keys():
             symbols[sg] =  [*self.data['symbols'][sg]]
@@ -31,8 +32,6 @@ class SymbolicModel:
         d = dict()
         for g, v in self.data['equations'].items():
             ll = []
-            # if g == 'direct_response':
-            #     l = 143+3
             for eq in v:
                 ll.append(sanitize(eq, variables=vars))
             d[g] = ll
@@ -47,11 +46,12 @@ class SymbolicModel:
                         else:
                             eq = "inf"
                     else:
-                        comp = eq.split("⟂")[1]
+                        comp = eq.split("⟂")[1].strip()
                         v = self.symbols["controls"][i]
                         eq = decode_complementarity(comp, v+"[t]")[ind]
                     eqs.append(eq)
                 d[g] = eqs
+
         return d
 
     @property
@@ -78,8 +78,23 @@ class SymbolicModel:
 
     def get_calibration(self):
 
+        from dolang.symbolic import remove_timing
+        import copy
+
         symbols = self.symbols
-        calibration = self.data.get("calibration", {})
+        calibration = dict()
+        for k,v in self.data.get("calibration", {}).items():
+            calibration[k] = copy.copy(v)
+
+        calibration
+        for k,v in calibration.items():
+            if isinstance(v, str):
+                vv = remove_timing(v)
+            else:
+                vv = v
+            kk = remove_timing(k)
+            calibration[kk] = vv
+
         definitions = self.definitions
 
         initial_values = {
@@ -97,10 +112,17 @@ class SymbolicModel:
             'direct_responses': 'direct_response'
         }
 
-        for k, v in definitions.items():
-            if k not in calibration:
-                calibration[k] = v
 
+        for k, v in definitions.items():
+            kk = remove_timing(k)
+            if kk not in calibration:
+                if isinstance(v,str):
+                    vv = remove_timing(v)
+                else:
+                    vv = v
+                calibration[kk] = vv
+
+        a = 3
         for symbol_group in symbols:
             if symbol_group not in initialized_from_model.keys():
                 if symbol_group in initial_values:
@@ -110,8 +132,9 @@ class SymbolicModel:
                 for s in symbols[symbol_group]:
                     if s not in calibration:
                         calibration[s] = default
+        a = 3
 
-        from dolo.compiler.triangular_solver import solve_triangular_system
+        from dolang.triangular_solver import solve_triangular_system
         return solve_triangular_system(calibration)
 
     def get_domain(self):
@@ -275,11 +298,13 @@ def decode_complementarity(comp, control):
     except:
         raise Exception(
             "Unable to parse complementarity condition '{}'".format(comp))
+
     res = [r.strip() for r in res]
     if res[1] != control:
         msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(
             comp, control, res[1])
         raise Exception(msg)
+
     return [res[0], res[2]]
 
 
