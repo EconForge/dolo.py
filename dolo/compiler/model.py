@@ -13,7 +13,8 @@ class SymbolicModel:
         from .misc import LoosyDict, equivalent_symbols
         from dolang.symbolic import remove_timing
 
-        auxiliaries = [remove_timing(k) for k in self.definitions.keys()]
+        auxiliaries = [remove_timing(k) for k in self.data.get('definitions', {})]
+
         symbols = LoosyDict(equivalences=equivalent_symbols)
         for sg in self.data['symbols'].keys():
             symbols[sg] =  [*self.data['symbols'][sg]]
@@ -56,8 +57,13 @@ class SymbolicModel:
 
     @property
     def definitions(self):
-        self.data.get('definitions', {})
-        return self.data.get('definitions', {})
+        vars = self.variables
+        d = dict()
+        for k,v in self.data.get('definitions', {}).items():
+            kk = sanitize(k, variables=vars)
+            vv = sanitize(v, variables=vars)
+            d[kk] = vv
+        return d
 
     @property
     def name(self):
@@ -318,6 +324,11 @@ class Model(SymbolicModel):
         self.__functions__ = None
         # self.__compile_functions__()
         self.set_changed()
+
+        print(self.definitions)
+        print(self.equations)
+        print(self.calibration)
+        return
         if check:
             self.calibration
             self.domain

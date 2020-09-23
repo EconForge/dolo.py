@@ -7,7 +7,7 @@ def test_import():
     filenames = [
         "examples/models/rbc_iid.yaml",
         "examples/models/rbc_mc.yaml",
-        # "examples/models/rbc_ar1.yaml"
+        "examples/models/rbc_ar1.yaml"
     ]
 
     for fname in filenames:
