@@ -2,13 +2,14 @@ name: Real Business Cycle
 
 symbols:
 
-   exogenous: [z]
-   states: [k]
+   exogenous: [e_z]
+   states: [z, k]
    controls: [n, i]
    expectations: [m]
    values: [V]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
    rewards: [u]
+
 definitions:
     y[t]: exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
     c[t]: y[t] - i[t]
@@ -39,11 +40,10 @@ equations:
         - n[t] = ((1-alpha)*exp(z[t])*k[t]^alpha*m[t]/chi)^(1/(eta+alpha))
         - i[t] = exp(z[t])*k[t]^alpha*n[t]^(1-alpha) - (m[t])^(-1/sigma)
 
-
 calibration:
 
     # parameters
-    beta: 0.99
+    beta : 0.99
     phi: 1
     delta : 0.025
     alpha : 0.33
@@ -56,10 +56,6 @@ calibration:
     c_i: 1.5
     c_y: 0.5
     e_z: 0.0
-    m: 0
-    V0: (c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta))/(1-beta)
-
-    # endogenous variables
     n: 0.33
     z: zbar
     rk: 1/beta-1+delta
@@ -70,17 +66,17 @@ calibration:
     c: y - i
     V: log(c)/(1-beta)
     u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+    m: beta/c^sigma*(1-delta+rk)
+    kss: 10
 
-
-
-
-exogenous: !VAR1
-    rho: 0.8
-    Sigma: [[sig_z^2]]
+exogenous: !UNormal
+    sigma: 0.01
 
 domain:
-    k: [k*0.5, k*1.5]
+    z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
+    k: [ kss*0.5, kss*1.5]
 
 options:
     grid: !Cartesian
-        orders: [20]
+        n: [20, 20]
+    discrete_choices: [n]
