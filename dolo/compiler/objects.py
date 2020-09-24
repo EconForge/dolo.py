@@ -2,7 +2,7 @@ from dolo.numeric.distribution import *
 
 #
 from dataclasses import dataclass
-from dolo.compiler.language import language_element
+from dolang.language import language_element
 # not sure we'll keep that
 import numpy as np
 from typing import List, Union

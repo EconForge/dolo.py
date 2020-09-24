@@ -14,8 +14,8 @@ from random import random as rand
 
 from xarray import DataArray
 
-from dolo.compiler.language import greek_tolerance
-from dolo.compiler.language import language_element
+from dolang.language import greek_tolerance
+from dolang.language import language_element
 
 @njit
 def choice(x, n, cumul):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dolo"
-version = "0.4.9.12"
+version = "0.4.9.13"
 readme = "README.md"
 description = "Economic Modeling in Python"
 authors = ["Winant Pablo <pablo.winant@gmail.com>"]
@@ -14,7 +14,6 @@ ipython = "^7.13.0"
 pandas = "^1.0.3"
 pyyaml = "^5.3.1"
 matplotlib = "^3.0.1"
-"ruamel.yaml" = "^0.16.10"
 scipy = "^1.4.1"
 quantecon = "^0.4.7"
 xarray = "^0.15.1"
@@ -29,6 +28,7 @@ pymdown-extensions = "^7.1"
 python-markdown-math = "^0.6"
 mypy = "^0.782"
 pylint = "^2.6.0"
+ipykernel = "^5.3.4"
 
 [build-system]
 requires = ["poetry>=0.12"]

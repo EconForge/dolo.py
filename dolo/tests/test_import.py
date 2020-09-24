@@ -18,11 +18,6 @@ def test_import():
         print(model.exogenous)
         print("Discretized shock:")
         print(model.exogenous.discretize())
-        try:
-            print("Distribution;")
-            print(model.get_distribution())
-        except:
-            pass
 
         dprocess = model.exogenous.discretize()
 
@@ -30,6 +25,24 @@ def test_import():
         print( dprocess.n_inodes(0) )
         print( dprocess.inode(0,0) )
         print( dprocess.node(0) )
+
+
+def test_old_models():
+
+    import os
+    os.listdir('examples/models_') # old models
+    filenames = [ f"examples/models_/{fname}" for fname in os.listdir('examples/models_') ]
+    
+    for fname in filenames:
+
+        try:
+            model = yaml_import(fname, check=True)
+
+        except Exception as e:
+            print(fname)
+            raise(e)
+            # assert( not isinstance(e, Exception) )
+    
 
 if __name__ == "__main__":
     test_import()

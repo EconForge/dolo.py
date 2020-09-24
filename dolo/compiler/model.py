@@ -1,4 +1,6 @@
-from dolang.symbolic import sanitize
+from dolang.symbolic import sanitize, parse_string, str_expression
+from dolang.language import eval_data
+
 import copy
 
 
@@ -11,13 +13,14 @@ class SymbolicModel:
     @property
     def symbols(self):
         from .misc import LoosyDict, equivalent_symbols
-        from dolang.symbolic import remove_timing
+        from dolang.symbolic import remove_timing, parse_string, str_expression
 
-        auxiliaries = [remove_timing(k) for k in self.data.get('definitions', {})]
+        auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+        auxiliaries = [str_expression(e) for e in auxiliaries]
 
         symbols = LoosyDict(equivalences=equivalent_symbols)
         for sg in self.data['symbols'].keys():
-            symbols[sg] =  [*self.data['symbols'][sg]]
+            symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
         symbols['auxiliaries'] = auxiliaries
         return symbols
 
@@ -33,8 +36,10 @@ class SymbolicModel:
         d = dict()
         for g, v in self.data['equations'].items():
             ll = []
-            for eq in v:
-                ll.append(sanitize(eq, variables=vars))
+            for eq_string in v:
+                eq = parse_string(eq_string)
+                eq = sanitize(eq, variables=vars)
+                ll.append(str_expression(eq))
             d[g] = ll
 
         if "controls_lb" not in d:
@@ -59,10 +64,13 @@ class SymbolicModel:
     def definitions(self):
         vars = self.variables
         d = dict()
-        for k,v in self.data.get('definitions', {}).items():
-            kk = sanitize(k, variables=vars)
-            vv = sanitize(v, variables=vars)
-            d[kk] = vv
+        for kk,vv in self.data.get('definitions', {}).items():
+            v = parse_string(vv)
+            v = sanitize(v, variables=vars)
+            v = str_expression(v)
+            k = sanitize(kk, variables=vars)
+
+            d[k] = v
         return d
 
     @property
@@ -90,16 +98,18 @@ class SymbolicModel:
         symbols = self.symbols
         calibration = dict()
         for k,v in self.data.get("calibration", {}).items():
-            calibration[k] = copy.copy(v)
+            if v.tag=='tag:yaml.org,2002:str':
 
-        calibration
-        for k,v in calibration.items():
-            if isinstance(v, str):
-                vv = remove_timing(v)
+                expr = parse_string(v)
+                expr = remove_timing(expr)
+                expr = str_expression(expr)
             else:
-                vv = v
-            kk = remove_timing(k)
-            calibration[kk] = vv
+                expr = float(v.value)
+            kk = remove_timing(parse_string(k))
+            kk = str_expression(kk)
+
+            calibration[kk] = expr
+
 
         definitions = self.definitions
 
@@ -168,14 +178,18 @@ class SymbolicModel:
                 print(e)
                 pass
 
+        if len(sdomain) == 0:
+            return None
+
         if len(sdomain) < len(states):
             missing = [s for s in states if s not in sdomain]
             raise Exception("Missing domain for states: {}.".format(
                 str.join(', ', missing)))
 
         from dolo.compiler.objects import CartesianDomain
-        from dolo.compiler.language import eval_data
+        from dolang.language import eval_data
         sdomain = eval_data(sdomain, calibration)
+
         domain = CartesianDomain(**sdomain)
 
         return domain
@@ -187,10 +201,9 @@ class SymbolicModel:
 
         exo = self.data['exogenous']
         calibration = self.get_calibration()
-        from dolo.compiler.language import eval_data
+        from dolang.language import eval_data
         exogenous = eval_data(exo, calibration)
 
-        from ruamel.yaml.comments import CommentedMap, CommentedSeq
         from dolo.numeric.processes import ProductProcess, Process
         if isinstance(exogenous, Process):
             # old style
@@ -208,7 +221,7 @@ class SymbolicModel:
                 ssyms.append(vars)
             ssyms = tuple(sum(ssyms, []))
             if tuple(syms)!=ssyms:
-                from dolo.compiler.language import ModelError
+                from dolang.language import ModelError
                 lc = exo.lc
                 raise ModelError(f"{lc.line}:{lc.col}: 'exogenous' section. Shocks specification must match declaration order. Found {ssyms}. Expected{tuple(syms)}")
 
@@ -241,7 +254,7 @@ class SymbolicModel:
                 orders = [20] * len(min)
             grid = UniformCartesianGrid(min=min, max=max, n=orders)
         elif grid_type.lower() in ('nonuniformcartesian', 'nonuniformcartesiangrid'):
-            from dolo.compiler.language import eval_data
+            from dolang.language import eval_data
             from dolo.numeric.grids import NonUniformCartesianGrid
             calibration = self.get_calibration()
             nodes = [eval_data(e, calibration) for e in self.data['options']['grid']]
@@ -260,9 +273,11 @@ class SymbolicModel:
 
 
 def get_type(d):
+    print(d)
     try:
-        s = d.tag.value
+        s = d.tag
         return s.strip("!")
+        print(s)
     except:
         v = d.get("type")
         return v
@@ -283,7 +298,7 @@ def get_address(data, address, default=None):
         fields = fields[1:]
         if data is None:
             return default
-    return data
+    return eval_data(data)
 
 
 import re
@@ -325,10 +340,6 @@ class Model(SymbolicModel):
         # self.__compile_functions__()
         self.set_changed()
 
-        print(self.definitions)
-        print(self.equations)
-        print(self.calibration)
-        return
         if check:
             self.calibration
             self.domain

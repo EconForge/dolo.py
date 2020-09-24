@@ -1,5 +1,7 @@
 from dolo.version import __version_info__, __version__
 
+import dolang
+
 from dolo.config import *
 
 import dolo.compiler.objects
