@@ -10,68 +10,92 @@ class SymbolicModel:
 
         self.data = data
 
+
     @property
     def symbols(self):
-        from .misc import LoosyDict, equivalent_symbols
-        from dolang.symbolic import remove_timing, parse_string, str_expression
 
-        auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
-        auxiliaries = [str_expression(e) for e in auxiliaries]
+        if self.__symbols__ is None:
 
-        symbols = LoosyDict(equivalences=equivalent_symbols)
-        for sg in self.data['symbols'].keys():
-            symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
-        symbols['auxiliaries'] = auxiliaries
-        return symbols
+            from .misc import LoosyDict, equivalent_symbols
+            from dolang.symbolic import remove_timing, parse_string, str_expression
+
+            auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+            auxiliaries = [str_expression(e) for e in auxiliaries]
+
+            symbols = LoosyDict(equivalences=equivalent_symbols)
+            for sg in self.data['symbols'].keys():
+                symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
+            symbols['auxiliaries'] = auxiliaries
+
+            self.__symbols__ = symbols
+
+        return self.__symbols__
+        
 
     @property
     def variables(self):
-        return sum([
-            self.symbols[e] for e in self.symbols.keys() if e != 'parameters'
-        ], [])
+        if self.__variables__ is None:
+            
+            self.__variables__ = sum([
+                self.symbols[e] for e in self.symbols.keys() if e != 'parameters'
+            ], [])
+
+        return self.__variables__
 
     @property
     def equations(self):
-        vars = self.variables + [*self.definitions.keys()]
-        d = dict()
-        for g, v in self.data['equations'].items():
-            ll = []
-            for eq_string in v:
-                eq = parse_string(eq_string)
-                eq = sanitize(eq, variables=vars)
-                ll.append(str_expression(eq))
-            d[g] = ll
 
-        if "controls_lb" not in d:
-            for ind, g in enumerate(("controls_lb", "controls_ub")):
-                eqs = []
-                for i, eq in enumerate(d['arbitrage']):
-                    if "⟂" not in eq:
-                        if ind == 0:
-                            eq = "-inf"
+        if self.__equations__ is None:
+                
+            vars = self.variables + [*self.definitions.keys()]
+            d = dict()
+            for g, v in self.data['equations'].items():
+                ll = []
+                for eq_string in v:
+                    eq = parse_string(eq_string)
+                    eq = sanitize(eq, variables=vars)
+                    ll.append(str_expression(eq))
+                d[g] = ll
+
+            if "controls_lb" not in d:
+                for ind, g in enumerate(("controls_lb", "controls_ub")):
+                    eqs = []
+                    for i, eq in enumerate(d['arbitrage']):
+                        if "⟂" not in eq:
+                            if ind == 0:
+                                eq = "-inf"
+                            else:
+                                eq = "inf"
                         else:
-                            eq = "inf"
-                    else:
-                        comp = eq.split("⟂")[1].strip()
-                        v = self.symbols["controls"][i]
-                        eq = decode_complementarity(comp, v+"[t]")[ind]
-                    eqs.append(eq)
-                d[g] = eqs
+                            comp = eq.split("⟂")[1].strip()
+                            v = self.symbols["controls"][i]
+                            eq = decode_complementarity(comp, v+"[t]")[ind]
+                        eqs.append(eq)
+                    d[g] = eqs
 
-        return d
+            self.__equations__ = d
+
+        return self.__equations__
+        
 
     @property
     def definitions(self):
-        vars = self.variables
-        d = dict()
-        for kk,vv in self.data.get('definitions', {}).items():
-            v = parse_string(vv)
-            v = sanitize(v, variables=vars)
-            v = str_expression(v)
-            k = sanitize(kk, variables=vars)
+        
+        if self.__definitions__ is None:
 
-            d[k] = v
-        return d
+            vars = self.variables
+            d = dict()
+            for kk,vv in self.data.get('definitions', {}).items():
+                v = parse_string(vv)
+                v = sanitize(v, variables=vars)
+                v = str_expression(v)
+                k = sanitize(kk, variables=vars)
+
+                d[k] = v
+
+            self.__definitions__ = d
+
+        return self.__definitions__
 
     @property
     def name(self):
@@ -80,7 +104,7 @@ class SymbolicModel:
     @property
     def infos(self):
         infos = {
-            'name': self.data.get('name', 'anonymous'),
+            'name': self.name,
             'filename': self.data.get('filename', '<string>'),
             'type': 'dtcc'
         }
@@ -92,66 +116,72 @@ class SymbolicModel:
 
     def get_calibration(self):
 
-        from dolang.symbolic import remove_timing
-        import copy
+        # if self.__calibration__ is None:
+        
+            from dolang.symbolic import remove_timing
+            
+            import copy
 
-        symbols = self.symbols
-        calibration = dict()
-        for k,v in self.data.get("calibration", {}).items():
-            if v.tag=='tag:yaml.org,2002:str':
+            symbols = self.symbols
+            calibration = dict()
+            for k,v in self.data.get("calibration", {}).items():
+                if v.tag=='tag:yaml.org,2002:str':
 
-                expr = parse_string(v)
-                expr = remove_timing(expr)
-                expr = str_expression(expr)
-            else:
-                expr = float(v.value)
-            kk = remove_timing(parse_string(k))
-            kk = str_expression(kk)
-
-            calibration[kk] = expr
-
-
-        definitions = self.definitions
-
-        initial_values = {
-            'exogenous': 0,
-            'expectations': 0,
-            'values': 0,
-            'controls': float('nan'),
-            'states': float('nan')
-        }
-
-        # variables defined by a model equation default to using these definitions
-        initialized_from_model = {
-            'values': 'value',
-            'expectations': 'expectation',
-            'direct_responses': 'direct_response'
-        }
-
-
-        for k, v in definitions.items():
-            kk = remove_timing(k)
-            if kk not in calibration:
-                if isinstance(v,str):
-                    vv = remove_timing(v)
+                    expr = parse_string(v)
+                    expr = remove_timing(expr)
+                    expr = str_expression(expr)
                 else:
-                    vv = v
-                calibration[kk] = vv
+                    expr = float(v.value)
+                kk = remove_timing(parse_string(k))
+                kk = str_expression(kk)
 
-        a = 3
-        for symbol_group in symbols:
-            if symbol_group not in initialized_from_model.keys():
-                if symbol_group in initial_values:
-                    default = initial_values[symbol_group]
-                else:
-                    default = float('nan')
-                for s in symbols[symbol_group]:
-                    if s not in calibration:
-                        calibration[s] = default
-        a = 3
+                calibration[kk] = expr
 
-        from dolang.triangular_solver import solve_triangular_system
-        return solve_triangular_system(calibration)
+
+            definitions = self.definitions
+
+            initial_values = {
+                'exogenous': 0,
+                'expectations': 0,
+                'values': 0,
+                'controls': float('nan'),
+                'states': float('nan')
+            }
+
+            # variables defined by a model equation default to using these definitions
+            initialized_from_model = {
+                'values': 'value',
+                'expectations': 'expectation',
+                'direct_responses': 'direct_response'
+            }
+
+
+            for k, v in definitions.items():
+                kk = remove_timing(k)
+                if kk not in calibration:
+                    if isinstance(v,str):
+                        vv = remove_timing(v)
+                    else:
+                        vv = v
+                    calibration[kk] = vv
+
+            for symbol_group in symbols:
+                if symbol_group not in initialized_from_model.keys():
+                    if symbol_group in initial_values:
+                        default = initial_values[symbol_group]
+                    else:
+                        default = float('nan')
+                    for s in symbols[symbol_group]:
+                        if s not in calibration:
+                            calibration[s] = default
+
+
+            from dolang.triangular_solver import solve_triangular_system
+
+            return solve_triangular_system(calibration)
+        #     self.__calibration__ =  solve_triangular_system(calibration)
+        
+        # return self.__calibration__
 
     def get_domain(self):
 
@@ -273,11 +303,9 @@ class SymbolicModel:
 
 
 def get_type(d):
-    print(d)
     try:
         s = d.tag
         return s.strip("!")
-        print(s)
     except:
         v = d.get("type")
         return v
@@ -334,11 +362,12 @@ class Model(SymbolicModel):
 
     def __init__(self, data, check=True):
 
-        self.data = data
+        super().__init__(data)
+
         self.model_type = 'dtcc'
         self.__functions__ = None
         # self.__compile_functions__()
-        self.set_changed()
+        self.set_changed(all='True')
 
         if check:
             self.calibration
@@ -347,10 +376,15 @@ class Model(SymbolicModel):
             self.x_bounds
             self.functions
 
-    def set_changed(self):
+    def set_changed(self, all=False):
         self.__domain__ = None
         self.__exogenous__ = None
         self.__calibration__ = None
+        if all:
+            self.__symbols__ = None
+            self.__definitions__ = None
+            self.__variables__ = None
+            self.__equations__ = None
 
     def set_calibration(self, *pargs, **kwargs):
         if len(pargs)==1:
@@ -361,7 +395,7 @@ class Model(SymbolicModel):
     @property
     def calibration(self):
         if self.__calibration__ is None:
-            calibration_dict = super(self.__class__, self).get_calibration()
+            calibration_dict = super().get_calibration()
             from dolo.compiler.misc import CalibrationDict, calibration_to_vector
             calib = calibration_to_vector(self.symbols, calibration_dict)
             self.__calibration__ = CalibrationDict(self.symbols, calib)  #
@@ -376,7 +410,7 @@ class Model(SymbolicModel):
     @property
     def domain(self):
         if self.__domain__ is None:
-            self.__domain__ = super(self.__class__, self).get_domain()
+            self.__domain__ = super().get_domain()
         return self.__domain__
 
     def discretize(self, grid_options={}, dprocess_options={}):
