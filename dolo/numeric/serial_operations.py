@@ -137,7 +137,7 @@ def serial_solve(A, B, diagnose=True):
 
     return sol
 
-@jit
+@jit(cache=True)
 def serial_multiplication(A,B):
 
     if A.ndim == 2 and B.ndim == 2:

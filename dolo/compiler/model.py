@@ -44,36 +44,87 @@ class SymbolicModel:
 
     @property
     def equations(self):
+        import yaml.nodes
 
         if self.__equations__ is None:
                 
+
             vars = self.variables + [*self.definitions.keys()]
+
             d = dict()
             for g, v in self.data['equations'].items():
-                ll = []
-                for eq_string in v:
-                    eq = parse_string(eq_string)
-                    eq = sanitize(eq, variables=vars)
-                    ll.append(str_expression(eq))
-                d[g] = ll
 
-            if "controls_lb" not in d:
-                for ind, g in enumerate(("controls_lb", "controls_ub")):
-                    eqs = []
-                    for i, eq in enumerate(d['arbitrage']):
-                        if "⟂" not in eq:
-                            if ind == 0:
-                                eq = "-inf"
-                            else:
-                                eq = "inf"
+                # new style
+                if isinstance(v, yaml.nodes.ScalarNode):
+                    assert(v.style=='|')
+                    if g in ('arbitrage',):
+                        start =  "complementarity_block"
+                    else:
+                        start = "assignment_block"
+                    eqs = parse_string(v, start=start)
+                    eqs = sanitize(eqs, variables=vars)
+                    eq_list = eqs.children
+                # old style           
+                else:
+                    eq_list = []
+                    for eq_string in v:
+                        if g in ('arbitrage',):
+                            start = 'double_complementarity'
                         else:
-                            comp = eq.split("⟂")[1].strip()
-                            v = self.symbols["controls"][i]
-                            eq = decode_complementarity(comp, v+"[t]")[ind]
-                        eqs.append(eq)
-                    d[g] = eqs
+                            start = 'assignment'
+                        eq = parse_string(eq_string, start=start)
+                        eq = sanitize(eq, variables=vars)
+                        eq_list.append(eq)
+
+                if g in ('arbitrage',):
+                    ll = [] # List[str]
+                    ll_lb = [] # List[str]
+                    ll_ub = [] # List[str]
+                    with_complementarity = False
+                    for i,eq in enumerate(eq_list):
+                        if eq.data == 'double_complementarity':
+                            v = eq.children[1].children[1].children[0].children[0].value
+                            t = int(eq.children[1].children[1].children[1].children[0].value)
+                            expected = (self.symbols['controls'][i],0) # TODO raise nice error message
+                            if (v,t) != expected:
+                                raise Exception(f"Incorrect variable in complementarity: expected {expected}. Found {(v,t)}")
+                            ll_lb.append(str_expression(eq.children[1].children[0]))
+                            ll_ub.append(str_expression(eq.children[1].children[2]))
+                            eq = eq.children[0]
+                            with_complementarity = True
+                        else:
+                            ll_lb.append('-inf')
+                            ll_ub.append('inf')
+                        from dolang.symbolic import list_symbols
+                        syms = list_symbols(eq)
+                        ll.append(str_expression(eq))
+                    d[g] = ll
+                    if with_complementarity:
+                        d[g+'_lb'] = ll_lb
+                        d[g+'_ub'] = ll_ub
+                else:
+                    # TODO: we should check here that equations are well specified
+                    d[g] = [str_expression(e) for e in eq_list]
+
+
+            # if "controls_lb" not in d:
+            #     for ind, g in enumerate(("controls_lb", "controls_ub")):
+            #         eqs = []
+            #         for i, eq in enumerate(d['arbitrage']):
+            #             if "⟂" not in eq:
+            #                 if ind == 0:
+            #                     eq = "-inf"
+            #                 else:
+            #                     eq = "inf"
+            #             else:
+            #                 comp = eq.split("⟂")[1].strip()
+            #                 v = self.symbols["controls"][i]
+            #                 eq = decode_complementarity(comp, v+"[t]")[ind]
+            #             eqs.append(eq)
+            #         d[g] = eqs
 
             self.__equations__ = d
+            
 
         return self.__equations__
         
@@ -594,6 +645,10 @@ class Model(SymbolicModel):
         if 'controls_ub' in self.functions:
             fun_lb = self.functions['controls_lb']
             fun_ub = self.functions['controls_ub']
+            return [fun_lb, fun_ub]
+        elif 'arbitrage_ub' in self.functions:
+            fun_lb = self.functions['arbitrage_lb']
+            fun_ub = self.functions['arbitrage_ub']
             return [fun_lb, fun_ub]
         else:
             return None

@@ -62,7 +62,7 @@ def get_factory(model, eq_type: str, tshift: int = 0):
         }
     else:
         eqs = equations[eq_type]
-        if eq_type in ('controls_lb', 'controls_ub'):
+        if eq_type in ('arbitrage_lb', 'arbitrage_ub'):
             specs = {
                 'eqs':
                 recipes['dtcc']['specs']['arbitrage']['complementarities'][
