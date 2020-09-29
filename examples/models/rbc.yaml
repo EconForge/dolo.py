@@ -10,11 +10,11 @@ symbols:
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
    rewards: [u]
 
-definitions:
-    y[t]: exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
-    c[t]: y[t] - i[t]
-    rk[t]: alpha*y[t]/k[t]
-    w[t]: (1-alpha)*y[t]/n[t]
+definitions: |
+    y[t] = exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
+    c[t] = y[t] - i[t]
+    rk[t] = alpha*y[t]/k[t]
+    w[t] = (1-alpha)*y[t]/n[t]
 
 equations:
 

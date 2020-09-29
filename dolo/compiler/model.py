@@ -19,13 +19,19 @@ class SymbolicModel:
             from .misc import LoosyDict, equivalent_symbols
             from dolang.symbolic import remove_timing, parse_string, str_expression
 
-            auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
-            auxiliaries = [str_expression(e) for e in auxiliaries]
 
             symbols = LoosyDict(equivalences=equivalent_symbols)
             for sg in self.data['symbols'].keys():
                 symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
-            symbols['auxiliaries'] = auxiliaries
+            
+            self.__symbols = symbols
+            
+            # this is kind of tricky
+            defs = self.definitions
+
+            # auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+            # auxiliaries = [str_expression(e) for e in auxiliaries]
+            # symbols['auxiliaries'] = auxiliaries
 
             self.__symbols__ = symbols
 
@@ -68,10 +74,7 @@ class SymbolicModel:
                 else:
                     eq_list = []
                     for eq_string in v:
-                        if g in ('arbitrage',):
-                            start = 'double_complementarity'
-                        else:
-                            start = 'assignment'
+                        start = 'equation' # it should be assignment
                         eq = parse_string(eq_string, start=start)
                         eq = sanitize(eq, variables=vars)
                         eq_list.append(eq)
@@ -129,22 +132,58 @@ class SymbolicModel:
         return self.__equations__
         
 
+
     @property
     def definitions(self):
-        
+
+        from yaml import ScalarNode
+
         if self.__definitions__ is None:
 
-            vars = self.variables
+            basic_symbols = self.symbols
+            vars = sum([basic_symbols[k] for k in basic_symbols.keys() if k!='parameters'], [])
+
+            if 'definitions' not in self.data:
+                return {}
+
+            definitions = self.data['definitions']
+
+            # new style
+            if isinstance(definitions.value, ScalarNode):
+                defs = parse_string(defs, 'assignment_block')
+                defs = sanitize(defs, variables=vars)
+                print(defs.pretty())
+                exit()
+
+            # old style
+
             d = dict()
-            for kk,vv in self.data.get('definitions', {}).items():
-                v = parse_string(vv)
+            for i in range(len(definitions.value)):
+
+                kk = definitions.value[i][0]
+                if self.__compat__:
+                    k = parse_string(kk.value)
+                    if k.data == 'symbol':
+                        # TODO: warn that definitions should be timed
+                        from dolang.grammar import create_variable
+                        k = create_variable(k.children[0].value, 0)
+                else:
+                    k = parse_string(kk.value, start='variable')
+                k = sanitize(k, variables=vars)
+                
+                assert(k.children[1].children[0].value=='0')
+
+                vv = definitions.value[i][1]
+                v = parse_string(vv, start='formula')
                 v = sanitize(v, variables=vars)
                 v = str_expression(v)
-                k = sanitize(kk, variables=vars)
 
-                d[k] = v
+                key = str_expression(k)
+                vars.append(key)
+                d[key] = v
 
             self.__definitions__ = d
+
 
         return self.__definitions__
 
@@ -411,7 +450,9 @@ def decode_complementarity(comp, control):
 class Model(SymbolicModel):
     """Model Object"""
 
-    def __init__(self, data, check=True):
+    def __init__(self, data, check=True, compat=True):
+
+        self.__compat__ = True
 
         super().__init__(data)
 

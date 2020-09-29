@@ -36,6 +36,7 @@ def test_old_models():
     for fname in filenames:
 
         try:
+            print(f"Importing: {fname}")
             model = yaml_import(fname, check=True)
 
         except Exception as e:

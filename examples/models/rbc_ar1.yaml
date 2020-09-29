@@ -32,7 +32,7 @@ equations:
         - u[t] =  c[t]^(1-sigma)/(1-sigma) - chi*n[t]^(1+eta)/(1+eta)
 
     expectation:
-        - m = beta/c[t+1]^sigma*(1-delta+rk[t+1])
+        - m[t] = beta/c[t+1]^sigma*(1-delta+rk[t+1])
 
     direct_response:
         - n[t] = ((1-alpha)*exp(z[t])*k[t]^alpha*m[t]/chi)^(1/(eta+alpha))
