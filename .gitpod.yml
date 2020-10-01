@@ -1,4 +1,4 @@
 tasks:
-  - init: pip install poetry
-    init: poetry install
-    init: poetry shell
+  - init: pip install poetry dephell
+    init: dephell deps convert --from=pyproject.toml --to=setup.py
+    init: pip install -e .
