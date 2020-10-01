@@ -1,0 +1,3 @@
+tasks:
+  - init: pip install poetry && poetry install
+  - init: poetry shell
