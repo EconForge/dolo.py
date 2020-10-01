@@ -1,5 +1,5 @@
 
 tasks:
-  - init: pip install poetry
-  - init: poetry export -f requirements.txt --output requirements.txt
-  - init: pip install -r requirements.txt
+  - init: pip install poetry &&
+          poetry export -f requirements.txt --output requirements.txt &&
+          pip install -r requirements.txt
