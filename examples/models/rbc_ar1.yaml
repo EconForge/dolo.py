@@ -9,6 +9,7 @@ symbols:
    values: [V]
    parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
    rewards: [u]
+   
 definitions:
     y[t]: exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
     c[t]: y[t] - i[t]

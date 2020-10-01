@@ -19,21 +19,14 @@ class SymbolicModel:
             from .misc import LoosyDict, equivalent_symbols
             from dolang.symbolic import remove_timing, parse_string, str_expression
 
-
             symbols = LoosyDict(equivalences=equivalent_symbols)
             for sg in self.data['symbols'].keys():
                 symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
-            
-            self.__symbols = symbols
-            
-            # this is kind of tricky
-            defs = self.definitions
-
-            # auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
-            # auxiliaries = [str_expression(e) for e in auxiliaries]
-            # symbols['auxiliaries'] = auxiliaries
 
             self.__symbols__ = symbols
+
+            # the following call adds auxiliaries (tricky, isn't it?)
+            self.definitions
 
         return self.__symbols__
         
@@ -99,7 +92,7 @@ class SymbolicModel:
                             ll_lb.append('-inf')
                             ll_ub.append('inf')
                         from dolang.symbolic import list_symbols
-                        syms = list_symbols(eq)
+                        # syms = list_symbols(eq)
                         ll.append(str_expression(eq))
                     d[g] = ll
                     if with_complementarity:
@@ -128,10 +121,8 @@ class SymbolicModel:
 
             self.__equations__ = d
             
-
         return self.__equations__
         
-
 
     @property
     def definitions(self):
@@ -140,56 +131,109 @@ class SymbolicModel:
 
         if self.__definitions__ is None:
 
+            # at this stage, basic_symbols doesn't contain auxiliaries
             basic_symbols = self.symbols
             vars = sum([basic_symbols[k] for k in basic_symbols.keys() if k!='parameters'], [])
 
+            # # auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+            # # auxiliaries = [str_expression(e) for e in auxiliaries]
+            # # symbols['auxiliaries'] = auxiliaries
+
+
+
             if 'definitions' not in self.data:
-                return {}
+                self.__definitions__ = {}
+                # self.__symbols__['auxiliaries'] = []
 
-            definitions = self.data['definitions']
 
-            # new style
-            if isinstance(definitions.value, ScalarNode):
-                defs = parse_string(defs, 'assignment_block')
-                defs = sanitize(defs, variables=vars)
-                print(defs.pretty())
-                exit()
-
-            # old style
-
-            d = dict()
-            for i in range(len(definitions.value)):
-
-                kk = definitions.value[i][0]
-                if self.__compat__:
-                    k = parse_string(kk.value)
-                    if k.data == 'symbol':
-                        # TODO: warn that definitions should be timed
-                        from dolang.grammar import create_variable
-                        k = create_variable(k.children[0].value, 0)
-                else:
-                    k = parse_string(kk.value, start='variable')
-                k = sanitize(k, variables=vars)
+            elif isinstance(self.data['definitions'], ScalarNode):
                 
-                assert(k.children[1].children[0].value=='0')
+                definitions = {}
+                
+                # new-style
+                from lark import Token
 
-                vv = definitions.value[i][1]
-                v = parse_string(vv, start='formula')
-                v = sanitize(v, variables=vars)
-                v = str_expression(v)
+                def_block_tree = parse_string(self.data['definitions'], start='assignment_block')
+                def_block_tree = sanitize(def_block_tree) # just to replace (v,) by (v,0) # TODO: remove
 
-                key = str_expression(k)
-                vars.append(key)
-                d[key] = v
+                auxiliaries = []
+                for eq_tree in def_block_tree.children:
+                    lhs, rhs = eq_tree.children
+                    tok_name: Token = lhs.children[0].children[0]
+                    tok_date: Token = lhs.children[1].children[0]
+                    name = (tok_name.value)
+                    date = int(tok_date.value)
+                    if name in vars:
+                        raise Exception(f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}'' already defined.")
+                    if date != 0:
+                        raise Exception(f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}' must be defined at date 't'.")
+                    # here we could check some stuff
+                    from dolang import list_symbols
+                    syms = list_symbols(rhs)
+                    for p in syms.parameters:
+                        if p in vars:
+                            raise Exception(f"definitions:{tok_name.line}: Symbol '{p}' is defined as a variable. Can't appear as a parameter.")
+                        if p not in self.symbols['parameters']:
+                            raise Exception(f"definitions:{tok_name.line}: Paremeter '{p}' must be defined as a model symbol.")
+                    for v in syms.variables:
+                        if v[0] not in vars:
+                            raise Exception(f"definitions:{tok_name.line}: Variable '{v[0]}[t]' is not defined.")
+                    auxiliaries.append(name)
+                    vars.append(name)
 
-            self.__definitions__ = d
+                    definitions[str_expression(lhs)] = str_expression(rhs)
 
+                self.__symbols__['auxiliaries'] = auxiliaries
+                self.__definitions__ = definitions
+                
+            else:
+            
+                # old style
+                from dolang.symbolic import remove_timing
+                auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+                auxiliaries = [str_expression(e) for e in auxiliaries]
+                self.__symbols__['auxiliaries'] = auxiliaries
+                vars = self.variables
+                auxs = []
+
+                definitions = self.data['definitions']
+                d = dict()
+                for i in range(len(definitions.value)):
+
+                    kk = definitions.value[i][0]
+                    if self.__compat__:
+                        k = parse_string(kk.value)
+                        if k.data == 'symbol':
+                            # TODO: warn that definitions should be timed
+                            from dolang.grammar import create_variable
+                            k = create_variable(k.children[0].value, 0)
+                    else:
+                        k = parse_string(kk.value, start='variable')
+                    k = sanitize(k, variables=vars)
+                    
+                    assert(k.children[1].children[0].value=='0')
+
+                    vv = definitions.value[i][1]
+                    v = parse_string(vv, start='formula')
+                    v = sanitize(v, variables=vars)
+                    v = str_expression(v)
+
+                    key = str_expression(k)
+                    vars.append(key)
+                    d[key] = v
+                    auxs.append(key)
+
+                self.__symbols__['auxiliaries'] = auxs
+                self.__definitions__ = d
 
         return self.__definitions__
 
     @property
     def name(self):
-        return self.data.get("name", "Anonymous")
+        try:
+            self.data["name"].value
+        except Exception as e:
+            return "Anonymous"
 
     @property
     def infos(self):
@@ -462,6 +506,8 @@ class Model(SymbolicModel):
         self.set_changed(all='True')
 
         if check:
+            self.symbols
+            self.definitions
             self.calibration
             self.domain
             self.exogenous
@@ -526,7 +572,9 @@ class Model(SymbolicModel):
         original_functions = {}
         original_gufunctions = {}
 
-        funnames = [*self.equations.keys()] + ['auxiliary']
+        funnames = [*self.equations.keys()]
+        if len(self.definitions)>0:
+            funnames = funnames + ['auxiliary']
 
         import dolo.config
         debug = dolo.config.debug

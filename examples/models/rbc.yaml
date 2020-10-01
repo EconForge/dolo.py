@@ -22,7 +22,6 @@ equations:
         chi*n[t]^eta*c[t]^sigma - w[t]                     ⟂ 0.0 <= n[t] <= inf
         1 - beta*(c[t]/c[t+1])^(sigma)*(1-delta+rk[t+1])   ⟂ 0.0 <= i[t] <= inf
 
-
     transition: |
         z[t] = rho*z[t-1] + e_z
         k[t] = (1-delta)*k[t-1] + i[t-1]

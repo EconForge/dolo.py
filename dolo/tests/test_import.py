@@ -7,7 +7,8 @@ def test_import():
     filenames = [
         "examples/models/rbc_iid.yaml",
         "examples/models/rbc_mc.yaml",
-        "examples/models/rbc_ar1.yaml"
+        "examples/models/rbc_ar1.yaml",
+        "examples/models/rbc.yaml"
     ]
 
     for fname in filenames:
@@ -18,9 +19,9 @@ def test_import():
         print(model.exogenous)
         print("Discretized shock:")
         print(model.exogenous.discretize())
-
+        print(model.symbols)
+        print(model.definitions)
         dprocess = model.exogenous.discretize()
-
         print( dprocess.n_nodes )
         print( dprocess.n_inodes(0) )
         print( dprocess.inode(0,0) )
