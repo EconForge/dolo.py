@@ -19,8 +19,8 @@ equations:
         - R = dumb*R(-1) + db_f(-1) + epsilon
 
     arbitrage:
-        - beta*( c_1^(-kappa)*(c_1(1)/c_1)^(-gamma) + c_2^(-kappa)*(c_2(1)/c_2)^(-gamma) )/2 = p_f
-        - beta*( c_1^(-kappa)*(c_1(1)/c_1)^(-gamma) - c_2^(-kappa)*(c_2(1)/c_2)^(-gamma) ) = 0        |  -inf <= db_f <= inf
+        - beta*( c_1^(-kappa)*(c_1(1)/c_1)^(-gamma) + c_2^(-kappa)*(c_2(1)/c_2)^(-gamma) )/2 - p_f
+        - beta*( c_1^(-kappa)*(c_1(1)/c_1)^(-gamma) - c_2^(-kappa)*(c_2(1)/c_2)^(-gamma) )        |  -inf <= db_f <= inf
 
 ############################
 calibration:

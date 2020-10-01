@@ -1,3 +1,5 @@
+from numba import jit
+from numpy.linalg import solve
 from numpy import zeros_like
 from numba import guvectorize,float64,void, generated_jit
 import numpy
@@ -26,7 +28,7 @@ def swaplines_vector(i,j,M):
     M[i] = M[j]
     M[j] = t
 
-@generated_jit
+@generated_jit(cache=True)
 def swaplines(i,j,M):
     if M.ndim==1:
         return swaplines_vector
@@ -57,7 +59,7 @@ def substract_vector(i,j,c,M):
     M[i] = M[i] - c*M[j]
 
 
-@generated_jit
+@generated_jit(cache=True)
 def substract(i,j,c,M):
     if M.ndim==1:
         return substract_vector
@@ -83,7 +85,7 @@ def divide_vector(i,c,M):
     # Li <- Li - c*Lj
     M[i] /= c
 
-@generated_jit
+@generated_jit(cache=True)
 def divide(i,c,M):
     if M.ndim==1:
         return divide_vector
@@ -93,9 +95,8 @@ def divide(i,c,M):
         return divide_tensor
 
 
-from numba import jit
 
-@jit(nopython=True)
+@jit(nopython=True, cache=True)
 def invert(A,B):
 
     # inverts A and puts result in B (modifies inputs)
@@ -131,7 +132,7 @@ def invert(A,B):
             substract(i0,i,f,B)
 
 target = 'parallel'
-@guvectorize([(float64[:,:],float64[:,:])],'(n,n)->(n,n)', nopython=True, target=target)
+@guvectorize([(float64[:,:],float64[:,:])],'(n,n)->(n,n)', nopython=True, target=target, cache=True)
 def invert_gu(A,Ainv):
     Ainv[:,:] = 0
     n = A.shape[0]
@@ -139,17 +140,17 @@ def invert_gu(A,Ainv):
         Ainv[i,i] = 1.0
     invert(A,Ainv)
 
-@guvectorize([(float64[:,:],float64[:])],'(n,n)->(n)', nopython=True, target=target)
+@guvectorize([(float64[:,:],float64[:])],'(n,n)->(n)', nopython=True, target=target, cache=True)
 def solve_gu(A,V):
     n = A.shape[0]
     invert(A,V)
 
-@guvectorize([(float64[:,:],float64[:,:],float64[:])],'(n,n),(n,p)->()', nopython=True, target=target)
+@guvectorize([(float64[:,:],float64[:,:],float64[:])],'(n,n),(n,p)->()', nopython=True, target=target, cache=True)
 def solve_tensor(A,V,dum):
     n = A.shape[0]
     invert(A,V)
 
-@guvectorize([(float64[:,:],float64[:,:,:],float64[:])],'(n,n),(n,p,q)->()', nopython=True, target=target)
+@guvectorize([(float64[:,:],float64[:,:,:],float64[:])],'(n,n),(n,p,q)->()', nopython=True, target=target, cache=True)
 def solve_tensor_old(A,V,dum):
     n = A.shape[0]
     invert(A,V)
@@ -170,10 +171,8 @@ def test_list_of_matrices():
         assert(err<1e-11)
         assert(err_2<1e-11)
 
-test_list_of_matrices()
 
 
-from numpy.linalg import solve
 
 @jit
 def serial_solve(A, B, diagnose=True):

@@ -49,7 +49,7 @@ from dataclasses import dataclass # type: ignore
 from typing import List, TypeVar, Generic, Union, Any, Callable # type: ignore
 from typing import Iterator, Tuple # type: ignore
 
-from dolo.compiler.language import greek_tolerance, language_element # type: ignore
+from dolang.language import greek_tolerance, language_element # type: ignore
 from dolo.numeric.processes import IIDProcess, DiscretizedIIDProcess # type: ignore
 
 Vector = List[float]
@@ -618,11 +618,14 @@ class Truncation(UnivariateContinuousDistribution, Generic[C]):
         q = q_lb + (q_ub-q_lb)*quantiles
         return self.dist.ppf(q)
 
-
+@language_element
 class Mixture(ContinuousDistribution):
 
     index: DiscreteDistribution  # values must be [0,1,..n]
     distributions: Tuple[UnivariateContinuousDistribution, ...]  # length musth be [n]
+
+    signature = {"index": 'DiscreteDistribution', 'distributions':  'List[Distribution]'}
+
 
     def __init__(self, index=None, distributions=None):
         # index is a distribution which takes discrete values
@@ -631,9 +634,10 @@ class Mixture(ContinuousDistribution):
         self.distributions = distributions
         ds = [e.d for e in self.distributions.values()]
         assert(len(set(ds))==1)
-        self.d = self.distributions[0].d
+        d0 = [*self.distributions.values()][0]
+        self.d = d0.d
         # TODO: check all distributions have the same variable names
-        self.names = self.distributions[0].names
+        self.names = d0.names
 
     def discretize(self):
 

@@ -29,7 +29,7 @@ domain:
 
 exogenous: !AR1
     rho: 0.9
-    Sigma: [[σ^2]]
+    sigma: [[σ^2]]
 
 
 options:

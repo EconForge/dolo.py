@@ -11,3 +11,5 @@ PKG-INFO
 site/*
 poetry.lock
 client_id
+pkgs/cache
+pkgs/urls
