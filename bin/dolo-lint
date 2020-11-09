@@ -1,20 +1,20 @@
-#!/usr/bin/env python
+# #!/usr/bin/env python
 
-import argparse
-import ruamel.yaml as ry
-from ruamel.yaml.comments import CommentedMap, CommentedSeq
-# requires conda install -c conda-forge ruamel.yaml=0.11.7
+# import argparse
+# import ruamel.yaml as ry
+# from ruamel.yaml.comments import CommentedMap, CommentedSeq
+# # requires conda install -c conda-forge ruamel.yaml=0.11.7
 
-parser = argparse.ArgumentParser(description='Dolo command line')
-parser.add_argument('--format', default='human')
-parser.add_argument('infile', type=argparse.FileType('r'))
-args = parser.parse_args()
+# parser = argparse.ArgumentParser(description='Dolo command line')
+# parser.add_argument('--format', default='human')
+# parser.add_argument('infile', type=argparse.FileType('r'))
+# args = parser.parse_args()
 
-ff = args.infile
-format = args.format
-txt = ff.read()
+# ff = args.infile
+# format = args.format
+# txt = ff.read()
 
-from dolo.linter import lint
+# from dolo.linter import lint
 
-res = lint(txt, source=ff.name, format=args.format)
-print(res)
+# res = lint(txt, source=ff.name, format=args.format)
+# print(res)

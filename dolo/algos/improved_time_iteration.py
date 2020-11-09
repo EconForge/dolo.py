@@ -258,8 +258,8 @@ def improved_time_iteration(model, method='jac', dr0=None, dprocess=None,
 
     f = model.functions['arbitrage']
     g = model.functions['transition']
-    x_lb = model.functions['controls_lb']
-    x_ub = model.functions['controls_ub']
+    x_lb = model.functions['arbitrage_lb']
+    x_ub = model.functions['arbitrage_ub']
 
     parms = model.calibration['parameters']
 
