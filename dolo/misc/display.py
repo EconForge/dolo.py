@@ -24,34 +24,23 @@ def pcat(filename, target='ipython'):
 
     code = read_file_or_url(filename)
 
-    HTML_TEMPLATE = """<style>
-    {}
-    </style>
-    {}
-    """
-
-    from pygments.lexers import get_lexer_for_filename
-    lexer = get_lexer_for_filename(filename, stripall=True)
-
-    from pygments.formatters import HtmlFormatter, TerminalFormatter
-    from pygments import highlight
-
     try:
         assert(target=='ipython')
-        from IPython.display import HTML, display
-        from pygments.formatters import HtmlFormatter
-        formatter = HtmlFormatter(linenos=True, cssclass="source")
-        html_code = highlight(code, lexer, formatter)
-        css = formatter.get_style_defs()
-        html = HTML_TEMPLATE.format(css, html_code)
-        htmlres = HTML(html)
+        from IPython import get_ipython
+        ipython = get_ipython()
 
-        return htmlres
+        ipython.magic(f"pycat {filename}")
+        return
 
     except Exception as e:
         print(e)
         pass
 
+
+    from pygments.lexers import get_lexer_for_filename
+    from pygments.formatters import TerminalFormatter
+    from pygments import highlight
+    lexer = get_lexer_for_filename(filename, stripall=True)
     formatter = TerminalFormatter()
     output = highlight(code,lexer,formatter)
     print(output)

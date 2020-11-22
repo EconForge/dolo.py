@@ -1,5 +1,6 @@
 from dolang.symbolic import sanitize, parse_string, str_expression
 from dolang.language import eval_data
+from dolang.symbolic import str_expression
 
 import copy
 
@@ -221,7 +222,7 @@ class SymbolicModel:
                     key = str_expression(k)
                     vars.append(key)
                     d[key] = v
-                    auxs.append(key)
+                    auxs.append(remove_timing(key))
 
                 self.__symbols__['auxiliaries'] = auxs
                 self.__definitions__ = d
@@ -288,8 +289,6 @@ class SymbolicModel:
                 'expectations': 'expectation',
                 'direct_responses': 'direct_response'
             }
-
-
             for k, v in definitions.items():
                 kk = remove_timing(k)
                 if kk not in calibration:
@@ -694,7 +693,7 @@ class Model(SymbolicModel):
 
         variables = sum(
             [e for k, e in self.symbols.items() if k != 'parameters'], [])
-        table = "<tr><td><b>Type</b></td><td><b>Equation</b></td><td><b>Residual</b></td></tr>\n"
+        table = '<tr><td><b>Type</b></td><td style="width:80%"><b>Equation</b></td><td><b>Residual</b></td></tr>\n'
 
         for eq_type in equations:
 
@@ -712,9 +711,14 @@ class Model(SymbolicModel):
                             val)
                     else:
                         vals = '{:.3f}'.format(val)
+                if '⟂' in eq:
+                    # keep only lhs for now
+                    eq, comp = str.split(eq, '⟂')
                 if '|' in eq:
                     # keep only lhs for now
                     eq, comp = str.split(eq, '|')
+                print(f"variables: {variables}")
+                print(f"equations: {eq}")
                 lat = eq2tex(variables, eq)
                 lat = '${}$'.format(lat)
                 line = [lat, vals]
