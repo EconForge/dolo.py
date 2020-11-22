@@ -46,6 +46,6 @@ def eval_formula(expr: str, dataframe=None, context=None):
 
     expr = str_expression(nexpr)
 
-    res = eval(expr, dd)
+    res = eval(expr.replace('^','**'), dd)
 
     return res
