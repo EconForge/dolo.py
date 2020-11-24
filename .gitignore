@@ -13,3 +13,4 @@ poetry.lock
 client_id
 pkgs/cache
 pkgs/urls
+setup.py
