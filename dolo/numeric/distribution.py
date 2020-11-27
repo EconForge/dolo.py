@@ -237,7 +237,7 @@ class Bernouilli(DiscreteDistribution):
     def __init__(self, π:float=None):
         self.π = float(π)
 
-    def discretize(self):
+    def discretize(self, to='iid'):
         x = np.array([[0],[1]])
         w = np.array([1-self.π, self.π])
         return FiniteDistribution(x, w)
@@ -282,7 +282,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
         raise Exception(f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}")
 
 
-    def discretize(self, N=5, method="equiprobable", mass_point="median"):
+    def discretize(self, to="iid", N=5, method="equiprobable", mass_point="median"):
         """
         Returns a discretized version of this process.
 
@@ -639,7 +639,7 @@ class Mixture(ContinuousDistribution):
         # TODO: check all distributions have the same variable names
         self.names = d0.names
 
-    def discretize(self):
+    def discretize(self, to='iid'):
 
         inddist = self.index.discretize()
         nodes = []
@@ -647,7 +647,7 @@ class Mixture(ContinuousDistribution):
         for i in range(inddist.n_inodes(0)):
             wind = inddist.iweight(0,i)
             xind = inddist.inode(0,i)
-            dist = self.distributions[int(xind)].discretize()
+            dist = self.distributions[i].discretize()
             for j in range(dist.n_inodes(0)):
                 w = dist.iweight(0,j)
                 x = dist.inode(0,j)
