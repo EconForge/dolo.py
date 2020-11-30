@@ -338,7 +338,6 @@ class SymbolicModel:
                     sdomain[s] = [min[i], max[i]]
                 # shall we raise a warning for deprecated syntax ?
             except Exception as e:
-                print(e)
                 pass
 
         if len(sdomain) == 0:
@@ -717,8 +716,6 @@ class Model(SymbolicModel):
                 if '|' in eq:
                     # keep only lhs for now
                     eq, comp = str.split(eq, '|')
-                print(f"variables: {variables}")
-                print(f"equations: {eq}")
                 lat = eq2tex(variables, eq)
                 lat = '${}$'.format(lat)
                 line = [lat, vals]

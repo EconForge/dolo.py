@@ -216,11 +216,16 @@ def deterministic_solve(
         lower_bound = None
         upper_bound = None
 
+
+    print(initial_guess.shape)
+    print(epsilons.shape)
+    det_residual(model, initial_guess, s1, xT_g, epsilons)
+
     if not ignore_constraints:
 
         def ff(vec):
             return det_residual(
-                model, vec.reshape(sh), s1, xT_g, epsilons[1:, :], jactype='sparse')
+                model, vec.reshape(sh), s1, xT_g, epsilons, jactype='sparse')
 
         v0 = initial_guess.ravel()
         if solver=='ncpsolve':
@@ -250,7 +255,7 @@ def deterministic_solve(
 
         def ff(vec):
             ll = det_residual(
-                model, vec.reshape(sh), s1, xT_g, epsilons[1:, :],
+                model, vec.reshape(sh), s1, xT_g, epsilons,
                 diff=True)
             return(ll)
 
@@ -268,6 +273,7 @@ def deterministic_solve(
     if (exogenous is not None) and keep_steady_state:
         sx = np.concatenate([s0, x0])
         sol = np.concatenate([sx[None, :], sol], axis=0)
+        epsilons = np.concatenate([epsilons[:1:], epsilons], axis=0)
         index = range(-1, T+1)
     else:
         index = range(0,T+1)
@@ -277,8 +283,6 @@ def deterministic_solve(
         colnames = (model.symbols['states'] + model.symbols['controls'] +
                     model.symbols['auxiliaries'])
         # compute auxiliaries
-        print(epsilons.shape)
-        print(sol.shape)
         y = model.functions['auxiliary'](epsilons, sol[:, :n_s], sol[:, n_s:],
                                          p)
         sol = np.column_stack([sol, y])
@@ -288,7 +292,7 @@ def deterministic_solve(
     sol = np.column_stack([sol, epsilons])
     colnames = colnames + model.symbols['exogenous']
 
-    ts = pd.DataFrame(sol, columns=colnames, index=True)
+    ts = pd.DataFrame(sol, columns=colnames, index=index)
     return ts
 
 
