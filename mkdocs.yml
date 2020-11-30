@@ -8,10 +8,12 @@ nav:
     - Install: installation.md
     - Model API: model_api.md
     # - API: mkapi/api/dolo
+    - Algorithms:
+      - perfect_foresight: perfect_foresight.md
 
 plugins:
   - search # necessary for search to work
-  # - mkapi
+  - mkapi
 
 markdown_extensions:
   - mdx_math

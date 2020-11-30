@@ -51,17 +51,29 @@ def _shocks_to_epsilons(model, shocks, T):
 
 def deterministic_solve(
         model,
-        shocks=None,
-        s1=None,
+        exogenous=None,
+        s0=None,
+        m0=None,
         T=100,
         ignore_constraints=False,
         maxit=100,
         initial_guess=None,
         verbose=True,
         solver='ncpsolve',
+        keep_steady_state=False,
+        s1=None, # deprecated
+        shocks=None, # deprecated
         tol=1e-6):
     """
     Computes a perfect foresight simulation using a stacked-time algorithm.
+
+    Typical simulation exercises are:
+    - start from an out-of-equilibrium exogenous and/or endogenous state: specify `s0` and or `m0`. Missing values are taken from the calibration (`model.calibration`).
+    - specify an exogenous path for shocks `exogenous`. Initial exogenous state `m0` is then first value of exogenous values. Economy is supposed to have been at the equilibrium for $t<0$, which pins
+    down initial endogenous state `s0`. `x0` is a jump variable.
+
+    If $s0$ is not specified it is then set 
+    equal to the steady-state consistent with the first value 
 
     The initial state is specified either by providing a series of exogenous
     shocks and assuming the model is initially in equilibrium with the first
@@ -71,19 +83,19 @@ def deterministic_solve(
     ----------
     model : Model
         Model to be solved
-    shocks : array-like, dict, or pandas.DataFrame
-        A specification of the shocks to the model. Can be any of the
+    exogenous : array-like, dict, or pandas.DataFrame
+        A specification for the path of exogenous variables (aka shocks). Can be any of the
         following (note by "declaration order" below we mean the order
-        of `model.symbols["shocks"]`):
+        of `model.symbols["exogenous"]`):
 
         - A 1d numpy array-like specifying a time series for a single
-          shock, or all shocks stacked into a single array.
+          exogenous variable, or all exogenous variables stacked into a single array.
         - A 2d numpy array where each column specifies the time series
           for one of the shocks in declaration order. This must be an
           `N` by number of shocks 2d array.
         - A dict where keys are strings found in
-          `model.symbols["shocks"]` and values are a time series of
-          values for that shock. For model shocks that do not appear in
+          `model.symbols["exogenous"]` and values are a time series of
+          values for that shock. For exogenous variables that do not appear in
           this dict, the shock is set to the calibrated value. Note
           that this interface is the most flexible as it allows the user
           to pass values for only a subset of the model shocks and it
@@ -92,16 +104,18 @@ def deterministic_solve(
           The same assumptions and behavior that are used in the dict
           case apply here
 
-        If nothing is given here, `shocks` is set equal to the
-        calibrated values found in `model.calibration["shocks"]` for
+        If nothing is given here, `exogenous` is set equal to the
+        calibrated values found in `model.calibration["exogenous"]` for
         all periods.
 
         If the length of any time-series in shocks is less than `T`
         (see below) it is assumed that that particular shock will
         remain at the final given value for the duration of the
-        simulaiton.
-    s1 : ndarray or dict
-        a vector with the value of initial states
+        simulation.
+    s0 : None or ndarray or dict
+        If vector with the value of initial states
+        If an exogenous timeseries is given for exogenous shocks, `s0` will be computed as the steady-state value that is consistent with its first value.
+
     T : int
         horizon for the perfect foresight simulation
     maxit : int
@@ -112,41 +126,56 @@ def deterministic_solve(
         stopping criterium for the nonlinear solver
     ignore_constraints : bool
         if True, complementarity constraints are ignored.
-
+    keep_steady_state : bool
+        if True, initial steady-states and steady-controls are appended to the simulation with date -1.
     Returns
     -------
     pandas dataframe
         a dataframe with T+1 observations of the model variables along the
-        simulation (states, controls, auxiliaries). The first observation is
-        the steady-state corresponding to the first value of the shocks. The
-        simulation should return to a steady-state corresponding to the last
-        value of the exogenous shocks.
+        simulation (states, controls, auxiliaries). The  simulation should return to a steady-state
+        consistent with the last specified value of the exogenous shocks.
 
     """
+
+    if shocks is not None:
+        import warnings
+        warnings.warn("`shocks` argument is deprecated. Use `exogenous` instead.")
+        exogenous = shocks
+
+    if s1 is not None:
+        import warnings
+        warnings.warn("`s1` argument is deprecated. Use `s0` instead.")
+        s0 = s1
 
     # definitions
     n_s = len(model.calibration['states'])
     n_x = len(model.calibration['controls'])
     p = model.calibration['parameters']
 
-    epsilons = _shocks_to_epsilons(model, shocks, T)
 
-    m0 = epsilons[0, :]
-
-    # get initial steady-state
-    from dolo.algos.steady_state import find_steady_state
-    # TODO: use initial_guess for steady_state
-    # TODO:
-
-    if s1 is None:
+    if exogenous is not None:
+        epsilons = _shocks_to_epsilons(model, exogenous, T)
+        m0 = epsilons[0, :]
+        # get initial steady-state
+        from dolo.algos.steady_state import find_steady_state
         start_state = find_steady_state(model, m=m0)
         s0 = start_state['states']
         x0 = start_state['controls']
         m1 = epsilons[1,:]
         s1 = model.functions['transition'](m0, s0, x0, m1, p)
     else:
-        s0 = model.calibration['states']*np.nan
-        x0 = model.calibration['controls']*np.nan
+        if s0 is None:
+            s0 = model.calibration['states']
+        if m0 is None:
+            m0 = model.calibration['exogenous']
+        # if m0 is None:
+        #     m0 = np.zeros(len(model.symbols['exogenous']))
+        # we should probably do something here with the nature of the exogenous process if specified
+        # i.e. compute nonlinear irf
+        epsilons = _shocks_to_epsilons(model, exogenous, T)
+        x0 = model.calibration['controls']
+        m1 = epsilons[1,:]
+        s1 = model.functions['transition'](m0, s0, x0, m1, p)
         s1 = np.array(s1)
 
     x1_g = model.calibration['controls']  # we can do better here
@@ -158,7 +187,7 @@ def deterministic_solve(
         start = np.concatenate([s1, x1_g])
         final = np.concatenate([sT_g, xT_g])
         initial_guess = np.row_stack(
-            [start * (1 - l) + final * l for l in linspace(0.0, 1.0, T)])
+            [start * (1 - l) + final * l for l in linspace(0.0, 1.0, T+1)])
 
     else:
         if isinstance(initial_guess, pd.DataFrame):
@@ -171,7 +200,7 @@ def deterministic_solve(
 
     if model.x_bounds and not ignore_constraints:
         initial_states = initial_guess[:, :n_s]
-        [lb, ub] = [u(epsilons[1:,:], initial_states, p) for u in model.x_bounds]
+        [lb, ub] = [u(epsilons[:,:], initial_states, p) for u in model.x_bounds]
         lower_bound = initial_guess * 0 - np.inf
         lower_bound[:, n_s:] = lb
         upper_bound = initial_guess * 0 + np.inf
@@ -233,16 +262,23 @@ def deterministic_solve(
         sol, nit = newton(ff, v0, jactype='sparse')
         sol = sol.reshape(sh)
 
-    sx = np.concatenate([s0, x0])
+    
     # sol = sol[:-1, :]
 
-    sol = np.concatenate([sx[None, :], sol], axis=0)
+    if (exogenous is not None) and keep_steady_state:
+        sx = np.concatenate([s0, x0])
+        sol = np.concatenate([sx[None, :], sol], axis=0)
+        index = range(-1, T+1)
+    else:
+        index = range(0,T+1)
     # epsilons = np.concatenate([epsilons[:1,:], epsilons], axis=0)
 
     if 'auxiliary' in model.functions:
         colnames = (model.symbols['states'] + model.symbols['controls'] +
                     model.symbols['auxiliaries'])
         # compute auxiliaries
+        print(epsilons.shape)
+        print(sol.shape)
         y = model.functions['auxiliary'](epsilons, sol[:, :n_s], sol[:, n_s:],
                                          p)
         sol = np.column_stack([sol, y])
@@ -252,7 +288,7 @@ def deterministic_solve(
     sol = np.column_stack([sol, epsilons])
     colnames = colnames + model.symbols['exogenous']
 
-    ts = pd.DataFrame(sol, columns=colnames)
+    ts = pd.DataFrame(sol, columns=colnames, index=True)
     return ts
 
 
