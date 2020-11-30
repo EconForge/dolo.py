@@ -314,8 +314,6 @@ class ProductProcess(Process):
         elif to =='gdp':
             fun = product_gdp
         
-        print(options)
-        
         # discretize children
         discretized_processes = [e.discretize(to=to, **kwargs[i]) for i,e in enumerate(self.processes)]
 

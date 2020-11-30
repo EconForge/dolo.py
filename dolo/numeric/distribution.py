@@ -238,6 +238,10 @@ class Bernouilli(DiscreteDistribution):
         self.π = float(π)
 
     def discretize(self, to='iid'):
+
+        if to != 'iid':
+            raise Exception("Not implemented (yet).")
+
         x = np.array([[0],[1]])
         w = np.array([1-self.π, self.π])
         return FiniteDistribution(x, w)
@@ -309,6 +313,9 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
             return self.__discretize_ep__(N=N, mass_point=mass_point)
         else:
             raise Exception("Unknown discretization method.")
+
+        if to != 'iid':
+            raise Exception("Not implemented (yet).")
 
     def __discretize_ep__(self, N=5, mass_point="median"):  # Equiprobable
         if mass_point == "median":
@@ -640,6 +647,9 @@ class Mixture(ContinuousDistribution):
         self.names = d0.names
 
     def discretize(self, to='iid'):
+        
+        if to != 'iid':
+            raise Exception("Not implemented (yet).")
 
         inddist = self.index.discretize()
         nodes = []
