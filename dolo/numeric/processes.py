@@ -113,7 +113,7 @@ class ConstantProcess(IIDProcess):
         assert(self.μ.ndim==1)
         self.d = len(self.μ)
 
-    def discretize(self, to='None', **kwargs):
+    def discretize(self, to='iid', **kwargs):
 
         if to == 'iid':
             x = self.μ[None,:]
@@ -290,7 +290,7 @@ class ProductProcess(Process):
         self.processes = l
         self.d = sum([e.d for e in self.processes])
 
-    def discretize(self, to=None, options={}):
+    def discretize(self, to='iid', options={}):
 
         if isinstance(options, dict):
             kwargs = [options]*len(self.processes)
@@ -313,7 +313,7 @@ class ProductProcess(Process):
             fun = product_mc
         elif to =='gdp':
             fun = product_gdp
-
+        
         # discretize children
         discretized_processes = [e.discretize(to=to, **kwargs[i]) for i,e in enumerate(self.processes)]
 

@@ -4,13 +4,41 @@ import scipy
 from scipy.integrate import quad
 import numpy as np
 from dolo.numeric.distribution import *
+from dolo.numeric.processes import ConstantProcess
 
 ## Polynomial
 def f(x):
     return x**2
 
-    def f(x):
-        return x**2
+def test_Mixture():
+    μ_cons = 0.5
+    σ = 0.1
+    μ_norm = 0.2
+    π = 0.4
+    distr = Mixture(index=Bernouilli(π=π), distributions={0: ConstantProcess(μ=μ_cons), 1: UNormal(σ=σ,μ=μ_norm)})
+    disMix = distr.discretize() 
+    expval = np.array([f(disMix.inode(0,j))*disMix.iweight(0,j) for j in range(disMix.n_inodes(0))]).sum()
+    '''
+    The following code is general enough to test different combinations of distributions in a Mixture
+    w/out changing many things.
+    TO DO: loop over different combinations?
+    '''
+    distr_MC = [
+        {"type": "ConstantProcess", "value": μ_cons},
+        {"type": np.random.normal, "kwargs": {"loc": μ_norm, "scale": σ}}
+        ]
+    coef_MC = distr.index.discretize().weights
+    M = 1000
+    N = len(distr_MC)
+    data_MC = np.zeros((M,N))
+    for i, d in enumerate(distr_MC):
+        if d["type"] == "ConstantProcess":
+            data_MC[:,i] = d["value"]
+        else:
+            data_MC[:,i] = d["type"](size=(M,), **d["kwargs"])
+    rand_idx_MC = np.random.choice(np.arange(N), size=(M,), p=coef_MC)    
+    expval_MC = np.array([f(x) for x in data_MC[np.arange(M), rand_idx_MC]]).sum() / M
+    assert(abs(expval-expval_MC) < 0.1)
 
 def test_UNormal():
     σ = 0.1
