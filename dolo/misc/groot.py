@@ -1,14 +1,15 @@
 # I Go to Root.
-def groot(path=''):
+def groot(path=""):
     "Changes current directory to the root of the project (looks for README.md)."
 
     def check_filelist(l):
-        if ('README.md' in l) or ('README' in l):
+        if ("README.md" in l) or ("README" in l):
             return True
         else:
             return False
 
     import os, copy
+
     cwd = os.getcwd()  # initial dir
     cwd0 = copy.copy(cwd)
     cwd_init = copy.copy(cwd)

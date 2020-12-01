@@ -2,13 +2,14 @@ from dolo import *
 
 from dolo.algos.value_iteration import constant_policy
 
+
 def test_import():
 
     filenames = [
         "examples/models/rbc_iid.yaml",
         "examples/models/rbc_mc.yaml",
         "examples/models/rbc_ar1.yaml",
-        "examples/models/rbc.yaml"
+        "examples/models/rbc.yaml",
     ]
 
     for fname in filenames:
@@ -22,18 +23,21 @@ def test_import():
         print(model.symbols)
         print(model.definitions)
         dprocess = model.exogenous.discretize()
-        print( dprocess.n_nodes )
-        print( dprocess.n_inodes(0) )
-        print( dprocess.inode(0,0) )
-        print( dprocess.node(0) )
+        print(dprocess.n_nodes)
+        print(dprocess.n_inodes(0))
+        print(dprocess.inode(0, 0))
+        print(dprocess.node(0))
 
 
 def test_old_models():
 
     import os
-    os.listdir('examples/models_') # old models
-    filenames = [ f"examples/models_/{fname}" for fname in os.listdir('examples/models_') ]
-    
+
+    os.listdir("examples/models_")  # old models
+    filenames = [
+        f"examples/models_/{fname}" for fname in os.listdir("examples/models_")
+    ]
+
     for fname in filenames:
 
         try:
@@ -42,9 +46,9 @@ def test_old_models():
 
         except Exception as e:
             print(fname)
-            raise(e)
+            raise (e)
             # assert( not isinstance(e, Exception) )
-    
+
 
 if __name__ == "__main__":
     test_import()

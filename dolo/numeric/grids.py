@@ -5,14 +5,19 @@ import numpy as np
 from numpy import zeros
 
 from typing import TypeVar, Generic, Dict
+
 T = TypeVar("T")
 S = TypeVar("S")
 
-def prod(l): return reduce(mul, l, 1.0)
+
+def prod(l):
+    return reduce(mul, l, 1.0)
+
+
 from dolo.numeric.misc import mlinspace
 
-class Grid:
 
+class Grid:
     def __mul__(self, rgrid):
         return cat_grids(self, rgrid)
 
@@ -25,11 +30,10 @@ class Grid:
         return self.__nodes__.shape[0]
 
     def node(self, i):
-        return self.__nodes__[i,:]
+        return self.__nodes__[i, :]
 
 
 class ProductGrid(Grid, Generic[T, S]):
-
     def __init__(self, g1: T, g2: S, names=None):
         self.grids = [g1, g2]
         self.names = names
@@ -41,10 +45,9 @@ class ProductGrid(Grid, Generic[T, S]):
         return str.join(" × ", [e.__repr__() for e in self.grids])
 
 
-
 class EmptyGrid(Grid):
 
-    type = 'empty'
+    type = "empty"
 
     @property
     def nodes(self):
@@ -60,9 +63,10 @@ class EmptyGrid(Grid):
     def __add__(self, g):
         return g
 
+
 class PointGrid(Grid):
 
-    type = 'point'
+    type = "point"
 
     def __init__(self, point):
         self.point = np.array(point)
@@ -75,12 +79,14 @@ class PointGrid(Grid):
     def n_nodes(self):
 
         return 1
+
     def node(self, i):
         return None
 
+
 class UnstructuredGrid(Grid):
 
-    type = 'unstructured'
+    type = "unstructured"
 
     def __init__(self, nodes):
         nodes = np.array(nodes, dtype=float)
@@ -89,13 +95,15 @@ class UnstructuredGrid(Grid):
         self.__nodes__ = nodes
         self.d = len(self.min)
 
+
 class CartesianGrid(Grid):
 
     pass
 
+
 class UniformCartesianGrid(CartesianGrid):
 
-    type = 'UniformCartesian'
+    type = "UniformCartesian"
 
     def __init__(self, min, max, n=[]):
 
@@ -113,22 +121,21 @@ class UniformCartesianGrid(CartesianGrid):
         self.__nodes__ = mlinspace(self.min, self.max, self.n)
 
     # def node(i:)
-        # pass
+    # pass
 
     def __add__(self, g):
 
         if not isinstance(g, UniformCartesianGrid):
             raise Exception("Not implemented.")
 
-        n = np.array( tuple(self.n) + tuple(g.n))
-        min = np.array( tuple(self.min) + tuple(self.min) )
-        max = np.array( tuple(self.max) + tuple(self.max) )
+        n = np.array(tuple(self.n) + tuple(g.n))
+        min = np.array(tuple(self.min) + tuple(self.min))
+        max = np.array(tuple(self.max) + tuple(self.max))
 
         return UniformCartesianGrid(min, max, n)
 
     def __numba_repr__(self):
         return tuple([(self.min[i], self.max[i], self.n[i]) for i in range(self.d)])
-
 
 
 class NonUniformCartesianGrid(CartesianGrid):
@@ -142,17 +149,16 @@ class NonUniformCartesianGrid(CartesianGrid):
         self.n = np.array([(len(e)) for e in list_of_nodes])
         # this should be done only on request.
         self.__nodes__ = cartesian(list_of_nodes)
-        self.list_of_nodes = list_of_nodes # think of a better name
+        self.list_of_nodes = list_of_nodes  # think of a better name
 
     def __add__(self, g):
 
         if not isinstance(g, NonUniformCartesianGrid):
             raise Exception("Not implemented.")
-        return NonUniformCartesianGrid( self.list_of_nodes + g.list_of_nodes )
+        return NonUniformCartesianGrid(self.list_of_nodes + g.list_of_nodes)
 
     def __numba_repr__(self):
         return tuple([np.array(e) for e in self.list_of_nodes])
-
 
 
 class SmolyakGrid(Grid):
@@ -162,6 +168,7 @@ class SmolyakGrid(Grid):
     def __init__(self, min, max, mu=2):
 
         from interpolation.smolyak import SmolyakGrid as ISmolyakGrid
+
         min = np.array(min)
         max = np.array(max)
         self.min = min
@@ -172,6 +179,7 @@ class SmolyakGrid(Grid):
         self.sg = sg
         self.d = d
         self.__nodes__ = sg.grid
+
 
 def cat_grids(grid_1, grid_2):
 
@@ -185,10 +193,19 @@ def cat_grids(grid_1, grid_2):
     else:
         raise Exception("Not Implemented.")
 
+
 # compat
-def node(grid, i): return grid.node(i)
-def nodes(grid): return grid.nodes
-def n_nodes(grid): return grid.n_nodes
+def node(grid, i):
+    return grid.node(i)
+
+
+def nodes(grid):
+    return grid.nodes
+
+
+def n_nodes(grid):
+    return grid.n_nodes
+
 
 if __name__ == "__main__":
 
@@ -200,14 +217,13 @@ if __name__ == "__main__":
     print("UnstructuredGrid")
     ugrid = UnstructuredGrid([[0.1, 0.3], [9, 0.4], [50, 10]])
     print(nodes(ugrid))
-    print(node(ugrid,0))
+    print(node(ugrid, 0))
     print(n_nodes(ugrid))
-
 
     print("Non Uniform CartesianGrid")
     ugrid = NonUniformCartesianGrid([[0.1, 0.3], [9, 0.4], [50, 10]])
     print(nodes(ugrid))
-    print(node(ugrid,0))
+    print(node(ugrid, 0))
     print(n_nodes(ugrid))
 
     print("Smolyak Grid")

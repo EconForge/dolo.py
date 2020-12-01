@@ -4,6 +4,7 @@ import scipy as sp
 from scipy.signal import fftconvolve
 from scipy.sparse import linalg as spla
 
+
 def hp_filter(data, lam=1600):
     """
     This function will apply a Hodrick-Prescott filter to a dataset.
@@ -38,12 +39,12 @@ def hp_filter(data, lam=1600):
 
     if Y.ndim == 2:
         resp = [hp_filter(e) for e in data]
-        T = np.row_stack( [e[0] for e in resp] )
-        Cycle = np.row_stack( [e[1] for e in resp] )
-        return [T,Cycle]
+        T = np.row_stack([e[0] for e in resp])
+        Cycle = np.row_stack([e[1] for e in resp])
+        return [T, Cycle]
 
     elif Y.ndim > 2:
-        raise Exception('HP filter is not defined for dimension >= 3.')
+        raise Exception("HP filter is not defined for dimension >= 3.")
 
     lil_t = len(Y)
     big_Lambda = sp.sparse.eye(lil_t, lil_t)
@@ -53,9 +54,9 @@ def hp_filter(data, lam=1600):
     # As are the second-second to last. Then all the ones in the middle...
     first_last = np.array([1 + lam, -2 * lam, lam])
     second = np.array([-2 * lam, (1 + 5 * lam), -4 * lam, lam])
-    middle_stuff = np.array([lam, -4. * lam, 1 + 6 * lam, -4 * lam, lam])
+    middle_stuff = np.array([lam, -4.0 * lam, 1 + 6 * lam, -4 * lam, lam])
 
-    #--------------------------- Putting it together --------------------------#
+    # --------------------------- Putting it together --------------------------#
 
     # First two rows
     big_Lambda[0, 0:3] = first_last
@@ -67,7 +68,7 @@ def hp_filter(data, lam=1600):
 
     # Middle rows
     for i in range(2, lil_t - 2):
-        big_Lambda[i, i - 2:i + 3] = middle_stuff
+        big_Lambda[i, i - 2 : i + 3] = middle_stuff
 
     # spla.spsolve requires csr or csc matrix. I choose csr for fun.
     big_Lambda = sp.sparse.csr_matrix(big_Lambda)
@@ -77,7 +78,6 @@ def hp_filter(data, lam=1600):
     Cycle = Y - T
 
     return T, Cycle
-
 
 
 def bandpass_filter(data, k, w1, w2):
@@ -116,4 +116,4 @@ def bandpass_filter(data, k, w1, w2):
 
     bweights -= bweights.mean()
 
-    return fftconvolve(bweights, data, mode='valid')
+    return fftconvolve(bweights, data, mode="valid")

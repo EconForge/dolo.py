@@ -3,19 +3,22 @@ from dolo.numeric.distribution import *
 #
 from dataclasses import dataclass
 from dolang.language import language_element
+
 # not sure we'll keep that
 import numpy as np
 from typing import List, Union
+
 Scalar = Union[int, float]
 
 # not really a language element though
 # @language_element
 
+
 class Domain:
     pass
 
-class CartesianDomain(Domain, dict):
 
+class CartesianDomain(Domain, dict):
     def __init__(self, **kwargs):
         super().__init__()
         for k, w in kwargs.items():
@@ -23,9 +26,10 @@ class CartesianDomain(Domain, dict):
             self[k] = np.array(v, dtype=float)
 
     def discretize(self, n=None):
-        if n==None:
-            n = [10]*(len(self.min))
+        if n == None:
+            n = [10] * (len(self.min))
         from dolo.numeric.grids import UniformCartesianGrid
+
         return UniformCartesianGrid(self.min, self.max, n)
 
     @property
@@ -61,13 +65,13 @@ class CartesianDomain(Domain, dict):
 #     signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
 
 
-
 #%%
+
 
 @language_element
 class Conditional:
 
-    signature = {'condition': None, 'type': None, 'arguments': None}
+    signature = {"condition": None, "type": None, "arguments": None}
 
     def __init__(self, condition, type, arguments):
         self.condition = condition
@@ -77,7 +81,6 @@ class Conditional:
 
 @language_element
 class Product:
-
     def __init__(self, *args: List):
         self.factors = args
 
@@ -85,13 +88,12 @@ class Product:
 @language_element
 def Matrix(*lines):
     mat = np.array(lines, np.float64)
-    assert(mat.ndim==2)
+    assert mat.ndim == 2
     return mat
-
 
 
 @language_element
 def Vector(*elements):
     mat = np.array(elements, np.float64)
-    assert(mat.ndim==1)
+    assert mat.ndim == 1
     return mat

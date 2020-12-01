@@ -13,7 +13,10 @@ def yaml_import(fname, check=True, check_only=False):
         # print(data)
         # return data
     except Exception as ex:
-        print ("Error while parsing YAML file. Probable YAML syntax error in file : ", fname )
+        print(
+            "Error while parsing YAML file. Probable YAML syntax error in file : ",
+            fname,
+        )
         raise ex
 
     # if check:
@@ -26,7 +29,7 @@ def yaml_import(fname, check=True, check_only=False):
     # if check_only:
     #     return output
 
-    data['filename'] = fname
+    data["filename"] = fname
 
     from dolo.compiler.model import Model
 

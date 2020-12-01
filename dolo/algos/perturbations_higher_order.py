@@ -4,6 +4,7 @@ from dolo.compiler.derivatives import get_model_derivatives
 from typing import List
 from numpy import ndarray
 
+
 def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
 
     from dolo.numeric.processes import IIDProcess
@@ -22,15 +23,15 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
     [f, g] = get_model_derivatives(model, order=order, calibration=calibration)
     sigma = model.exogenous.Σ
 
-    problem = PerturbationProblem(f,g,sigma)
+    problem = PerturbationProblem(f, g, sigma)
 
     pert_sol = state_perturb(problem, verbose=verbose)
 
-    controls_ss = calibration['controls']
-    states_ss = calibration['states']
+    controls_ss = calibration["controls"]
+    states_ss = calibration["states"]
 
-    n_s = len(model.symbols['states'])
-    n_c = len(model.symbols['controls'])
+    n_s = len(model.symbols["states"])
+    n_c = len(model.symbols["controls"])
 
     if order == 1:
         if return_dr:
@@ -39,8 +40,8 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
             # add transitions of states to the d.r.
 
             X_s = pert_sol[0]
-            A = g[1][:, :n_s] + numpy.dot(g[1][:, n_s:n_s+n_c], X_s)
-            B = g[1][:, n_s+n_c:]
+            A = g[1][:, :n_s] + numpy.dot(g[1][:, n_s : n_s + n_c], X_s)
+            B = g[1][:, n_s + n_c :]
             dr = CDR(S_bar, X_bar, X_s)
             dr.A = A
             dr.B = B
@@ -51,14 +52,14 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
 
     if order == 2:
         [[X_s, X_ss], [X_tt]] = pert_sol
-        X_bar = controls_ss + X_tt/2
+        X_bar = controls_ss + X_tt / 2
         if return_dr:
             S_bar = states_ss
             S_bar = numpy.array(S_bar)
             X_bar = numpy.array(X_bar)
             dr = CDR(S_bar, X_bar, X_s, X_ss)
-            A = g[1][:, :n_s] + numpy.dot(g[1][:, n_s:n_s+n_c], X_s)
-            B = g[1][:, n_s+n_c:]
+            A = g[1][:, :n_s] + numpy.dot(g[1][:, n_s : n_s + n_c], X_s)
+            B = g[1][:, n_s + n_c :]
             dr.sigma = sigma
             dr.A = A
             dr.B = B
@@ -67,8 +68,8 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
 
     if order == 3:
         [[X_s, X_ss, X_sss], [X_tt, X_stt]] = pert_sol
-        X_bar = controls_ss + X_tt/2
-        X_s = X_s + X_stt/2
+        X_bar = controls_ss + X_tt / 2
+        X_s = X_s + X_stt / 2
         if return_dr:
             S_bar = states_ss
             dr = CDR(S_bar, X_bar, X_s, X_ss, X_sss)
@@ -76,19 +77,21 @@ def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
             return dr
         return [X_bar, X_s, X_ss, X_sss]
 
-class PerturbationProblem:
 
-    def __init__(self, f:List[ndarray], g:List[ndarray], sigma: ndarray):
+class PerturbationProblem:
+    def __init__(self, f: List[ndarray], g: List[ndarray], sigma: ndarray):
         self.f = f
         self.g = g
         self.sigma = sigma
-        assert len(f)==len(g)
+        assert len(f) == len(g)
 
     @property
     def order(self):
-        return len(self.f)-1
+        return len(self.f) - 1
+
 
 approximate_controls = perturb
+
 
 def state_perturb(problem: PerturbationProblem, verbose=True):
     """Computes a Taylor approximation of decision rules, given the supplied derivatives.
@@ -131,30 +134,29 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     [g0, g1] = problem.g[:2]
     sigma = problem.sigma
 
-    n_x = f1.shape[0]           # number of controls
-    n_s = f1.shape[1]//2 - n_x   # number of states
+    n_x = f1.shape[0]  # number of controls
+    n_s = f1.shape[1] // 2 - n_x  # number of states
     n_e = g1.shape[1] - n_x - n_s
     n_v = n_s + n_x
 
     f_s = f1[:, :n_s]
-    f_x = f1[:, n_s:n_s+n_x]
-    f_snext = f1[:, n_v:n_v+n_s]
-    f_xnext = f1[:, n_v+n_s:]
+    f_x = f1[:, n_s : n_s + n_x]
+    f_snext = f1[:, n_v : n_v + n_s]
+    f_xnext = f1[:, n_v + n_s :]
 
     g_s = g1[:, :n_s]
-    g_x = g1[:, n_s:n_s+n_x]
+    g_x = g1[:, n_s : n_s + n_x]
     g_e = g1[:, n_v:]
 
-    A = np.row_stack([
-        np.column_stack([np.eye(n_s), np.zeros((n_s, n_x))]),
-        np.column_stack([-f_snext    , -f_xnext           ])
-    ])
-    B = np.row_stack([
-        np.column_stack([g_s, g_x]),
-        np.column_stack([f_s, f_x])
-    ])
+    A = np.row_stack(
+        [
+            np.column_stack([np.eye(n_s), np.zeros((n_s, n_x))]),
+            np.column_stack([-f_snext, -f_xnext]),
+        ]
+    )
+    B = np.row_stack([np.column_stack([g_s, g_x]), np.column_stack([f_s, f_x])])
 
-    [S, T, Q, Z, eigval] = qzordered(A, B, 1.0-1e-8)
+    [S, T, Q, Z, eigval] = qzordered(A, B, 1.0 - 1e-8)
 
     Q = Q.real  # is it really necessary ?
     Z = Z.real
@@ -165,9 +167,8 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     tol_geneigvals = 1e-10
 
     try:
-        ok = sum((abs(diag_S) < tol_geneigvals) *
-                 (abs(diag_T) < tol_geneigvals)) == 0
-        assert(ok)
+        ok = sum((abs(diag_S) < tol_geneigvals) * (abs(diag_T) < tol_geneigvals)) == 0
+        assert ok
     except Exception as e:
         raise GeneralizedEigenvaluesError(diag_S=diag_S, diag_T=diag_T)
 
@@ -176,19 +177,27 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
         pass
     else:
         eigval_s = sorted(eigval, reverse=True)
-        ev_a = eigval_s[n_s-1]
+        ev_a = eigval_s[n_s - 1]
         ev_b = eigval_s[n_s]
-        cutoff = (ev_a - ev_b)/2
+        cutoff = (ev_a - ev_b) / 2
         if not ev_a > ev_b:
             raise GeneralizedEigenvaluesSelectionError(
-                    A=A, B=B, eigval=eigval, cutoff=cutoff,
-                    diag_S=diag_S, diag_T=diag_T, n_states=n_s
-                )
+                A=A,
+                B=B,
+                eigval=eigval,
+                cutoff=cutoff,
+                diag_S=diag_S,
+                diag_T=diag_T,
+                n_states=n_s,
+            )
         import warnings
+
         if cutoff > 1:
             warnings.warn("Solution is not convergent.")
         else:
-            warnings.warn("There are multiple convergent solutions. The one with the smaller eigenvalues was selected.")
+            warnings.warn(
+                "There are multiple convergent solutions. The one with the smaller eigenvalues was selected."
+            )
         [S, T, Q, Z, eigval] = qzordered(A, B, cutoff)
 
     Z11 = Z[:n_s, :n_s]
@@ -225,12 +234,7 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     X_s = C
 
     V1_3 = g_s + dot(g_x, X_s)
-    V1 = np.row_stack([
-        np.eye(n_s),
-        X_s,
-        V1_3,
-        X_s @ V1_3
-    ])
+    V1 = np.row_stack([np.eye(n_s), X_s, V1_3, X_s @ V1_3])
 
     K2 = g_ss + 2 * sdot(g_sx, X_s) + mdot(g_xx, X_s, X_s)
     A = f_x + dot(f_snext + dot(f_xnext, X_s), g_x)
@@ -240,14 +244,11 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
 
     X_ss = solve_sylvester(A, B, C, D)
 
-#    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,V1_3,V1_3) ) + D
+    #    test = sdot( A, X_ss ) + sdot( B,  mdot(X_ss,V1_3,V1_3) ) + D
 
     g_ee = g2[:, n_v:, n_v:]
 
-    v = np.row_stack([
-        g_e,
-        dot(X_s, g_e)
-    ])
+    v = np.row_stack([g_e, dot(X_s, g_e)])
 
     K_tt = mdot(f2[:, n_v:, n_v:], v, v)
     K_tt += sdot(f_snext + dot(f_xnext, X_s), g_ee)
@@ -255,7 +256,7 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     K_tt = np.tensordot(K_tt, sigma, axes=((1, 2), (0, 1)))
 
     L_tt = f_x + dot(f_snext, g_x) + dot(f_xnext, dot(X_s, g_x) + np.eye(n_x))
-    X_tt = solve(L_tt, - K_tt)
+    X_tt = solve(L_tt, -K_tt)
 
     if approx_order == 2:
         return [[X_s, X_ss], [X_tt]]
@@ -270,21 +271,22 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     g_xxx = g3[:, n_s:n_v, n_s:n_v, n_s:n_v]
 
     V2_3 = K2 + sdot(g_x, X_ss)
-    V2 = np.row_stack([
-        np.zeros((n_s, n_s, n_s)),
-        X_ss,
-        V2_3,
-        dot(X_s, V2_3) + mdot(X_ss, V1_3, V1_3)
-    ])
+    V2 = np.row_stack(
+        [np.zeros((n_s, n_s, n_s)), X_ss, V2_3, dot(X_s, V2_3) + mdot(X_ss, V1_3, V1_3)]
+    )
 
-    K3 = g_sss + 3*sdot(g_ssx, X_s) + 3*mdot(g_sxx, X_s, X_s) + 2*sdot(g_sx, X_ss)
-    K3 += 3*mdot(g_xx, X_ss, X_s) + mdot(g_xxx, X_s, X_s, X_s)
-    L3 = 3*mdot(X_ss, V1_3, V2_3)
+    K3 = g_sss + 3 * sdot(g_ssx, X_s) + 3 * mdot(g_sxx, X_s, X_s) + 2 * sdot(g_sx, X_ss)
+    K3 += 3 * mdot(g_xx, X_ss, X_s) + mdot(g_xxx, X_s, X_s, X_s)
+    L3 = 3 * mdot(X_ss, V1_3, V2_3)
 
     # A = f_x + dot( f_snext + dot(f_xnext,X_s), g_x) # same as before
     # B = f_xnext # same
     # C = V1_3 # same
-    D = mdot(f3, V1, V1, V1) + 3*mdot(f2, V2, V1) + sdot(f_snext + dot(f_xnext, X_s), K3)
+    D = (
+        mdot(f3, V1, V1, V1)
+        + 3 * mdot(f2, V2, V1)
+        + sdot(f_snext + dot(f_xnext, X_s), K3)
+    )
     D += sdot(f_xnext, L3)
 
     X_sss = solve_sylvester(A, B, C, D)
@@ -297,56 +299,43 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
     g_see = g3[:, :n_s, n_v:, n_v:]
     g_xee = g3[:, n_s:n_v, n_v:, n_v:]
 
-    W_l = np.row_stack([
-        g_e,
-        dot(X_s, g_e)
-    ])
+    W_l = np.row_stack([g_e, dot(X_s, g_e)])
 
     I_e = np.eye(n_e)
 
     V_sl = g_se + mdot(g_xe, X_s, np.eye(n_e))
 
-    W_sl = np.row_stack([
-        V_sl,
-        mdot(X_ss, V1_3, g_e) + sdot(X_s, V_sl)
-    ])
+    W_sl = np.row_stack([V_sl, mdot(X_ss, V1_3, g_e) + sdot(X_s, V_sl)])
 
     K_ee = mdot(f3[:, :, n_v:, n_v:], V1, W_l, W_l)
     K_ee += 2 * mdot(f2[:, n_v:, n_v:], W_sl, W_l)
 
     # stochastic part of W_ll
 
-    SW_ll = np.row_stack([
-        g_ee,
-        mdot(X_ss, g_e, g_e) + sdot(X_s, g_ee)
-    ])
+    SW_ll = np.row_stack([g_ee, mdot(X_ss, g_e, g_e) + sdot(X_s, g_ee)])
 
-    DW_ll = np.concatenate([
-        X_tt,
-        dot(g_x, X_tt),
-        dot(X_s, sdot(g_x, X_tt)) + X_tt
-    ])
+    DW_ll = np.concatenate([X_tt, dot(g_x, X_tt), dot(X_s, sdot(g_x, X_tt)) + X_tt])
 
     K_ee += mdot(f2[:, :, n_v:], V1, SW_ll)
 
-    K_ = np.tensordot(K_ee, sigma, axes=((2,3), (0,1)))
+    K_ = np.tensordot(K_ee, sigma, axes=((2, 3), (0, 1)))
 
     K_ += mdot(f2[:, :, n_s:], V1, DW_ll)
 
     def E(vec):
         n = len(vec.shape)
-        return np.tensordot(vec, sigma, axes=((n-2, n-1), (0, 1)))
+        return np.tensordot(vec, sigma, axes=((n - 2, n - 1), (0, 1)))
 
     L = sdot(g_sx, X_tt) + mdot(g_xx, X_s, X_tt)
 
     L += E(g_see + mdot(g_xee, X_s, I_e, I_e))
 
-    M = E(mdot(X_sss, V1_3, g_e, g_e) + 2*mdot(X_ss, V_sl, g_e))
+    M = E(mdot(X_sss, V1_3, g_e, g_e) + 2 * mdot(X_ss, V_sl, g_e))
     M += mdot(X_ss, V1_3, E(g_ee) + sdot(g_x, X_tt))
 
     A = f_x + dot(f_snext + dot(f_xnext, X_s), g_x)  # same as before
     B = f_xnext  # same
-    C = V1_3     # same
+    C = V1_3  # same
     D = K_ + dot(f_snext + dot(f_xnext, X_s), L) + dot(f_xnext, M)
 
     X_stt = solve_sylvester(A, B, C, D)
@@ -359,19 +348,13 @@ def state_perturb(problem: PerturbationProblem, verbose=True):
         return [[X_s, X_ss, X_sss], [X_tt, X_stt]]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from dolo import yaml_import
-    model = yaml_import('examples/models/compat/rbc.yaml')
+
+    model = yaml_import("examples/models/compat/rbc.yaml")
     # model = yaml_import('/home/pablo/Programming/papers/finint/models/integration_B_pert.yaml')
 
     import time
-    t1 = time.time()
-    dr = approximate_controls(model, order=2)
-    print(dr.X_s)
-    # print(dr.X_ss)
-    # print(dr.X_sss)
-    t2 = time.time()
-    print("Elapsed {}".format(t2-t1))
 
     t1 = time.time()
     dr = approximate_controls(model, order=2)
@@ -379,4 +362,12 @@ if __name__ == '__main__':
     # print(dr.X_ss)
     # print(dr.X_sss)
     t2 = time.time()
-    print("Elapsed {}".format(t2-t1))
+    print("Elapsed {}".format(t2 - t1))
+
+    t1 = time.time()
+    dr = approximate_controls(model, order=2)
+    print(dr.X_s)
+    # print(dr.X_ss)
+    # print(dr.X_sss)
+    t2 = time.time()
+    print("Elapsed {}".format(t2 - t1))

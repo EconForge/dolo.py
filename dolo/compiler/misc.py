@@ -1,10 +1,12 @@
 import numpy
 from numpy import array, zeros
 
+
 def calibration_to_vector(symbols, calibration_dict):
 
     from dolang.triangular_solver import solve_triangular_system
     from numpy import nan
+
     sol = solve_triangular_system(calibration_dict)
 
     calibration = dict()
@@ -23,7 +25,7 @@ def calibration_to_dict(symbols, calib):
 
     d = dict()
     for group, values in calib.items():
-        if group == 'covariances':
+        if group == "covariances":
             continue
         syms = symbols[group]
         for i, s in enumerate(syms):
@@ -38,8 +40,8 @@ import copy
 
 equivalent_symbols = dict(actions="controls")
 
-class LoosyDict(dict):
 
+class LoosyDict(dict):
     def __init__(self, **kwargs):
 
         kwargs = kwargs.copy()
@@ -72,7 +74,9 @@ class CalibrationDict:
             v.setflags(write=False)
         self.symbols = symbols
         self.flat = calibration_to_dict(symbols, calib)
-        self.grouped = LoosyDict(**{k:v for (k,v) in calib.items()}, equivalences=equivalences)
+        self.grouped = LoosyDict(
+            **{k: v for (k, v) in calib.items()}, equivalences=equivalences
+        )
 
     def __getitem__(self, p):
         if isinstance(p, tuple):
@@ -86,9 +90,9 @@ class CalibrationDict:
 def allocating_function(inplace_function, size_output):
     def new_function(*args, **kwargs):
         val = numpy.zeros(size_output)
-        nargs = args + (val, )
+        nargs = args + (val,)
         inplace_function(*nargs)
-        if 'diff' in kwargs:
+        if "diff" in kwargs:
             return numdiff(new_function, args)
         return val
 
@@ -109,7 +113,7 @@ def numdiff(fun, args):
     for i, a in enumerate(args):
         l_a = (a).shape[1]
         dv = numpy.zeros((N, l_v, l_a))
-        nargs = list(args)  #.copy()
+        nargs = list(args)  # .copy()
         for j in range(l_a):
             xx = args[i].copy()
             xx[:, j] += epsilon
@@ -117,4 +121,3 @@ def numdiff(fun, args):
             dv[:, :, j] = (fun(*nargs) - v0) / epsilon
         dvs.append(dv)
     return [v0] + dvs
-
