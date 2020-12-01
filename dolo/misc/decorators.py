@@ -3,12 +3,14 @@ import functools
 from dolo.misc.caching import memoized, cachedondisk
 
 import sys
-is_python_3 =  sys.version_info >= (3, 0)
+
+is_python_3 = sys.version_info >= (3, 0)
+
 
 def deprecated(func):
-    '''This is a decorator which can be used to mark functions
+    """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
-    when the function is used.'''
+    when the function is used."""
 
     import warnings
 
@@ -22,10 +24,12 @@ def deprecated(func):
             "Call to deprecated function {}.".format(func.__name__),
             category=Warning,
             filename=code.co_filename,
-            lineno=code.co_firstlineno + 1
+            lineno=code.co_firstlineno + 1,
         )
         return func(*args, **kwargs)
+
     return new_func
+
 
 @deprecated
 def test_deprecation():

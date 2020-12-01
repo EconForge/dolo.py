@@ -16,7 +16,7 @@ class IterationsPrinter:
                 fmts.append("{{:{}}}".format(mm))
             elif v == float:
                 fmts.append("{:9.3e}")
-        fmt_str = "| " + str.join(' | ', fmts) + " |"
+        fmt_str = "| " + str.join(" | ", fmts) + " |"
         self.verbose = verbose
         self.names = names
         self.types = types
@@ -35,17 +35,17 @@ class IterationsPrinter:
             return
         self.print_line()
         if msg is not None:
-            ll = '| ' + msg
-            print(ll + ' ' * (self.width - len(ll) - 1) + '|')
+            ll = "| " + msg
+            print(ll + " " * (self.width - len(ll) - 1) + "|")
             self.print_line()
-        title_str = ''
+        title_str = ""
         for i, v in enumerate(self.types):
             k = self.names[i]
             if v == int:
                 title_str += " {:4} |".format(k)
             elif v == float:
                 title_str += " {:9} |".format(k)
-        title_str = '|' + title_str
+        title_str = "|" + title_str
         print(title_str)
         self.print_line()
 
@@ -59,8 +59,8 @@ class IterationsPrinter:
         if not self.verbose:
             return
         elapsed = time.time() - self.t_start
-        line = '| Elapsed: {:.2f} seconds.'.format(elapsed)
+        line = "| Elapsed: {:.2f} seconds.".format(elapsed)
         self.print_line()
-        print(line + ' ' * (self.width - len(line) - 1) + '|')
+        print(line + " " * (self.width - len(line) - 1) + "|")
         self.print_line()
         print()

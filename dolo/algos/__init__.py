@@ -1,5 +1,5 @@
 """All kinds of algorithms."""
 
-__author__ = 'pablo'
+__author__ = "pablo"
 
 from .commands import *

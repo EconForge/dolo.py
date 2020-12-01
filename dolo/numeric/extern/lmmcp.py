@@ -40,7 +40,7 @@ presteps = 20  # maximum number of preprocessing steps, default: 20
 # trust-region parameters for preprocessor
 delta = 5  # default: 5
 deltamin = 1  # default: 1
-deltamax = 1e+25  # default: 1e+25
+deltamax = 1e25  # default: 1e+25
 rho1 = 1e-4  # default: rho1=1e-4
 rho2 = 0.75  # default: rho2=0.75
 sigma1 = 0.5  # default: 0.5
@@ -54,7 +54,7 @@ defaults = dict(
     null=1e-8,  # default: 1e-8
     Big=1e10,  # default: 1e+10
     preprocess=True,  # 1=preprocessor used, otherwise not
-    presteps=20  # maximum number of preprocessing steps, default: 20
+    presteps=20,  # maximum number of preprocessing steps, default: 20
 )
 
 
@@ -65,13 +65,13 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     opts = dict(defaults)
     opts.update(options)
 
-    eps1 = opts['eps1']
-    eps2 = opts['eps2']
-    null = opts['null']
-    Big = opts['Big']
-    preprocess = opts['preprocess']
-    presteps = opts['presteps']
-    #verbose = opts['verbose']
+    eps1 = opts["eps1"]
+    eps2 = opts["eps2"]
+    null = opts["null"]
+    Big = opts["Big"]
+    preprocess = opts["preprocess"]
+    presteps = opts["presteps"]
+    # verbose = opts['verbose']
 
     x = x0
     delta = 5
@@ -83,12 +83,12 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
 
     n = len(x)
 
-    #print 'Name and dimension of the testproblem: {} {}\n'.format( name, n)
+    # print 'Name and dimension of the testproblem: {} {}\n'.format( name, n)
 
     Indexset = np.zeros((n, 1))
-    #I_l=find(lb>-Big & ub>Big)
-    #I_u=find(lb<-Big & ub<Big)
-    #I_lu=find(lb>-Big & ub<Big)
+    # I_l=find(lb>-Big & ub>Big)
+    # I_u=find(lb<-Big & ub<Big)
+    # I_lu=find(lb>-Big & ub<Big)
     I_l = (lb > -Big) & (ub > Big)  # not exactly the same definition
     I_u = (lb < -Big) & (ub < Big)
     I_lu = (lb > -Big) & (ub < Big)
@@ -97,7 +97,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     Indexset[I_u] = 2
     Indexset[I_lu] = 3
 
-    #I_f=find(Indexset==0)
+    # I_f=find(Indexset==0)
     I_f = ~(I_l | I_u | I_lu)
 
     # function evaluations
@@ -105,14 +105,15 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
     DFx = Dfun(x)
 
     # choice of NCP-function and corresponding evaluations
-    #from Phi3MCPPFB import Phi3MCPPFB as Phi
-    #from DPhi3MCPPFB import DPhi3MCPPFB as DPhi
+    # from Phi3MCPPFB import Phi3MCPPFB as Phi
+    # from DPhi3MCPPFB import DPhi3MCPPFB as DPhi
     Phi = Phi3MCPPFB
     DPhi = DPhi3MCPPFB
 
     Phix = Phi(x, Fx, lb, ub, lambda1, lambda2, n, Indexset)
 
     from numpy.linalg import norm
+
     normPhix = norm(Phix)
     Psix = 0.5 * np.dot(Phix.T, Phix)
 
@@ -151,25 +152,27 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
 
     if verbose:
 
-        headline = '|{0:^5} | {1:10} | {2:12} | {3:10} |'.format(
-            'k', ' Psi(x)', '||DPsi(x)||', 'stepsize')
-        stars = '-' * len(headline)
+        headline = "|{0:^5} | {1:10} | {2:12} | {3:10} |".format(
+            "k", " Psi(x)", "||DPsi(x)||", "stepsize"
+        )
+        stars = "-" * len(headline)
         print(stars)
         print(headline)
         print(stars)
         #        print('   k               Psi(x)                || DPsi(x) ||    stepsize\n')
         #        print('====================================================================')
-        s = '|{:^' + str(len(stars) - 2) + '}|'
-        print(s.format('Output at starting point'))
+        s = "|{:^" + str(len(stars) - 2) + "}|"
+        print(s.format("Output at starting point"))
         print(stars)
-        print('|{0:5} | {1:10.3e} | {2:12.3f} |'.format(k, Psix, normDPsix))
+        print("|{0:5} | {1:10.3e} | {2:12.3f} |".format(k, Psix, normDPsix))
 
     import numpy.linalg
+
     if preprocess == 1:
         if verbose:
-            s = '|{:^' + str(len(stars) - 2) + '}|'
+            s = "|{:^" + str(len(stars) - 2) + "}|"
             print(stars)
-            print(s.format('Preprocessor'))
+            print(s.format("Preprocessor"))
             print(stars)
 
         normpLM = 1
@@ -186,8 +189,9 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
             if n < 100:
                 i = 1
                 mu = 1e-16
-                if numpy.linalg.cond(np.dot(
-                        DPhix.T, DPhix)) > 1e25:  #TODO use random estimator
+                if (
+                    numpy.linalg.cond(np.dot(DPhix.T, DPhix)) > 1e25
+                ):  # TODO use random estimator
                     mu = 1e-6 / (k + 1)
 
             if i == 1:
@@ -222,7 +226,7 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
             elif normPhixnew > 5 * eta * normPhix:
                 delta = max(deltamin, sigma1 * delta)
 
-        # update
+            # update
             x = xnew
             Fx = Fxnew
             DFx = DFxnew
@@ -236,17 +240,20 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
             # output at each iteration
             t = 1
             if verbose:
-                print('|{0:5} | {1:10.3e} | {2:12.3f} | {3:10.3f} |'.format(
-                    k, Psix, normDPsix, t))
+                print(
+                    "|{0:5} | {1:10.3e} | {2:12.3f} | {3:10.3f} |".format(
+                        k, Psix, normDPsix, t
+                    )
+                )
 
-#                print('{}\t{}\t{}\t{}\n'.format(k,Psix,normDPsix,t))
+    #                print('{}\t{}\t{}\t{}\n'.format(k,Psix,normDPsix,t))
 
-# terminate program or redefine current iterate as original initial point
+    # terminate program or redefine current iterate as original initial point
     if (preprocess == 1) & (Psix < eps2):
         if verbose:
-            s = '|{:^' + str(len(stars) - 2) + '}|'
+            s = "|{:^" + str(len(stars) - 2) + "}|"
             print(stars)
-            print(s.format('Approximate solution found'))
+            print(s.format("Approximate solution found"))
             print(stars)
             return x
 
@@ -262,17 +269,17 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
         DPsix = DPsix0
         normDPsi = normDPsix0
         if verbose:
-            s = '|{:^' + str(len(stars) - 2) + '}|'
-            print(s.format('Restart with initial point'))
-            print('{}\t{}\t{}\n'.format(k_main, Psix0, normDPsix0))
+            s = "|{:^" + str(len(stars) - 2) + "}|"
+            print(s.format("Restart with initial point"))
+            print("{}\t{}\t{}\n".format(k_main, Psix0, normDPsix0))
 
     #
     #   Main algorithm
     #
     if verbose:
-        s = '|{:^' + str(len(stars) - 2) + '}|'
+        s = "|{:^" + str(len(stars) - 2) + "}|"
         print(stars)
-        print(s.format('Main program'))
+        print(s.format("Main program"))
         print(stars)
 
     k_main = 0
@@ -287,8 +294,9 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
         if n < 100:
             i = 1
             mu = 1e-16
-            if numpy.linalg.cond(np.dot(
-                    DPhix.T, DPhix)) > 1e25:  #TODO use random estimator
+            if (
+                numpy.linalg.cond(np.dot(DPhix.T, DPhix)) > 1e25
+            ):  # TODO use random estimator
                 mu = 1e-1 / (k + 1)
         if i == 1:
             A1 = np.row_stack([DPhix, np.sqrt(mu) * np.eye(n)])
@@ -359,12 +367,12 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
                 DPsix = DPsibest
                 normDPsix = normDPsibest
                 MaxPsi = Psix
-    # output at each iteration
+        # output at each iteration
         if verbose:
-            print('{}\t{}\t{}\t{}\n'.format(k, Psix, normDPsix, t))
+            print("{}\t{}\t{}\t{}\n".format(k, Psix, normDPsix, t))
 
     if k == kmax:
-        raise Exception('No convergence')
+        raise Exception("No convergence")
     return x
 
 
@@ -374,26 +382,37 @@ def lmmcp(fun, Dfun, x0, lb, ub, verbose=True, options={}):
 def Phi3MCPPFB(x, Fx, lb, ub, lambda1, lambda2, n, Indexset):
     y = np.zeros(2 * n)
     for i in range(1, n + 1):
-        phi_u = np.sqrt((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2
-                        ) - ub[i - 1] + x[i - 1] + Fx[i - 1]
+        phi_u = (
+            np.sqrt((ub[i - 1] - x[i - 1]) ** 2 + Fx[i - 1] ** 2)
+            - ub[i - 1]
+            + x[i - 1]
+            + Fx[i - 1]
+        )
         if Indexset[i - 1] == 1:
-            y[i - 1] = lambda1 * (-x[i - 1] + lb[i - 1] - Fx[i - 1] + np.sqrt(
-                (x[i - 1] - lb[i - 1])**2 + Fx[i - 1]**2))
-            y[n + i -
-              1] = lambda2 * max(0, x[i - 1] - lb[i - 1]) * max(0, Fx[i - 1])
+            y[i - 1] = lambda1 * (
+                -x[i - 1]
+                + lb[i - 1]
+                - Fx[i - 1]
+                + np.sqrt((x[i - 1] - lb[i - 1]) ** 2 + Fx[i - 1] ** 2)
+            )
+            y[n + i - 1] = lambda2 * max(0, x[i - 1] - lb[i - 1]) * max(0, Fx[i - 1])
         elif Indexset[i - 1] == 2:
             y[i - 1] = -lambda1 * phi_u
-            y[n + i -
-              1] = lambda2 * max(0, ub[i - 1] - x[i - 1]) * max(0, -Fx[i - 1])
+            y[n + i - 1] = lambda2 * max(0, ub[i - 1] - x[i - 1]) * max(0, -Fx[i - 1])
         elif Indexset[i - 1] == 0:
             y[i - 1] = -lambda1 * Fx[i - 1]
             y[n + i - 1] = -lambda2 * Fx[i - 1]
         elif Indexset[i - 1] == 3:
-            y[i - 1] = lambda1 * (np.sqrt((x[i - 1] - lb[i - 1])**2 + phi_u**2)
-                                  - x[i - 1] + lb[i - 1] - phi_u)
+            y[i - 1] = lambda1 * (
+                np.sqrt((x[i - 1] - lb[i - 1]) ** 2 + phi_u ** 2)
+                - x[i - 1]
+                + lb[i - 1]
+                - phi_u
+            )
             y[n + i - 1] = lambda2 * (
-                max(0, x[i - 1] - lb[i - 1]) * max(0, Fx[i - 1]) +
-                max(0, ub[i - 1] - x[i - 1]) * max(0, -Fx[i - 1]))
+                max(0, x[i - 1] - lb[i - 1]) * max(0, Fx[i - 1])
+                + max(0, ub[i - 1] - x[i - 1]) * max(0, -Fx[i - 1])
+            )
     return y
 
 
@@ -410,127 +429,141 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
     H2 = H1.copy()
     for i in range(1, n + 1):
         if np.logical_and(
-                np.abs((x[i - 1] - lb[i - 1])) <= null,
-                np.abs(Fx[i - 1]) <= null):
-            beta_l[i - 1] = 1.
-            z[i - 1] = 1.
+            np.abs((x[i - 1] - lb[i - 1])) <= null, np.abs(Fx[i - 1]) <= null
+        ):
+            beta_l[i - 1] = 1.0
+            z[i - 1] = 1.0
 
         if np.logical_and(
-                np.abs((ub[i - 1] - x[i - 1])) <= null,
-                np.abs(Fx[i - 1]) <= null):
-            beta_u[i - 1] = 1.
-            z[i - 1] = 1.
+            np.abs((ub[i - 1] - x[i - 1])) <= null, np.abs(Fx[i - 1]) <= null
+        ):
+            beta_u[i - 1] = 1.0
+            z[i - 1] = 1.0
 
         if np.logical_and(x[i - 1] - lb[i - 1] >= -null, Fx[i - 1] >= -null):
-            alpha_l[i - 1] = 1.
+            alpha_l[i - 1] = 1.0
 
         if np.logical_and(ub[i - 1] - x[i - 1] >= -null, Fx[i - 1] <= null):
-            alpha_u[i - 1] = 1.
+            alpha_u[i - 1] = 1.0
 
     Da = np.zeros((n, 1))
     Db = np.zeros((n, 1))
     for i in range(1, n + 1):
         #        ei = np.zeros( (1., n) )
         ei = np.zeros(n)
-        ei[i - 1] = 1.
-        if Indexset[i - 1] == 0.:
+        ei[i - 1] = 1.0
+        if Indexset[i - 1] == 0.0:
             Da[i - 1] = 0
             Db[i - 1] = -1
             H2[i - 1, :] = -DFx[i - 1, :]
-        elif Indexset[i - 1] == 1.:
+        elif Indexset[i - 1] == 1.0:
             # TODO : hyp : the maximand is a scalar
             denom1 = np.maximum(
-                null, np.sqrt(((x[i - 1] - lb[i - 1])**2 + Fx[i - 1]**2)))
+                null, np.sqrt(((x[i - 1] - lb[i - 1]) ** 2 + Fx[i - 1] ** 2))
+            )
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
-            if beta_l[i - 1] == 0.:
-                Da[i - 1] = (x[i - 1] - lb[i - 1]) / denom1 - 1.
-                Db[i - 1] = Fx[i - 1] / denom1 - 1.
+                null, np.sqrt((z[i - 1] ** 2 + np.dot(DFx[i - 1, :], z) ** 2))
+            )
+            if beta_l[i - 1] == 0.0:
+                Da[i - 1] = (x[i - 1] - lb[i - 1]) / denom1 - 1.0
+                Db[i - 1] = Fx[i - 1] / denom1 - 1.0
             else:
-                Da[i - 1] = z[i - 1] / denom2 - 1.
-                Db[i - 1] = np.dot(DFx[i - 1, :], z) / denom2 - 1.
+                Da[i - 1] = z[i - 1] / denom2 - 1.0
+                Db[i - 1] = np.dot(DFx[i - 1, :], z) / denom2 - 1.0
 
-            if alpha_l[i - 1] == 1.:
-                H2[i - 1, :] = (
-                    x[i - 1] - lb[i - 1]) * DFx[i - 1, :] + Fx[i - 1] * ei
+            if alpha_l[i - 1] == 1.0:
+                H2[i - 1, :] = (x[i - 1] - lb[i - 1]) * DFx[i - 1, :] + Fx[i - 1] * ei
             else:
-                H2[i - 1, :] = 0.
+                H2[i - 1, :] = 0.0
 
         elif Indexset[i - 1] == 2:
             denom1 = np.maximum(
-                null, np.sqrt(((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2)))
+                null, np.sqrt(((ub[i - 1] - x[i - 1]) ** 2 + Fx[i - 1] ** 2))
+            )
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
-            if beta_u[i - 1] == 0.:
-                Da[i - 1] = (ub[i - 1] - x[i - 1]) / denom1 - 1.
-                Db[i - 1] = -Fx[i - 1] / denom1 - 1.
+                null, np.sqrt((z[i - 1] ** 2 + np.dot(DFx[i - 1, :], z) ** 2))
+            )
+            if beta_u[i - 1] == 0.0:
+                Da[i - 1] = (ub[i - 1] - x[i - 1]) / denom1 - 1.0
+                Db[i - 1] = -Fx[i - 1] / denom1 - 1.0
             else:
-                Da[i - 1] = -z[i - 1] / denom2 - 1.
-                Db[i - 1] = -np.dot(DFx[i - 1, :], z) / denom2 - 1.
+                Da[i - 1] = -z[i - 1] / denom2 - 1.0
+                Db[i - 1] = -np.dot(DFx[i - 1, :], z) / denom2 - 1.0
 
-            if alpha_u[i - 1] == 1.:
-                H2[i - 1, :] = np.dot(x[i - 1] - ub[i - 1],
-                                      DFx[i - 1, :]) + np.dot(Fx[i - 1], ei)
+            if alpha_u[i - 1] == 1.0:
+                H2[i - 1, :] = np.dot(x[i - 1] - ub[i - 1], DFx[i - 1, :]) + np.dot(
+                    Fx[i - 1], ei
+                )
             else:
-                H2[i - 1, :] = 0.
+                H2[i - 1, :] = 0.0
 
-        elif Indexset[i - 1] == 3.:
-            ai = 0.
-            bi = 0.
-            ci = 0.
-            di = 0.
-            phi = -ub[i - 1] + x[i - 1] + Fx[i - 1] + np.sqrt(
-                ((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2))
-            denom1 = np.maximum(null,
-                                np.sqrt(
-                                    ((x[i - 1] - lb[i - 1])**2 + phi**2)))
+        elif Indexset[i - 1] == 3.0:
+            ai = 0.0
+            bi = 0.0
+            ci = 0.0
+            di = 0.0
+            phi = (
+                -ub[i - 1]
+                + x[i - 1]
+                + Fx[i - 1]
+                + np.sqrt(((ub[i - 1] - x[i - 1]) ** 2 + Fx[i - 1] ** 2))
+            )
+            denom1 = np.maximum(null, np.sqrt(((x[i - 1] - lb[i - 1]) ** 2 + phi ** 2)))
             denom2 = np.maximum(
-                null, np.sqrt((z[i - 1]**2 + np.dot(DFx[i - 1, :], z)**2)))
+                null, np.sqrt((z[i - 1] ** 2 + np.dot(DFx[i - 1, :], z) ** 2))
+            )
             denom3 = np.maximum(
-                null, np.sqrt(((ub[i - 1] - x[i - 1])**2 + Fx[i - 1]**2)))
+                null, np.sqrt(((ub[i - 1] - x[i - 1]) ** 2 + Fx[i - 1] ** 2))
+            )
             denom4 = np.maximum(
                 null,
-                np.sqrt((z[i - 1]**2 + (np.dot(ci, z[i - 1]) + np.dot(
-                    np.dot(di, DFx[i - 1, :]), z))**2)))
+                np.sqrt(
+                    (
+                        z[i - 1] ** 2
+                        + (np.dot(ci, z[i - 1]) + np.dot(np.dot(di, DFx[i - 1, :]), z))
+                        ** 2
+                    )
+                ),
+            )
 
-            if beta_u[i - 1] == 0.:
+            if beta_u[i - 1] == 0.0:
                 ci = (x[i - 1] - ub[i - 1]) / denom3 + 1
                 di = Fx[i - 1] / denom3 + 1
             else:
                 ci = 1 + z[i - 1] / denom2
                 di = 1 + np.dot(DFx[i - 1, :], z) / denom2
 
-            if beta_l[i - 1] == 0.:
+            if beta_l[i - 1] == 0.0:
                 ai = (x[i - 1] - lb[i - 1]) / denom1 - 1
                 bi = phi / denom1 - 1
             else:
-                ai = z[i - 1] / denom4 - 1.
-                bi = (np.dot(ci, z[i - 1]) +
-                      np.dot(np.dot(di, DFx[i - 1, :]), z)) / denom4 - 1.
+                ai = z[i - 1] / denom4 - 1.0
+                bi = (
+                    np.dot(ci, z[i - 1]) + np.dot(np.dot(di, DFx[i - 1, :]), z)
+                ) / denom4 - 1.0
 
             Da[i - 1] = ai + np.dot(bi, ci)
             Db[i - 1] = np.dot(bi, di)
-            if np.logical_and(alpha_l[i - 1] == 1., alpha_u[i - 1] == 1.):
-                H2[i - 1, :] = np.dot(-lb[i - 1] - ub[i - 1] + 2 * x[i - 1],
-                                      DFx[i - 1, :]) + np.dot(
-                                          2 * Fx[i - 1], ei)
+            if np.logical_and(alpha_l[i - 1] == 1.0, alpha_u[i - 1] == 1.0):
+                H2[i - 1, :] = np.dot(
+                    -lb[i - 1] - ub[i - 1] + 2 * x[i - 1], DFx[i - 1, :]
+                ) + np.dot(2 * Fx[i - 1], ei)
             else:
-                if alpha_l[i - 1] == 1.:
-                    H2[i - 1, :] = np.dot(x[i - 1] - lb[i - 1],
-                                          DFx[i - 1, :]) + np.dot(
-                                              Fx[i - 1], ei)
-                elif alpha_u[i - 1] == 1.:
-                    H2[i - 1, :] = np.dot(x[i - 1] - ub[i - 1],
-                                          DFx[i - 1, :]) + np.dot(
-                                              Fx[i - 1], ei)
+                if alpha_l[i - 1] == 1.0:
+                    H2[i - 1, :] = np.dot(x[i - 1] - lb[i - 1], DFx[i - 1, :]) + np.dot(
+                        Fx[i - 1], ei
+                    )
+                elif alpha_u[i - 1] == 1.0:
+                    H2[i - 1, :] = np.dot(x[i - 1] - ub[i - 1], DFx[i - 1, :]) + np.dot(
+                        Fx[i - 1], ei
+                    )
 
                 else:
-                    H2[i - 1, :] = 0.
+                    H2[i - 1, :] = 0.0
 
         H1[i - 1, :] = Da[i - 1] * ei + Db[i - 1] * DFx[i - 1, :]
 
-
-#  H=[lambda1*H1; lambda2*H2];
+    #  H=[lambda1*H1; lambda2*H2];
     H = np.row_stack([lambda1 * H1, lambda2 * H2])
     #    H = np.array(np.vstack((np.hstack((np.dot(lambda1, H1))), np.hstack((np.dot(lambda2, H2))))))
 

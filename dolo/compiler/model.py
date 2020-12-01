@@ -6,11 +6,9 @@ import copy
 
 
 class SymbolicModel:
-
     def __init__(self, data):
 
         self.data = data
-
 
     @property
     def symbols(self):
@@ -21,8 +19,8 @@ class SymbolicModel:
             from dolang.symbolic import remove_timing, parse_string, str_expression
 
             symbols = LoosyDict(equivalences=equivalent_symbols)
-            for sg in self.data['symbols'].keys():
-                symbols[sg] =  [s.value for s in self.data['symbols'][sg]]
+            for sg in self.data["symbols"].keys():
+                symbols[sg] = [s.value for s in self.data["symbols"][sg]]
 
             self.__symbols__ = symbols
 
@@ -30,15 +28,14 @@ class SymbolicModel:
             self.definitions
 
         return self.__symbols__
-        
 
     @property
     def variables(self):
         if self.__variables__ is None:
-            
-            self.__variables__ = sum([
-                self.symbols[e] for e in self.symbols.keys() if e != 'parameters'
-            ], [])
+
+            self.__variables__ = sum(
+                [self.symbols[e] for e in self.symbols.keys() if e != "parameters"], []
+            )
 
         return self.__variables__
 
@@ -47,62 +44,68 @@ class SymbolicModel:
         import yaml.nodes
 
         if self.__equations__ is None:
-                
 
             vars = self.variables + [*self.definitions.keys()]
 
             d = dict()
-            for g, v in self.data['equations'].items():
+            for g, v in self.data["equations"].items():
 
                 # new style
                 if isinstance(v, yaml.nodes.ScalarNode):
-                    assert(v.style=='|')
-                    if g in ('arbitrage',):
-                        start =  "complementarity_block"
+                    assert v.style == "|"
+                    if g in ("arbitrage",):
+                        start = "complementarity_block"
                     else:
                         start = "assignment_block"
                     eqs = parse_string(v, start=start)
                     eqs = sanitize(eqs, variables=vars)
                     eq_list = eqs.children
-                # old style           
+                # old style
                 else:
                     eq_list = []
                     for eq_string in v:
-                        start = 'equation' # it should be assignment
+                        start = "equation"  # it should be assignment
                         eq = parse_string(eq_string, start=start)
                         eq = sanitize(eq, variables=vars)
                         eq_list.append(eq)
 
-                if g in ('arbitrage',):
-                    ll = [] # List[str]
-                    ll_lb = [] # List[str]
-                    ll_ub = [] # List[str]
+                if g in ("arbitrage",):
+                    ll = []  # List[str]
+                    ll_lb = []  # List[str]
+                    ll_ub = []  # List[str]
                     with_complementarity = False
-                    for i,eq in enumerate(eq_list):
-                        if eq.data == 'double_complementarity':
+                    for i, eq in enumerate(eq_list):
+                        if eq.data == "double_complementarity":
                             v = eq.children[1].children[1].children[0].children[0].value
-                            t = int(eq.children[1].children[1].children[1].children[0].value)
-                            expected = (self.symbols['controls'][i],0) # TODO raise nice error message
-                            if (v,t) != expected:
-                                raise Exception(f"Incorrect variable in complementarity: expected {expected}. Found {(v,t)}")
+                            t = int(
+                                eq.children[1].children[1].children[1].children[0].value
+                            )
+                            expected = (
+                                self.symbols["controls"][i],
+                                0,
+                            )  # TODO raise nice error message
+                            if (v, t) != expected:
+                                raise Exception(
+                                    f"Incorrect variable in complementarity: expected {expected}. Found {(v,t)}"
+                                )
                             ll_lb.append(str_expression(eq.children[1].children[0]))
                             ll_ub.append(str_expression(eq.children[1].children[2]))
                             eq = eq.children[0]
                             with_complementarity = True
                         else:
-                            ll_lb.append('-inf')
-                            ll_ub.append('inf')
+                            ll_lb.append("-inf")
+                            ll_ub.append("inf")
                         from dolang.symbolic import list_symbols
+
                         # syms = list_symbols(eq)
                         ll.append(str_expression(eq))
                     d[g] = ll
                     if with_complementarity:
-                        d[g+'_lb'] = ll_lb
-                        d[g+'_ub'] = ll_ub
+                        d[g + "_lb"] = ll_lb
+                        d[g + "_ub"] = ll_ub
                 else:
                     # TODO: we should check here that equations are well specified
                     d[g] = [str_expression(e) for e in eq_list]
-
 
             # if "controls_lb" not in d:
             #     for ind, g in enumerate(("controls_lb", "controls_ub")):
@@ -121,9 +124,8 @@ class SymbolicModel:
             #         d[g] = eqs
 
             self.__equations__ = d
-            
+
         return self.__equations__
-        
 
     @property
     def definitions(self):
@@ -134,88 +136,108 @@ class SymbolicModel:
 
             # at this stage, basic_symbols doesn't contain auxiliaries
             basic_symbols = self.symbols
-            vars = sum([basic_symbols[k] for k in basic_symbols.keys() if k!='parameters'], [])
+            vars = sum(
+                [basic_symbols[k] for k in basic_symbols.keys() if k != "parameters"],
+                [],
+            )
 
             # # auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
             # # auxiliaries = [str_expression(e) for e in auxiliaries]
             # # symbols['auxiliaries'] = auxiliaries
 
-
-
-            if 'definitions' not in self.data:
+            if "definitions" not in self.data:
                 self.__definitions__ = {}
                 # self.__symbols__['auxiliaries'] = []
 
+            elif isinstance(self.data["definitions"], ScalarNode):
 
-            elif isinstance(self.data['definitions'], ScalarNode):
-                
                 definitions = {}
-                
+
                 # new-style
                 from lark import Token
 
-                def_block_tree = parse_string(self.data['definitions'], start='assignment_block')
-                def_block_tree = sanitize(def_block_tree) # just to replace (v,) by (v,0) # TODO: remove
+                def_block_tree = parse_string(
+                    self.data["definitions"], start="assignment_block"
+                )
+                def_block_tree = sanitize(
+                    def_block_tree
+                )  # just to replace (v,) by (v,0) # TODO: remove
 
                 auxiliaries = []
                 for eq_tree in def_block_tree.children:
                     lhs, rhs = eq_tree.children
                     tok_name: Token = lhs.children[0].children[0]
                     tok_date: Token = lhs.children[1].children[0]
-                    name = (tok_name.value)
+                    name = tok_name.value
                     date = int(tok_date.value)
                     if name in vars:
-                        raise Exception(f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}'' already defined.")
+                        raise Exception(
+                            f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}'' already defined."
+                        )
                     if date != 0:
-                        raise Exception(f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}' must be defined at date 't'.")
+                        raise Exception(
+                            f"definitions:{tok_name.line}:{tok_name.column}: Auxiliary variable '{name}' must be defined at date 't'."
+                        )
                     # here we could check some stuff
                     from dolang import list_symbols
+
                     syms = list_symbols(rhs)
                     for p in syms.parameters:
                         if p in vars:
-                            raise Exception(f"definitions:{tok_name.line}: Symbol '{p}' is defined as a variable. Can't appear as a parameter.")
-                        if p not in self.symbols['parameters']:
-                            raise Exception(f"definitions:{tok_name.line}: Paremeter '{p}' must be defined as a model symbol.")
+                            raise Exception(
+                                f"definitions:{tok_name.line}: Symbol '{p}' is defined as a variable. Can't appear as a parameter."
+                            )
+                        if p not in self.symbols["parameters"]:
+                            raise Exception(
+                                f"definitions:{tok_name.line}: Paremeter '{p}' must be defined as a model symbol."
+                            )
                     for v in syms.variables:
                         if v[0] not in vars:
-                            raise Exception(f"definitions:{tok_name.line}: Variable '{v[0]}[t]' is not defined.")
+                            raise Exception(
+                                f"definitions:{tok_name.line}: Variable '{v[0]}[t]' is not defined."
+                            )
                     auxiliaries.append(name)
                     vars.append(name)
 
                     definitions[str_expression(lhs)] = str_expression(rhs)
 
-                self.__symbols__['auxiliaries'] = auxiliaries
+                self.__symbols__["auxiliaries"] = auxiliaries
                 self.__definitions__ = definitions
-                
+
             else:
-            
+
                 # old style
                 from dolang.symbolic import remove_timing
-                auxiliaries = [remove_timing(parse_string(k)) for k in self.data.get('definitions', {})]
+
+                auxiliaries = [
+                    remove_timing(parse_string(k))
+                    for k in self.data.get("definitions", {})
+                ]
                 auxiliaries = [str_expression(e) for e in auxiliaries]
-                self.__symbols__['auxiliaries'] = auxiliaries
+                self.__symbols__["auxiliaries"] = auxiliaries
                 vars = self.variables
                 auxs = []
 
-                definitions = self.data['definitions']
+                definitions = self.data["definitions"]
                 d = dict()
                 for i in range(len(definitions.value)):
 
                     kk = definitions.value[i][0]
                     if self.__compat__:
                         k = parse_string(kk.value)
-                        if k.data == 'symbol':
+                        if k.data == "symbol":
                             # TODO: warn that definitions should be timed
                             from dolang.grammar import create_variable
+
                             k = create_variable(k.children[0].value, 0)
                     else:
-                        k = parse_string(kk.value, start='variable')
+                        k = parse_string(kk.value, start="variable")
                     k = sanitize(k, variables=vars)
-                    
-                    assert(k.children[1].children[0].value=='0')
+
+                    assert k.children[1].children[0].value == "0"
 
                     vv = definitions.value[i][1]
-                    v = parse_string(vv, start='formula')
+                    v = parse_string(vv, start="formula")
                     v = sanitize(v, variables=vars)
                     v = str_expression(v)
 
@@ -224,7 +246,7 @@ class SymbolicModel:
                     d[key] = v
                     auxs.append(remove_timing(key))
 
-                self.__symbols__['auxiliaries'] = auxs
+                self.__symbols__["auxiliaries"] = auxs
                 self.__definitions__ = d
 
         return self.__definitions__
@@ -239,87 +261,86 @@ class SymbolicModel:
     @property
     def infos(self):
         infos = {
-            'name': self.name,
-            'filename': self.data.get('filename', '<string>'),
-            'type': 'dtcc'
+            "name": self.name,
+            "filename": self.data.get("filename", "<string>"),
+            "type": "dtcc",
         }
         return infos
 
     @property
     def options(self):
-        return self.data['options']
+        return self.data["options"]
 
     def get_calibration(self):
 
         # if self.__calibration__ is None:
-        
-            from dolang.symbolic import remove_timing
-            
-            import copy
 
-            symbols = self.symbols
-            calibration = dict()
-            for k,v in self.data.get("calibration", {}).items():
-                if v.tag=='tag:yaml.org,2002:str':
+        from dolang.symbolic import remove_timing
 
-                    expr = parse_string(v)
-                    expr = remove_timing(expr)
-                    expr = str_expression(expr)
+        import copy
+
+        symbols = self.symbols
+        calibration = dict()
+        for k, v in self.data.get("calibration", {}).items():
+            if v.tag == "tag:yaml.org,2002:str":
+
+                expr = parse_string(v)
+                expr = remove_timing(expr)
+                expr = str_expression(expr)
+            else:
+                expr = float(v.value)
+            kk = remove_timing(parse_string(k))
+            kk = str_expression(kk)
+
+            calibration[kk] = expr
+
+        definitions = self.definitions
+
+        initial_values = {
+            "exogenous": 0,
+            "expectations": 0,
+            "values": 0,
+            "controls": float("nan"),
+            "states": float("nan"),
+        }
+
+        # variables defined by a model equation default to using these definitions
+        initialized_from_model = {
+            "values": "value",
+            "expectations": "expectation",
+            "direct_responses": "direct_response",
+        }
+        for k, v in definitions.items():
+            kk = remove_timing(k)
+            if kk not in calibration:
+                if isinstance(v, str):
+                    vv = remove_timing(v)
                 else:
-                    expr = float(v.value)
-                kk = remove_timing(parse_string(k))
-                kk = str_expression(kk)
+                    vv = v
+                calibration[kk] = vv
 
-                calibration[kk] = expr
+        for symbol_group in symbols:
+            if symbol_group not in initialized_from_model.keys():
+                if symbol_group in initial_values:
+                    default = initial_values[symbol_group]
+                else:
+                    default = float("nan")
+                for s in symbols[symbol_group]:
+                    if s not in calibration:
+                        calibration[s] = default
 
+        from dolang.triangular_solver import solve_triangular_system
 
-            definitions = self.definitions
+        return solve_triangular_system(calibration)
 
-            initial_values = {
-                'exogenous': 0,
-                'expectations': 0,
-                'values': 0,
-                'controls': float('nan'),
-                'states': float('nan')
-            }
+    #     self.__calibration__ =  solve_triangular_system(calibration)
 
-            # variables defined by a model equation default to using these definitions
-            initialized_from_model = {
-                'values': 'value',
-                'expectations': 'expectation',
-                'direct_responses': 'direct_response'
-            }
-            for k, v in definitions.items():
-                kk = remove_timing(k)
-                if kk not in calibration:
-                    if isinstance(v,str):
-                        vv = remove_timing(v)
-                    else:
-                        vv = v
-                    calibration[kk] = vv
-
-            for symbol_group in symbols:
-                if symbol_group not in initialized_from_model.keys():
-                    if symbol_group in initial_values:
-                        default = initial_values[symbol_group]
-                    else:
-                        default = float('nan')
-                    for s in symbols[symbol_group]:
-                        if s not in calibration:
-                            calibration[s] = default
-
-
-            from dolang.triangular_solver import solve_triangular_system
-
-            return solve_triangular_system(calibration)
-        #     self.__calibration__ =  solve_triangular_system(calibration)
-        
-        # return self.__calibration__
+    # return self.__calibration__
 
     def get_domain(self):
 
         calibration = self.get_calibration()
-        states = self.symbols['states']
+        states = self.symbols["states"]
 
         sdomain = self.data.get("domain", {})
         for k in sdomain.keys():
@@ -330,10 +351,9 @@ class SymbolicModel:
         if len(sdomain) == 0 and len(states) > 0:
             try:
                 import warnings
-                min = get_address(self.data,
-                                  ["options:grid:a", "options:grid:min"])
-                max = get_address(self.data,
-                                  ["options:grid:b", "options:grid:max"])
+
+                min = get_address(self.data, ["options:grid:a", "options:grid:min"])
+                max = get_address(self.data, ["options:grid:b", "options:grid:max"])
                 for i, s in enumerate(states):
                     sdomain[s] = [min[i], max[i]]
                 # shall we raise a warning for deprecated syntax ?
@@ -345,11 +365,13 @@ class SymbolicModel:
 
         if len(sdomain) < len(states):
             missing = [s for s in states if s not in sdomain]
-            raise Exception("Missing domain for states: {}.".format(
-                str.join(', ', missing)))
+            raise Exception(
+                "Missing domain for states: {}.".format(str.join(", ", missing))
+            )
 
         from dolo.compiler.objects import CartesianDomain
         from dolang.language import eval_data
+
         sdomain = eval_data(sdomain, calibration)
 
         domain = CartesianDomain(**sdomain)
@@ -361,12 +383,14 @@ class SymbolicModel:
         if "exogenous" not in self.data:
             return {}
 
-        exo = self.data['exogenous']
+        exo = self.data["exogenous"]
         calibration = self.get_calibration()
         from dolang.language import eval_data
+
         exogenous = eval_data(exo, calibration)
 
         from dolo.numeric.processes import ProductProcess, Process
+
         if isinstance(exogenous, Process):
             # old style
             return exogenous
@@ -375,17 +399,20 @@ class SymbolicModel:
             return ProductProcess(*exogenous)
         else:
             # new style
-            syms = self.symbols['exogenous']
+            syms = self.symbols["exogenous"]
             # first we check that shocks are defined in the right order
             ssyms = []
             for k in exo.keys():
-                vars = [v.strip() for v in k.split(',')]
+                vars = [v.strip() for v in k.split(",")]
                 ssyms.append(vars)
             ssyms = tuple(sum(ssyms, []))
-            if tuple(syms)!=ssyms:
+            if tuple(syms) != ssyms:
                 from dolang.language import ModelError
+
                 lc = exo.lc
-                raise ModelError(f"{lc.line}:{lc.col}: 'exogenous' section. Shocks specification must match declaration order. Found {ssyms}. Expected{tuple(syms)}")
+                raise ModelError(
+                    f"{lc.line}:{lc.col}: 'exogenous' section. Shocks specification must match declaration order. Found {ssyms}. Expected{tuple(syms)}"
+                )
 
             return ProductProcess(*exogenous.values())
 
@@ -402,28 +429,31 @@ class SymbolicModel:
         # determine grid_type
         grid_type = get_type(options.get("grid"))
         if grid_type is None:
-            grid_type = get_address(self.data,
-                                    ["options:grid:type", "options:grid_type"])
+            grid_type = get_address(
+                self.data, ["options:grid:type", "options:grid_type"]
+            )
         if grid_type is None:
             raise Exception('Missing grid geometry ("options:grid:type")')
 
-        args = {'min': min, 'max': max}
-        if grid_type.lower() in ('cartesian', 'cartesiangrid'):
+        args = {"min": min, "max": max}
+        if grid_type.lower() in ("cartesian", "cartesiangrid"):
             from dolo.numeric.grids import UniformCartesianGrid
-            orders = get_address(self.data,
-                                 ["options:grid:n", "options:grid:orders"])
+
+            orders = get_address(self.data, ["options:grid:n", "options:grid:orders"])
             if orders is None:
                 orders = [20] * len(min)
             grid = UniformCartesianGrid(min=min, max=max, n=orders)
-        elif grid_type.lower() in ('nonuniformcartesian', 'nonuniformcartesiangrid'):
+        elif grid_type.lower() in ("nonuniformcartesian", "nonuniformcartesiangrid"):
             from dolang.language import eval_data
             from dolo.numeric.grids import NonUniformCartesianGrid
+
             calibration = self.get_calibration()
-            nodes = [eval_data(e, calibration) for e in self.data['options']['grid']]
+            nodes = [eval_data(e, calibration) for e in self.data["options"]["grid"]]
             # each element of nodes should be a vector
             return NonUniformCartesianGrid(nodes)
-        elif grid_type.lower() in ('smolyak', 'smolyakgrid'):
+        elif grid_type.lower() in ("smolyak", "smolyakgrid"):
             from dolo.numeric.grids import SmolyakGrid
+
             mu = get_address(self.data, ["options:grid:mu"])
             if mu is None:
                 mu = 2
@@ -452,7 +482,7 @@ def get_address(data, address, default=None):
             return found[0]
         else:
             return default
-    fields = str.split(address, ':')
+    fields = str.split(address, ":")
     while len(fields) > 0:
         data = data.get(fields[0])
         fields = fields[1:]
@@ -462,28 +492,29 @@ def get_address(data, address, default=None):
 
 
 import re
+
 regex = re.compile("(.*)<=(.*)<=(.*)")
 
 
 def decode_complementarity(comp, control):
-    '''
+    """
     # comp can be either:
     - None
     - "a<=expr" where a is a controls
     - "expr<=a" where a is a control
     - "expr1<=a<=expr2"
-    '''
+    """
 
     try:
         res = regex.match(comp).groups()
     except:
-        raise Exception(
-            "Unable to parse complementarity condition '{}'".format(comp))
+        raise Exception("Unable to parse complementarity condition '{}'".format(comp))
 
     res = [r.strip() for r in res]
     if res[1] != control:
         msg = "Complementarity condition '{}' incorrect. Expected {} instead of {}.".format(
-            comp, control, res[1])
+            comp, control, res[1]
+        )
         raise Exception(msg)
 
     return [res[0], res[2]]
@@ -498,10 +529,10 @@ class Model(SymbolicModel):
 
         super().__init__(data)
 
-        self.model_type = 'dtcc'
+        self.model_type = "dtcc"
         self.__functions__ = None
         # self.__compile_functions__()
-        self.set_changed(all='True')
+        self.set_changed(all="True")
 
         if check:
             self.symbols
@@ -523,16 +554,17 @@ class Model(SymbolicModel):
             self.__equations__ = None
 
     def set_calibration(self, *pargs, **kwargs):
-        if len(pargs)==1:
+        if len(pargs) == 1:
             self.set_calibration(**pargs[0])
         self.set_changed()
-        self.data['calibration'].update(kwargs)
+        self.data["calibration"].update(kwargs)
 
     @property
     def calibration(self):
         if self.__calibration__ is None:
             calibration_dict = super().get_calibration()
             from dolo.compiler.misc import CalibrationDict, calibration_to_vector
+
             calib = calibration_to_vector(self.symbols, calibration_dict)
             self.__calibration__ = CalibrationDict(self.symbols, calib)  #
         return self.__calibration__
@@ -553,9 +585,9 @@ class Model(SymbolicModel):
         dprocess = self.exogenous.discretize(**dprocess_options)
         endo_grid = self.domain.discretize(**grid_options)
         from dolo.numeric.grids import ProductGrid
-        grid = ProductGrid(dprocess.grid, endo_grid, names=['exo', 'endo'])
-        return [grid, dprocess]
 
+        grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
+        return [grid, dprocess]
 
     def __compile_functions__(self):
 
@@ -564,24 +596,27 @@ class Model(SymbolicModel):
         from dolang.vectorize import standard_function
         from dolo.compiler.factories import get_factory
         from .misc import LoosyDict
-        
-        equivalent_function_names = {'equilibrium': 'arbitrage', 'optimality': 'arbitrage'}
+
+        equivalent_function_names = {
+            "equilibrium": "arbitrage",
+            "optimality": "arbitrage",
+        }
         functions = LoosyDict(equivalences=equivalent_function_names)
         original_functions = {}
         original_gufunctions = {}
 
         funnames = [*self.equations.keys()]
-        if len(self.definitions)>0:
-            funnames = funnames + ['auxiliary']
+        if len(self.definitions) > 0:
+            funnames = funnames + ["auxiliary"]
 
         import dolo.config
+
         debug = dolo.config.debug
 
         for funname in funnames:
 
             fff = get_factory(self, funname)
-            fun, gufun = make_method_from_factory(
-                fff, vectorize=True, debug=debug)
+            fun, gufun = make_method_from_factory(fff, vectorize=True, debug=debug)
             n_output = len(fff.content)
             functions[funname] = standard_function(gufun, n_output)
             original_gufunctions[funname] = gufun  # basic gufun function
@@ -601,49 +636,53 @@ class Model(SymbolicModel):
 
         from dolo.misc.termcolor import colored
         from numpy import zeros
-        s = u'''
+
+        s = """
         Model:
         ------
         name: "{name}"
         type: "{type}"
-        file: "{filename}\n'''.format(**self.infos)
+        file: "{filename}\n""".format(
+            **self.infos
+        )
 
-        ss = '\nEquations:\n----------\n\n'
+        ss = "\nEquations:\n----------\n\n"
         res = self.residuals()
-        res.update({'definitions': zeros(1)})
+        res.update({"definitions": zeros(1)})
 
         equations = self.equations.copy()
         definitions = self.definitions
         tmp = []
         for deftype in definitions:
-            tmp.append(deftype + ' = ' + definitions[deftype])
-        definitions = {'definitions': tmp}
+            tmp.append(deftype + " = " + definitions[deftype])
+        definitions = {"definitions": tmp}
         equations.update(definitions)
         # for eqgroup, eqlist in self.symbolic.equations.items():
         for eqgroup in res.keys():
-            if eqgroup == 'auxiliary':
+            if eqgroup == "auxiliary":
                 continue
-            if eqgroup == 'definitions':
+            if eqgroup == "definitions":
                 eqlist = equations[eqgroup]
                 # Update the residuals section with the right number of empty
                 # values. Note: adding 'zeros' was easiest (rather than empty
                 # cells), since other variable types have  arrays of zeros.
-                res.update({'definitions': [None for i in range(len(eqlist))]})
+                res.update({"definitions": [None for i in range(len(eqlist))]})
             else:
                 eqlist = equations[eqgroup]
-            ss += u"{}\n".format(eqgroup)
+            ss += "{}\n".format(eqgroup)
             for i, eq in enumerate(eqlist):
                 val = res[eqgroup][i]
                 if val is None:
-                    ss += u" {eqn:2} : {eqs}\n".format(eqn=str(i + 1), eqs=eq)
+                    ss += " {eqn:2} : {eqs}\n".format(eqn=str(i + 1), eqs=eq)
                 else:
                     if abs(val) < 1e-8:
                         val = 0
-                    vals = '{:.4f}'.format(val)
+                    vals = "{:.4f}".format(val)
                     if abs(val) > 1e-8:
-                        vals = colored(vals, 'red')
-                    ss += u" {eqn:2} : {vals} : {eqs}\n".format(
-                        eqn=str(i + 1), vals=vals, eqs=eq)
+                        vals = colored(vals, "red")
+                    ss += " {eqn:2} : {vals} : {eqs}\n".format(
+                        eqn=str(i + 1), vals=vals, eqs=eq
+                    )
             ss += "\n"
         s += ss
 
@@ -674,9 +713,10 @@ class Model(SymbolicModel):
         <td>{filename}</td>
         </tr>
         </table>""".format(
-            name=infos['name'],
-            type=infos['type'],
-            filename=infos['filename'].replace("<", "&lt").replace(">", "&gt"))
+            name=infos["name"],
+            type=infos["type"],
+            filename=infos["filename"].replace("<", "&lt").replace(">", "&gt"),
+        )
 
         # Equations and residuals
         resids = self.residuals()
@@ -685,13 +725,12 @@ class Model(SymbolicModel):
         definitions = self.definitions
         tmp = []
         for deftype in definitions:
-            tmp.append(deftype + ' = ' + definitions[deftype])
+            tmp.append(deftype + " = " + definitions[deftype])
 
-        definitions = {'definitions': tmp}
+        definitions = {"definitions": tmp}
         equations.update(definitions)
 
-        variables = sum(
-            [e for k, e in self.symbols.items() if k != 'parameters'], [])
+        variables = sum([e for k, e in self.symbols.items() if k != "parameters"], [])
         table = '<tr><td><b>Type</b></td><td style="width:80%"><b>Equation</b></td><td><b>Residual</b></td></tr>\n'
 
         for eq_type in equations:
@@ -701,27 +740,25 @@ class Model(SymbolicModel):
                 eq = equations[eq_type][i]
                 # if eq_type in ('expectation','direct_response'):
                 #     vals = ''
-                if eq_type not in ('arbitrage', 'transition', 'arbitrage_exp'):
-                    vals = ''
+                if eq_type not in ("arbitrage", "transition", "arbitrage_exp"):
+                    vals = ""
                 else:
                     val = resids[eq_type][i]
                     if abs(val) > 1e-8:
-                        vals = '<span style="color: red;">{:.4f}</span>'.format(
-                            val)
+                        vals = '<span style="color: red;">{:.4f}</span>'.format(val)
                     else:
-                        vals = '{:.3f}'.format(val)
-                if '⟂' in eq:
+                        vals = "{:.3f}".format(val)
+                if "⟂" in eq:
                     # keep only lhs for now
-                    eq, comp = str.split(eq, '⟂')
-                if '|' in eq:
+                    eq, comp = str.split(eq, "⟂")
+                if "|" in eq:
                     # keep only lhs for now
-                    eq, comp = str.split(eq, '|')
+                    eq, comp = str.split(eq, "|")
                 lat = eq2tex(variables, eq)
-                lat = '${}$'.format(lat)
+                lat = "${}$".format(lat)
                 line = [lat, vals]
-                h = eq_type if i == 0 else ''
-                fmt_line = '<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-                    h, *line)
+                h = eq_type if i == 0 else ""
+                fmt_line = "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(h, *line)
                 #         print(fmt_line)
                 eq_lines.append(fmt_line)
             table += str.join("\n", eq_lines)
@@ -732,13 +769,13 @@ class Model(SymbolicModel):
     @property
     def x_bounds(self):
 
-        if 'controls_ub' in self.functions:
-            fun_lb = self.functions['controls_lb']
-            fun_ub = self.functions['controls_ub']
+        if "controls_ub" in self.functions:
+            fun_lb = self.functions["controls_lb"]
+            fun_ub = self.functions["controls_ub"]
             return [fun_lb, fun_ub]
-        elif 'arbitrage_ub' in self.functions:
-            fun_lb = self.functions['arbitrage_lb']
-            fun_ub = self.functions['arbitrage_ub']
+        elif "arbitrage_ub" in self.functions:
+            fun_lb = self.functions["arbitrage_lb"]
+            fun_ub = self.functions["arbitrage_ub"]
             return [fun_lb, fun_ub]
         else:
             return None
@@ -746,11 +783,13 @@ class Model(SymbolicModel):
     def residuals(self, calib=None):
 
         from dolo.algos.steady_state import residuals
+
         return residuals(self, calib)
 
     def eval_formula(self, expr, dataframe=None, calib=None):
 
         from dolo.compiler.eval_formula import eval_formula
+
         if calib is None:
             calib = self.calibration
         return eval_formula(expr, dataframe=dataframe, context=calib)
