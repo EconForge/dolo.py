@@ -25,8 +25,8 @@ jobs:
       - name: Install Poetry
         uses: Gr1N/setup-poetry@v4
 
-      # - name: Code Quality
-      #   run: poetry run black . --check
+      - name: Code Quality
+        run: poetry run black . --check
 
       - name: Install dependencies
         run: poetry install
