@@ -25,11 +25,11 @@ jobs:
       - name: Install Poetry
         uses: Gr1N/setup-poetry@v4
 
-      - name: Code Quality
-        run: poetry run black . --check
-
       - name: Install dependencies
         run: poetry install
+        
+      - name: Code Quality
+        run: poetry run black . --check
 
       - name: Test with pytest
         run: poetry run pytest --cov=./ --cov-report=xml
