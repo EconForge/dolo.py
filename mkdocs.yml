@@ -10,6 +10,7 @@ nav:
     # - API: mkapi/api/dolo
     - Algorithms:
       - perfect_foresight: perfect_foresight.md
+      - time_iteration: time_iteration.md
 
 plugins:
   - search # necessary for search to work

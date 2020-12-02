@@ -4,13 +4,27 @@ class AlgoResult:
 
 from dataclasses import dataclass
 
+from dolo.numeric.decision_rule import DecisionRule
+from dolo.numeric.processes import DiscretizedProcess
+
 
 @dataclass
 class TimeIterationResult(AlgoResult):
-    dr: object
+
+    """Result from a Time Iteration algorithm.
+
+    Parameters
+    ----------
+    dr : DecisionRule
+        approximated decision rule
+    iterations : int
+        number of iterations until convergence
+    """
+
+    dr: DecisionRule
     iterations: int
     complementarities: bool
-    dprocess: object
+    dprocess: DiscretizedProcess
     x_converged: bool
     x_tol: float
     err: float

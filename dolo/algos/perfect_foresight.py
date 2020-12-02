@@ -54,31 +54,29 @@ def deterministic_solve(
     exogenous=None,
     s0=None,
     m0=None,
-    T=100,
-    ignore_constraints=False,
-    maxit=100,
+    T:int=100,
+    ignore_constraints:bool=False,
+    keep_steady_state=False,
     initial_guess=None,
+    maxit=100,
+    tol=1e-6,
     verbose=True,
     solver="ncpsolve",
-    keep_steady_state=False,
     s1=None,  # deprecated
     shocks=None,  # deprecated
-    tol=1e-6,
 ):
     """
     Computes a perfect foresight simulation using a stacked-time algorithm.
 
     Typical simulation exercises are:
-    - start from an out-of-equilibrium exogenous and/or endogenous state: specify `s0` and or `m0`. Missing values are taken from the calibration (`model.calibration`).
-    - specify an exogenous path for shocks `exogenous`. Initial exogenous state `m0` is then first value of exogenous values. Economy is supposed to have been at the equilibrium for $t<0$, which pins
-    down initial endogenous state `s0`. `x0` is a jump variable.
 
-    If $s0$ is not specified it is then set
-    equal to the steady-state consistent with the first value
+    - start from an out-of-equilibrium exogenous and/or endogenous state: specify `s0` and or `m0` arguements. Missing values for either of them are taken from the calibration (`model.calibration`).
+    - specify an exogenous path for exogenous process: specify `exogenous` argument. 
+    Initial exogenous state `m0` is then first value of exogenous values. Economy is supposed to have been at the equilibrium for $t<0$, which pins
+    down initial endogenous state `s0`.
 
-    The initial state is specified either by providing a series of exogenous
-    shocks and assuming the model is initially in equilibrium with the first
-    value of the shock, or by specifying an initial value for the states.
+    In both cases, initial control `x0` is a jump variable, solved for by the algorithm.
+
 
     Parameters
     ----------
@@ -114,8 +112,11 @@ def deterministic_solve(
         remain at the final given value for the duration of the
         simulation.
     s0 : None or ndarray or dict
-        If vector with the value of initial states
-        If an exogenous timeseries is given for exogenous shocks, `s0` will be computed as the steady-state value that is consistent with its first value.
+        Starting vector for endogenous states. If missing and `exogenous` argument is set, it equals the steady-state value consistent with `m0`. Otherwise
+        it defaults to `model.calibration['states']`.
+    m0 : None or ndarray or dict
+        Starting vector for exogenous states. If missing and `exogenous` argument is set, it equals the first value specified by the `exogenous` path. Otherwise
+        it defaults to `model.calibration['exogenous']`.
 
     T : int
         horizon for the perfect foresight simulation

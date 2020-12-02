@@ -33,36 +33,40 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
 from .results import TimeIterationResult, AlgoResult
 
+from dolo.compiler.model import Model
+from dolo.numeric.decision_rule import DecisionRule
+from dolo.numeric.processes import DiscretizedProcess
 
 def time_iteration(
-    model,
-    dr0=None,
-    with_complementarities=True,
-    dprocess=None,
-    verbose=True,
-    maxit=1000,
-    inner_maxit=10,
-    tol=1e-6,
-    hook=None,
-    details=False,
+    model: Model,
+    dr0: DecisionRule=None,
+    with_complementarities: bool=True,
+    dprocess: DiscretizedProcess=None,
+    details: bool=True,
+    verbose: bool=True,
+    maxit: int=1000,
+    inner_maxit: int=10,
+    tol: float=1e-6,
+    hook: callable=None,
     interp_method="cubic",
 ):
 
     """Finds a global solution for ``model`` using backward time-iteration.
 
-
-    This algorithm iterates on the residuals of the arbitrage equations
+    This algorithm iterates on the residuals of the arbitrage equations.
 
     Parameters
     ----------
     model : Model
-        model to be solved
-    verbose : boolean
-        if True, display iterations
+        model to be solved. Must have `transition` and `arbitrage` equations.
     dr0 : decision rule
         initial guess for the decision rule
     with_complementarities : boolean (True)
         if False, complementarity conditions are ignored
+    details : boolean (True)
+        if True, the function returns a solution object, if False it returns a decision rule
+    verbose : boolean
+        if True, display iterations
     maxit: maximum number of iterations
     inner_maxit: maximum number of iteration for inner solver
     tol: tolerance criterium for successive approximations
@@ -72,8 +76,8 @@ def time_iteration(
 
     Returns
     -------
-    decision rule :
-        approximated solution
+    result : TimeIterationResult
+        structure containing the approximated decision rule, and metadata about the solution results
     """
 
     from dolo import dprint
