@@ -25,7 +25,7 @@ import types
 import typing
 from typing import Callable, Iterable, Iterator, Mapping
 
-__version__ = '1.3'
+__version__ = "1.3"
 
 
 def groupby(func: Callable, values: Iterable) -> dict:
@@ -38,10 +38,10 @@ def groupby(func: Callable, values: Iterable) -> dict:
 
 def get_types(func: Callable) -> tuple:
     """Return evaluated type hints in order."""
-    if not hasattr(func, '__annotations__'):
+    if not hasattr(func, "__annotations__"):
         return ()
     annotations = dict(typing.get_type_hints(func))
-    annotations.pop('return', None)
+    annotations.pop("return", None)
     params = inspect.signature(func).parameters
     return tuple(annotations.pop(name, object) for name in params if annotations)
 
@@ -60,12 +60,12 @@ class subtype(type):
             if not tp.__constraints__:
                 return object
             tp = typing.Union[tp.__constraints__]
-        origin = getattr(tp, '__extra__', getattr(tp, '__origin__', tp))
-        args = tuple(map(cls, getattr(tp, '__args__', None) or args))
+        origin = getattr(tp, "__extra__", getattr(tp, "__origin__", tp))
+        args = tuple(map(cls, getattr(tp, "__args__", None) or args))
         if set(args) <= {object} and not (origin is tuple and args):
             return origin
         bases = (origin,) if type(origin) is type else ()
-        namespace = {'__origin__': origin, '__args__': args}
+        namespace = {"__origin__": origin, "__args__": args}
         return type.__new__(cls, str(tp), bases, namespace)
 
     def __init__(self, tp, *args):
@@ -76,14 +76,18 @@ class subtype(type):
         return self.__origin__, self.__args__
 
     def __eq__(self, other):
-        return isinstance(other, subtype) and self.__getstate__() == other.__getstate__()
+        return (
+            isinstance(other, subtype) and self.__getstate__() == other.__getstate__()
+        )
 
     def __hash__(self):
         return hash(self.__getstate__())
 
     def __subclasscheck__(self, subclass):
-        origin = getattr(subclass, '__extra__', getattr(subclass, '__origin__', subclass))
-        args = getattr(subclass, '__args__', ())
+        origin = getattr(
+            subclass, "__extra__", getattr(subclass, "__origin__", subclass)
+        )
+        args = getattr(subclass, "__args__", ())
         if origin is typing.Union:
             return all(issubclass(cls, self) for cls in args)
         if self.__origin__ is typing.Union:
@@ -112,7 +116,9 @@ class signature(tuple):
     def __sub__(self, other) -> tuple:
         """Return relative distances, assuming self >= other."""
         mros = (subclass.mro() for subclass in self)
-        return tuple(mro.index(cls if cls in mro else object) for mro, cls in zip(mros, other))
+        return tuple(
+            mro.index(cls if cls in mro else object) for mro, cls in zip(mros, other)
+        )
 
 
 class multimethod(dict):
@@ -138,7 +144,7 @@ class multimethod(dict):
 
         Optionally call with types to return a decorator for unannotated functions.
         """
-        if len(args) == 1 and hasattr(args[0], '__annotations__'):
+        if len(args) == 1 and hasattr(args[0], "__annotations__"):
             return overload.register(self, *args)
         return lambda func: self.__setitem__(args, func) or func
 
@@ -212,10 +218,10 @@ class multimethod(dict):
             try:
                 sig = inspect.signature(func)
             except ValueError:
-                sig = ''
-            doc = func.__doc__ or ''
-            docs.append(f'{func.__name__}{sig}\n    {doc}')
-        return '\n\n'.join(docs)
+                sig = ""
+            doc = func.__doc__ or ""
+            docs.append(f"{func.__name__}{sig}\n    {doc}")
+        return "\n\n".join(docs)
 
 
 class multidispatch(multimethod):
@@ -225,7 +231,9 @@ class multidispatch(multimethod):
 get_type = multimethod(type)
 get_type.__doc__ = """Return a generic `subtype` which checks subscripts."""
 for atomic in (Iterator, str, bytes):
-    get_type[atomic,] = type
+    get_type[
+        atomic,
+    ] = type
 
 
 @multimethod  # type: ignore[no-redef]
@@ -268,8 +276,10 @@ class overload(collections.OrderedDict):
         """Dispatch to first matching function."""
         for sig, func in reversed(self.items()):
             arguments = sig.bind(*args, **kwargs).arguments
-            if all(predicate(
-            arguments[name]) for name, predicate in func.__annotations__.items()):
+            if all(
+                predicate(arguments[name])
+                for name, predicate in func.__annotations__.items()
+            ):
                 return func(*args, **kwargs)
         raise DispatchError("No matching functions found")
 
@@ -288,5 +298,5 @@ class multimeta(type):
 
         def __setitem__(self, key, value):
             if callable(value):
-                value = getattr(self.get(key), 'register', multimethod)(value)
+                value = getattr(self.get(key), "register", multimethod)(value)
             super().__setitem__(key, value)

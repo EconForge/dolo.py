@@ -1,6 +1,11 @@
 def test_grids():
 
-    from dolo.numeric.grids import UniformCartesianGrid, UnstructuredGrid, NonUniformCartesianGrid, SmolyakGrid
+    from dolo.numeric.grids import (
+        UniformCartesianGrid,
+        UnstructuredGrid,
+        NonUniformCartesianGrid,
+        SmolyakGrid,
+    )
     from dolo.numeric.grids import nodes, n_nodes, node
 
     print("Cartsian Grid")
@@ -11,13 +16,13 @@ def test_grids():
     print("UnstructuredGrid")
     ugrid = UnstructuredGrid([[0.1, 0.3], [9, 0.4], [50, 10]])
     print(nodes(ugrid))
-    print(node(ugrid,0))
+    print(node(ugrid, 0))
     print(n_nodes(ugrid))
 
     print("Non Uniform CartesianGrid")
     ugrid = NonUniformCartesianGrid([[0.1, 0.3], [9, 0.4], [50, 10]])
     print(nodes(ugrid))
-    print(node(ugrid,0))
+    print(node(ugrid, 0))
     print(n_nodes(ugrid))
 
     print("Smolyak Grid")

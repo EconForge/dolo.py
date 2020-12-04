@@ -6,6 +6,7 @@ from dolo.numeric.processes import DiscretizedIIDProcess
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.grids import CartesianGrid
 
+
 def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
     N = s.shape[0]
@@ -16,16 +17,16 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
     for i_ms in range(dprocess.n_nodes):
 
         # solving on grid for markov index i_ms
-        m = numpy.tile(dprocess.node(i_ms),(N,1))
-        xm = x[i_ms,:,:]
+        m = numpy.tile(dprocess.node(i_ms), (N, 1))
+        xm = x[i_ms, :, :]
 
         for I_ms in range(dprocess.n_inodes(i_ms)):
-            M = numpy.tile(dprocess.inode(i_ms, I_ms), (N,1))
+            M = numpy.tile(dprocess.inode(i_ms, I_ms), (N, 1))
             prob = dprocess.iweight(i_ms, I_ms)
             S = g(m, s, xm, M, parms)
             XM = dr.eval_ijs(i_ms, I_ms, S)
-            rr = f(m,s,xm,M,S,XM,parms)
-            res[i_ms,:,:] += prob*rr
+            rr = f(m, s, xm, M, S, XM, parms)
+            res[i_ms, :, :] += prob * rr
 
     return res
 
@@ -33,10 +34,21 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 from .results import TimeIterationResult, AlgoResult
 
 
-def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
-                        verbose=True, maxit=1000, inner_maxit=10, tol=1e-6, hook=None, details=False, interp_method='cubic'):
+def time_iteration(
+    model,
+    dr0=None,
+    with_complementarities=True,
+    dprocess=None,
+    verbose=True,
+    maxit=1000,
+    inner_maxit=10,
+    tol=1e-6,
+    hook=None,
+    details=False,
+    interp_method="cubic",
+):
 
-    '''    Finds a global solution for ``model`` using backward time-iteration.
+    """Finds a global solution for ``model`` using backward time-iteration.
 
 
     This algorithm iterates on the residuals of the arbitrage equations
@@ -62,39 +74,43 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
     -------
     decision rule :
         approximated solution
-    '''
+    """
 
     from dolo import dprint
+
     def vprint(t):
         if verbose:
             print(t)
 
     if dprocess is not None:
         from dolo.numeric.grids import ProductGrid
+
         endo_grid = model.domain.discretize()
-        grid = ProductGrid(dprocess.grid, endo_grid, names=['exo', 'endo'])
+        grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
     else:
         grid, dprocess = model.discretize()
 
-    n_ms = dprocess.n_nodes # number of exogenous states
-    n_mv = dprocess.n_inodes(0) # this assume number of integration nodes is constant
+    n_ms = dprocess.n_nodes  # number of exogenous states
+    n_mv = dprocess.n_inodes(0)  # this assume number of integration nodes is constant
 
-    x0 = model.calibration['controls']
-    parms = model.calibration['parameters']
+    x0 = model.calibration["controls"]
+    parms = model.calibration["parameters"]
     n_x = len(x0)
-    n_s = len(model.symbols['states'])
+    n_s = len(model.symbols["states"])
 
-    endo_grid = grid['endo']
-    exo_grid = grid['exo']
+    endo_grid = grid["endo"]
+    exo_grid = grid["exo"]
 
-    mdr = DecisionRule(exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method)
+    mdr = DecisionRule(
+        exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method
+    )
 
     s = mdr.endo_grid.nodes
     N = s.shape[0]
 
     controls_0 = numpy.zeros((n_ms, N, n_x))
     if dr0 is None:
-        controls_0[:, :, :] = x0[None,None,:]
+        controls_0[:, :, :] = x0[None, None, :]
     else:
         if isinstance(dr0, AlgoResult):
             dr0 = dr0.dr
@@ -105,30 +121,30 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
             for i_m in range(n_ms):
                 m = dprocess.node(i_m)
                 controls_0[i_m, :, :] = dr0(m, s)
-    
-    f = model.functions['arbitrage']
-    g = model.functions['transition']
 
-    if 'arbitrage_lb' in model.functions and with_complementarities==True:
-        lb_fun = model.functions['arbitrage_lb']
-        ub_fun = model.functions['arbitrage_ub']
-        lb = numpy.zeros_like(controls_0)*numpy.nan
-        ub = numpy.zeros_like(controls_0)*numpy.nan
+    f = model.functions["arbitrage"]
+    g = model.functions["transition"]
+
+    if "arbitrage_lb" in model.functions and with_complementarities == True:
+        lb_fun = model.functions["arbitrage_lb"]
+        ub_fun = model.functions["arbitrage_ub"]
+        lb = numpy.zeros_like(controls_0) * numpy.nan
+        ub = numpy.zeros_like(controls_0) * numpy.nan
         for i_m in range(n_ms):
-            m = dprocess.node(i_m)[None,:]
-            p = parms[None,:]
+            m = dprocess.node(i_m)[None, :]
+            p = parms[None, :]
             m = numpy.repeat(m, N, axis=0)
             p = numpy.repeat(p, N, axis=0)
 
-            lb[i_m,:,:] = lb_fun(m, s, p)
-            ub[i_m,:,:] = ub_fun(m, s, p)
+            lb[i_m, :, :] = lb_fun(m, s, p)
+            ub[i_m, :, :] = ub_fun(m, s, p)
 
     else:
         with_complementarities = False
 
     sh_c = controls_0.shape
 
-    controls_0 = controls_0.reshape( (-1,n_x) )
+    controls_0 = controls_0.reshape((-1, n_x))
 
     from dolo.numeric.optimize.newton import newton, SerialDifferentiableFunction
     from dolo.numeric.optimize.ncpsolve import ncpsolve
@@ -137,25 +153,27 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
     it = 0
 
     if with_complementarities:
-        lb = lb.reshape((-1,n_x))
-        ub = ub.reshape((-1,n_x))
-
+        lb = lb.reshape((-1, n_x))
+        ub = ub.reshape((-1, n_x))
 
     if verbose:
-        headline = '|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |'.format( 'N',' Error', 'Gain','Time',  'nit' )
-        stars = '-'*len(headline)
+        headline = "|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |".format(
+            "N", " Error", "Gain", "Time", "nit"
+        )
+        stars = "-" * len(headline)
         print(stars)
         print(headline)
         print(stars)
 
     import time
+
     t1 = time.time()
 
     err_0 = numpy.nan
 
-    verbit = (verbose == 'full')
+    verbit = verbose == "full"
 
-    while err>tol and it<maxit:
+    while err > tol and it < maxit:
 
         it += 1
 
@@ -163,7 +181,9 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
 
         mdr.set_values(controls_0.reshape(sh_c))
 
-        fn = lambda x: residuals_simple(f, g, s, x.reshape(sh_c), mdr, dprocess, parms).reshape((-1,n_x))
+        fn = lambda x: residuals_simple(
+            f, g, s, x.reshape(sh_c), mdr, dprocess, parms
+        ).reshape((-1, n_x))
         dfn = SerialDifferentiableFunction(fn)
 
         res = fn(controls_0)
@@ -172,13 +192,15 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
             hook()
 
         if with_complementarities:
-            [controls,nit] = ncpsolve(dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit)
+            [controls, nit] = ncpsolve(
+                dfn, lb, ub, controls_0, verbose=verbit, maxit=inner_maxit
+            )
         else:
             [controls, nit] = newton(dfn, controls_0, verbose=verbit, maxit=inner_maxit)
 
-        err = abs(controls-controls_0).max()
+        err = abs(controls - controls_0).max()
 
-        err_SA = err/err_0
+        err_SA = err / err_0
         err_0 = err
 
         controls_0 = controls
@@ -187,7 +209,11 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
         elapsed = t_finish - t_start
 
         if verbose:
-            print('|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |'.format( it, err, err_SA, elapsed, nit  ))
+            print(
+                "|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |".format(
+                    it, err, err_SA, elapsed, nit
+                )
+            )
 
     controls_0 = controls.reshape(sh_c)
 
@@ -197,7 +223,7 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
 
     if verbose:
         print(stars)
-        print("Elapsed: {} seconds.".format(t2-t1))
+        print("Elapsed: {} seconds.".format(t2 - t1))
         print(stars)
 
     if not details:
@@ -208,9 +234,9 @@ def time_iteration(model, dr0=None, with_complementarities=True, dprocess=None,
         it,
         with_complementarities,
         dprocess,
-        err<tol, # x_converged: bool
-        tol, # x_tol
-        err, #: float
+        err < tol,  # x_converged: bool
+        tol,  # x_tol
+        err,  #: float
         None,  # log: object # TimeIterationLog
-        None   # trace: object #{Nothing,IterationTrace}
+        None,  # trace: object #{Nothing,IterationTrace}
     )
