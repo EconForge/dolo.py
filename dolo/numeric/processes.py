@@ -290,7 +290,7 @@ class ProductProcess(Process):
         self.processes = l
         self.d = sum([e.d for e in self.processes])
 
-    def discretize(self, to='iid', options={}):
+    def discretize(self, to='mc', options={}):
 
         if isinstance(options, dict):
             kwargs = [options]*len(self.processes)
@@ -299,12 +299,18 @@ class ProductProcess(Process):
             kwargs = options
 
         if to is None:
-            if isinstance(self.processes[0], IIDProcess):
-                to = 'iid'
-            elif isinstance(self.processes[0], DiscreteProcess):
+            if any([ isinstance(dp, DiscreteProcess) for dp in self.processes]):
                 to = 'mc'
+            elif all([ isinstance(dp, IIDProcess) for dp in self.processes]):
+                to = 'iid'
             else:
                 to = 'gdp'
+            # if isinstance(self.processes[0], IIDProcess):
+            #     to = 'iid'
+            # elif isinstance(self.processes[0], DiscreteProcess):
+            #     to = 'mc'
+            # else:
+            #     to = 'gdp'
 
         if to =='iid':
             from dolo.numeric.distribution import product_iid

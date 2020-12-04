@@ -15,7 +15,7 @@ def test_Mixture():
     σ = 0.1
     μ_norm = 0.2
     π = 0.4
-    distr = Mixture(index=Bernouilli(π=π), distributions={0: ConstantProcess(μ=μ_cons), 1: UNormal(σ=σ,μ=μ_norm)})
+    distr = Mixture(index=Bernouilli(π=π), distributions={'0': ConstantProcess(μ=μ_cons), '1': UNormal(σ=σ,μ=μ_norm)})
     disMix = distr.discretize() 
     expval = np.array([f(disMix.inode(0,j))*disMix.iweight(0,j) for j in range(disMix.n_inodes(0))]).sum()
     '''

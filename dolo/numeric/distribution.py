@@ -657,7 +657,7 @@ class Mixture(ContinuousDistribution):
         for i in range(inddist.n_inodes(0)):
             wind = inddist.iweight(0,i)
             xind = inddist.inode(0,i)
-            dist = self.distributions[i].discretize()
+            dist = self.distributions[str(i)].discretize()
             for j in range(dist.n_inodes(0)):
                 w = dist.iweight(0,j)
                 x = dist.inode(0,j)
