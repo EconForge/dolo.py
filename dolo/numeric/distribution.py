@@ -237,7 +237,7 @@ class Bernouilli(DiscreteDistribution):
     def __init__(self, π:float=None):
         self.π = float(π)
 
-    def discretize(self, to=None):
+    def discretize(self, to='iid'):
 
         if to == 'iid':
             x = np.array([[0],[1]])
@@ -291,7 +291,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
         raise Exception(f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}")
 
 
-    def discretize(self, to=None, N=5, method="equiprobable", mass_point="median"):
+    def discretize(self, to='iid', N=5, method="equiprobable", mass_point="median"):
         """
         Returns a discretized version of this process.
 
@@ -541,7 +541,7 @@ class Normal(ContinuousDistribution):
 
         return res
 
-    def discretize(self, to=None, N=None)->FiniteDistribution:
+    def discretize(self, to='iid', N=None)->FiniteDistribution:
         
         if to == 'iid':
             if N is None:
@@ -585,10 +585,10 @@ class ProductDistribution(ContinuousDistribution):
         self.d = sum([dis.d for dis in distributions])
         self.names = sum( [dis.names for dis in self.distributions], tuple() )
 
-    def discretize(self):
+    def discretize(self, to='iid'):
 
         # TODO: pass some options
-        fids = [dis.discretize() for dis in self.distributions]
+        fids = [dis.discretize(to = to) for dis in self.distributions]
         return product_iid(fids)
 
     def draw(self, N: int)->Matrix:
@@ -668,7 +668,7 @@ class Mixture(ContinuousDistribution):
         # TODO: check all distributions have the same variable names
         self.names = d0.names
 
-    def discretize(self, to=None):
+    def discretize(self, to='iid'):
         
         if to == 'iid':
 
