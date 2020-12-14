@@ -50,7 +50,7 @@ from typing import List, TypeVar, Generic, Union, Any, Callable # type: ignore
 from typing import Iterator, Tuple # type: ignore
 
 from dolang.language import greek_tolerance, language_element # type: ignore
-from dolo.numeric.processes import IIDProcess, DiscretizedIIDProcess # type: ignore
+from dolo.numeric.processes import IIDProcess, DiscretizedIIDProcess, MarkovChain # type: ignore
 
 Vector = List[float]
 Matrix = List[Vector]
@@ -237,15 +237,20 @@ class Bernouilli(DiscreteDistribution):
     def __init__(self, π:float=None):
         self.π = float(π)
 
-    def discretize(self, to='iid'):
+    def discretize(self, to=None):
 
-        if to != 'iid':
-            raise Exception("Not implemented (yet).")
-
-        x = np.array([[0],[1]])
-        w = np.array([1-self.π, self.π])
-        return FiniteDistribution(x, w)
-
+        if to == 'iid':
+            x = np.array([[0],[1]])
+            w = np.array([1-self.π, self.π])
+            return FiniteDistribution(x, w)
+        elif to == 'mc':
+            fin_distr = self.discretize(to='iid')
+            nodes = fin_distr.points
+            transitions = np.array([fin_distr.weights,]*2)
+            return MarkovChain(transitions, nodes)
+        else:
+            raise Exception("Not implemented.")
+    
     def draw(self, N: int)->Matrix:
         a = np.array([0,1])
         c = np.random.choice(a, size=N)
@@ -286,7 +291,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
         raise Exception(f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}")
 
 
-    def discretize(self, to="iid", N=5, method="equiprobable", mass_point="median"):
+    def discretize(self, to=None, N=5, method="equiprobable", mass_point="median"):
         """
         Returns a discretized version of this process.
 
@@ -307,14 +312,19 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
         process : DiscreteDistribution
             A discrete distribution.
         """
-        if method == "gauss-hermite":
-            return self.__discretize_gh__(N=N)
-        elif method == "equiprobable":
-            return self.__discretize_ep__(N=N, mass_point=mass_point)
+        if to == 'iid':
+            if method == "gauss-hermite":
+                return self.__discretize_gh__(N=N)
+            elif method == "equiprobable":
+                return self.__discretize_ep__(N=N, mass_point=mass_point)
+            else:
+                raise Exception("Unknown discretization method.")
+        elif to == 'mc':
+            discr_iid = self.discretize(to='iid')
+            nodes = discr_iid.points
+            transitions = np.array([discr_iid.weights,]*N)
+            return MarkovChain(transitions, nodes)
         else:
-            raise Exception("Unknown discretization method.")
-
-        if to != 'iid':
             raise Exception("Not implemented (yet).")
 
     def __discretize_ep__(self, N=5, mass_point="median"):  # Equiprobable
@@ -394,6 +404,8 @@ class Uniform(UnivariateContinuousDistribution):
     # uniform distribution over an interval [a,b]
     a: float = 0.0
     b: float = 1.0
+    
+    signature = {'a': 'float', 'b' : 'float'} # this is redundant for now
 
     def __init__(self, a: float = 0.0, b: float = 1.0):
         self.a = float(a)
@@ -529,16 +541,26 @@ class Normal(ContinuousDistribution):
 
         return res
 
-    def discretize(self, N=None)->FiniteDistribution:
+    def discretize(self, to=None, N=None)->FiniteDistribution:
+        
+        if to == 'iid':
+            if N is None:
+                N  = 5
+            if isinstance(N,int):
+                N = [N]*self.d
+            from dolo.numeric.discretization.quadrature import gauss_hermite_nodes # type: ignore
+            [x, w] = gauss_hermite_nodes(N, self.Σ, mu=self.Μ)
+            x = np.row_stack( [(e + self.Μ) for e in x] )
+            return FiniteDistribution(x,w,origin=self)
 
-        if N is None:
-            N  = 5
-        if isinstance(N,int):
-            N = [N]*self.d
-        from dolo.numeric.discretization.quadrature import gauss_hermite_nodes # type: ignore
-        [x, w] = gauss_hermite_nodes(N, self.Σ, mu=self.Μ)
-        x = np.row_stack( [(e + self.Μ) for e in x] )
-        return FiniteDistribution(x,w,origin=self)
+        elif to == 'mc':
+            discr_iid = self.discretize(to='iid')
+            nodes = discr_iid.points
+            transitions = np.array([discr_iid.weights,]*N)
+            return MarkovChain(transitions, nodes)
+
+        else:
+            raise Exception("Not implemented.")
 
     def __repr__(self):
         return f"Normal(Μ={self.Μ.__repr__()},Σ={self.Σ.__repr__()})"
@@ -646,26 +668,35 @@ class Mixture(ContinuousDistribution):
         # TODO: check all distributions have the same variable names
         self.names = d0.names
 
-    def discretize(self, to='iid'):
+    def discretize(self, to=None):
         
-        if to != 'iid':
-            raise Exception("Not implemented (yet).")
+        if to == 'iid':
 
-        inddist = self.index.discretize()
-        nodes = []
-        weights = []
-        for i in range(inddist.n_inodes(0)):
-            wind = inddist.iweight(0,i)
-            xind = inddist.inode(0,i)
-            dist = self.distributions[str(i)].discretize()
-            for j in range(dist.n_inodes(0)):
-                w = dist.iweight(0,j)
-                x = dist.inode(0,j)
-                nodes.append(x)
-                weights.append(wind*w)
-        nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
-        weights = np.array(weights)
-        return FiniteDistribution(nodes, weights)
+            inddist = self.index.discretize(to=to)
+            nodes = []
+            weights = []
+            for i in range(inddist.n_inodes(0)):
+                wind = inddist.iweight(0,i)
+                xind = inddist.inode(0,i)
+                dist = self.distributions[str(i)].discretize(to=to)
+                for j in range(dist.n_inodes(0)):
+                    w = dist.iweight(0,j)
+                    x = dist.inode(0,j)
+                    nodes.append(x)
+                    weights.append(wind*w)
+            nodes = np.concatenate([e[None,:] for e in nodes], axis=0)
+            weights = np.array(weights)
+            return FiniteDistribution(nodes, weights)
+        
+        elif to == 'mc':
+            discr_iid = self.discretize(to='iid')
+            nodes = discr_iid.points
+            transitions = np.array([discr_iid.weights,]*N)
+            return MarkovChain(transitions, nodes)
+        
+        else:
+            raise Exception("Not implemented.")
+
 
     def draw(self, N: int)->Matrix:
 
