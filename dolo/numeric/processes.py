@@ -125,7 +125,7 @@ class ConstantProcess(IIDProcess):
         assert self.μ.ndim == 1
         self.d = len(self.μ)
 
-    def discretize(self, to="iid", **kwargs):
+    def discretize(self, to=None, **kwargs):
 
         if to == "iid":
             x = self.μ[None, :]
@@ -303,7 +303,7 @@ class ProductProcess(Process):
         self.processes = l
         self.d = sum([e.d for e in self.processes])
 
-    def discretize(self, to="iid", options={}):
+    def discretize(self, to=None, options={}):
 
         if isinstance(options, dict):
             kwargs = [options] * len(self.processes)
@@ -312,10 +312,15 @@ class ProductProcess(Process):
             kwargs = options
 
         if to is None:
-            if isinstance(self.processes[0], IIDProcess):
-                to = "iid"
-            elif isinstance(self.processes[0], DiscreteProcess):
+            if any(
+                [
+                    isinstance(dp, MarkovChain) or isinstance(dp, ContinuousProcess)
+                    for dp in self.processes
+                ]
+            ):
                 to = "mc"
+            elif all([isinstance(dp, IIDProcess) for dp in self.processes]):
+                to = "iid"
             else:
                 to = "gdp"
 

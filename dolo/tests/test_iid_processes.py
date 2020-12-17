@@ -17,7 +17,7 @@ def test_Mixture():
     π = 0.4
     distr = Mixture(
         index=Bernouilli(π=π),
-        distributions={0: ConstantProcess(μ=μ_cons), 1: UNormal(σ=σ, μ=μ_norm)},
+        distributions={"0": ConstantProcess(μ=μ_cons), "1": UNormal(σ=σ, μ=μ_norm)},
     )
     disMix = distr.discretize()
     expval = np.array(
