@@ -102,6 +102,8 @@ class IIDProcess(Process):
         xar = DataArray(irf, dims=coords.keys(), coords=coords)
         return xar
 
+
+
     def simulate(
         self, N: int = 10, T: int = 100, i0=None, m0=None, stochastic=True
     ) -> DataArray:
@@ -204,6 +206,7 @@ class GDP(DiscretizedProcess):
 
 
 class DiscretizedIIDProcess(DiscretizedProcess):
+
     def point(self, i: int) -> int:
         raise Exception("Not Implemented.")
 

@@ -780,6 +780,11 @@ class Model(SymbolicModel):
         else:
             return None
 
+    def get_options(self, name):
+        
+        if name == "endo_grid":
+
+
     def residuals(self, calib=None):
 
         from dolo.algos.steady_state import residuals

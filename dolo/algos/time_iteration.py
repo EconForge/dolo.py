@@ -82,13 +82,19 @@ def time_iteration(
         if verbose:
             print(t)
 
+    try:
+        grid_options = {
+            'n': [e.value for e in model.data["options"]["grid"]["n"]]
+        }
+    except:
+        grid_options = {}
+
     if dprocess is not None:
         from dolo.numeric.grids import ProductGrid
-
-        endo_grid = model.domain.discretize()
+        endo_grid = model.domain.discretize(**grid_options)
         grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
     else:
-        grid, dprocess = model.discretize()
+        grid, dprocess = model.discretize(grid_options=grid_options)
 
     n_ms = dprocess.n_nodes  # number of exogenous states
     n_mv = dprocess.n_inodes(0)  # this assume number of integration nodes is constant
