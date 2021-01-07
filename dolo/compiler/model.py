@@ -581,9 +581,15 @@ class Model(SymbolicModel):
             self.__domain__ = super().get_domain()
         return self.__domain__
 
-    def discretize(self, grid_options={}, dprocess_options={}):
+    def discretize(self, grid_options=None, dprocess_options={}):
+
         dprocess = self.exogenous.discretize(**dprocess_options)
-        endo_grid = self.domain.discretize(**grid_options)
+
+        if grid_options is None:
+            endo_grid = self.endo_grid
+        else:
+            endo_grid = self.domain.discretize(**grid_options)
+            
         from dolo.numeric.grids import ProductGrid
 
         grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
@@ -779,10 +785,6 @@ class Model(SymbolicModel):
             return [fun_lb, fun_ub]
         else:
             return None
-
-    def get_options(self, name):
-        
-        if name == "endo_grid":
 
 
     def residuals(self, calib=None):
