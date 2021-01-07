@@ -172,11 +172,11 @@ class EquiprobableDistribution(DiscreteDistribution):
         inds = numpy.random.randint(low=0, high=self.n, size=N)
         return self.points[inds, :]
 
-    def discretize(self, to='iid'):
-        if to=='iid':
+    def discretize(self, to="iid"):
+        if to == "iid":
             return self
-        elif to=='mc':
-            return FiniteDistribution(self.points, self.weights).discretize(to='mc')
+        elif to == "mc":
+            return FiniteDistribution(self.points, self.weights).discretize(to="mc")
         else:
             raise Exception("Not implemented.")
 
@@ -224,12 +224,12 @@ class FiniteDistribution(DiscreteDistribution):
 
         return self.weights[i]
 
-
-    def discretize(self, to='iid'):
-        if to=='iid':
+    def discretize(self, to="iid"):
+        if to == "iid":
             return self
-        elif to=='mc':
+        elif to == "mc":
             from .processes import MarkovChain
+
             nodes = self.points
             N = len(nodes)
             transitions = np.array(
@@ -292,7 +292,7 @@ class Bernouilli(DiscreteDistribution):
             return FiniteDistribution(x, w)
         elif to == "mc":
             fin_distr = self.discretize(to="iid")
-            return fin_distr.discretize(to='mc')
+            return fin_distr.discretize(to="mc")
         else:
             raise Exception("Not implemented.")
 
@@ -370,7 +370,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
                 raise Exception("Unknown discretization method.")
         elif to == "mc":
             discr_iid = self.discretize(to="iid")
-            return discr_iid.discretize(to='mc')
+            return discr_iid.discretize(to="mc")
         else:
             raise Exception("Not implemented (yet).")
 
@@ -610,7 +610,7 @@ class Normal(ContinuousDistribution):
 
         elif to == "mc":
             discr_iid = self.discretize(to="iid")
-            return discr_iid.discretize(to='mc')
+            return discr_iid.discretize(to="mc")
 
         else:
             raise Exception("Not implemented.")
@@ -750,7 +750,8 @@ class Mixture(ContinuousDistribution):
 
         elif to == "mc":
             from dolo.numeric.processes import DiscretizedIIDProcess
-            return self.discretize(to='iid').discretize(to="mc")
+
+            return self.discretize(to="iid").discretize(to="mc")
 
         else:
             raise Exception("Not implemented.")

@@ -589,7 +589,7 @@ class Model(SymbolicModel):
             endo_grid = self.endo_grid
         else:
             endo_grid = self.domain.discretize(**grid_options)
-            
+
         from dolo.numeric.grids import ProductGrid
 
         grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
@@ -785,7 +785,6 @@ class Model(SymbolicModel):
             return [fun_lb, fun_ub]
         else:
             return None
-
 
     def residuals(self, calib=None):
 
