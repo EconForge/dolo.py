@@ -72,14 +72,14 @@ class Distribution(IIDProcess):
         "Compute `N` random draws. Returns an `N` times `d` matrix."
 
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
     def integrate(self, f) -> float:
         "Computes the expectation $E_u f(u)$ for given function `f`"
 
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
 
@@ -92,7 +92,7 @@ class ContinuousDistribution(Distribution):
     def discretize(self, **kwargs):  # ->DiscreteDistribution:
 
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
 
@@ -118,13 +118,13 @@ class DiscreteDistribution(Distribution, DiscretizedIIDProcess):
     def point(self, i) -> Vector:
         "Returns i-th discretization point (a Vector)"
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
     def weight(self, i) -> float:
         "Returns i-th discretization point (a float)"
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
     def items(self) -> Iterator[Tuple[float, Vector]]:
@@ -172,6 +172,14 @@ class EquiprobableDistribution(DiscreteDistribution):
         inds = numpy.random.randint(low=0, high=self.n, size=N)
         return self.points[inds, :]
 
+    def discretize(self, to="iid"):
+        if to == "iid":
+            return self
+        elif to == "mc":
+            return FiniteDistribution(self.points, self.weights).discretize(to="mc")
+        else:
+            raise Exception("Not implemented.")
+
     def __repr__(self):
         return f"EquiprobableDistribution(points={self.points.__repr__()}, origin={str(self.origin)})"
 
@@ -215,6 +223,24 @@ class FiniteDistribution(DiscreteDistribution):
     def weight(self, i) -> float:
 
         return self.weights[i]
+
+    def discretize(self, to="iid"):
+        if to == "iid":
+            return self
+        elif to == "mc":
+            from .processes import MarkovChain
+
+            nodes = self.points
+            N = len(nodes)
+            transitions = np.array(
+                [
+                    self.weights,
+                ]
+                * N
+            )
+            return MarkovChain(transitions, nodes)
+        else:
+            raise Exception("Not implemented.")
 
     def __repr__(self):
         return f"FiniteDistribution(points={self.points.__repr__()}, weights={self.weights.__repr__()}, origin={str(self.origin)})"
@@ -266,14 +292,7 @@ class Bernouilli(DiscreteDistribution):
             return FiniteDistribution(x, w)
         elif to == "mc":
             fin_distr = self.discretize(to="iid")
-            nodes = fin_distr.points
-            transitions = np.array(
-                [
-                    fin_distr.weights,
-                ]
-                * 2
-            )
-            return MarkovChain(transitions, nodes)
+            return fin_distr.discretize(to="mc")
         else:
             raise Exception("Not implemented.")
 
@@ -312,13 +331,13 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
     def ppf(self, quantiles: Vector) -> Vector:
         "Percentage Point Function (inverse CDF)"
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
     def cdf(self, quantiles: Vector) -> Vector:
         "Cumulative Distribution"
         raise Exception(
-            f"Not Implemented (yet). Should be implemented by subclass {self.__class__.name}"
+            f"Not Implemented (yet). Should be implemented by subclass {self.__class__}"
         )
 
     def discretize(self, to="iid", N=5, method="equiprobable", mass_point="median"):
@@ -351,14 +370,7 @@ class UnivariateContinuousDistribution(ContinuousDistribution):
                 raise Exception("Unknown discretization method.")
         elif to == "mc":
             discr_iid = self.discretize(to="iid")
-            nodes = discr_iid.points
-            transitions = np.array(
-                [
-                    discr_iid.weights,
-                ]
-                * N
-            )
-            return MarkovChain(transitions, nodes)
+            return discr_iid.discretize(to="mc")
         else:
             raise Exception("Not implemented (yet).")
 
@@ -598,14 +610,7 @@ class Normal(ContinuousDistribution):
 
         elif to == "mc":
             discr_iid = self.discretize(to="iid")
-            nodes = discr_iid.points
-            transitions = np.array(
-                [
-                    discr_iid.weights,
-                ]
-                * N
-            )
-            return MarkovChain(transitions, nodes)
+            return discr_iid.discretize(to="mc")
 
         else:
             raise Exception("Not implemented.")
@@ -744,15 +749,9 @@ class Mixture(ContinuousDistribution):
             return FiniteDistribution(nodes, weights)
 
         elif to == "mc":
-            discr_iid = self.discretize(to="iid")
-            nodes = discr_iid.points
-            transitions = np.array(
-                [
-                    discr_iid.weights,
-                ]
-                * N
-            )
-            return MarkovChain(transitions, nodes)
+            from dolo.numeric.processes import DiscretizedIIDProcess
+
+            return self.discretize(to="iid").discretize(to="mc")
 
         else:
             raise Exception("Not implemented.")

@@ -220,8 +220,6 @@ def deterministic_solve(
         lower_bound = None
         upper_bound = None
 
-    print(initial_guess.shape)
-    print(epsilons.shape)
     det_residual(model, initial_guess, s1, xT_g, epsilons)
 
     if not ignore_constraints:

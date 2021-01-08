@@ -289,13 +289,10 @@ def improved_time_iteration(
 
     parms = model.calibration["parameters"]
 
-    if dprocess is not None:
-        from dolo.numeric.grids import ProductGrid
+    grid, dprocess_ = model.discretize()
 
-        endo_grid = model.domain.discretize()
-        grid = ProductGrid(dprocess.grid, endo_grid, names=["exo", "endo"])
-    else:
-        grid, dprocess = model.discretize()
+    if dprocess is None:
+        dprocess = dprocess_
 
     endo_grid = grid["endo"]
     exo_grid = grid["exo"]
