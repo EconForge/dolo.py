@@ -56,7 +56,8 @@ def time_iteration(
     Parameters
     ----------
     model : Model
-        model to be solved
+        model to be solved.
+        Must have ``transition`` and ``arbitrage`` functions.
     verbose : boolean
         if True, display iterations
     dr0 : decision rule
