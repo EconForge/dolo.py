@@ -24,8 +24,13 @@ def response(model, dr, varname, T=40, impulse: float = None):
     e1 = numpy.zeros(len(model.symbols["exogenous"]))
     e1[i_exo] = impulse
 
-    m_simul = model.exogenous.response(T, e1)
-    m_simul = m_simul[:, None, :]
+
+    exogenous = model.exogenous
+    print(exogenous)
+    print(T, e1)
+    m_simul = model.exogenous.response(T-1, e1) # this is an xarray T x V
+    m_simul = m_simul.expand_dims("N")
+    m_simul = m_simul.transpose("T", "N", "V").data
 
     sim = simulate(model, dr, N=1, T=T, driving_process=m_simul, stochastic=False)
 
