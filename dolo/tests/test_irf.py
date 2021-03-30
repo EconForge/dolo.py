@@ -6,7 +6,8 @@ def test_irf():
     model = yaml_import("examples/models/rbc.yaml")
     dr = perturb(model).dr
 
-    irf = response(model, dr, 'e_z')
+    irf = response(model, dr, "e_z")
     print(irf)
+
 
 test_irf()
