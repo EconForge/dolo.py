@@ -4,7 +4,7 @@ symbols:
     expectations: [mr]
     poststates: [a]
     controls: [c]
-    parameters: [β, γ, σ, ρ, r]
+    parameters: [β, γ, σ, ρ, r, cbar]
 
 
 equations:
@@ -16,13 +16,16 @@ equations:
         - β*( c[t+1]/c[t] )^(-γ)*r - 1  | 0.0<=c[t]<=w[t]
 
     half_transition: |
-        w[t] = y[t] + a[t-1]*r
+        w[t] = exp(y[t]) + a[t-1]*r
+
+    reverse_state: |
+        w[t] = a[t] + c[t]
 
     expectation: |
-        mr[t] = β*( c[t+1] )^(-γ)*r
+        mr[t] = β*( c[t+1]/cbar )^(-γ)*r
 
     direct_response_egm: |
-        c[t] = (mr[t])^(-1/γ)
+        c[t] = cbar*(mr[t])^(-1/γ)
 
 calibration:
     β: 0.96
@@ -30,13 +33,14 @@ calibration:
     σ: 0.1
     ρ: 0.0
     r: 1.02
+    cbar: c
 
     w: 1.0
     ξ: 0.0
     c: 0.9*w
 
 domain:
-    w: [0.1, 4.0]
+    w: [0.01, 4.0]
 
 exogenous: !AR1
     rho: 0.9

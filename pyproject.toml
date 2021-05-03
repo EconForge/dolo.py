@@ -19,6 +19,7 @@ quantecon = "^0.4.7"
 xarray = "^0.15.1"
 multipledispatch = "^0.6.0"
 dolang = "0.0.14"
+PyQt5 = "^5.15.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

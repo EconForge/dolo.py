@@ -107,6 +107,8 @@ dtcc:
                 - ['exogenous', 0, 'm']
                 - ['poststates', 0, 'a']
                 - ['controls', 0, 'x']
+                - ['parameters',0,'p']
+
 
             
 
