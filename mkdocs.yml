@@ -7,6 +7,7 @@ nav:
     - Home: index.md
     - Install: installation.md
     - Model API: model_api.md
+    - Processes: processes.md
     # - API: mkapi/api/dolo
     - Algorithms:
       - perfect_foresight: perfect_foresight.md

@@ -2,7 +2,7 @@ dtcc:
 
     model_spec: dtcc
 
-    symbols: ['exogenous', 'states', 'controls', 'rewards', 'values', 'expectations', 'shocks', 'parameters']
+    symbols: ['exogenous', 'states', 'controls', 'poststates', 'rewards', 'values', 'expectations', 'shocks', 'parameters']
 
     specs:
 
@@ -75,6 +75,40 @@ dtcc:
                 - ['controls',1,'X']
 
                 - ['parameters',0,'p']
+
+        half_transition:
+            optional: True
+            target: ['states', 0, 'S']
+            recursive: False
+            eqs:
+                - ['exogenous', -1, 'm']
+                - ['poststates', -1, 'a']
+                - ['exogenous', 0, 'M']
+                - ['parameters', 0, 'p']
+
+        direct_response_egm:
+
+            optional: True
+            recursive: True
+            target: ['controls', 0,'x']
+
+            eqs:
+                - ['exogenous',0,'m']
+                - ['poststates',0,'a']
+                - ['expectations', 0, 'z']
+                - ['parameters',0,'p']
+
+        reverse_state:
+
+            optional: True
+            recursive: True
+            target: ['states', 0, 's']
+            eqs:
+                - ['exogenous', 0, 'm']
+                - ['poststates', 0, 'a']
+                - ['controls', 0, 'x']
+
+            
 
         direct_response:
 
