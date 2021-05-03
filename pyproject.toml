@@ -7,7 +7,7 @@ authors = ["Winant Pablo <pablo.winant@gmail.com>"]
 license="BSD-2-Clause"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7, <3.10"
 interpolation = "^2.1.6"
 numpy = "^1.16.0"
 ipython = "^7.13.0"
@@ -19,7 +19,8 @@ quantecon = "^0.4.7"
 xarray = "^0.15.1"
 multipledispatch = "^0.6.0"
 dolang = "0.0.14"
-PyQt5 = "^5.15.4"
+PySide2 = "^5.15.2"
+line-profiler = "^3.2.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

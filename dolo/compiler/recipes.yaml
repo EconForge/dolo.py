@@ -63,17 +63,13 @@ dtcc:
                 - ['parameters',0,'p']
 
         expectation:
-
             optional: True
-
             target: ['expectations',0,'z']
             recursive: False
-
             eqs:
                 - ['exogenous',1,'M']
                 - ['states',1,'S']
                 - ['controls',1,'X']
-
                 - ['parameters',0,'p']
 
         half_transition:
