@@ -19,6 +19,18 @@ class TimeIterationResult(AlgoResult):
 
 
 @dataclass
+class EGMResult(AlgoResult):
+    dr: object
+    iterations: int
+    dprocess: object
+    a_converged: bool
+    a_tol: float
+    err: float
+    # log: object  # TimeIterationLog
+    # trace: object  # {Nothing,IterationTrace}
+
+
+@dataclass
 class ValueIterationResult(AlgoResult):
     dr: object  #:AbstractDecisionRule
     drv: object  #:AbstractDecisionRule
