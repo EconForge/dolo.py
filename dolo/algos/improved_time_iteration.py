@@ -248,11 +248,12 @@ from .results import AlgoResult, ImprovedTimeIterationResult
 
 
 def improved_time_iteration(
-    model: Model, *,
-    dr0: DecisionRule=None,      #
-    verbose: bool=True, #
-    details: bool=True,  #
-    ignore_constraints=False, #
+    model: Model,
+    *,
+    dr0: DecisionRule = None,  #
+    verbose: bool = True,  #
+    details: bool = True,  #
+    ignore_constraints=False,  #
     method="jac",
     dprocess=None,
     interp_method="cubic",
@@ -265,7 +266,7 @@ def improved_time_iteration(
     invmethod="iti",
     # obsolete
     complementarities=None
-)->ImprovedTimeIterationResult:
+) -> ImprovedTimeIterationResult:
 
     # obsolete
     if complementarities is not None:

@@ -21,13 +21,14 @@ from .results import AlgoResult, ValueIterationResult
 
 
 def value_iteration(
-    model: Model, *,
-    verbose: bool=False, #
-    details: bool=True,  #
-    tol=1e-6, 
+    model: Model,
+    *,
+    verbose: bool = False,  #
+    details: bool = True,  #
+    tol=1e-6,
     maxit=500,
-    maxit_howard=20, 
-)->ValueIterationResult:
+    maxit_howard=20,
+) -> ValueIterationResult:
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.

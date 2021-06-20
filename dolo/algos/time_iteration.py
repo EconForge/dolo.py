@@ -36,13 +36,15 @@ from .results import TimeIterationResult, AlgoResult
 from dolo.misc.itprinter import IterationsPrinter
 import copy
 
+
 def time_iteration(
-    model: Model, *, #
-    dr0: DecisionRule=None, #
-    verbose: bool=True, #
-    details: bool=True, #
-    ignore_constraints: bool=False, #
-    trace: bool=False, #
+    model: Model,
+    *,  #
+    dr0: DecisionRule = None,  #
+    verbose: bool = True,  #
+    details: bool = True,  #
+    ignore_constraints: bool = False,  #
+    trace: bool = False,  #
     dprocess=None,
     maxit=1000,
     inner_maxit=10,
@@ -51,7 +53,7 @@ def time_iteration(
     interp_method="cubic",
     # obsolete
     with_complementarities=None,
-)->TimeIterationResult:
+) -> TimeIterationResult:
 
     """Finds a global solution for ``model`` using backward time-iteration.
 
@@ -87,7 +89,6 @@ def time_iteration(
         pass
     else:
         with_complementarities = not ignore_constraints
-
 
     if trace:
         trace_details = []
@@ -171,7 +172,6 @@ def time_iteration(
         lb = lb.reshape((-1, n_x))
         ub = ub.reshape((-1, n_x))
 
-
     itprint = IterationsPrinter(
         ("N", int),
         ("Error", float),
@@ -199,7 +199,7 @@ def time_iteration(
         mdr.set_values(controls_0.reshape(sh_c))
 
         if trace:
-            trace_details.append({'dr': copy.deepcopy(mdr)})
+            trace_details.append({"dr": copy.deepcopy(mdr)})
 
         fn = lambda x: residuals_simple(
             f, g, s, x.reshape(sh_c), mdr, dprocess, parms
@@ -228,22 +228,15 @@ def time_iteration(
         t_finish = time.time()
         elapsed = t_finish - t_start
 
-        itprint.print_iteration(
-            N=it,
-            Error=err_0,
-            Gain=err_SA,
-            Time=elapsed,
-            nit=nit),
+        itprint.print_iteration(N=it, Error=err_0, Gain=err_SA, Time=elapsed, nit=nit),
 
     controls_0 = controls.reshape(sh_c)
 
     mdr.set_values(controls_0)
     if trace:
-            trace_details.append({'dr': copy.deepcopy(mdr)})
-
+        trace_details.append({"dr": copy.deepcopy(mdr)})
 
     itprint.print_finished()
-
 
     if not details:
         return mdr

@@ -59,7 +59,9 @@ from dolo.numeric.decision_rule import DecisionRule
 
 
 def simulate(
-    model: Model, dr: DecisionRule, *,
+    model: Model,
+    dr: DecisionRule,
+    *,
     process=None,
     N=1,
     T=40,

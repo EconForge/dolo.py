@@ -51,10 +51,11 @@ def _shocks_to_epsilons(model, shocks, T):
 
 
 def deterministic_solve(
-    model: Model, *, #
-    verbose: bool=True,    #
-    ignore_constraints: bool=False, #
-    exogenous=None, 
+    model: Model,
+    *,  #
+    verbose: bool = True,  #
+    ignore_constraints: bool = False,  #
+    exogenous=None,
     s0=None,
     m0=None,
     T=100,

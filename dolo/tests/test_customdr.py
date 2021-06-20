@@ -50,8 +50,4 @@ def finite_time_iteration():
     # plt.show()
 
 
-
-
-
-
 finite_time_iteration()

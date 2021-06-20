@@ -8,9 +8,9 @@ from .results import EGMResult
 
 def egm(
     model: Model,
-    dr0: DecisionRule=None,
-    verbose: bool=False,
-    details: bool=True,
+    dr0: DecisionRule = None,
+    verbose: bool = False,
+    details: bool = True,
     a_grid=None,
     η_tol=1e-6,
     maxit=1000,

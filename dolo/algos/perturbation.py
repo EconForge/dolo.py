@@ -1,5 +1,6 @@
 from dolo.compiler.model import Model
 
+
 def get_derivatives(model, steady_state=None):
     """The sum of two numbers."""
 
@@ -193,9 +194,10 @@ from dolo.compiler.model import Model
 
 
 def perturb(
-    model: Model, *,
-    details: bool=True, #
-    verbose: bool=True, #
+    model: Model,
+    *,
+    details: bool = True,  #
+    verbose: bool = True,  #
     steady_state=None,
     eigmax=1.0 - 1e-6,
     solve_steady_state=False,
