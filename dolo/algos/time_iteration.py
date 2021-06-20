@@ -2,6 +2,7 @@
 
 import numpy
 from dolo import dprint
+from dolo.compiler.model import Model
 from dolo.numeric.processes import DiscretizedIIDProcess
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.grids import CartesianGrid
@@ -32,21 +33,25 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 
 
 from .results import TimeIterationResult, AlgoResult
-
+from dolo.misc.itprinter import IterationsPrinter
+import copy
 
 def time_iteration(
-    model,
-    dr0=None,
-    with_complementarities=True,
+    model: Model, *, #
+    dr0: DecisionRule=None, #
+    verbose: bool=True, #
+    details: bool=True, #
+    ignore_constraints: bool=False, #
+    trace: bool=False, #
     dprocess=None,
-    verbose=True,
     maxit=1000,
     inner_maxit=10,
     tol=1e-6,
     hook=None,
-    details=False,
     interp_method="cubic",
-):
+    # obsolete
+    with_complementarities=None,
+)->TimeIterationResult:
 
     """Finds a global solution for ``model`` using backward time-iteration.
 
@@ -57,11 +62,11 @@ def time_iteration(
     ----------
     model : Model
         model to be solved
-    verbose : boolean
+    verbose : bool
         if True, display iterations
     dr0 : decision rule
         initial guess for the decision rule
-    with_complementarities : boolean (True)
+    with_complementarities : bool (True)
         if False, complementarity conditions are ignored
     maxit: maximum number of iterations
     inner_maxit: maximum number of iteration for inner solver
@@ -75,6 +80,17 @@ def time_iteration(
     decision rule :
         approximated solution
     """
+
+    # deal with obsolete options
+    if with_complementarities is not None:
+        # TODO warn
+        pass
+    else:
+        with_complementarities = not ignore_constraints
+
+
+    if trace:
+        trace_details = []
 
     from dolo import dprint
 
@@ -153,14 +169,16 @@ def time_iteration(
         lb = lb.reshape((-1, n_x))
         ub = ub.reshape((-1, n_x))
 
-    if verbose:
-        headline = "|{0:^4} | {1:10} | {2:8} | {3:8} | {4:3} |".format(
-            "N", " Error", "Gain", "Time", "nit"
-        )
-        stars = "-" * len(headline)
-        print(stars)
-        print(headline)
-        print(stars)
+
+    itprint = IterationsPrinter(
+        ("N", int),
+        ("Error", float),
+        ("Gain", float),
+        ("Time", float),
+        ("nit", int),
+        verbose=verbose,
+    )
+    itprint.print_header("Start Time Iterations.")
 
     import time
 
@@ -177,6 +195,9 @@ def time_iteration(
         t_start = time.time()
 
         mdr.set_values(controls_0.reshape(sh_c))
+
+        if trace:
+            trace_details.append({'dr': copy.deepcopy(mdr)})
 
         fn = lambda x: residuals_simple(
             f, g, s, x.reshape(sh_c), mdr, dprocess, parms
@@ -205,23 +226,22 @@ def time_iteration(
         t_finish = time.time()
         elapsed = t_finish - t_start
 
-        if verbose:
-            print(
-                "|{0:4} | {1:10.3e} | {2:8.3f} | {3:8.3f} | {4:3} |".format(
-                    it, err, err_SA, elapsed, nit
-                )
-            )
+        itprint.print_iteration(
+            N=it,
+            Error=err_0,
+            Gain=err_SA,
+            Time=elapsed,
+            nit=nit),
 
     controls_0 = controls.reshape(sh_c)
 
     mdr.set_values(controls_0)
+    if trace:
+            trace_details.append({'dr': copy.deepcopy(mdr)})
 
-    t2 = time.time()
 
-    if verbose:
-        print(stars)
-        print("Elapsed: {} seconds.".format(t2 - t1))
-        print(stars)
+    itprint.print_finished()
+
 
     if not details:
         return mdr
@@ -235,5 +255,5 @@ def time_iteration(
         tol,  # x_tol
         err,  #: float
         None,  # log: object # TimeIterationLog
-        None,  # trace: object #{Nothing,IterationTrace}
+        trace_details,  # trace: object #{Nothing,IterationTrace}
     )

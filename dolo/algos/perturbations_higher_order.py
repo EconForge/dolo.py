@@ -1,3 +1,4 @@
+from dolo.compiler.model import Model
 from dolo.numeric.taylor_expansion import CDR
 from dolo.numeric.extern.qz import qzordered
 from dolo.compiler.derivatives import get_model_derivatives
@@ -5,7 +6,12 @@ from typing import List
 from numpy import ndarray
 
 
-def perturb(model, order=1, return_dr=True, steady_state=None, verbose=True):
+def perturb(model: Model, *,
+     verbose=True,
+     details=True,
+     order=1,
+     return_dr=True,
+     steady_state=None,):
 
     from dolo.numeric.processes import IIDProcess
 

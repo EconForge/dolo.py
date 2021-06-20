@@ -3,6 +3,7 @@ import pandas as pd
 from numpy import array, atleast_2d, linspace, zeros
 from scipy.optimize import root
 
+from dolo.compiler.model import Model
 from dolo.numeric.optimize.ncpsolve import ncpsolve
 
 
@@ -50,15 +51,15 @@ def _shocks_to_epsilons(model, shocks, T):
 
 
 def deterministic_solve(
-    model,
-    exogenous=None,
+    model: Model, *, #
+    verbose: bool=True,    #
+    ignore_constraints: bool=False, #
+    exogenous=None, 
     s0=None,
     m0=None,
     T=100,
-    ignore_constraints=False,
     maxit=100,
     initial_guess=None,
-    verbose=True,
     solver="ncpsolve",
     keep_steady_state=False,
     s1=None,  # deprecated

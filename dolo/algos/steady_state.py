@@ -25,7 +25,8 @@ def residuals(model: Model, calib=None) -> Dict[str, List[float]]:
     return res
 
 
-def find_steady_state(model, m=None):
+def find_steady_state(model: Model, *,
+    m=None):
 
     n_s = len(model.calibration["states"])
     n_x = len(model.calibration["controls"])

@@ -7,14 +7,15 @@ from .results import EGMResult
 
 
 def egm(
-    model,
-    dr0=None,
+    model: Model,
+    dr0: DecisionRule=None,
+    verbose: bool=False,
+    details: bool=True,
     a_grid=None,
     η_tol=1e-6,
     maxit=1000,
     grid=None,
     dp=None,
-    verbose=False,
 ):
     """
     a_grid: (numpy-array) vector of points used to discretize poststates; must be increasing

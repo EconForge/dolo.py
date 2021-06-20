@@ -3,7 +3,7 @@
 from .bruteforce_lib import *
 from .invert import *
 
-
+from dolo.compiler.model import Model
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.misc.itprinter import IterationsPrinter
 from numba import jit
@@ -248,22 +248,32 @@ from .results import AlgoResult, ImprovedTimeIterationResult
 
 
 def improved_time_iteration(
-    model,
+    model: Model, *,
+    dr0: DecisionRule=None,      #
+    verbose: bool=True, #
+    details: bool=True,  #
+    ignore_constraints=False, #
     method="jac",
-    dr0=None,
     dprocess=None,
     interp_method="cubic",
     mu=2,
     maxbsteps=10,
-    verbose=False,
     tol=1e-8,
     smaxit=500,
     maxit=1000,
-    complementarities=True,
     compute_radius=False,
     invmethod="iti",
-    details=True,
-):
+    # obsolete
+    complementarities=None
+)->ImprovedTimeIterationResult:
+
+    # obsolete
+    if complementarities is not None:
+        # TODO: warning
+        pass
+    else:
+        complementarities = not ignore_constraints
+
     def vprint(*args, **kwargs):
         if verbose:
             print(*args, **kwargs)

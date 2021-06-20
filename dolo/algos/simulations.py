@@ -2,6 +2,8 @@ import numpy
 import pandas
 import xarray as xr
 import numpy as np
+
+from dolo.compiler.model import Model
 from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import newton as newton_solver
 from dolo.numeric.optimize.newton import SerialDifferentiableFunction
@@ -56,7 +58,7 @@ from dolo.algos.results import AlgoResult
 
 
 def simulate(
-    model,
+    model: Model, *,
     dr,
     process=None,
     N=1,

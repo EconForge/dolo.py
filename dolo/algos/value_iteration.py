@@ -2,6 +2,9 @@ import time
 import numpy as np
 import numpy
 import scipy.optimize
+
+from dolo.compiler.model import Model
+
 from dolo.numeric.processes import DiscretizedIIDProcess
 
 # from dolo.numeric.decision_rules_markov import MarkovDecisionRule, IIDDecisionRule
@@ -18,8 +21,13 @@ from .results import AlgoResult, ValueIterationResult
 
 
 def value_iteration(
-    model, tol=1e-6, maxit=500, maxit_howard=20, verbose=False, details=True
-):
+    model: Model, *,
+    verbose: bool=False, #
+    details: bool=True,  #
+    tol=1e-6, 
+    maxit=500,
+    maxit_howard=20, 
+)->ValueIterationResult:
     """
     Solve for the value function and associated Markov decision rule by iterating over
     the value function.

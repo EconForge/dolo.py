@@ -1,3 +1,5 @@
+from dolo.compiler.model import Model
+
 def get_derivatives(model, steady_state=None):
     """The sum of two numbers."""
 
@@ -187,16 +189,17 @@ def approximate_1st_order(g_s, g_x, g_e, f_s, f_x, f_S, f_X):
 
 
 from .results import AlgoResult, PerturbationResult
+from dolo.compiler.model import Model
 
 
 def perturb(
-    model,
-    verbose=False,
+    model: Model, *,
+    details: bool=True, #
+    verbose: bool=True, #
     steady_state=None,
     eigmax=1.0 - 1e-6,
     solve_steady_state=False,
     order=1,
-    details=True,
 ):
     """Compute first order approximation of optimal controls
 
