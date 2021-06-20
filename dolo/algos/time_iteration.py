@@ -91,6 +91,8 @@ def time_iteration(
 
     if trace:
         trace_details = []
+    else:
+        trace_details = None
 
     from dolo import dprint
 

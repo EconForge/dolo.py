@@ -17,3 +17,41 @@ def test_custom_dr():
     sim = simulate(model, edr, s0=np.array([0.0, 8.0]))
 
     time_iteration(model, dr0=edr)
+
+
+def finite_time_iteration():
+    from dolo import yaml_import, time_iteration
+    from dolo.numeric.decision_rule import CustomDR
+    import matplotlib.pyplot as plt
+
+    model = yaml_import("examples/models/consumption_savings_iid.yaml")
+
+    # in the near future this will become:
+    # """c[t] = w[t]"""
+    values = {"c": "w"}
+
+    edr = CustomDR(values, model)
+
+    sol = time_iteration(model, dr0=edr, maxit=5, trace=True)
+
+    # # exemple of use
+    # wmin, wmax = model.domain['w']
+    # import numpy as np
+    # wvec = np.linspace(wmin, wmax, 1000)[:,None]
+    # plt.plot()
+    # for k in range(len(sol.trace)):
+    #     # sol.trace[k] is a dictionary with some recorded values
+    #     dr = sol.trace[k]['dr']
+    #     cvec = dr(wvec)[:,0]
+    #     plt.plot(wvec, cvec, label=f"T-{k}")
+    # plt.xlabel("w")
+    # plt.legend(loc='upper left')
+    # plt.ylabel("c(w)")
+    # plt.show()
+
+
+
+
+
+
+finite_time_iteration()

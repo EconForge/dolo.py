@@ -55,11 +55,11 @@ def find_index(sim, values):
 
 from dolo.numeric.grids import CartesianGrid, UnstructuredGrid
 from dolo.algos.results import AlgoResult
+from dolo.numeric.decision_rule import DecisionRule
 
 
 def simulate(
-    model: Model, *,
-    dr,
+    model: Model, dr: DecisionRule, *,
     process=None,
     N=1,
     T=40,

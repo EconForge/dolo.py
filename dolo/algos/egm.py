@@ -2,7 +2,7 @@ import yaml
 from dolo.numeric.decision_rule import DecisionRule
 import numpy as np
 from interpolation.splines import eval_linear
-
+from dolo.compiler.model import Model
 from .results import EGMResult
 
 
