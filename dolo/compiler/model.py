@@ -259,10 +259,18 @@ class SymbolicModel:
             return "Anonymous"
 
     @property
+    def filename(self):
+        try:
+            return self.data["filename"].value
+        except Exception as e:
+            return "<string>"
+
+
+    @property
     def infos(self):
         infos = {
             "name": self.name,
-            "filename": self.data["filename"].value,
+            "filename": self.filename,
             "type": "dtcc",
         }
         return infos
