@@ -1,5 +1,4 @@
-Complete documentation with installation instruction, available at http://dolo.readthedocs.org/en/latest/
-New in-progress [version](https://www.econforge.org/dolo.py).
+Complete documentation with installation instruction, available at https://www.econforge.org/dolo.py.
 
 Join the chat at https://gitter.im/EconForge/dolo
 
