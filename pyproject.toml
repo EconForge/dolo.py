@@ -19,10 +19,10 @@ quantecon = "^0.4.7"
 xarray = "^0.15.1"
 multipledispatch = "^0.6.0"
 dolang = "0.0.14"
-PySide2 = "^5.15.2"
 line-profiler = "^3.2.6"
 
 [tool.poetry.dev-dependencies]
+mkdocs-material = "^7.1.8"
 pytest = "^5.2"
 mkdocs = "^1.1"
 mkapi = "^1.0.5"

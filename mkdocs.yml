@@ -1,7 +1,7 @@
 site_name: Dolo
 
 theme:
-    name: mkdocs
+    name: material
 
 nav:
     - Home: index.md
