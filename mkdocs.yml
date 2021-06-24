@@ -1,7 +1,9 @@
 site_name: Dolo
 
 theme:
-    name: material
+    name: readthedocs
+    # titles_only: true
+    # name: material
 
 nav:
     - Home: index.md
