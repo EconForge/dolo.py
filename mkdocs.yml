@@ -10,7 +10,12 @@ nav:
     - Processes: processes.md
     # - API: mkapi/api/dolo
     - Algorithms:
+      - steady_state: steady_state.md
+      - perturbation: perturbation.md
       - perfect_foresight: perfect_foresight.md
+      - time_iteration: time_iteration.md
+      - value_iteration: value_iteration.md
+
 
 plugins:
   - search # necessary for search to work
