@@ -26,6 +26,8 @@ nav:
     - Post Processing: 
       - Inspecting the Solution: inspect.md
       - Simulation: simulation.md
+    - Misc:
+      - Finite Horizon Time Iteration: finite_iteration.md
 
 plugins:
   - search # necessary for search to work
