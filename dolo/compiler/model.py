@@ -265,7 +265,6 @@ class SymbolicModel:
         except Exception as e:
             return "<string>"
 
-
     @property
     def infos(self):
         infos = {
