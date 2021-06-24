@@ -36,7 +36,7 @@ def value_iteration(
     Parameters:
     -----------
     model :
-        "dtmscc" model. Must contain a 'felicity' function.
+        model to be solved
     dr :
         decision rule to evaluate
 

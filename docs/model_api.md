@@ -1,17 +1,13 @@
 # Model API
 
-For numerical purposes, models are essentially represented as a set of
-symbols, calibration and functions representing the various equation
-types of the model. This data is held in a `Model` object whose
-API is described in this chapter. Models are usually created by writing
-a Yaml files as described in the the previous chapter, but as we will
+For numerical purposes, models are essentially represented as a set of symbols, calibration and functions representing the various equation
+types of the model. This data is held in a `Model` object whose API is described in this chapter. Models are usually created by writing a Yaml files as described in the the previous chapter, but as we will
 see below, they can also be written directly as long as they satisfy the requirements detailed below.
 
 ## Model Object
 
 
-As previously, let\'s consider, the Real Business Cycle example, from
-the introduction. The model object can be created using the yaml file:
+As previously, let's consider, the Real Business Cycle example, from the introduction. The model object can be created using the yaml file:
 
 ``` {.python}
 model = yaml_import('models/rbc.yaml')
@@ -20,22 +16,14 @@ model = yaml_import('models/rbc.yaml')
 The object contains few meta-data:
 
 ``` {.yaml}
-display( model.name )  # -> Real Business Cycles
-display( model.model_type )   # -> `dtcc`
+display( model.name )  # -> "Real Business Cycles"
+display( model.infos )   # -> {"name": "Real Business Cycle",  "filename": "examples/models/rbc.yaml",  "type": "dtcc"}
 ```
-
-
-!!! note
-
-    ``model_type`` field is now always ``dtcc``. Older model types (``'dtmscc'``, ``'dtcscc'``, ``'dynare'``) are not used anymore.
-
-
 
 ## Calibration
 
 
-Each models stores calibration information as `model.calibration`. It is a special dictionary-like object,  which contains
-calibration information, that is values for parameters and initial values (or steady-state) for all other variables of the model.
+Each models stores calibration information as `model.calibration`. It is a special dictionary-like object,  which contains calibration information, that is values for parameters and initial values (or steady-state) for all other variables of the model.
 
 It is possible to retrieve one or several variables calibrations:
 
@@ -98,22 +86,22 @@ or to change the values in the yaml files. In particular, the calibration order 
 
 ## Functions
 
-A model of a specific type can feature various kinds of functions. For instance, a continuous-states-continuous-controls models, solved by iterating on the Euler equations may feature a transition equation $g$ and an arbitrage equation $f$. Their signature is respectively $s_t=g(m_{t-1},s_{t-1},x_{t-1},m_t)$ and $E_t[f(m_t,s_t,x_t,s_{t+1},x_{t+1},m_{t+1})]$, where $s_t$, $x_t$ and $e_t$ respectively represent a vector of states, controls and exogenous shock. Implicitly, all functions are also assumed to depend on the vector of parameters :math:`p`.
+A model of a specific type can feature various kinds of functions. For instance, a continuous-states-continuous-controls models, solved by iterating on the Euler equations may feature a transition equation $g$ and an arbitrage equation $f$. Their signature is respectively $s_t=g(m_{t-1},s_{t-1},x_{t-1},m_t)$ and $E_t[f(m_t,s_t,x_t,s_{t+1},x_{t+1},m_{t+1})]$, where $s_t$, $x_t$ and $m_t$ respectively represent a vector of states, controls and exogenous shock. Implicitly, all functions are also assumed to depend on the vector of parameters $p$.
 
 These functions can be accessed by their type in the model.functions dictionary:
 
-```python
+``` python
 g = model.functions['transition']
 f = model.functions['arbitrage']
 ```
 
 Let's call the arbitrage function on the steady-state value, to see the residuals at the deterministic steady-state:
 
-```python
-m = model.calibration['exogenous']
-s = model.calibration['states']
-x = model.calibration['controls']
-p = model.calibration['parameters']
+``` python
+m = model.calibration["exogenous"]
+s = model.calibration["states"]
+x = model.calibration["controls"]
+p = model.calibration["parameters"]
 res = f(m,s,x,m,s,x,p)
 display(res)
 ```

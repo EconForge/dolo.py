@@ -72,8 +72,7 @@ def simulate(
     seed=42,
     stochastic=True,
 ):
-    """
-    Simulate a model using the specified decision rule.
+    """Simulate a model using the specified decision rule.
 
     Parameters
     ----------
