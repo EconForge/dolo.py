@@ -2,7 +2,6 @@
 *.mypy_cache*
 *__pycache__
 *.ipynb_checkpoints*
-.vscode/settings.json
 doc/*
 *pickle
 *whl
@@ -15,3 +14,4 @@ client_id
 pkgs/cache
 pkgs/urls
 setup.py
+.venv/*
