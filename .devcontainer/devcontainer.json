@@ -4,7 +4,6 @@
 		"ms-python.vscode-pylance"
 	],
     "settings": {
-		"python.pythonPath": "/usr/local/bin/python",
 		"python.languageServer": "Pylance",
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
@@ -33,9 +32,5 @@
 			"NODE_VERSION": "lts/*"
 		}
 	},
-	"postCreateCommand": [
-		"curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -",
-		"poetry install"
-	],
 	"remoteUser": "vscode"
 }
