@@ -18,7 +18,7 @@ scipy = "^1.4.1"
 quantecon = "^0.5"
 xarray = "^0.15.1"
 multipledispatch = "^0.6.0"
-dolang = "0.0.14"
+dolang = "0.0.15"
 
 [tool.poetry.dev-dependencies]
 # mkdocs-material = "^7.1.8"
