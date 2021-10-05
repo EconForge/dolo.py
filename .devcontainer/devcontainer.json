@@ -1,7 +1,8 @@
 {
     "extensions": [
 		"ms-python.python",
-		"ms-python.vscode-pylance"
+		"ms-python.vscode-pylance",
+		"albop.dolo-language"
 	],
     "settings": {
 		"python.languageServer": "Pylance",
