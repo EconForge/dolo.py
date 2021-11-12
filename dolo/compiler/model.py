@@ -1,5 +1,5 @@
 from dolang.symbolic import sanitize, parse_string, str_expression
-from dolang.language import eval_data
+from dolang.language import eval_data, greekify_dict
 from dolang.symbolic import str_expression
 
 import copy
@@ -423,53 +423,6 @@ class SymbolicModel:
 
             return ProductProcess(*exogenous.values())
 
-    @property
-    def endo_grid(self):
-
-        # determine bounds:
-        domain = self.get_domain()
-        min = domain.min
-        max = domain.max
-
-        options = self.data.get("options", {})
-
-        # determine grid_type
-        grid_type = get_type(options.get("grid"))
-        if grid_type is None:
-            grid_type = get_address(
-                self.data, ["options:grid:type", "options:grid_type"]
-            )
-        if grid_type is None:
-            raise Exception('Missing grid geometry ("options:grid:type")')
-
-        args = {"min": min, "max": max}
-        if grid_type.lower() in ("cartesian", "cartesiangrid"):
-            from dolo.numeric.grids import UniformCartesianGrid
-
-            orders = get_address(self.data, ["options:grid:n", "options:grid:orders"])
-            if orders is None:
-                orders = [20] * len(min)
-            grid = UniformCartesianGrid(min=min, max=max, n=orders)
-        elif grid_type.lower() in ("nonuniformcartesian", "nonuniformcartesiangrid"):
-            from dolang.language import eval_data
-            from dolo.numeric.grids import NonUniformCartesianGrid
-
-            calibration = self.get_calibration()
-            nodes = [eval_data(e, calibration) for e in self.data["options"]["grid"]]
-            # each element of nodes should be a vector
-            return NonUniformCartesianGrid(nodes)
-        elif grid_type.lower() in ("smolyak", "smolyakgrid"):
-            from dolo.numeric.grids import SmolyakGrid
-
-            mu = get_address(self.data, ["options:grid:mu"])
-            if mu is None:
-                mu = 2
-            grid = SmolyakGrid(min=min, max=max, mu=mu)
-        else:
-            raise Exception("Unknown grid type.")
-
-        return grid
-
 
 def get_type(d):
     try:
@@ -588,14 +541,110 @@ class Model(SymbolicModel):
             self.__domain__ = super().get_domain()
         return self.__domain__
 
-    def discretize(self, grid_options=None, dprocess_options={}):
 
-        dprocess = self.exogenous.discretize(**dprocess_options)
 
-        if grid_options is None:
-            endo_grid = self.endo_grid
+    # def __get_endo_grid__(self):
+
+    #     # only for compatibility
+
+    #     # determine bounds:
+    #     domain = self.get_domain()
+    #     min = domain.min
+    #     max = domain.max
+
+    #     options = self.data.get("options", {})
+
+    #     # determine grid_type
+    #     grid_type = get_type(options.get("grid"))
+    #     if grid_type is None:
+    #         grid_type = get_address(
+    #             self.data, ["options:grid:type", "options:grid_type"]
+    #         )
+    #     if grid_type is None:
+    #         raise Exception('Missing grid geometry ("options:grid:type")')
+
+    #     args = {"min": min, "max": max}
+    #     if grid_type.lower() in ("cartesian", "cartesiangrid"):
+    #         from dolo.numeric.grids import UniformCartesianGrid
+
+    #         orders = get_address(self.data, ["options:grid:n", "options:grid:orders"])
+    #         if orders is None:
+    #             orders = [20] * len(min)
+    #         grid = UniformCartesianGrid(min=min, max=max, n=orders)
+    #     elif grid_type.lower() in ("nonuniformcartesian", "nonuniformcartesiangrid"):
+    #         from dolang.language import eval_data
+    #         from dolo.numeric.grids import NonUniformCartesianGrid
+
+    #         calibration = self.get_calibration()
+    #         nodes = [eval_data(e, calibration) for e in self.data["options"]["grid"]]
+    #         # each element of nodes should be a vector
+    #         return NonUniformCartesianGrid(nodes)
+    #     elif grid_type.lower() in ("smolyak", "smolyakgrid"):
+    #         from dolo.numeric.grids import SmolyakGrid
+
+    #         mu = get_address(self.data, ["options:grid:mu"])
+    #         if mu is None:
+    #             mu = 2
+    #         grid = SmolyakGrid(min=min, max=max, mu=mu)
+    #     else:
+    #         raise Exception("Unknown grid type.")
+
+    #     return grid
+
+
+    def __get_discretization_options__(self, **grid):
+
+        data = self.data
+        
+        calib = self.get_calibration()        
+
+        try:
+            grid_options = data["options"]["grid"]
+        except:
+            return None
+
+        if not ("endo" in grid_options or "exo" in grid_options):
+            # must be old style
+            raise Exception("Old style grid definition not supported.")
+            # exogenous = eval_data(grid_options, calib)
         else:
-            endo_grid = self.domain.discretize(**grid_options)
+            if "exo" in grid_options:
+                exo = eval_data(grid_options["exo"], calib)
+            else:
+                exo = dict()
+            if "endo" in grid_options:
+                g_o_opts = grid_options["endo"]
+                tag = g_o_opts.tag
+                endo = eval_data(g_o_opts, calib)
+                if tag in ("Smolyak","SmolyakGrid"):
+                    endo["type"] = "smolyak"
+            else:
+                endo = dict()
+
+            endo.update(grid.get("endo", {}))
+            exo.update(grid.get("exo", {}))
+
+            if "interpolation" in grid_options:
+                interpolation = grid_options.get("interpolation")
+            elif endo.get("type")=="smolyak":
+                interpolation = "polynomial"
+            else:
+                interpolation = "cubic"
+
+            return dict(exo= exo, endo= endo, interpolation=interpolation)
+            
+            
+
+
+
+    def discretize(self, **grid_options):
+
+        opts = self.__get_discretization_options__(**grid_options)
+        exo_opts = opts['exo']
+        endo_opts = opts['endo']
+
+        dprocess = self.exogenous.discretize(**exo_opts)
+        endo_grid = self.domain.discretize(**endo_opts)
 
         from dolo.numeric.grids import ProductGrid
 

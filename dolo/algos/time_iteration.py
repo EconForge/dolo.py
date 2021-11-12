@@ -41,6 +41,7 @@ def time_iteration(
     model: Model,
     *,  #
     dr0: DecisionRule = None,  #
+    grid: dict = dict(),  #
     verbose: bool = True,  #
     details: bool = True,  #
     ignore_constraints: bool = False,  #
@@ -101,7 +102,7 @@ def time_iteration(
         if verbose:
             print(t)
 
-    grid, dprocess_ = model.discretize()
+    grid, dprocess_ = model.discretize(**grid)
 
     if dprocess is None:
         dprocess = dprocess_
@@ -207,6 +208,8 @@ def time_iteration(
         dfn = SerialDifferentiableFunction(fn)
 
         res = fn(controls_0)
+
+        print(res)
 
         if hook:
             hook()

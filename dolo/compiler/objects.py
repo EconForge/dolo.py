@@ -25,7 +25,7 @@ class CartesianDomain(Domain, dict):
             v = kwargs[k]
             self[k] = np.array(v, dtype=float)
 
-    def discretize(self, n=None):
+    def discretize(self, geometry="cartesian", n=None):
         if n == None:
             n = [10] * (len(self.min))
         from dolo.numeric.grids import UniformCartesianGrid

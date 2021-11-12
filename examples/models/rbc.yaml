@@ -60,6 +60,9 @@ domain:
     k: [ kss*0.5, kss*1.5]
 
 options:
-    grid: !Cartesian
-        n: [100, 100]
-    discrete_choices: [n]
+    grid:
+        endo:
+            n: [10, 10]
+        exo:
+            N: 8
+        interpolation: cubic

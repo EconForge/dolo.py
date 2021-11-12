@@ -147,9 +147,9 @@ def serial_multiplication(A, B):
     if A.ndim == 2 and B.ndim == 2:
         return numpy.dot(A, B)
 
+    N = A.shape[0]
     I = A.shape[1]
     J = A.shape[2]
-    N = A.shape[0]
     K = B.shape[2]
 
     assert B.shape[1] == J
@@ -168,22 +168,22 @@ def serial_multiplication(A, B):
     return resp
 
 
-# def serial_multiplication_vector(A,X):
-#
-#     I = A.shape[0]
-#     J = A.shape[1]
-#     N = A.shape[2]
-#
-#     assert(X.shape[0]==J)
-#     assert(X.shape[1]==N)
-#
-#     resp = np.zeros( (I,N) )
-#     for i in range(I):
-# #        T = np.zeros( N )
-#         for j in range(J):
-# #            T += A[i,j,:]*B[j,k,:]
-#             resp[i,:] += A[i,j,:]*X[j,:]
-#     return resp
+@jit(cache=True)
+def serial_multiplication_vector(A,X):
+
+    N = A.shape[0]
+    I = A.shape[1]
+    J = A.shape[2]
+
+    assert(X.shape[0]==N)
+    assert(X.shape[1]==J)
+
+    resp = np.zeros( (N,J) )
+    for n in range(N):
+        for j in range(J):
+            for i in range(I):
+                resp[n,j] += A[n,i,j]*X[n,j]
+    return resp
 
 
 if __name__ == "__main__":
