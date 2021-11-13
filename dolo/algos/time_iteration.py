@@ -207,7 +207,9 @@ def time_iteration(
         ).reshape((-1, n_x))
         dfn = SerialDifferentiableFunction(fn)
 
-        res = fn(controls_0)
+        v0, dv0 = dfn(controls_0)
+
+        return v0, dv0
 
         print(res)
 

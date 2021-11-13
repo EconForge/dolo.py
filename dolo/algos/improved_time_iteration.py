@@ -100,7 +100,7 @@ def ssmul_inplace(A, B, O):
 
 
 # make parallel using guvectorize ?
-def d_filt_dx(π, M_ij, S_ij, n_m, N, n_x, dumdr):
+def d_filt_dx(π, M_ij, S_ij, dumdr):
     # OK, so res is probably not what we need to filter here.
     # s sh
     n_m, n_im = M_ij.shape[:2]
@@ -190,7 +190,7 @@ def invert_jac(res, dres, jres, fut_S, dumdr, tol=1e-10, maxit=1000, verbose=Fal
         print("Starting inversion")
     for nn in range(maxit):
         # operations are made in place in ddx
-        ddx = d_filt_dx(ddx, jres, fut_S, n_m, N, n_x, dumdr)
+        ddx = d_filt_dx(ddx, jres, fut_S, dumdr)
         err = abs(ddx).max()
         lam = err / err_0
         lam_max = max(lam_max, lam)
@@ -513,6 +513,8 @@ def improved_time_iteration(
 
         x = new_x
 
+
+    print(x.shape)
     ddr.set_values(x)
 
     itprint.print_finished()
@@ -522,6 +524,9 @@ def improved_time_iteration(
     #     lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
     #     return ddr, lam, lam_max, lambdas
     # else:
+
+    return x
+
     if not details:
         return ddr
     else:
