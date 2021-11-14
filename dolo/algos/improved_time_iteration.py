@@ -260,12 +260,12 @@ def improved_time_iteration(
     mu=2,
     maxbsteps=10,
     tol=1e-8,
+    tol_ν=1e-10,
     smaxit=500,
     maxit=1000,
     compute_radius=False,
     invmethod="iti",
-    # obsolete
-    complementarities=None
+    complementarities=None,
 ) -> ImprovedTimeIterationResult:
 
     # obsolete
@@ -274,6 +274,8 @@ def improved_time_iteration(
         pass
     else:
         complementarities = not ignore_constraints
+
+    print("Complementarities : {}".format(complementarities))
 
     def vprint(*args, **kwargs):
         if verbose:
@@ -334,9 +336,16 @@ def improved_time_iteration(
         .repeat(N, axis=1)
     )
 
-    if dr0 is not None:
-        for i_m in range(n_m):
-            x0[i_m, :, :] = dr0.eval_is(i_m, s)
+    try:
+        if dr0 is not None:
+            for i_m in range(n_m):
+                m = dprocess.node(i_m)
+                x0[i_m, :, :] = dr0.eval_ms(m, s)
+    except:
+        if dr0 is not None:
+            for i_m in range(n_m):
+                x0[i_m, :, :] = dr0.eval_is(i_m, s)
+                
     ddr.set_values(x0)
 
     steps = 0.5 ** numpy.arange(maxbsteps)
@@ -461,7 +470,7 @@ def improved_time_iteration(
             sol = scipy.sparse.linalg.gmres(
                 L, ddx.ravel(), tol=ttol
             )  # , maxiter=1, restart=smaxit)
-            lam0 = 0.01
+            # lam0 = 0.01
             nn = L.counter - n0
             tot = sol[0].reshape(ddx.shape)
         else:
@@ -472,7 +481,7 @@ def improved_time_iteration(
                 jres,
                 fut_S,
                 ddr_filt,
-                tol=tol,
+                tol=tol_ν,
                 maxit=smaxit,
                 verbose=(verbose == "full"),
             )
@@ -514,7 +523,6 @@ def improved_time_iteration(
         x = new_x
 
 
-    print(x.shape)
     ddr.set_values(x)
 
     itprint.print_finished()
@@ -524,8 +532,6 @@ def improved_time_iteration(
     #     lam, lam_max, lambdas = radius_jac(res,dres,jres,fut_S,ddr_filt,tol=tol,maxit=smaxit,verbose=(verbose=='full'))
     #     return ddr, lam, lam_max, lambdas
     # else:
-
-    return x
 
     if not details:
         return ddr

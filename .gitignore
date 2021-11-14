@@ -1,6 +1,11 @@
 *.pyc
 *.mypy_cache*
 *__pycache__
+__pycache__/*
+htmlcov/*
+settings.json
+coverage.xml
+.coverage
 *.ipynb_checkpoints*
 doc/*
 *pickle

@@ -209,10 +209,6 @@ def time_iteration(
 
         v0, dv0 = dfn(controls_0)
 
-        return v0, dv0
-
-        print(res)
-
         if hook:
             hook()
 

@@ -1,3 +1,4 @@
+from numba import _ensure_critical_deps
 from dolo.compiler.model import Model
 
 import numpy
@@ -117,15 +118,13 @@ class CVector:
 
         A = self.data
         B = x.data
-        from dolo.numeric.serial_operations import serial_solve_numba
-        
-        # if len(A.shape) == len(B.shape) == 3:
-        #     C = serial_multiplication(A,B)
-        # elif len(A.shape)==3 and len(B.shape)==2:
-        #     C = serial_multiplication_vector(A,B)
 
+        from dolo.numeric.serial_operations import serial_solve_numba
         C = serial_solve(A,B)
 
+        # from dolo.algos.improved_time_iteration import solve_gu 
+        # C = solve_gu(A.copy(),B.copy())
+        
         return CVector(C.reshape(self.shape+C.shape[1:]))
 
 
@@ -137,10 +136,10 @@ class Euler:
     grid: object
     dprocess: DiscretizedProcess
     dr: DecisionRule
-    x0: object   # N_e . N . n_x array
+    x0: object   # CVector[ N_e × N , n_x ]
     p: object   # n_p vector
 
-    def __init__(self, model, grid=dict(), interp_method='cubic'):
+    def __init__(self, model, grid=dict(), interp_method='cubic', dr0=None):
 
         self.model = model
         grid, dprocess = model.discretize(**grid)
@@ -155,6 +154,23 @@ class Euler:
 
         x0 = numpy.zeros((N_e, N, n_x))
         x0[:, :, :] = model.calibration["controls"][None, None, :]
+
+
+        if dr0 is not None:
+            # TODO: revisit this, if dr0, is a d.r. we need to check what inputs it accepts
+            s = grid['endo'].nodes
+            for i_m in range(dprocess.n_nodes):
+                    m = dprocess.node(i_m)
+                    x0[i_m, :, :] = dr0(m, s)
+            # try:
+            #     for i_m in range(dprocess.n_nodes):
+            #         m = dprocess.node(i_m)
+            #         x0[i_m, :, :] = dr0(m, s)
+            # except Exception:
+            #     for i_m in range(dprocess.n_nodes):
+            #         x0[i_m, :, :] = dr0(i_m, s)
+
+
         self.x0 = CVector(x0)
         
         self.p = model.calibration['parameters']
@@ -360,70 +376,294 @@ def euler_residuals(
         return res
 
 
+import copy
+from .results import ImprovedTimeIterationResult, TimeIterationResult, AlgoResult
+from dolo.misc.itprinter import IterationsPrinter
+from dolo.numeric.optimize.newton import newton
 
-def solve(model, verbose=True, maxit=500):
 
-    F = Euler(model)
+def newton(f, x: CVector, verbose=False, tol=1e-6, maxit=5, jactype="serial"):
+
+    """Solve nonlinear system using safeguarded Newton iterations
+
+
+    Parameters
+    ----------
+
+    Return
+    ------
+    """
+    if verbose:
+        print = lambda txt: print(txt)
+    else:
+        print = lambda txt: None
+
+    it = 0
+    error = 10
+    converged = False
+    maxbacksteps = 30
+
+    x0 = x
+
+    while it < maxit and not converged:
+
+        [v, dv] = f(x)
+
+        # TODO: rewrite starting here
+
+        #        print("Time to evaluate {}".format(ss-tt)0)
+
+        error_0 = (v).norm()
+
+        if error_0 < tol:
+
+            if verbose:
+                print(
+                    "> System was solved after iteration {}. Residual={}".format(
+                        it, error_0
+                    )
+                )
+            converged = True
+
+        else:
+
+            it += 1
+
+            dx = dv.solve(v)
+
+            # dx = solve(dv, v)
+
+            # norm_dx = abs(dx).max()
+
+            for bck in range(maxbacksteps):
+                xx = x - dx * (2 ** (-bck))
+                vm = f(xx)[0]
+                err = (vm).norm()
+                if err < error_0:
+                    break
+
+            x = xx
+
+            if verbose:
+                print("\t> {} | {} | {}".format(it, err, bck))
+
+    if not converged:
+        import warnings
+
+        warnings.warn("Did not converge")
+    return (x, it)
+
+def time_iteration(
+    model: Model,
+    *,
+    dr0: DecisionRule = None,  #
+    grid: dict = dict(),
+    verbose: bool = True,  #
+    details: bool = True,  #
+    ignore_constraints=False,  #
+    interp_method="cubic",
+    trace: bool = False,  #
+    maxit=1000,
+    tol_η=1e-6,
+    tol_ε=1e-6,
+    inner_maxit=5,
+    hook=None,
+) -> TimeIterationResult:
+
+
+    F = Euler(model, grid=grid, interp_method=interp_method, dr0=dr0)
 
     x0 = F.x0
 
+    complementarities = not ignore_constraints
 
-    for  i in range(maxit):
+    trace_details = []
+
+    verbit = verbose == "full"
+
+
+    itprint = IterationsPrinter(
+        ("n", int),
+        ("f_x", (float,"εₙ=|f(xₙ)|")),
+        ("d_x", (float,"ηₙ=|xₙ-xₙ₋₁|")),
+        ("λ", (float,"λₙ=ηₙ/ηₙ₋₁")),
+        ("Time", float),
+        ("nit", int),
+        verbose=verbose,
+    )
+    
+    itprint.print_header("Time Iterations.")
+
+    err_η_0 = numpy.nan
+
+    n_x = len(model.symbols["controls"])
+
+    for  it in range(maxit):
+
+        if hook:
+            hook()
+
+        t_start = time.time()
+
+        if trace:
+            trace_details.append({"dr": copy.deepcopy(F.dr)})
 
         r = ( F(x0, x0) )
+        err_ε = r.norm()
 
-        r, J = ( F.d_A(x0) )
+            # r,J = F.d_A(su)
 
-        dx = J.solve(r)
+        verbose=False
 
-        if verbose:
-            print(f"{i} | {r.norm()}")
-
-        x0 = x0 - dx
+        x1, nit = newton(F.d_A, x0, maxit=inner_maxit)
 
 
+        # baby-steps version
+        # r, J = ( F.d_A(x0) )
+        # dx = J.solve(r)
+        # err_η = dx.norm()
+        # x1 = x0 - dx
 
-def improved_time_iteration(model, tol_ε=1e-8):
+        dx = x1 - x0
+        err_η = dx.norm()
 
-    F = Euler(model)
+        λ = err_η/err_η_0
+        err_η_0 = err_η
+
+
+        t_finish = time.time()
+        elapsed = t_finish -t_start
+
+        itprint.print_iteration(n=it, f_x=err_ε, d_x=err_η, λ=λ, Time=elapsed, nit=nit),
+
+        if err_ε<tol_ε or err_η<tol_η:
+            break
+
+        x0 = x1
+
+    dr = F.dr
+
+    itprint.print_finished()
+
+
+    if not details:
+        return dr
+    
+    return TimeIterationResult(
+        dr,
+        it,
+        complementarities,
+        F.dprocess,
+        err_η < tol_η,  # x_converged: bool
+        tol_η,  # x_tol
+        err_η,  #: float
+        None,  # log: object # TimeIterationLog
+        trace_details,  # trace: object #{Nothing,IterationTrace}
+    )
+
+
+import numpy as np
+
+def improved_time_iteration(
+    model: Model,
+    *,
+    dr0: DecisionRule = None,  #
+    grid: dict = dict(),
+    verbose: bool = True,  #
+    details: bool = True,  #
+    ignore_constraints=False,  #
+    interp_method="cubic",
+    maxbsteps=10,
+    tol_ε=1e-8,
+    tol_ν=1e-10,
+    smaxit=500,
+    maxit=1000,
+    compute_radius=False,
+    # invmethod="iti",
+) -> ImprovedTimeIterationResult:
+
+
+    F = Euler(model, grid=grid, interp_method=interp_method, dr0=dr0)
 
     x0 = F.x0
 
+    complementarities = not ignore_constraints
 
-    for k in range(10):
+    itprint = IterationsPrinter(
+        ("n", int),
+        # ("εₙ=|f(xₙ)|", float),
+        # ("ηₙ=|f(xₙ)-f(xₙ₋₁)|", float),
+        ("f_x", (float,"εₙ=|f(xₙ)|")),
+        ("d_x", (float,"ηₙ=|xₙ-xₙ₋₁|")),
+        # ("Time_residuals", float),
+        # ("Time_inversion", float),
+        ("λ", (float, "λ≈|T'(xₙ)|")),
+        ("Time", float),
+        ("N_invert", int),
+        verbose=verbose,
+    )
+    itprint.print_header("Improved Time Iterations.")
 
 
-        r = F(x0, x0)
+    for it in range(maxit):
 
-        err_ε = r.norm()
+        t_start = time.time()
 
-        if err_ε<tol_ε:
-            print(f"Error {k} = {err_ε} |")
-            break
-
+        dr = F(x0, x0)
+        err_ε = dr.norm()
 
         R, J = F.d_A(x0)
         R, L = F.d_B(x0)
 
-        r = J.solve(r)
-
+        dr = J.solve(dr)
         L.ldiv(J)
         L *= -1
 
-
-        tol_i = 1e-10
-
-        dx = r
-        du = r
-        for n in range(1000):
+        # compute dx such that: (I-L).dx = dr
+        dx = dr
+        du = dr
+        err_ν_0 = 1.0
+        for n in range(smaxit):
             du = L@du
             dx = dx + du
-            if du.norm()<tol_i:
+            err_ν = du.norm()
+            λ = err_ν/err_ν_0
+            err_ν_0 = err_ν
+            if err_ν<tol_ν:
                 break
 
-        print(f"Error {k} = {err_ε} | {n}")
+        err_η = dx.norm()
 
         x0 = x0 - dx
 
-    print(x0.shape)
-    return x0
+        t_finish = time.time()
+
+        itprint.print_iteration(
+            n=it,
+            f_x=err_ε,
+            d_x=err_η,
+            λ=λ,
+            Time=t_finish-t_start,
+            N_invert=n
+        )
+        if err_ε<tol_ε:
+            # print(f"Error {k} = {err_ε} |")
+            break
+
+    # F.dr.set_values(x0)
+
+    dr = F.dr
+
+    itprint.print_finished()
+
+
+    if not details:
+        return dr
+    else:
+        if compute_radius:
+            raise Exception("Not implemented.")
+        else:
+            lam = np.nan
+        return ImprovedTimeIterationResult(
+            dr, it, err_ε, err_η, err_ε < tol_ε, complementarities, lam, None, L
+        )
