@@ -17,6 +17,12 @@ from dolo.algos.new_time_iteration import Euler
 F = Euler(model)
 
 res = F(F.x0, F.x0)
+
+
+
+
+
+
 print(res.norm())
 
 solp = perturb(model)
@@ -28,8 +34,14 @@ class D:
     def eval_ms(self,m,s):
             return dr0(m,s)
 
-improved_time_iteration(model, ignore_constraints=True)
-new_iti(model)
+# improved_time_iteration(model, ignore_constraints=True)
+sol = new_iti(model)
+print(sol.dr)
+
+
+
+exit()
+
 
 print("Ready ?")
 print("Set.")

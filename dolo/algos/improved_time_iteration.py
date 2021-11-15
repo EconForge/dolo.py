@@ -40,7 +40,7 @@ def inplace(Phi, J):
                         J[i_a, i_b, i_c, i_d, i_e] *= Phi[i_a, i_c, i_d]
 
 
-def smooth(res, dres, jres, dx, pos=1.0):
+def smooth(res, dx, dres=None, jres=None, pos=1.0):
     from numpy import sqrt
 
     # jres is modified
@@ -48,17 +48,31 @@ def smooth(res, dres, jres, dx, pos=1.0):
     n_m, N, n_x = res.shape
     sq = sqrt(res ** 2 + (dx) ** 2)
     H = res + (dx) - sq
+    H[dinf] = res[dinf]
+
+    if (dres is None) and (jres is None):
+        return H
+
     Phi_a = 1 - res / sq
     Phi_b = 1 - (dx) / sq
-    H[dinf] = res[dinf]
+    
     Phi_a[dinf] = 1.0
     Phi_b[dinf] = 0.0
-    H_x = Phi_a[:, :, :, None] * dres
-    for i_x in range(n_x):
-        H_x[:, :, i_x, i_x] += Phi_b[:, :, i_x] * pos
+
+    if (dres is not None):
+        H_x = Phi_a[:, :, :, None] * dres
+        for i_x in range(n_x):
+            H_x[:, :, i_x, i_x] += Phi_b[:, :, i_x] * pos
     # H_xt = Phi_a[:,None,:,:,None]*jres
-    inplace(Phi_a, jres)
-    return H, H_x, jres
+    else:
+        H_x = None
+
+    if (jres is not None):
+        inplace(Phi_a, jres)
+    else:
+        jres=None
+
+    return (e for e in [H, H_x, jres] if e is not None)
     # return H, H_x, H_xt
 
 

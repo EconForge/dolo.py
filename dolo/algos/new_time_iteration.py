@@ -1,5 +1,5 @@
 from numba import _ensure_critical_deps
-from dolo.compiler.model import Model
+from dolo.compiler.model import Model, get_address
 
 import numpy
 from dolo import dprint
@@ -128,6 +128,37 @@ class CVector:
         return CVector(C.reshape(self.shape+C.shape[1:]))
 
 
+def smooth(res, x, lb, ub, dres:CVector=None, jres=None):
+    if dres is not None:
+        dres = dres.x0
+    from dolo.algos.improved_time_iteration import smooth as vec_smooth
+    if (dres is None) and (jres is None):
+        res = vec_smooth(res.x0, x.x0 - lb.x0)
+        res *= -1
+        res = vec_smooth(res, ub.x0 - x.x0, pos=-1.0)
+        res *= -1
+        return CVector(res)
+    if (dres is not None) and (jres is None):
+        res, dres = vec_smooth(res.x0, x.x0 - lb.x0, dres=dres)
+        res *= -1
+        dres *= -1
+        res,dres = vec_smooth(res, ub.x0 - x.x0, pos=-1.0, dres=dres)
+        res *= -1
+        dres *= -1
+        return CVector(res), CVector(dres)
+    if (dres is None) and (jres is not None):
+        res, jres = vec_smooth(res.x0, x.x0 - lb.x0, jres=jres)
+        res *= -1
+        jres *= -1
+        res, jres  = vec_smooth(res, ub.x0 - x.x0, pos=-1.0, jres=jres)
+        res *= -1
+        jres *= -1
+        return CVector(res), (jres)
+    # if (dres is None) and (jres is None):
+    #     return CVector(res)
+    # else:
+    #     return (e for e in [res, dres, jres] if e is not None)
+
 
 
 class Euler:
@@ -138,13 +169,17 @@ class Euler:
     dr: DecisionRule
     x0: object   # CVector[ N_e × N , n_x ]
     p: object   # n_p vector
+    bounds: object # CVector[ N_e × N , n_x ]   # bounds for controls
 
-    def __init__(self, model, grid=dict(), interp_method='cubic', dr0=None):
+    def __init__(self, model, discretization=dict(), interpolation='cubic', dr0=None):
 
         self.model = model
-        grid, dprocess = model.discretize(**grid)
+        grid, dprocess = model.discretize(**discretization)
         self.grid = grid
         self.dprocess = dprocess
+
+        calib = model.calibration.flat
+        interp_method = get_address(model.data, "options:interpolation", default="cubic")
 
         self.dr = DecisionRule(grid['exo'], grid['endo'], dprocess=dprocess, interp_method=interp_method)
 
@@ -176,6 +211,25 @@ class Euler:
         self.p = model.calibration['parameters']
         self.sh_C = (N_e*N, n_x)
 
+        if "arbitrage_lb" in model.functions:
+            lb_fun = model.functions["arbitrage_lb"]
+            ub_fun = model.functions["arbitrage_ub"]
+            lb = numpy.zeros_like(x0) * numpy.nan
+            ub = numpy.zeros_like(x0) * numpy.nan
+            s = grid['endo'].nodes
+            for i_m in range(dprocess.n_nodes):
+                m = dprocess.node(i_m)[None, :]
+                p = self.p[None, :]
+                m = numpy.repeat(m, N, axis=0)
+                p = numpy.repeat(p, N, axis=0)
+
+                lb[i_m, :, :] = lb_fun(m, s, p)
+                ub[i_m, :, :] = ub_fun(m, s, p)
+            self.bounds = (CVector(lb), CVector(ub))
+        else:
+            self.bounds = None
+        
+
     def __call__(self, x0, x1=None):
 
 
@@ -190,8 +244,14 @@ class Euler:
         if x1 is not None:
             self.dr.set_values(x1.data.reshape(x1.x0.shape))
         
+        res = residuals_simple(f, g, s, x0, self.dr, dp, p)
 
-        return residuals_simple(f, g, s, x0, self.dr, dp, p)
+        if self.bounds is not None:
+            lb, ub = self.bounds
+            return smooth(res, x0, lb, ub)
+        else:
+            return res
+
 
     def d_A(self, x0, x1=None):
 
@@ -211,13 +271,14 @@ class Euler:
         R = CVector(r.reshape(x0.x0.shape))
         J = CVector(J.reshape(x0.shape + J.shape[1:]))
 
-        return R,J
+        # return R,J
+        if self.bounds is not None:
+            lb, ub = self.bounds[0], self.bounds[1]
+            return smooth(R, x0, lb, ub, dres=J)
+        else:
+            return R, J
     
     def d_B(self, x0, x1=None):
-
-
-
-
 
         f = self.model.functions['arbitrage']
         g = self.model.functions['transition']
@@ -230,14 +291,19 @@ class Euler:
         ## 
         x = x0.x0
 
-
         res, jres, S_ij = euler_residuals(f, g, s, x, dr, dp, p, diff=True, with_jres=True, set_dr=False)
 
+        R = CVector(res.reshape(x.shape))
+
+
+        jres *=-1
+        if self.bounds is not None:
+            lb, ub = self.bounds[0], self.bounds[1]
+            R, jres = smooth(R, x0, lb, ub, jres=jres)
 
         import copy
         cdr = copy.deepcopy(dr)
 
-        R = CVector(res.reshape(x.shape))
         L = Jacobian(jres, S_ij, cdr)
 
         return R, L
@@ -457,11 +523,11 @@ def time_iteration(
     model: Model,
     *,
     dr0: DecisionRule = None,  #
-    grid: dict = dict(),
+    discretization: dict = dict(),
+    interpolation="cubic",
     verbose: bool = True,  #
     details: bool = True,  #
     ignore_constraints=False,  #
-    interp_method="cubic",
     trace: bool = False,  #
     maxit=1000,
     tol_η=1e-6,
@@ -471,7 +537,7 @@ def time_iteration(
 ) -> TimeIterationResult:
 
 
-    F = Euler(model, grid=grid, interp_method=interp_method, dr0=dr0)
+    F = Euler(model, discretization=discretization, interpolation=interpolation, dr0=dr0)
 
     x0 = F.x0
 
@@ -568,11 +634,11 @@ def improved_time_iteration(
     model: Model,
     *,
     dr0: DecisionRule = None,  #
-    grid: dict = dict(),
+    discretization: dict = dict(),
+    interpolation="cubic",
     verbose: bool = True,  #
     details: bool = True,  #
     ignore_constraints=False,  #
-    interp_method="cubic",
     maxbsteps=10,
     tol_ε=1e-8,
     tol_ν=1e-10,
@@ -583,7 +649,7 @@ def improved_time_iteration(
 ) -> ImprovedTimeIterationResult:
 
 
-    F = Euler(model, grid=grid, interp_method=interp_method, dr0=dr0)
+    F = Euler(model, discretization=discretization, interpolation=interpolation, dr0=dr0)
 
     x0 = F.x0
 
