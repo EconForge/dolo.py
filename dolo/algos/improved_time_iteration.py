@@ -452,11 +452,11 @@ def improved_time_iteration(
 
         # if there are complementerities, we modify derivatives
         if complementarities:
-            res, dres, jres = smooth(res, dres, jres, x - lb)
+            res, dres, jres = smooth(res, x - lb, dres=dres, jres=jres)
             res[...] *= -1
             dres[...] *= -1
             jres[...] *= -1
-            res, dres, jres = smooth(res, dres, jres, ub - x, pos=-1.0)
+            res, dres, jres = smooth(res, ub - x, dres=dres, jres=jres, pos=-1.0)
             res[...] *= -1
             dres[...] *= -1
             jres[...] *= -1

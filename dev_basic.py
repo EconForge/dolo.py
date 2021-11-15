@@ -14,38 +14,128 @@ model = yaml_import("examples/models/rbc.yaml")
 
 from dolo.algos.new_time_iteration import Euler
 
-F = Euler(model)
-
-res = F(F.x0, F.x0)
-
+# F0 = Euler(model, ignore_constraints=True)
+# r0 = F0(F0.x0, F0.x0)
 
 
+new_iti(model)
+improved_time_iteration(model)
+
+
+print("------------------------")
+
+new_iti(model)
+improved_time_iteration(model)
+
+exit()
 
 
 
-print(res.norm())
+F = Euler(model, ignore_constraints=False)
 
-solp = perturb(model)
 
-dr0 = solp.dr
-class D:
-    # def eval_is(self,i,s):
-    #     return dr0(i,s)
-    def eval_ms(self,m,s):
-            return dr0(m,s)
+r1 = F(F.x0, F.x0)
 
-# improved_time_iteration(model, ignore_constraints=True)
-sol = new_iti(model)
-print(sol.dr)
+r2, J = F.d_A(F.x0)
+r3, L = F.d_B(F.x0)
+
+
+print( abs(r2.x0-r1.x0).max())
+print( abs(r3.x0-r1.x0).max())
+# print( abs(r2.x0-r1.x0).max())
+
+res,dres,jres = improved_time_iteration(model)
+
+print("Before")
+
+print(abs(r1.x0-res).max())
+print(abs(J.x0-dres).max())
+print(abs(L.M_ij-jres).max())
+
+
+from dolo.algos.improved_time_iteration import smooth
+
+from dolo.algos.new_time_iteration import smooth2
+
+lb = F.bounds[0]
+ub = F.bounds[1]
+
+res, dres, jres = smooth(res, F.x0.x0 - lb.x0, dres=dres, jres=jres)
+res[...] *= -1
+dres[...] *= -1
+jres[...] *= -1
+res, dres, jres = smooth(res, ub.x0 - F.x0.x0, dres=dres, jres=jres, pos=-1.0)
+res[...] *= -1
+dres[...] *= -1
+jres[...] *= -1
+
+
+print("After")
+
+print(abs(r1.x0-res).max())
+print(abs(J.x0-dres).max())
+print(abs(L.M_ij-jres).max())
 
 
 
 exit()
 
 
-print("Ready ?")
-print("Set.")
-print("Go!")
+
+# R,J,L = smooth2(R, F.x0, lb, ub, J=J, L=L.M_ij)
+
+
+# focus on J.
+print("Focus on J")
+R,J = F.d_A(F.x0)
+R,L = F.d_B(F.x0)
+R,J = smooth2(R, F.x0, lb, ub, J=J)
+print(abs(J.x0-dres).max())
+exit()
+
+# print("After")
+
+# print(abs(R.x0-res).max())
+# print(abs(L.M_ij-jres).max())
+
+# exit()
+
+
+# # print("Variant 1")
+
+
+# R,J = F.d_A(F.x0)
+# # R,L = F.d_B(F.x0)
+
+# R0 = R.x0.copy()
+# J0 = J.x0.copy()
+
+
+# R,J = smooth2(R, F.x0, lb, ub, dres=J)
+# print(abs(R.x0-res).max())
+# print(abs(J.x0-dres).max())
+
+# print(abs(R.x0-R0).max())
+# print(abs(J.x0-J0).max())
+
+# print("Variant 2")
+
+
+# # R,J = F.d_A(F.x0)
+# R,L = F.d_B(F.x0)
+
+# R,L = smooth2(R, F.x0, lb, ub, jres=L.M_ij)
+
+# print(abs(R.x0-res).max())
+# print(abs(L-jres).max())
+
+
+# exit()
+
+
+# print("Ready ?")
+# print("Set.")
+# print("Go!")
 
 
 improved_time_iteration(model, ignore_constraints=True, dr0=D())

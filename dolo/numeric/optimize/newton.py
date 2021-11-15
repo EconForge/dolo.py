@@ -100,7 +100,7 @@ def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype="serial"):
     it = 0
     error = 10
     converged = False
-    maxbacksteps = 30
+    maxbacksteps = 1
 
     x0 = x
 

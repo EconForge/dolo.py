@@ -65,4 +65,4 @@ options:
             n: [10, 10]
         exo:
             N: 50
-    interpolation: linear
+    interpolation: cubic

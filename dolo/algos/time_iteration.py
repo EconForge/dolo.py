@@ -2,7 +2,7 @@
 
 import numpy
 from dolo import dprint
-from dolo.compiler.model import Model
+from dolo.compiler.model import Model, get_address
 from dolo.numeric.processes import DiscretizedIIDProcess
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.grids import CartesianGrid
@@ -51,7 +51,7 @@ def time_iteration(
     inner_maxit=10,
     tol=1e-6,
     hook=None,
-    interp_method="cubic",
+    interp_method=None,
     # obsolete
     with_complementarities=None,
 ) -> TimeIterationResult:
@@ -117,6 +117,9 @@ def time_iteration(
 
     endo_grid = grid["endo"]
     exo_grid = grid["exo"]
+
+    if interp_method is None:
+        interp_method = get_address(model.data, "options:interpolation", default="cubic")
 
     mdr = DecisionRule(
         exo_grid, endo_grid, dprocess=dprocess, interp_method=interp_method

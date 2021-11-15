@@ -1,523 +1,12 @@
-from numba import _ensure_critical_deps
-from dolo.compiler.model import Model, get_address
-
-import numpy
-from dolo import dprint
-from dolo.compiler.model import Model
-from dolo.numeric.processes import DiscretizedIIDProcess, DiscretizedProcess
-from dolo.numeric.decision_rule import DecisionRule, Linear
-from dolo.numeric.grids import CartesianGrid
-from dolo.numeric.serial_operations import serial_multiplication_vector, serial_solve
-from dolo.numeric.optimize.newton import SerialDifferentiableFunction
-
-
-class CVector:
-
-    data: object # vector
-
-
-    def __init__(self, x0):
-
-        assert(x0.ndim>=3)
-
-        self.x0 = x0
-
-        self.datashape = x0.shape[2:]
-        self.shape = x0.shape[:2]
-
-        self.data = x0.reshape((-1,)+self.datashape)
-
-        # self.views = [x0[i,:,:] for i in range(x0.shape[0])]
-
-    def __str__(self):
-
-        s = f"CVector(shape={self.shape}, datashape={self.datashape})"
-        return s
-
-    def zeros_like(self):
-
-        x1 = self.x0*0
-        return CVector(x1)
-
-    def __getitem__(self, args):
-        if len(args)!=3 or (args[1]!=slice(None,None)) or (args[2]!=slice(None,None)):
-            raise Exception("Unsupported Subscripts.")
-        else:
-            i = args[0]
-            return self.x0[i,:,:]
-
-
-    def __setitem__(self, args, value):
-        if len(args)!=3 or (args[1]!=slice(None,None)) or (args[2]!=slice(None,None)):
-            raise Exception("Unsupported Subscripts.")
-        else:
-            i = args[0]
-            self.x0[i,:,:] = value
-
-
-    def __mul__(self, x):
-
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0*x)
-
-    def __rmul__(self, x):
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0*x)
-
-    def __add__(self, x):
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0+x)
-
-    def __radd__(self, x):
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0+x)
-
-    def __sub__(self, x):
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0-x)
-
-    def __truediv__(self, x):
-        if isinstance(x,CVector):
-            assert(self.shape == x.shape)
-            x = x.x0
-        return CVector(self.x0/x)
-
-
-    def __matmul__(self, x):
-
-        assert(isinstance(x, CVector))
-
-        A = self.data
-        B = x.data
-        from dolo.numeric.serial_operations import serial_multiplication, serial_multiplication_vector
-        
-        if len(A.shape) == len(B.shape) == 3:
-            C = serial_multiplication(A,B)
-        elif len(A.shape)==3 and len(B.shape)==2:
-            C = serial_multiplication_vector(A,B)
-
-        return CVector(C.reshape(self.shape+C.shape[1:]))
-
-
-    def norm(self):
-        return abs(self.data).max()
-
-    def solve(self, x):
-
-        assert(isinstance(x, CVector))
-
-        A = self.data
-        B = x.data
-
-        from dolo.numeric.serial_operations import serial_solve_numba
-        C = serial_solve(A,B)
-
-        # from dolo.algos.improved_time_iteration import solve_gu 
-        # C = solve_gu(A.copy(),B.copy())
-        
-        return CVector(C.reshape(self.shape+C.shape[1:]))
-
-
-def smooth(res, x, lb, ub, dres:CVector=None, jres=None):
-    if dres is not None:
-        dres = dres.x0
-    from dolo.algos.improved_time_iteration import smooth as vec_smooth
-    if (dres is None) and (jres is None):
-        res = vec_smooth(res.x0, x.x0 - lb.x0)
-        res *= -1
-        res = vec_smooth(res, ub.x0 - x.x0, pos=-1.0)
-        res *= -1
-        return CVector(res)
-    if (dres is not None) and (jres is None):
-        res, dres = vec_smooth(res.x0, x.x0 - lb.x0, dres=dres)
-        res *= -1
-        dres *= -1
-        res,dres = vec_smooth(res, ub.x0 - x.x0, pos=-1.0, dres=dres)
-        res *= -1
-        dres *= -1
-        return CVector(res), CVector(dres)
-    if (dres is None) and (jres is not None):
-        res, jres = vec_smooth(res.x0, x.x0 - lb.x0, jres=jres)
-        res *= -1
-        jres *= -1
-        res, jres  = vec_smooth(res, ub.x0 - x.x0, pos=-1.0, jres=jres)
-        res *= -1
-        jres *= -1
-        return CVector(res), (jres)
-    # if (dres is None) and (jres is None):
-    #     return CVector(res)
-    # else:
-    #     return (e for e in [res, dres, jres] if e is not None)
-
-
-
-class Euler:
-
-    model: Model
-    grid: object
-    dprocess: DiscretizedProcess
-    dr: DecisionRule
-    x0: object   # CVector[ N_e × N , n_x ]
-    p: object   # n_p vector
-    bounds: object # CVector[ N_e × N , n_x ]   # bounds for controls
-
-    def __init__(self, model, discretization=dict(), interpolation='cubic', dr0=None):
-
-        self.model = model
-        grid, dprocess = model.discretize(**discretization)
-        self.grid = grid
-        self.dprocess = dprocess
-
-        calib = model.calibration.flat
-        interp_method = get_address(model.data, "options:interpolation", default="cubic")
-
-        self.dr = DecisionRule(grid['exo'], grid['endo'], dprocess=dprocess, interp_method=interp_method)
-
-        n_x = len(model.symbols["controls"])
-        N_e = max(1,grid['exo'].n_nodes)
-        N = grid['endo'].n_nodes
-
-        x0 = numpy.zeros((N_e, N, n_x))
-        x0[:, :, :] = model.calibration["controls"][None, None, :]
-
-
-        if dr0 is not None:
-            # TODO: revisit this, if dr0, is a d.r. we need to check what inputs it accepts
-            s = grid['endo'].nodes
-            for i_m in range(dprocess.n_nodes):
-                    m = dprocess.node(i_m)
-                    x0[i_m, :, :] = dr0(m, s)
-            # try:
-            #     for i_m in range(dprocess.n_nodes):
-            #         m = dprocess.node(i_m)
-            #         x0[i_m, :, :] = dr0(m, s)
-            # except Exception:
-            #     for i_m in range(dprocess.n_nodes):
-            #         x0[i_m, :, :] = dr0(i_m, s)
-
-
-        self.x0 = CVector(x0)
-        
-        self.p = model.calibration['parameters']
-        self.sh_C = (N_e*N, n_x)
-
-        if "arbitrage_lb" in model.functions:
-            lb_fun = model.functions["arbitrage_lb"]
-            ub_fun = model.functions["arbitrage_ub"]
-            lb = numpy.zeros_like(x0) * numpy.nan
-            ub = numpy.zeros_like(x0) * numpy.nan
-            s = grid['endo'].nodes
-            for i_m in range(dprocess.n_nodes):
-                m = dprocess.node(i_m)[None, :]
-                p = self.p[None, :]
-                m = numpy.repeat(m, N, axis=0)
-                p = numpy.repeat(p, N, axis=0)
-
-                lb[i_m, :, :] = lb_fun(m, s, p)
-                ub[i_m, :, :] = ub_fun(m, s, p)
-            self.bounds = (CVector(lb), CVector(ub))
-        else:
-            self.bounds = None
-        
-
-    def __call__(self, x0, x1=None):
-
-
-        f = self.model.functions['arbitrage']
-        g = self.model.functions['transition']
-
-        s = self.grid["endo"].nodes      
-        dp = self.dprocess
-        p = self.p
-
-
-        if x1 is not None:
-            self.dr.set_values(x1.data.reshape(x1.x0.shape))
-        
-        res = residuals_simple(f, g, s, x0, self.dr, dp, p)
-
-        if self.bounds is not None:
-            lb, ub = self.bounds
-            return smooth(res, x0, lb, ub)
-        else:
-            return res
-
-
-    def d_A(self, x0, x1=None):
-
-        sh = x0.x0.shape
-
-        def fun(x):
-            return self( CVector( x.reshape( sh )) ).data.copy()
-
-        z0 = x0.data.copy()
-        
-        from dolo.numeric.optimize.newton import serial_newton
-
-        dfun = SerialDifferentiableFunction(fun)
-    
-        r, J = dfun(z0)
-
-        R = CVector(r.reshape(x0.x0.shape))
-        J = CVector(J.reshape(x0.shape + J.shape[1:]))
-
-        # return R,J
-        if self.bounds is not None:
-            lb, ub = self.bounds[0], self.bounds[1]
-            return smooth(R, x0, lb, ub, dres=J)
-        else:
-            return R, J
-    
-    def d_B(self, x0, x1=None):
-
-        f = self.model.functions['arbitrage']
-        g = self.model.functions['transition']
-
-        s = self.grid["endo"].nodes      
-        dp = self.dprocess
-        p = self.p
-        dr = self.dr
-
-        ## 
-        x = x0.x0
-
-        res, jres, S_ij = euler_residuals(f, g, s, x, dr, dp, p, diff=True, with_jres=True, set_dr=False)
-
-        R = CVector(res.reshape(x.shape))
-
-
-        jres *=-1
-        if self.bounds is not None:
-            lb, ub = self.bounds[0], self.bounds[1]
-            R, jres = smooth(R, x0, lb, ub, jres=jres)
-
-        import copy
-        cdr = copy.deepcopy(dr)
-
-        L = Jacobian(jres, S_ij, cdr)
-
-        return R, L
-
-
-class Jacobian:
-
-    def __init__(self, M_ij, S_ij, cdr):
-
-        self.M_ij = M_ij
-        self.S_ij = S_ij
-        self.cdr = cdr
-
-    def __matmul__(self, A, inplace=False):
-
-        π = A.x0
-
-        M_ij = self.M_ij
-        S_ij = self.S_ij
-
-        if not inplace:
-            π = π.copy()
-
-        from dolo.algos.improved_time_iteration import d_filt_dx
-
-        d_filt_dx(π, M_ij, S_ij, self.cdr)
-
-        return CVector(π)
-
-    def ldiv(self, A): # performs the computation in place
-
-        from .invert import solve_tensor
-
-        M_ij = self.M_ij
-        n_m, n_im = self.M_ij.shape[:2]
-
-        V = A.x0
-
-        for i_m in range(n_m):
-            for j_m in range(n_im):
-                M = M_ij[i_m, j_m, :, :, :]
-                X = V[i_m, :, :, :].copy()
-                rhs = solve_tensor(X, M)
-
-    def __imul__(self, other):
-
-        self.M_ij[...] *= other
-        return self
-
-def residuals_simple(f, g, s, x, dr, dprocess, parms)->CVector:
-
-    N = s.shape[0]
-    n_s = s.shape[1]
-
-    res = x.zeros_like()
-
-    for i_ms in range(dprocess.n_nodes):
-
-        # solving on grid for markov index i_ms
-        m = numpy.tile(dprocess.node(i_ms), (N, 1))
-        xm = x[i_ms, :, :]
-
-        for I_ms in range(dprocess.n_inodes(i_ms)):
-            M = numpy.tile(dprocess.inode(i_ms, I_ms), (N, 1))
-            prob = dprocess.iweight(i_ms, I_ms)
-            S = g(m, s, xm, M, parms)
-            XM = dr.eval_ijs(i_ms, I_ms, S)
-            rr = f(m, s, xm, M, S, XM, parms)
-            res[i_ms, :, :] += prob * rr
-
-    return res
-
-
-import time
-
-def euler_residuals(
-    f,
-    g,
-    s,
-    x,
-    dr,
-    dp,
-    p_,
-    diff=True,
-    with_jres=False,
-    set_dr=True,
-    jres=None,
-    S_ij=None,
-):
-
-
-    if set_dr:
-        dr.set_values(x)
-
-    N = s.shape[0]
-    n_s = s.shape[1]
-    n_x = x.shape[2]
-
-    n_ms = max(dp.n_nodes, 1)  # number of markov states
-    n_im = dp.n_inodes(0)
-
-    res = numpy.zeros_like(x)
-
-    if with_jres:
-        if jres is None:
-            jres = numpy.zeros((n_ms, n_im, N, n_x, n_x))
-        if S_ij is None:
-            S_ij = numpy.zeros((n_ms, n_im, N, n_s))
-
-    for i_ms in range(n_ms):
-        m_ = dp.node(i_ms)
-        xm = x[i_ms, :, :]
-        for I_ms in range(n_im):
-            M_ = dp.inode(i_ms, I_ms)
-            w = dp.iweight(i_ms, I_ms)
-            S = g(m_, s, xm, M_, p_, diff=False)
-            XM = dr.eval_ijs(i_ms, I_ms, S)
-            if with_jres:
-                ff = SerialDifferentiableFunction(
-                    lambda u: f(m_, s, xm, M_, S, u, p_, diff=False)
-                )
-                rr, rr_XM = ff(XM)
-
-                rr = f(m_, s, xm, M_, S, XM, p_, diff=False)
-                jres[i_ms, I_ms, :, :, :] = w * rr_XM
-                S_ij[i_ms, I_ms, :, :] = S
-            else:
-                rr = f(m_, s, xm, M_, S, XM, p_, diff=False)
-            res[i_ms, :, :] += w * rr
-
-    t2 = time.time()
-
-    if with_jres:
-        return res, jres, S_ij
-    else:
-        return res
-
-
 import copy
 from .results import ImprovedTimeIterationResult, TimeIterationResult, AlgoResult
 from dolo.misc.itprinter import IterationsPrinter
 from dolo.numeric.optimize.newton import newton
+import numpy as np
 
 
-def newton(f, x: CVector, verbose=False, tol=1e-6, maxit=5, jactype="serial"):
+from .time_iteration_helpers import *
 
-    """Solve nonlinear system using safeguarded Newton iterations
-
-
-    Parameters
-    ----------
-
-    Return
-    ------
-    """
-    if verbose:
-        print = lambda txt: print(txt)
-    else:
-        print = lambda txt: None
-
-    it = 0
-    error = 10
-    converged = False
-    maxbacksteps = 30
-
-    x0 = x
-
-    while it < maxit and not converged:
-
-        [v, dv] = f(x)
-
-        # TODO: rewrite starting here
-
-        #        print("Time to evaluate {}".format(ss-tt)0)
-
-        error_0 = (v).norm()
-
-        if error_0 < tol:
-
-            if verbose:
-                print(
-                    "> System was solved after iteration {}. Residual={}".format(
-                        it, error_0
-                    )
-                )
-            converged = True
-
-        else:
-
-            it += 1
-
-            dx = dv.solve(v)
-
-            # dx = solve(dv, v)
-
-            # norm_dx = abs(dx).max()
-
-            for bck in range(maxbacksteps):
-                xx = x - dx * (2 ** (-bck))
-                vm = f(xx)[0]
-                err = (vm).norm()
-                if err < error_0:
-                    break
-
-            x = xx
-
-            if verbose:
-                print("\t> {} | {} | {}".format(it, err, bck))
-
-    if not converged:
-        import warnings
-
-        warnings.warn("Did not converge")
-    return (x, it)
 
 def time_iteration(
     model: Model,
@@ -536,8 +25,9 @@ def time_iteration(
     hook=None,
 ) -> TimeIterationResult:
 
-
-    F = Euler(model, discretization=discretization, interpolation=interpolation, dr0=dr0)
+    F = Euler(
+        model, discretization=discretization, interpolation=interpolation, dr0=dr0
+    )
 
     x0 = F.x0
 
@@ -547,24 +37,23 @@ def time_iteration(
 
     verbit = verbose == "full"
 
-
     itprint = IterationsPrinter(
         ("n", int),
-        ("f_x", (float,"εₙ=|f(xₙ)|")),
-        ("d_x", (float,"ηₙ=|xₙ-xₙ₋₁|")),
-        ("λ", (float,"λₙ=ηₙ/ηₙ₋₁")),
+        ("f_x", (float, "εₙ=|f(xₙ)|")),
+        ("d_x", (float, "ηₙ=|xₙ-xₙ₋₁|")),
+        ("λ", (float, "λₙ=ηₙ/ηₙ₋₁")),
         ("Time", float),
         ("nit", int),
         verbose=verbose,
     )
-    
+
     itprint.print_header("Time Iterations.")
 
     err_η_0 = numpy.nan
 
     n_x = len(model.symbols["controls"])
 
-    for  it in range(maxit):
+    for it in range(maxit):
 
         if hook:
             hook()
@@ -574,15 +63,17 @@ def time_iteration(
         if trace:
             trace_details.append({"dr": copy.deepcopy(F.dr)})
 
-        r = ( F(x0, x0) )
+        r = F(x0, x0)
         err_ε = r.norm()
 
-            # r,J = F.d_A(su)
+        # r,J = F.d_A(su)
 
-        verbose=False
+        verbose = False
+
+        R, J = F.d_A(x0)
+        R, L = F.d_B(x0)
 
         x1, nit = newton(F.d_A, x0, maxit=inner_maxit)
-
 
         # baby-steps version
         # r, J = ( F.d_A(x0) )
@@ -593,16 +84,15 @@ def time_iteration(
         dx = x1 - x0
         err_η = dx.norm()
 
-        λ = err_η/err_η_0
+        λ = err_η / err_η_0
         err_η_0 = err_η
 
-
         t_finish = time.time()
-        elapsed = t_finish -t_start
+        elapsed = t_finish - t_start
 
         itprint.print_iteration(n=it, f_x=err_ε, d_x=err_η, λ=λ, Time=elapsed, nit=nit),
 
-        if err_ε<tol_ε or err_η<tol_η:
+        if err_ε < tol_ε or err_η < tol_η:
             break
 
         x0 = x1
@@ -611,10 +101,9 @@ def time_iteration(
 
     itprint.print_finished()
 
-
     if not details:
         return dr
-    
+
     return TimeIterationResult(
         dr,
         it,
@@ -627,8 +116,6 @@ def time_iteration(
         trace_details,  # trace: object #{Nothing,IterationTrace}
     )
 
-
-import numpy as np
 
 def improved_time_iteration(
     model: Model,
@@ -648,10 +135,17 @@ def improved_time_iteration(
     # invmethod="iti",
 ) -> ImprovedTimeIterationResult:
 
-
-    F = Euler(model, discretization=discretization, interpolation=interpolation, dr0=dr0)
+    F = Euler(
+        model,
+        discretization=discretization,
+        interpolation=interpolation,
+        dr0=dr0,
+        ignore_constraints=ignore_constraints,
+    )
 
     x0 = F.x0
+
+    steps = 0.5 ** numpy.arange(maxbsteps)
 
     complementarities = not ignore_constraints
 
@@ -659,8 +153,8 @@ def improved_time_iteration(
         ("n", int),
         # ("εₙ=|f(xₙ)|", float),
         # ("ηₙ=|f(xₙ)-f(xₙ₋₁)|", float),
-        ("f_x", (float,"εₙ=|f(xₙ)|")),
-        ("d_x", (float,"ηₙ=|xₙ-xₙ₋₁|")),
+        ("f_x", (float, "εₙ=|f(xₙ)|")),
+        ("d_x", (float, "ηₙ=|xₙ-xₙ₋₁|")),
         # ("Time_residuals", float),
         # ("Time_inversion", float),
         ("λ", (float, "λ≈|T'(xₙ)|")),
@@ -670,7 +164,6 @@ def improved_time_iteration(
     )
     itprint.print_header("Improved Time Iterations.")
 
-
     for it in range(maxit):
 
         t_start = time.time()
@@ -678,8 +171,8 @@ def improved_time_iteration(
         dr = F(x0, x0)
         err_ε = dr.norm()
 
-        R, J = F.d_A(x0)
-        R, L = F.d_B(x0)
+        dr, J = F.d_A(x0)
+        dr, L = F.d_B(x0)
 
         dr = J.solve(dr)
         L.ldiv(J)
@@ -690,29 +183,30 @@ def improved_time_iteration(
         du = dr
         err_ν_0 = 1.0
         for n in range(smaxit):
-            du = L@du
+            du = L @ du
             dx = dx + du
             err_ν = du.norm()
-            λ = err_ν/err_ν_0
+            λ = err_ν / err_ν_0
             err_ν_0 = err_ν
-            if err_ν<tol_ν:
+            if err_ν < tol_ν:
                 break
 
         err_η = dx.norm()
 
-        x0 = x0 - dx
+        for i_bckstps, lam in enumerate(steps):
+            x1 = x0 - dx * lam
+            err = F(x1, x1).norm()
+            if err < err_ε:
+                break
+
+        x0 = x1
 
         t_finish = time.time()
 
         itprint.print_iteration(
-            n=it,
-            f_x=err_ε,
-            d_x=err_η,
-            λ=λ,
-            Time=t_finish-t_start,
-            N_invert=n
+            n=it, f_x=err_ε, d_x=err_η, λ=λ, Time=t_finish - t_start, N_invert=n
         )
-        if err_ε<tol_ε:
+        if err_ε < tol_ε:
             # print(f"Error {k} = {err_ε} |")
             break
 
@@ -721,7 +215,6 @@ def improved_time_iteration(
     dr = F.dr
 
     itprint.print_finished()
-
 
     if not details:
         return dr
