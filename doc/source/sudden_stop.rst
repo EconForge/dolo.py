@@ -15,18 +15,18 @@ importing necessary functions
 
 .. code:: python
 
+    # if using in a Jupyther notebook:
     %pylab inline
 
-.. parsed-literal::
-
-    Populating the interactive namespace from numpy and matplotlib
+    # Populating the interactive namespace from numpy and matplotlib
+    from matplotlib.pyplot import *
 
 
 .. code:: python
 
     from dolo import *
-    from dolo.algos.dtmscc.time_iteration import time_iteration
-    from dolo.algos.dtmscc.simulations import plot_decision_rule, simulate
+    from dolo.algos.time_iteration import time_iteration
+    from dolo.algos.simulations import plot_decision_rule, simulate
 writing the model
 -----------------
 
@@ -41,8 +41,9 @@ writing the model
 
 .. code:: python
 
-    filename = 'https://raw.githubusercontent.com/EconForge/dolo/master/examples/models/compat/sudden_stop.yaml'
-    filename = 'sudden_stop.yaml'
+    filename = 'https://github.com/EconForge/dolo.py/blob/master/examples/models_/sudden_stop.yaml'
+    # alternatively, specify path yourself:
+    # filename = 'sudden_stop.yaml'
     # the model file is coded in a separate file called sudden_stop.yaml
     # note how the borrowing constraint is implemented as complementarity condition
     pcat(filename)
@@ -284,7 +285,7 @@ By default, the calibrated value for endogenous variables are used as a
 
 .. code:: python
 
-    model = yaml_import('sudden_stop.yaml')
+    model = yaml_import(filename)
     model
 
 .. parsed-literal::
