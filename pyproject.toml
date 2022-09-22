@@ -7,7 +7,7 @@ authors = ["Winant Pablo <pablo.winant@gmail.com>"]
 license="BSD-2-Clause"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
+python = ">=3.9, <3.11"
 interpolation = "^2.2.4"
 dolang = "0.0.16"
 numpy = "^1.23.3"
