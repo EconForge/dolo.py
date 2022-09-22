@@ -30,6 +30,8 @@ ipykernel = "^6.15.3"
 coverage = "^6.4.4"
 pytest-cov = "^3.0.0"
 black = "^22.8.0"
+pymdown-extensions = "^9.5"
+python-markdown-math = "^0.8"
 
 [build-system]
 requires = ["poetry>=1.1"]
