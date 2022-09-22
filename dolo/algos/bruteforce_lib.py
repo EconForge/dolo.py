@@ -142,7 +142,7 @@ class SparseTensor:
             pp = prod(self.shape)
             P = int(sqrt(pp))
             Q = P
-            assert pp == P ** 2
+            assert pp == P**2
             dims = (P, Q)
         else:
             assert len(dims) == 2

@@ -38,11 +38,11 @@ def smooth(x, a, b, fx, J, jactype="serial"):
     db = b - x
 
     # TODO: ignore warnings when there are infinite values.
-    sq1 = sqrt(fx ** 2 + da ** 2)
+    sq1 = sqrt(fx**2 + da**2)
     pval = fx + sq1 + da
     pval[dainf] = fx[dainf]
 
-    sq2 = sqrt(pval ** 2 + db ** 2)
+    sq2 = sqrt(pval**2 + db**2)
 
     fxnew = pval - sq2 + db
 

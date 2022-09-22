@@ -422,7 +422,7 @@ class UNormal(UnivariateContinuousDistribution):
 
         from numpy.random import multivariate_normal
 
-        Sigma = np.array([[self.σ ** 2]])
+        Sigma = np.array([[self.σ**2]])
         mu = np.array([self.μ])
         sim = multivariate_normal(mu, Sigma, size=N)
         return sim.reshape((N, 1))
@@ -448,7 +448,7 @@ class UNormal(UnivariateContinuousDistribution):
         # Maybe we can avoid that one by inheriting from mvNormal
         from dolo.numeric.discretization.quadrature import gauss_hermite_nodes
 
-        [x, w] = gauss_hermite_nodes(N, np.array([[self.σ ** 2]]), mu=self.μ)
+        [x, w] = gauss_hermite_nodes(N, np.array([[self.σ**2]]), mu=self.μ)
         x += np.array([self.μ])[:, None]
         return FiniteDistribution(x, w, origin=self)
 

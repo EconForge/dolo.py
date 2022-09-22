@@ -46,7 +46,7 @@ def smooth(res, dres, jres, dx, pos=1.0):
     # jres is modified
     dinf = dx > 100000
     n_m, N, n_x = res.shape
-    sq = sqrt(res ** 2 + (dx) ** 2)
+    sq = sqrt(res**2 + (dx) ** 2)
     H = res + (dx) - sq
     Phi_a = 1 - res / sq
     Phi_b = 1 - (dx) / sq
@@ -67,7 +67,7 @@ def smooth_nodiff(res, dx):
 
     n_m, N, n_x = res.shape
     dinf = dx > 100000
-    sq = sqrt(res ** 2 + (dx) ** 2)
+    sq = sqrt(res**2 + (dx) ** 2)
     H = res + (dx) - sq
     H[dinf] = res[dinf]
     return H
@@ -215,7 +215,7 @@ def radius_jac(res, dres, jres, fut_S, dumdr, tol=1e-10, maxit=1000, verbose=Fal
 
     err0 = 0.0
 
-    norm2 = lambda m: sqrt((m ** 2).sum())
+    norm2 = lambda m: sqrt((m**2).sum())
 
     import numpy.random
 

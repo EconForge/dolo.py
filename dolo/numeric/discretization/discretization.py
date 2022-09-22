@@ -28,7 +28,7 @@ def tauchen(N, mu, rho, sigma, m=2):
     Zprob = np.zeros((N, N))
     a = (1 - rho) * mu
 
-    Z[-1] = m * math.sqrt(sigma ** 2 / (1 - (rho ** 2)))
+    Z[-1] = m * math.sqrt(sigma**2 / (1 - (rho**2)))
     Z[0] = -1 * Z[-1]
     zstep = (Z[-1] - Z[0]) / (N - 1)
 
@@ -76,7 +76,7 @@ def rouwenhorst(rho, sigma, N):
 
     p = (rho + 1) / 2
     q = p
-    nu = sqrt((N - 1) / (1 - rho ** 2)) * sigma
+    nu = sqrt((N - 1) / (1 - rho**2)) * sigma
 
     nodes = linspace(-nu, nu, N)
     sig_a = sigma

@@ -7,7 +7,7 @@ from dolo.numeric.processes import ConstantProcess
 
 ## Polynomial
 def f(x):
-    return x ** 2
+    return x**2
 
 
 def test_Mixture():
@@ -70,8 +70,8 @@ def test_UNormal():
     ).sum()
     expval_normal = quad(
         lambda x: f(x)
-        / np.sqrt(2 * np.pi * σ ** 2)
-        * np.exp(-((x - μ) ** 2) / (2 * σ ** 2)),
+        / np.sqrt(2 * np.pi * σ**2)
+        * np.exp(-((x - μ) ** 2) / (2 * σ**2)),
         -np.inf,
         np.inf,
     )[0]

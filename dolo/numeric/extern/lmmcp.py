@@ -404,7 +404,7 @@ def Phi3MCPPFB(x, Fx, lb, ub, lambda1, lambda2, n, Indexset):
             y[n + i - 1] = -lambda2 * Fx[i - 1]
         elif Indexset[i - 1] == 3:
             y[i - 1] = lambda1 * (
-                np.sqrt((x[i - 1] - lb[i - 1]) ** 2 + phi_u ** 2)
+                np.sqrt((x[i - 1] - lb[i - 1]) ** 2 + phi_u**2)
                 - x[i - 1]
                 + lb[i - 1]
                 - phi_u
@@ -508,7 +508,7 @@ def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
                 + Fx[i - 1]
                 + np.sqrt(((ub[i - 1] - x[i - 1]) ** 2 + Fx[i - 1] ** 2))
             )
-            denom1 = np.maximum(null, np.sqrt(((x[i - 1] - lb[i - 1]) ** 2 + phi ** 2)))
+            denom1 = np.maximum(null, np.sqrt(((x[i - 1] - lb[i - 1]) ** 2 + phi**2)))
             denom2 = np.maximum(
                 null, np.sqrt((z[i - 1] ** 2 + np.dot(DFx[i - 1, :], z) ** 2))
             )

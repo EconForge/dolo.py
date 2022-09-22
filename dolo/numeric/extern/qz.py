@@ -11,7 +11,7 @@ def qzordered(A, B, crit=1.0):
     TOL = 1e-10
 
     def select(alpha, beta):
-        return alpha ** 2 > crit * beta ** 2
+        return alpha**2 > crit * beta**2
 
     [S, T, alpha, beta, U, V] = ordqz(A, B, output="real", sort=select)
 

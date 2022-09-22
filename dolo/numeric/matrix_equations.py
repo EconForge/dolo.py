@@ -78,7 +78,7 @@ def solve_sylvester(A, B, C, D, Ainv=None, method="linear"):
     n_d = D.ndim - 1
     n_v = C.shape[1]
 
-    n_c = D.size // n_v ** n_d
+    n_c = D.size // n_v**n_d
 
     #    import dolo.config
     #    opts = dolo.config.use_engine
@@ -87,7 +87,7 @@ def solve_sylvester(A, B, C, D, Ainv=None, method="linear"):
     #        [err,XX] = dolo.config.engine.engine.feval(2,'gensylv',n_d,A,B,C,-DD)
     #        X = XX.reshape( (n_c,)+(n_v,)*(n_d))
 
-    DD = D.reshape(n_c, n_v ** n_d)
+    DD = D.reshape(n_c, n_v**n_d)
 
     if n_d == 1:
         CC = C
@@ -112,7 +112,7 @@ def solve_sylvester(A, B, C, D, Ainv=None, method="linear"):
             S = np.linalg.solve(A, DD)
 
         n = n_c
-        m = n_v ** n_d
+        m = n_v**n_d
 
         XX = slycot.sb04qd(n, m, Q, CC, -S)
 

@@ -11,7 +11,7 @@ def hermgauss(n):
     from numpy import pi, fix, zeros, sqrt
 
     maxit = 100
-    pim4 = 1 / pi ** 0.25
+    pim4 = 1 / pi**0.25
     m = int(fix((n + 1) / 2))
 
     x = zeros(n)
@@ -21,7 +21,7 @@ def hermgauss(n):
         if i == 0:
             z = sqrt(2 * n + 1) - 1.85575 * ((2 * n + 1) ** (-1 / 6))
         elif i == 1:
-            z = z - 1.14 * (n ** 0.426) / z
+            z = z - 1.14 * (n**0.426) / z
         elif i == 2:
             z = 1.86 * z + 0.86 * x[0]
         elif i == 3:
@@ -47,7 +47,7 @@ def hermgauss(n):
             raise Exception("Failure to converge")
         x[n - i - 1] = z
         x[i] = -z
-        w[i] = 2 / pp ** 2
+        w[i] = 2 / pp**2
         w[n - i - 1] = w[i]
 
     return [x, w]

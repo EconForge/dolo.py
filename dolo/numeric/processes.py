@@ -437,8 +437,8 @@ class AR1(ContinuousProcess):
 
         epsilons, weights = gauss_hermite_nodes([n_integration_nodes], Σ)
 
-        min = -n_std * (σ / (np.sqrt(1 - ρ ** 2)))
-        max = n_std * (σ / (np.sqrt(1 - ρ ** 2)))
+        min = -n_std * (σ / (np.sqrt(1 - ρ**2)))
+        max = n_std * (σ / (np.sqrt(1 - ρ**2)))
 
         from .grids import CartesianGrid
 
@@ -574,8 +574,8 @@ class VAR1(ContinuousProcess):
 
         epsilons, weights = gauss_hermite_nodes([n_integration_nodes], Σ)
 
-        min = -n_std * (σ / (np.sqrt(1 - ρ ** 2)))
-        max = n_std * (σ / (np.sqrt(1 - ρ ** 2)))
+        min = -n_std * (σ / (np.sqrt(1 - ρ**2)))
+        max = n_std * (σ / (np.sqrt(1 - ρ**2)))
 
         from .grids import CartesianGrid
 

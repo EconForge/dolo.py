@@ -15,7 +15,7 @@ ttol = 1e-10
 
 @jit
 def PhiFB(a, b):
-    return a + b - sqrt(a ** 2 + b ** 2)
+    return a + b - sqrt(a**2 + b**2)
 
 
 @jit
@@ -25,7 +25,7 @@ def smooth_FB(f, x, a, b):
 
 @jit
 def PhiFB_(a, b):
-    sq = sqrt(a ** 2 + b ** 2)
+    sq = sqrt(a**2 + b**2)
     x = a + b - sq
     if sq != 0.0:
         dx_da = 1.0 - a / sq

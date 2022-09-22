@@ -148,16 +148,16 @@ def arbitrage_(m, s, x, M, S, X, p):
     N, I = X
     # E_z = M
 
-    y = exp(z) * k ** α * n ** (1 - α)
+    y = exp(z) * k**α * n ** (1 - α)
     c = y - i
     w = (1 - α) * y / n
 
-    Y = exp(Z) * K ** α * N ** (1 - α)
+    Y = exp(Z) * K**α * N ** (1 - α)
     C = Y - I
     R = α * Y / K
     # W = (1-α)*y/n
 
-    res_1 = χ * n ** η * c ** σ - w
+    res_1 = χ * n**η * c**σ - w
     res_2 = 1 - β * (c / C) ** (σ) * (1 - δ + R)
 
     return (res_1, res_2)
