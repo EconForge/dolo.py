@@ -237,7 +237,7 @@ class SymbolicModel:
                     assert k.children[1].children[0].value == "0"
 
                     vv = definitions.value[i][1]
-                    v = parse_string(vv, start="formula")
+                    v = parse_string(vv)
                     v = sanitize(v, variables=vars)
                     v = str_expression(v)
 

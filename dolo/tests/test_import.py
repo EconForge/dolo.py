@@ -15,7 +15,7 @@ def test_import():
     for fname in filenames:
 
         model = yaml_import(fname, check=False)
-        print(model)
+        # print(model)
         print("Exogenous shocks:")
         print(model.exogenous)
         print("Discretized shock:")
