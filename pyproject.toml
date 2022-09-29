@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dolo"
-version = "0.4.9.17"
+version = "0.4.9.18"
 readme = "README.md"
 description = "Economic Modeling in Python"
 authors = ["Winant Pablo <pablo.winant@gmail.com>"]
@@ -9,7 +9,7 @@ license="BSD-2-Clause"
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
 interpolation = "^2.2.4"
-dolang = "^0.0.17"
+dolang = "^0.0.18"
 numpy = "^1.22.2"
 ipython = "^8.5.0"
 pandas = "^1.5.0"
