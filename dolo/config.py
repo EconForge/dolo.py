@@ -34,4 +34,4 @@ temp_dir = tempfile.mkdtemp(prefix="dolo_")
 sys.path.append(temp_dir)
 
 
-from IPython.core.display import display
+# from IPython.core.display import display
