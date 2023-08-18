@@ -10,7 +10,7 @@ symbols:
 
 definitions:
     # Equations from 11.6.8
-    eta[t]: alpha*A[t]*k[t]^(alpha-1)
+    eta[t]: alpha*A*k[t]^(alpha-1)
     w[t]: A*k[t]^alpha - k[t]*eta
 
 equations:
