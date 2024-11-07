@@ -201,7 +201,7 @@ in the declaration order.
 
 !!! note
 
-    In the RBC example, the `defintitions` block defines variables (`y,c,rk,w`)
+    In the RBC example, the `definitions` block defines variables (`y,c,rk,w`)
     that can be directly deduced from the states and the controls:
 
     ``` {.yaml}
