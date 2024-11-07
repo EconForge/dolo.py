@@ -82,7 +82,6 @@ import time
 
 
 def newton(f, x, verbose=False, tol=1e-6, maxit=5, jactype="serial"):
-
     """Solve nonlinear system using safeguarded Newton iterations
 
 

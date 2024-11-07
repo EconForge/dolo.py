@@ -3,6 +3,7 @@ from __future__ import division
 import numpy
 from dolo.numeric.misc import cartesian
 
+
 # Credits : both routines below are ported from the Compecon Toolbox
 # by Paul L Fackler and Mario J. Miranda.
 # It is downloadable at http://www4.ncsu.edu/~pfackler/compecon/toolbox.html

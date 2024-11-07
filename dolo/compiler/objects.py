@@ -65,7 +65,7 @@ class CartesianDomain(Domain, dict):
 #     signature = {'Mu': 'list(float)', 'Sigma': 'Matrix'}
 
 
-#%%
+# %%
 
 
 @language_element

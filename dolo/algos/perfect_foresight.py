@@ -22,7 +22,7 @@ def _shocks_to_epsilons(model, shocks, T):
     # value arrays are not the same length
     if isinstance(shocks, dict):
         epsilons = np.zeros((T + 1, n_e))
-        for (i, k) in enumerate(model.symbols["exogenous"]):
+        for i, k in enumerate(model.symbols["exogenous"]):
             if k in shocks:
                 this_shock = shocks[k]
                 epsilons[: len(this_shock), i] = this_shock

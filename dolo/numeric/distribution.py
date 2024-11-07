@@ -550,7 +550,7 @@ class Beta(UnivariateContinuousDistribution):
         # Probability associated with each point in grid (nodes)
 
 
-#%
+# %
 
 
 ###

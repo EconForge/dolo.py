@@ -418,7 +418,7 @@ def Phi3MCPPFB(x, Fx, lb, ub, lambda1, lambda2, n, Indexset):
 
 def DPhi3MCPPFB(x, Fx, DFx, lb, ub, lambda1, lambda2, n, Indexset):
 
-    #% we evaluate an element of the C-subdifferential of operator Phi3MCPPFB
+    # % we evaluate an element of the C-subdifferential of operator Phi3MCPPFB
     null = 1e-8
     beta_l = np.zeros(n)
     beta_u = np.zeros(n)

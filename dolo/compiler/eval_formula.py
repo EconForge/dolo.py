@@ -40,7 +40,7 @@ def eval_formula(expr: str, dataframe=None, context=None):
 
         import pandas as pd
 
-        for (k, t) in variables:
+        for k, t in variables:
             dd[stringify_symbol((k, t))] = dataframe[k].shift(t)
         dd["t_"] = pd.Series(dataframe.index, index=dataframe.index)
 

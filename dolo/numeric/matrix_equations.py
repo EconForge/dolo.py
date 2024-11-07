@@ -4,6 +4,7 @@ import numpy as np
 
 TOL = 1e-10
 
+
 # credits : second_order_solver is adapted from Sven Schreiber's port of Uhlig's Toolkit.
 def second_order_solver(FF, GG, HH, eigmax=1.0 + 1e-6):
 

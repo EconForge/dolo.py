@@ -4,6 +4,7 @@ import numpy as np
 # from multipledispatch import dispatch
 # multimethod = dispatch()
 from dolo.misc.multimethod import multimethod
+
 # from numba import generated_jit
 import xarray
 
@@ -16,6 +17,7 @@ from dolo.numeric.grids import CartesianGrid, UnstructuredGrid, EmptyGrid
 
 
 # @generated_jit(nopython=True)
+
 
 @jit
 def trembling_hand(A: "N*n1*...*nd", x: "N*d", w: "float"):

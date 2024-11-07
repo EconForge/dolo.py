@@ -19,9 +19,9 @@ def josephy(x):
 def Djosephy(x):
     # Local Variables: x, DFx, n
     # Function calls: Djosephy, zeros, length
-    #%
-    #%   Computes the Jacobian DF(x) of the NCP-example by Josephy
-    #%
+    # %
+    # %   Computes the Jacobian DF(x) of the NCP-example by Josephy
+    # %
     n = len(x)
     DFx = np.zeros((n, n))
     DFx[0, 0] = 6.0 * x[0] + 2.0 * x[1]

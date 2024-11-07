@@ -54,7 +54,6 @@ def time_iteration(
     # obsolete
     with_complementarities=None,
 ) -> TimeIterationResult:
-
     """Finds a global solution for ``model`` using backward time-iteration.
 
 

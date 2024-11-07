@@ -2,7 +2,6 @@
 Discretization of continuous processes as markov chain
 """
 
-
 import scipy as sp
 import scipy.stats
 import numpy as np

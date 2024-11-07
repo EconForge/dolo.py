@@ -5,6 +5,7 @@ import numpy as np
 from dolo.numeric.distribution import *
 from dolo.numeric.processes import ConstantProcess
 
+
 ## Polynomial
 def f(x):
     return x**2

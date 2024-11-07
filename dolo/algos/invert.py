@@ -6,6 +6,7 @@ from numba.extending import overload
 
 import numpy
 
+
 @jit
 def swaplines_tensor(i, j, M):
     n0, n1, n2 = M.shape
@@ -15,6 +16,7 @@ def swaplines_tensor(i, j, M):
             M[i, k, l] = M[j, k, l]
             M[j, k, l] = t
 
+
 @jit
 def swaplines_matrix(i, j, M):
     n = M.shape[1]
@@ -22,6 +24,7 @@ def swaplines_matrix(i, j, M):
         t = M[i, k]
         M[i, k] = M[j, k]
         M[j, k] = t
+
 
 @jit
 def swaplines_vector(i, j, M):
@@ -34,11 +37,12 @@ def swaplines_vector(i, j, M):
 @jit(cache=True)
 def swaplines(i, j, M):
     if M.ndim == 1:
-        return swaplines_vector(i,j,M)
+        return swaplines_vector(i, j, M)
     elif M.ndim == 2:
-        return swaplines_matrix(i,j,M)
+        return swaplines_matrix(i, j, M)
     elif M.ndim == 3:
-        return swaplines_tensor(i,j,M)
+        return swaplines_tensor(i, j, M)
+
 
 @jit
 def substract_tensor(i, j, c, M):
@@ -48,6 +52,7 @@ def substract_tensor(i, j, c, M):
         for l in range(n2):
             M[i, k, l] = M[i, k, l] - c * M[j, k, l]
 
+
 @jit
 def substract_matrix(i, j, c, M):
     # Li <- Li - c*Lj
@@ -55,21 +60,24 @@ def substract_matrix(i, j, c, M):
     for k in range(n):
         M[i, k] = M[i, k] - c * M[j, k]
 
+
 @jit
 def substract_vector(i, j, c, M):
     # Li <- Li - c*Lj
     # n = M.shape[0]
     M[i] = M[i] - c * M[j]
 
+
 @jit
-def substract(i,j,c,M):
+def substract(i, j, c, M):
     if M.ndim == 1:
-        return substract_vector(i,j,c,M)
+        return substract_vector(i, j, c, M)
     elif M.ndim == 2:
-        return substract_matrix(i,j,c,M)
+        return substract_matrix(i, j, c, M)
     elif M.ndim == 3:
-        return substract_tensor(i,j,c,M)
-    
+        return substract_tensor(i, j, c, M)
+
+
 # @overload(substract)
 # def substract_jit(i, j, c, M):
 #     if M.ndim == 1:
@@ -79,6 +87,7 @@ def substract(i,j,c,M):
 #     elif M.ndim == 3:
 #         return substract_tensor
 
+
 @jit
 def divide_tensor(i, c, M):
     # Li <- Li - c*Lj
@@ -87,6 +96,7 @@ def divide_tensor(i, c, M):
         for l in range(n2):
             M[i, k, l] /= c
 
+
 @jit
 def divide_matrix(i, c, M):
     # Li <- Li - c*Lj
@@ -94,19 +104,21 @@ def divide_matrix(i, c, M):
     for k in range(n):
         M[i, k] /= c
 
+
 @jit
 def divide_vector(i, c, M):
     # Li <- Li - c*Lj
     M[i] /= c
 
+
 @jit
 def divide(i, c, M):
     if M.ndim == 1:
-        return divide_vector(i,c,M)
+        return divide_vector(i, c, M)
     elif M.ndim == 2:
-        return divide_matrix(i,c,M)
+        return divide_matrix(i, c, M)
     elif M.ndim == 3:
-        return divide_tensor(i,c,M)
+        return divide_tensor(i, c, M)
 
 
 # def divide(i, c, M):

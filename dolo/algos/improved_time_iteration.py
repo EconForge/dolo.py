@@ -120,7 +120,6 @@ from scipy.sparse.linalg import LinearOperator
 
 
 class Operator(LinearOperator):
-
     """Special Linear Operator"""
 
     def __init__(self, M_ij, S_ij, dumdr):

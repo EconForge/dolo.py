@@ -291,7 +291,7 @@ class MarkovChain(DiscretizedProcess, DiscreteProcess):
         return self.values[inds]
 
 
-#%%
+# %%
 
 
 @language_element
