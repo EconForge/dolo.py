@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Model API - Dolo</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css" rel="stylesheet" />
+        <link href="../css/mkapi-common.css" rel="stylesheet" />
+        <link href="../css/mkapi-readthedocs.css" rel="stylesheet" />
+        <link href="../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Model API";
+        var mkdocs_page_input_path = "model_api.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dolo
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Install</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Modeling</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../modeling_language/">The Dolo Language</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Model API</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#model-object">Model Object</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#calibration">Calibration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exogenous-shock">Exogenous shock</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#options-structure">Options structure</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_specification/">Model Specification</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Local Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../steady_state/">Steady-State</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../perturbation/">Perturbation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Perfect Foresight Algorithm</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../perfect_foresight/">Perfect Foresight</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Global Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameterized_expectations/">Parameterized Expectations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../time_iteration/">Time Iteration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../value_iteration/">Value Iteration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Post Processing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../inspect/">Inspecting the Solution</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Misc</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../finite_iteration/">Finite Horizon Time Iteration</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dolo</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Modeling</li>
+      <li class="breadcrumb-item active">Model API</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="model-api">Model API</h1>
+<p>For numerical purposes, models are essentially represented as a set of symbols, calibration and functions representing the various equation
+types of the model. This data is held in a <code>Model</code> object whose API is described in this chapter. Models are usually created by writing a Yaml files as described in the the previous chapter, but as we will
+see below, they can also be written directly as long as they satisfy the requirements detailed below.</p>
+<h2 id="model-object">Model Object</h2>
+<p>As previously, let's consider, the Real Business Cycle example, from the introduction. The model object can be created using the yaml file:</p>
+<pre class="highlight"><code class="language-python">model = yaml_import('models/rbc.yaml')</code></pre>
+<p>The object contains few meta-data:</p>
+<pre class="highlight"><code class="language-yaml">display( model.name )  # -&gt; "Real Business Cycles"
+display( model.infos )   # -&gt; {"name": "Real Business Cycle",  "filename": "examples/models/rbc.yaml",  "type": "dtcc"}</code></pre>
+<h2 id="calibration">Calibration</h2>
+<p>Each models stores calibration information as <code>model.calibration</code>. It is a special dictionary-like object,  which contains calibration information, that is values for parameters and initial values (or steady-state) for all other variables of the model.</p>
+<p>It is possible to retrieve one or several variables calibrations:</p>
+<pre class="highlight"><code class="language-python">display( model.calibration['k'] ) #  -&gt;  2.9
+display( model.calibration['k', 'delta']  #  -&gt; [2.9, 0.08]</code></pre>
+<p>When a key coresponds to one of the symbols group, one gets one or several vectors of variables instead:</p>
+<pre class="highlight"><code class="language-python">model.calibration['states'] # - &gt; np.array([2.9, 0]) (values of states [z, k])
+model.calibration['states', 'controls'] # -&gt; [np.array([2.9, 0]), np.array([0.29, 1.0])]</code></pre>
+<p>To get regular dictionary mapping states groups and vectors, one can use the attributed <code>.grouped</code>
+The values are vectors (1d numpy arrays) of values for each symbol group. For instance the following code will print the calibrated values of the parameters:</p>
+<pre class="highlight"><code class="language-python">for (variable_group, variables) in model.calibration.items():
+    print(variables_group, variables)</code></pre>
+<p>In order to get a <code>(key,values)</code> of all the values of the model, one can call <code>model.calibration.flat</code>.</p>
+<pre class="highlight"><code class="language-python">for (variable_group, variables) in model.calibration.items():
+    print(variables_group, variables)</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The calibration object can contain values that are not symbols of the model. These values can be used to calibrate model parameters
+and are also evaluated in the other yaml sections, using the supplied value.</p>
+</div>
+<p>One uses the <code>model.set_calibration()</code> routine to change the calibration of the model.  This one takes either a dict as an argument, or a set of keyword arguments. Both calls are valid:</p>
+<pre class="highlight"><code class="language-python">model.set_calibration( {'delta':0.01} )
+model.set_calibration( {'i': 'delta*k'} )
+model.set_calibration( delta=0.08, k=2.8 )</code></pre>
+<p>This method also understands symbolic expressions (as string) which makes it possible to define symbols as a function of other symbols:</p>
+<pre class="highlight"><code class="language-python">model.set_calibration(beta='1/(1+delta)')
+print(model.get_calibration('beta'))   # -&gt; nan
+
+model.set_calibration(delta=0.04)
+print(model.get_calibration(['beta', 'delta'])) # -&gt; [0.96, 0.04]</code></pre>
+<p>Under the hood, the method stores the symbolic relations between symbols. It is precisely equivalent to use the <code>set_calibration</code> method
+or to change the values in the yaml files. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.</p>
+<h2 id="functions">Functions</h2>
+<p>A model of a specific type can feature various kinds of functions. For instance, a continuous-states-continuous-controls models, solved by iterating on the Euler equations may feature a transition equation <span class="arithmatex"><span class="MathJax_Preview">g</span><script type="math/tex">g</script></span> and an arbitrage equation <span class="arithmatex"><span class="MathJax_Preview">f</span><script type="math/tex">f</script></span>. Their signature is respectively <span class="arithmatex"><span class="MathJax_Preview">s_t=g(m_{t-1},s_{t-1},x_{t-1},m_t)</span><script type="math/tex">s_t=g(m_{t-1},s_{t-1},x_{t-1},m_t)</script></span> and <span class="arithmatex"><span class="MathJax_Preview">E_t[f(m_t,s_t,x_t,s_{t+1},x_{t+1},m_{t+1})]</span><script type="math/tex">E_t[f(m_t,s_t,x_t,s_{t+1},x_{t+1},m_{t+1})]</script></span>, where <span class="arithmatex"><span class="MathJax_Preview">s_t</span><script type="math/tex">s_t</script></span>, <span class="arithmatex"><span class="MathJax_Preview">x_t</span><script type="math/tex">x_t</script></span> and <span class="arithmatex"><span class="MathJax_Preview">m_t</span><script type="math/tex">m_t</script></span> respectively represent a vector of states, controls and exogenous shock. Implicitly, all functions are also assumed to depend on the vector of parameters <span class="arithmatex"><span class="MathJax_Preview">p</span><script type="math/tex">p</script></span>.</p>
+<p>These functions can be accessed by their type in the model.functions dictionary:</p>
+<pre class="highlight"><code class="language-python">g = model.functions['transition']
+f = model.functions['arbitrage']</code></pre>
+<p>Let's call the arbitrage function on the steady-state value, to see the residuals at the deterministic steady-state:</p>
+<pre class="highlight"><code class="language-python">m = model.calibration["exogenous"]
+s = model.calibration["states"]
+x = model.calibration["controls"]
+p = model.calibration["parameters"]
+res = f(m,s,x,m,s,x,p)
+display(res)</code></pre>
+<p>The output (<code>res</code>) is two element vector, representing the residuals of the two arbitrage equations at the steady-state. It should be full of zero. Is it ? Great !</p>
+<p>By inspecting the arbitrage function ( <code>f?</code> ), one can see that its call api is:</p>
+<pre class="highlight"><code class="language-python">f(m,s,x,M,S,X,p,diff=False,out=None)</code></pre>
+<p>Since <code>m</code>, <code>s</code> and <code>x</code> are the short names for exogenous shocks, states and controls, their values at date <span class="arithmatex"><span class="MathJax_Preview">t+1</span><script type="math/tex">t+1</script></span> is denoted with <code>S</code> and <code>X</code>. This simple convention prevails in most of dolo source code: when possible, vectors at date <code>t</code> are denoted with lowercase, while future vectors are with upper case. We have already commented the presence of the parameter vector <code>p</code>.
+Now, the generated functions also gives the option to perform in place computations, when an output vector is given:</p>
+<pre class="highlight"><code class="language-python">out = numpy.ones(2)
+f(m,s,x,m,s,x,p,out)   # out now contains zeros</code></pre>
+<p>It is also possible to compute derivatives of the function by setting <code>diff=True</code>. In that case, the residual and jacobians with respect to the various arguments are returned as a list:</p>
+<pre class="highlight"><code class="language-python">r, r_m, r_s, r_x, r_M, r_S, r_X = f(m,s,x,m,s,x,p,diff=True)</code></pre>
+<p>Since there are two states and two controls, the variables <code>r_s, r_x, r_S, r_X</code> are all 2 by 2 matrices.</p>
+<p>The generated functions also allow for efficient vectorized evaluation. In order to evaluate the residuals :math:<code>N</code> times, one needs to supply matrix arguments, instead of vectors, so that each line corresponds to one value to evaluate as in the following example:</p>
+<pre class="highlight"><code class="language-python">N = 10000
+
+vec_m = m[None,:].repeat(N, axis=0) # we repeat each line N times
+vec_s = s[None,:].repeat(N, axis=0) # we repeat each line N times
+vec_x = x[None,:].repeat(N, axis=0)
+vec_X = X[None,:].repeat(N, axis=0)
+vec_p = p[None,:].repeat(N, axis=0)
+
+# actually, except for vec_s, the function repeat is not need since broadcast rules apply
+vec_s[:,0] = linspace(2,4,N)   # we provide various guesses for the steady-state capital
+vec_S = vec_s
+
+out = f(vec_m, vec_s,vec_x,vec_M, vec_S,vec_X,vec_p)  # now a 10000 x 2 array
+
+out, out_m, out_s, out_x, out_M, out_S, out_X = f(vec_m, vec_s,vec_x, vec_m, vec_S,vec_X,vec_p)</code></pre>
+<p>The vectorized evaluation is optimized so that it is much faster to make a vectorized call rather than iterate on each point. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the preceding example, the parameters are constant for all evaluations, yet they are repeated. This is not mandatory, and the call <code>f(vec_m, vec_s, vec_x, vec_M, vec_S, vec_X, p)</code> should work exactly as if <code>p</code> had been repeated along the first axis. We follow there numba's <code>guvectorize</code> conventions, even though they slightly differ from numpy's ones.</p>
+</div>
+<h2 id="exogenous-shock">Exogenous shock</h2>
+<p>The <code>exogenous</code> field contains information about the driving process. To get its default, discretized version, one can call <code>model.exogenous.discretize()</code>.</p>
+<h2 id="options-structure">Options structure</h2>
+<p>The <code>model.options</code> structure holds an information required by a particular solution method. For instance, for global methods, <code>model.options['grid']</code> is supposed to hold the boundaries and the number nodes at which to interpolate.</p>
+<pre class="highlight"><code class="language-python">display( model.options['grid'] )</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../modeling_language/" class="btn btn-neutral float-left" title="The Dolo Language"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../model_specification/" class="btn btn-neutral float-right" title="Model Specification">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../modeling_language/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../model_specification/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/mkapi.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@5"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

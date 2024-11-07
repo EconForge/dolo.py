@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Perfect Foresight - Dolo</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css" rel="stylesheet" />
+        <link href="../css/mkapi-common.css" rel="stylesheet" />
+        <link href="../css/mkapi-readthedocs.css" rel="stylesheet" />
+        <link href="../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Perfect Foresight";
+        var mkdocs_page_input_path = "perfect_foresight.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dolo
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Install</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Modeling</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../modeling_language/">The Dolo Language</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_api/">Model API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_specification/">Model Specification</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Local Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../steady_state/">Steady-State</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../perturbation/">Perturbation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Perfect Foresight Algorithm</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Perfect Foresight</a>
+    <ul class="current">
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Global Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameterized_expectations/">Parameterized Expectations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../time_iteration/">Time Iteration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../value_iteration/">Value Iteration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Post Processing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../inspect/">Inspecting the Solution</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Misc</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../finite_iteration/">Finite Horizon Time Iteration</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dolo</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Perfect Foresight Algorithm</li>
+      <li class="breadcrumb-item active">Perfect Foresight</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="perfect-foresight">Perfect foresight</h1>
+<p>Consider a series for the exogenous process <span class="arithmatex"><span class="MathJax_Preview">(m_t)_{0 \leq t \leq T}</span><script type="math/tex">(m_t)_{0 \leq t \leq T}</script></span> given exogenously.</p>
+<p>The perfect foresight problem consists in finding the path of optimal
+controls <span class="arithmatex"><span class="MathJax_Preview">(x_t)_{0 \leq t \leq T}</span><script type="math/tex">(x_t)_{0 \leq t \leq T}</script></span> and corresponding states <span class="arithmatex"><span class="MathJax_Preview">(s_t)_{0 \leq t \leq T}</span><script type="math/tex">(s_t)_{0 \leq t \leq T}</script></span> such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">\begin{aligned}
+s_t &amp; = &amp; g\left(m_{t-1}, s_{t-1}, x_{t-1}, m_t \right) &amp; \\
+0 &amp; = &amp; f\left(m_{t}, s_{t}, x_{t}, m_{t+1}, s_{t+1}, x_{t+1}\right) &amp; \ \perp \ \underline{u} &lt;= x_t &lt;= \overline{u}
+\end{aligned}</div>
+<script type="math/tex; mode=display">\begin{aligned}
+s_t & = & g\left(m_{t-1}, s_{t-1}, x_{t-1}, m_t \right) & \\
+0 & = & f\left(m_{t}, s_{t}, x_{t}, m_{t+1}, s_{t+1}, x_{t+1}\right) & \ \perp \ \underline{u} <= x_t <= \overline{u}
+\end{aligned}</script>
+</div>
+<p>Special conditions apply for the initial state and controls. Initial
+state (<span class="arithmatex"><span class="MathJax_Preview">{m_0}, {s_0})</span><script type="math/tex">{m_0}, {s_0})</script></span> is given exogenously. Final states and controls are
+determined by assuming the exogenous process satisfies <span class="arithmatex"><span class="MathJax_Preview">m_t=m_T</span><script type="math/tex">m_t=m_T</script></span> for all
+<span class="arithmatex"><span class="MathJax_Preview">t\geq T</span><script type="math/tex">t\geq T</script></span> and optimality conditions are satisfied in the last period:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">f(m_T, s_T, x_T, m_T, s_T, x_T) \perp \underline{u} \leq x_T \leq \overline{u}</div>
+<script type="math/tex; mode=display">f(m_T, s_T, x_T, m_T, s_T, x_T) \perp \underline{u} \leq x_T \leq \overline{u}</script>
+</div>
+<p>We assume that <span class="arithmatex"><span class="MathJax_Preview">\underline{u}</span><script type="math/tex">\underline{u}</script></span> and <span class="arithmatex"><span class="MathJax_Preview">\overline{u}</span><script type="math/tex">\overline{u}</script></span> are constants. This is
+not a big restriction since the model can always be reformulated in
+order to meet that constraint, by adding more equations.</p>
+<p>The stacked system of equations satisfied by the solution is:</p>
+<table>
+<thead>
+<tr>
+<th>Transitions</th>
+<th>Arbitrage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="arithmatex"><span class="MathJax_Preview">s_0</span><script type="math/tex">s_0</script></span> exogenous</td>
+<td><span class="arithmatex"><span class="MathJax_Preview">f(m_0, s_0, x_0, m_1, s_1, x_1) \perp \underline{u} &lt;= x_0 &lt;= \overline{u}</span><script type="math/tex">f(m_0, s_0, x_0, m_1, s_1, x_1) \perp \underline{u} <= x_0 <= \overline{u}</script></span></td>
+</tr>
+<tr>
+<td><span class="arithmatex"><span class="MathJax_Preview">s_1 = g(m_0, s_0, x_0, m_1)</span><script type="math/tex">s_1 = g(m_0, s_0, x_0, m_1)</script></span></td>
+<td><span class="arithmatex"><span class="MathJax_Preview">f(s_1, x_1, s_2, x_2) \perp \underline{u} &lt;= x_1 &lt;= \overline{u}</span><script type="math/tex">f(s_1, x_1, s_2, x_2) \perp \underline{u} <= x_1 <= \overline{u}</script></span></td>
+</tr>
+<tr>
+<td>....</td>
+<td>...</td>
+</tr>
+<tr>
+<td><span class="arithmatex"><span class="MathJax_Preview">s_T = g(m_{T-1}, s_{T-1}, x_{T-1}, m_T)</span><script type="math/tex">s_T = g(m_{T-1}, s_{T-1}, x_{T-1}, m_T)</script></span></td>
+<td><span class="arithmatex"><span class="MathJax_Preview">f(m_T, s_T, x_T, m_T, s_T, x_T) \perp \underline{u} &lt;= x_T &lt;= \overline{u}</span><script type="math/tex">f(m_T, s_T, x_T, m_T, s_T, x_T) \perp \underline{u} <= x_T <= \overline{u}</script></span></td>
+</tr>
+</tbody>
+</table>
+<p>The system is solved using a nonlinear solver.</p>
+<div class="mkapi-node" id="dolo.algos.perfect_foresight.deterministic_solve">
+<div class='mkapi-object-container'>
+  <div class="mkapi-object function code top">
+    <div class="mkapi-object-kind function top">function</div>
+    <div class="mkapi-object-body function top"><code class="mkapi-object-prefix">dolo.algos.perfect_foresight.</code><code class="mkapi-object-name">deterministic_solve</code><code class="mkapi-object-parenthesis">(</code><code class="mkapi-object-signature">model</code>, <code class="mkapi-object-signature">verbose=True</code>, <code class="mkapi-object-signature">ignore_constraints=False</code>, <code class="mkapi-object-signature">exogenous=None</code>, <code class="mkapi-object-signature">s0=None</code>, <code class="mkapi-object-signature">m0=None</code>, <code class="mkapi-object-signature">T=100</code>, <code class="mkapi-object-signature">maxit=100</code>, <code class="mkapi-object-signature">initial_guess=None</code>, <code class="mkapi-object-signature">solver=&#39;ncpsolve&#39;</code>, <code class="mkapi-object-signature">keep_steady_state=False</code>, <code class="mkapi-object-signature">s1=None</code>, <code class="mkapi-object-signature">shocks=None</code>, <code class="mkapi-object-signature">tol=1e-06</code><code class="mkapi-object-parenthesis">)</code></div>
+  </div>
+  
+</div>
+<div class="mkapi-docstring">
+<div class="mkapi-section">
+      <div class="mkapi-section-body"><p>Computes a perfect foresight simulation using a stacked-time algorithm.</p>
+<p>Typical simulation exercises are:
+- start from an out-of-equilibrium exogenous and/or endogenous state: specify <code>s0</code> and or <code>m0</code>. Missing values are taken from the calibration (<code>model.calibration</code>).
+- specify an exogenous path for shocks <code>exogenous</code>. Initial exogenous state <code>m0</code> is then first value of exogenous values. Economy is supposed to have been at the equilibrium for <span class="arithmatex"><span class="MathJax_Preview">t&lt;0</span><script type="math/tex">t<0</script></span>, which pins
+down initial endogenous state <code>s0</code>. <code>x0</code> is a jump variable.</p>
+<p>If <span class="arithmatex"><span class="MathJax_Preview">s0</span><script type="math/tex">s0</script></span> is not specified it is then set
+equal to the steady-state consistent with the first value</p>
+<p>The initial state is specified either by providing a series of exogenous
+shocks and assuming the model is initially in equilibrium with the first
+value of the shock, or by specifying an initial value for the states.</p></div>
+    </div>
+  <div class="mkapi-section parameters">
+      <div class="mkapi-section-name parameters">
+          <span class="mkapi-section-name-body parameters">Parameters</span> 
+        </div>
+      <div class="mkapi-section-body parameters"><ul class="mkapi-items">
+<li><code class="mkapi-item-name">model</code>
+<span class="mkapi-item-type">(Model)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">Model to be solved</span></li>
+
+<li><code class="mkapi-item-name">verbose</code>
+<span class="mkapi-item-type">(boolean)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">if True, the solver displays iterations</span></li>
+
+<li><code class="mkapi-item-name">ignore_constraints</code>
+<span class="mkapi-item-type">(bool)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">if True, complementarity constraints are ignored.</span></li>
+
+<li><code class="mkapi-item-name">exogenous</code>
+<span class="mkapi-item-type">(array-like, dict, or pandas.DataFrame)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">A specification for the path of exogenous variables (aka shocks). Can be any of the
+following (note by "declaration order" below we mean the order
+of <code>model.symbols["exogenous"]</code>):<br>
+<ul>
+<li>A 1d numpy array-like specifying a time series for a single
+  exogenous variable, or all exogenous variables stacked into a single array.</li>
+<li>A 2d numpy array where each column specifies the time series
+  for one of the shocks in declaration order. This must be an
+  <code>N</code> by number of shocks 2d array.</li>
+<li>A dict where keys are strings found in
+  <code>model.symbols["exogenous"]</code> and values are a time series of
+  values for that shock. For exogenous variables that do not appear in
+  this dict, the shock is set to the calibrated value. Note
+  that this interface is the most flexible as it allows the user
+  to pass values for only a subset of the model shocks and it
+  allows the passed time series to be of different lengths.</li>
+<li>A DataFrame where columns map shock names into time series.
+  The same assumptions and behavior that are used in the dict
+  case apply here</li>
+</ul>
+If nothing is given here, <code>exogenous</code> is set equal to the
+calibrated values found in <code>model.calibration["exogenous"]</code> for
+all periods.<br>
+If the length of any time-series in shocks is less than <code>T</code>
+(see below) it is assumed that that particular shock will
+remain at the final given value for the duration of the
+simulation.</span></li>
+
+<li><code class="mkapi-item-name">s0</code>
+<span class="mkapi-item-type">(None or ndarray or dict)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">If vector with the value of initial states
+If an exogenous timeseries is given for exogenous shocks, <code>s0</code> will be computed as the steady-state value that is consistent with its first value.</span></li>
+
+
+<li><code class="mkapi-item-name">T</code>
+<span class="mkapi-item-type">(int)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">horizon for the perfect foresight simulation</span></li>
+
+<li><code class="mkapi-item-name">maxit</code>
+<span class="mkapi-item-type">(int)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">maximum number of iteration for the nonlinear solver</span></li>
+
+
+
+<li><code class="mkapi-item-name">keep_steady_state</code>
+<span class="mkapi-item-type">(bool)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">if True, initial steady-states and steady-controls are appended to the simulation with date -1.</span></li>
+
+
+
+<li><code class="mkapi-item-name">tol</code>
+<span class="mkapi-item-type">(float)</span>
+<span class="mkapi-item-dash">&mdash;</span> <span class="mkapi-item-description">stopping criterium for the nonlinear solver</span></li>
+
+
+</ul></div>
+    </div>
+  <div class="mkapi-section returns">
+      <div class="mkapi-section-name returns">
+          <span class="mkapi-section-name-body returns">Returns</span> <span class="mkapi-item-type">(pandas dataframe)</span>
+        </div>
+      <div class="mkapi-section-body returns"><p>a dataframe with T+1 observations of the model variables along the
+simulation (states, controls, auxiliaries). The  simulation should return to a steady-state
+consistent with the last specified value of the exogenous shocks.</p></div>
+    </div>
+  </div>
+
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../perturbation/" class="btn btn-neutral float-left" title="Perturbation"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../parameterized_expectations/" class="btn btn-neutral float-right" title="Parameterized Expectations">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../perturbation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../parameterized_expectations/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/mkapi.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@5"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Processes - Dolo</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css" rel="stylesheet" />
+        <link href="../css/mkapi-common.css" rel="stylesheet" />
+        <link href="../css/mkapi-readthedocs.css" rel="stylesheet" />
+        <link href="../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Processes";
+        var mkdocs_page_input_path = "processes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dolo
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Install</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Modeling</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../modeling_language/">The Dolo Language</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_api/">Model API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_specification/">Model Specification</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Processes</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#distributions-iidprocess">Distributions / IIDProcess</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#univariate-distributions">Univariate distributions</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#iid-normal">IID Normal</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#iid-lognormal">IID LogNormal</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#uniform">Uniform</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#beta">Beta</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#bernouilli">Bernouilli</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#multivariate-distributions">Multivariate distributions</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#normal-multivariate">Normal (multivariate)</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mixtures">Mixtures</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#continuous-autoregressive-process">Continuous Autoregressive Process</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#ar1-var1">AR1 / VAR1</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#markov-chains">Markov chains</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#product">Product</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#conditional-processes">Conditional processes</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#discretization-methods-for-continous-shocks">Discretization methods for continous shocks</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Local Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../steady_state/">Steady-State</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../perturbation/">Perturbation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Perfect Foresight Algorithm</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../perfect_foresight/">Perfect Foresight</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Global Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameterized_expectations/">Parameterized Expectations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../time_iteration/">Time Iteration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../value_iteration/">Value Iteration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Post Processing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../inspect/">Inspecting the Solution</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Misc</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../finite_iteration/">Finite Horizon Time Iteration</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dolo</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Modeling</li>
+      <li class="breadcrumb-item active">Processes</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="shocks">Shocks</h1>
+<p>The type of exogenous shock associated to a model determines the kind of decision rule, which will be obtained by the solvers. Shocks can pertain to one of the following categories:</p>
+<ul>
+<li>
+<p>continuous i.i.d. shocks aka distributions</p>
+</li>
+<li>
+<p>continuous auto-correlated process such as AR1</p>
+</li>
+<li>
+<p>discrete processes such as discrete markov chains</p>
+</li>
+</ul>
+<p>Exogenous shock processes are specified in the section <code>exogenous</code> of a yaml file.</p>
+<p>Here are some examples for each type of shock:</p>
+<h2 id="distributions-iidprocess">Distributions / IIDProcess</h2>
+<h3 id="univariate-distributions">Univariate distributions</h3>
+<h4 id="iid-normal">IID Normal</h4>
+<p>The type of the shock is specified using yaml type annotations (starting with exclamation mark)</p>
+<p>Normal distribution with mean mu and variance σ^2 has the probability density function</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">f(x; \mu, \sigma) = \frac{1}{\sqrt{2 \pi \sigma^2}}
+\exp \left( - \frac{(x - \mu)^2}{2 \sigma^2} \right)</div>
+<script type="math/tex; mode=display">f(x; \mu, \sigma) = \frac{1}{\sqrt{2 \pi \sigma^2}}
+\exp \left( - \frac{(x - \mu)^2}{2 \sigma^2} \right)</script>
+</div>
+<p>A normal shock in the yaml file with mean 0.2 and standard deviation 0.1 can be declared as follows</p>
+<pre class="highlight"><code>!Normal:
+    σ: 0.1
+    μ: 0.2</code></pre>
+<p>or</p>
+<pre class="highlight"><code>!Normal:
+    sigma: 0.1
+    mu: 0.2</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Greek letter 'σ' or 'sigma' (similarly 'μ' or 'mu' ) are accepted.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When defining shocks in a dolo model, that is in an <code>exogenous</code> section, The exogenous shock section can refer to parameters specified in the calibration section:</p>
+<pre class="highlight"><code>symbols:
+...
+      parameters: [alpha, beta, mu, sigma]
+...
+calibration:
+      sigma: 0.01
+      mu: 0.0
+
+exogenous: !Normal:
+      σ: sigma
+      μ: mu
+</code></pre>
+</div>
+<h4 id="iid-lognormal">IID LogNormal</h4>
+<p>Parametrization of a lognormal random variable Y is in terms of he mean, μ, and standard deviation, σ, of the unique normally distributed random variable X is as follows</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">f(x; \mu, \sigma) = \frac{1}{x \sqrt{2 \pi \sigma^2}}
+\exp \left( - \frac{(\log(x) - \mu)^2}{2 \sigma^2} \right),
+\quad x &gt; 0</div>
+<script type="math/tex; mode=display">f(x; \mu, \sigma) = \frac{1}{x \sqrt{2 \pi \sigma^2}}
+\exp \left( - \frac{(\log(x) - \mu)^2}{2 \sigma^2} \right),
+\quad x > 0</script>
+</div>
+<p>such that exp(X) = Y</p>
+<pre class="highlight"><code>exogenous: !LogNormal:
+      σ: sigma
+      μ: mu
+</code></pre>
+<h4 id="uniform">Uniform</h4>
+<p>Uniform distribution over an interval [a,b]</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">f(x; a, b) = \frac{1}{b - a}, \quad a \le x \le b</div>
+<script type="math/tex; mode=display">f(x; a, b) = \frac{1}{b - a}, \quad a \le x \le b</script>
+</div>
+<pre class="highlight"><code>symbols:
+      states: [k]
+      controls: [c, d]
+      exogenous: [e]
+      parameters: [alpha, beta, mu, sigma, e_min, e_max]
+
+.
+.
+.
+
+exogenous: !Uniform:
+      a: e_min
+      b: e_max
+</code></pre>
+<h4 id="beta">Beta</h4>
+<p>If X∼Gamma(α) and Y∼Gamma(β) are distributed independently, then X/(X+Y)∼Beta(α,β).</p>
+<p>Beta distribution with shape parameters α and β has the following PDF</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">f(x; \alpha, \beta) = \frac{1}{B(\alpha, \beta)} x^{\alpha - 1} (1 x)^{\beta - 1}, \quad x \in [0, 1]</div>
+<script type="math/tex; mode=display">f(x; \alpha, \beta) = \frac{1}{B(\alpha, \beta)} x^{\alpha - 1} (1 x)^{\beta - 1}, \quad x \in [0, 1]</script>
+</div>
+<pre class="highlight"><code>exogenous: !Beta
+      α: 0.3
+      β: 0.1
+</code></pre>
+<h4 id="bernouilli">Bernouilli</h4>
+<p>Binomial distribution parameterized by <span class="arithmatex"><span class="MathJax_Preview">p</span><script type="math/tex">p</script></span> yields <span class="arithmatex"><span class="MathJax_Preview">1</span><script type="math/tex">1</script></span> with probability <span class="arithmatex"><span class="MathJax_Preview">p</span><script type="math/tex">p</script></span> and <span class="arithmatex"><span class="MathJax_Preview">0</span><script type="math/tex">0</script></span> with probability <span class="arithmatex"><span class="MathJax_Preview">1-p</span><script type="math/tex">1-p</script></span>.</p>
+<pre class="highlight"><code>!Bernouilli
+      π: 0.3</code></pre>
+<h3 id="multivariate-distributions">Multivariate distributions</h3>
+<h4 id="normal-multivariate">Normal (multivariate)</h4>
+<p>Note the difference with <code>UNormal</code>. Parameters <code>Σ</code> (not <code>σ</code>) and <code>μ</code> take a matrix and a vector respectively as argument.
+<pre class="highlight"><code>!Normal:
+      Σ: [[0.0]]
+      μ: [0.1]</code></pre></p>
+<h3 id="mixtures">Mixtures</h3>
+<p>For now, mixtures are defined for i.i.d. processes only. They take an integer valued distribution (like the Bernouilli one) and a different distribution associated to each of the values.</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !Mixture
+    index: !Bernouilli
+        p: 0.3
+    distributions:
+        0: UNormal(μ=0.0, σ=0.01)
+        1: UNormal(μ=0.0, σ=0.02)</code></pre>
+<p>Mixtures are not restricted to 1d distributions, but all distributions of the mixture must have the same dimension.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>Right now, mixtures accept only distributions as values. To switch between constants, one can use a <code>Constant</code> distribution as in the following examples.</p>
+<pre class="highlight"><code class="language-yaml">exogenous:
+    e,v: !Mixture:
+        index: !Bernouilli
+            p: 0.3
+        distributions:
+            0: Constant(μ=[0.1, 0.2])
+            1: Constant(μ=[0.2, 0.3])</code></pre>
+<h2 id="continuous-autoregressive-process">Continuous Autoregressive Process</h2>
+<h3 id="ar1-var1">AR1 / VAR1</h3>
+<p>For now, <code>AR1</code> is an alias for <code>VAR1</code>. Autocorrelation <code>ρ</code> must be a scalar (otherwise we don't know how to discretize).</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !AR1
+    rho: 0.9
+    Sigma: [[σ^2]]</code></pre>
+<h2 id="markov-chains">Markov chains</h2>
+<p>Markov chains are constructed by providing a list of nodes and a
+transition matrix.</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !MarkovChain
+    values: [[-0.01, 0.1],[0.01, 0.1]]
+    transitions: [[0.9, 0.1], [0.1, 0.9]]</code></pre>
+<h2 id="product">Product</h2>
+<p>We can also specify more than one process. For instance if we want to combine a VAR1 and an Normal Process we use the tag Product and write:</p>
+<pre class="highlight"><code>exogenous: !Product
+
+    - !VAR1
+         rho: 0.75
+         Sigma:  [[0.015^2, -0.05], [-0.05, 0.012]]
+
+    -  !Normal:
+          σ: sigma
+          μ: mu</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that another syntax is accepted, in the specific context of a dolo exogenous section. It keeps the Product operator implicit. Suppose a dolo model has <span class="arithmatex"><span class="MathJax_Preview">r,w,e</span><script type="math/tex">r,w,e</script></span> as exogenous shocks. It is possible to list several shocks for each variable as in the following example:</p>
+<pre class="highlight"><code>symbols:
+      ...
+      exogenous: [r,w,e]
+
+exogenous:
+    r,w: !VAR1
+         rho: 0.75
+         Sigma: [[0.015^2, -0.05], [-0.05, 0.012]]
+
+    e  !Normal:
+          σ: sigma
+          μ: mu</code></pre>
+<p>In this case we define several shocks for several variables (or combinations thereof).</p>
+</div>
+<h2 id="conditional-processes">Conditional processes</h2>
+<p>Support is very limited for now. It is possible to define markov chains, whose transitions (not the values) depend on the output of another process.</p>
+<pre class="highlight"><code>exogenous: !Conditional
+    condition: !UNormal
+        mu: 0.0
+        sigma: 0.2
+    type: Markov
+    arguments: !Function
+        arguments: [x]
+        value:
+          states: [0.1, 0.2]
+          transitions: !Matrix
+              [[1-0.1-x, 0.1+x],
+               [0.5,       0.5]]
+</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The plan is to replace the clean and explicit but somewhat tedious syntax above by the following (where dependence is detected automatically):</p>
+<pre class="highlight"><code>exogenous:
+    x: !UNormal
+        mu: 0.0
+        sigma: 0.2
+    y: !Markov
+          states: [0.1, 0.2]
+          transitions: !Matrix
+              [[1-0.1-x, 0.1+x],
+               [0.5,       0.5]]
+</code></pre>
+</div>
+<h2 id="discretization-methods-for-continous-shocks">Discretization methods for continous shocks</h2>
+<p>To solve a non-linear model with a given exogenous process, one can apply different types of procedures to discretize the continous process:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Distribution</th>
+<th>Discretization procedure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Univariate iid</td>
+<td>UNormal(μ, σ)</td>
+<td>Equiprobable, Gauss-Hermite Nodes</td>
+</tr>
+<tr>
+<td>Univariate iid</td>
+<td>LogNormal(μ, σ)</td>
+<td>Equiprobable</td>
+</tr>
+<tr>
+<td>Univariate iid</td>
+<td>Uniform(a, b )</td>
+<td>Equiprobable</td>
+</tr>
+<tr>
+<td>Univariate iid</td>
+<td>Beta(α, β)</td>
+<td>Equiprobable</td>
+</tr>
+<tr>
+<td>Univariate iid</td>
+<td>Beta(α, β)</td>
+<td>Equiprobable</td>
+</tr>
+<tr>
+<td>VAR1</td>
+<td></td>
+<td>Generalized Discretization Method (GDP), Markov Chain</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Here we can define shortly each method. Then perhaps link to a jupyter notebook as discussed: Conditional on the discretization approach, present the results of the corresponding method solutions and simulations. Discuss further discretization methods and related dolo objects.</p>
+</div>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../model_specification/" class="btn btn-neutral float-left" title="Model Specification"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../steady_state/" class="btn btn-neutral float-right" title="Steady-State">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../model_specification/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../steady_state/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/mkapi.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@5"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

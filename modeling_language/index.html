@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>The Dolo Language - Dolo</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css" rel="stylesheet" />
+        <link href="../css/mkapi-common.css" rel="stylesheet" />
+        <link href="../css/mkapi-readthedocs.css" rel="stylesheet" />
+        <link href="../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "The Dolo Language";
+        var mkdocs_page_input_path = "modeling_language.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dolo
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Install</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Modeling</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">The Dolo Language</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#yaml-format">YAML format</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#example">Example</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sections">Sections</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#declaration-section">Declaration section</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#declaration-of-equations">Declaration of equations</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#calibration-section">Calibration section</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#domain-section">Domain section</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#exogenous-shocks-specification">Exogenous shocks specification</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#normal">Normal</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#markov-chains">Markov chains</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#options">Options</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_api/">Model API</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_specification/">Model Specification</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Local Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../steady_state/">Steady-State</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../perturbation/">Perturbation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Perfect Foresight Algorithm</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../perfect_foresight/">Perfect Foresight</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Global Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameterized_expectations/">Parameterized Expectations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../time_iteration/">Time Iteration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../value_iteration/">Value Iteration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Post Processing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../inspect/">Inspecting the Solution</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Misc</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../finite_iteration/">Finite Horizon Time Iteration</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dolo</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Modeling</li>
+      <li class="breadcrumb-item active">The Dolo Language</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="the-dolo-language">The dolo language</h1>
+<p>The easiest way to code a model in dolo consists in using specialized
+Yaml files also referred to as dolo model files.</p>
+<h2 id="yaml-format">YAML format</h2>
+<p>YAML stands for Yet Another Markup Language. It is a serialization
+language that allows complex data structures in a human-readable way.
+Atomic elements are floats, integers and strings. An ordered list can be
+defined by separating elements with commas and enclosing them with
+squere brackets:</p>
+<pre class="highlight"><code class="language-yaml">[1,2,3]</code></pre>
+<p>Equivalently, it can be done on several line, by prepending
+[-]{.title-ref} to each line</p>
+<pre class="highlight"><code class="language-yaml">- 'element'
+- element         # quotes are optional there is no ambiguity
+- third element   # this is interpreted as ``'third element'``</code></pre>
+<p>Associative arrays map keys to (simple strings to arbitrary values) as
+in the following example:</p>
+<pre class="highlight"><code class="language-yaml">{age: 18, name: peter}</code></pre>
+<p>Mappings can also be defined on severaly lines, and as in Python,
+structures can be nested by using indentation (use spaces no tabs):</p>
+<pre class="highlight"><code class="language-yaml">age: 18
+name: peter
+occupations:
+  - school
+  - guitar
+friends:
+  paula: {age: 18}</code></pre>
+<p>The correspondance between the yaml definition and the resulting Python
+object is very transparent. YAML mappings and lists are converted to
+Python dictionaries and lists respectiveley.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>TODO say something about YAML objects</p>
+</div>
+<p>Any model file must be syntactically correct in the Yaml sense, before
+the content is analysed further. More information about the YAML syntax
+can be found on the <a href="http://www.yaml.org/">YAML website</a>, especially
+from the <a href="http://www.yaml.org/">language specification</a>.</p>
+<h2 id="example">Example</h2>
+<p>Here is an example model contained in the file
+<code>examples\models\rbc.yaml</code></p>
+<pre class="highlight"><code>name: Real Business Cycle
+
+symbols:
+
+   exogenous: [e_z]
+   states: [z, k]
+   controls: [n, i]
+   parameters: [beta, sigma, eta, chi, delta, alpha, rho, zbar, sig_z]
+
+definitions: |
+    y[t] = exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
+    c[t] = y[t] - i[t]
+    rk[t] = alpha*y[t]/k[t]
+    w[t] = (1-alpha)*y[t]/n[t]
+
+equations:
+
+    arbitrage: |
+        chi*n[t]^eta*c[t]^sigma - w[t]                     ⟂ 0.0 &lt;= n[t] &lt;= inf
+        1 - beta*(c[t]/c[t+1])^(sigma)*(1-delta+rk[t+1])   ⟂ -inf &lt;= i[t] &lt;= inf
+
+    transition: |
+        z[t] = rho*z[t-1] + e_z
+        k[t] = (1-delta)*k[t-1] + i[t-1]
+
+calibration:
+
+    # parameters
+    beta : 0.99
+    phi: 1
+    delta : 0.025
+    alpha : 0.33
+    rho : 0.8
+    sigma: 5
+    eta: 1
+    sig_z: 0.016
+    zbar: 0
+    chi : w/c^sigma/n^eta
+    c_i: 1.5
+    c_y: 0.5
+    e_z: 0.0
+    n: 0.33
+    z: zbar
+    rk: 1/beta-1+delta
+    w: (1-alpha)*exp(z)*(k/n)^(alpha)
+    k: n/(rk/alpha)^(1/(1-alpha))
+    y: exp(z)*k^alpha*n^(1-alpha)
+    i: delta*k
+    c: y - i
+    V: log(c)/(1-beta)
+    u: c^(1-sigma)/(1-sigma) - chi*n^(1+eta)/(1+eta)
+    m: beta/c^sigma*(1-delta+rk)
+    kss: 10
+
+exogenous: !UNormal
+    sigma: 0.01
+
+domain:
+    z: [-2*sig_z/(1-rho^2)^0.5,  2*sig_z/(1-rho^2)^0.5]
+    k: [ kss*0.5, kss*1.5]
+
+options:
+    grid: !Cartesian
+        n: [100, 100]
+    discrete_choices: [n]</code></pre>
+<p>This model can be loaded using the command:</p>
+<pre class="highlight"><code class="language-python">model = yaml_import(`examples/models/rbc.yaml`)</code></pre>
+<p>The function <code>yaml_import</code> (cross) will raise errors until
+the model satisfies basic compliance tests. . In the
+following subsections, we describe the various syntactic rules prevailing
+while writing yaml files.</p>
+<h2 id="sections">Sections</h2>
+<p>A dolo model consists in the following 4 or 5 parts:</p>
+<ul>
+<li>a <code>symbols</code> section where all symbols used in the model
+    must be defined</li>
+<li>an <code>equations</code> section containing the list of equations</li>
+<li>a <code>calibration</code> section providing numeric values for the
+    symbols</li>
+<li>a <code>domain</code> section, with the information about the
+    solution domain</li>
+<li>an <code>options</code> section containing additional informations</li>
+<li>an <code>exogenous</code> section where exogenous shocks are defined.</li>
+</ul>
+<p>These section have context dependent rules. We now review each of them in detail:</p>
+<h3 id="declaration-section">Declaration section</h3>
+<p>This section is introduced by the <code>symbols</code>]{.title-ref}` keyword. All
+symbols appearing in the model must be defined there.</p>
+<p>Symbols must be valid Python identifiers (alphanumeric not beginning
+with a number) and are case sensitive. Greek letters  are recognized. Subscripts and
+superscripts can be denoted by <code>_</code> and <code>__</code>
+respectively. For instance <code>beta_i_1__d</code> will be pretty
+printed as <span class="arithmatex"><span class="MathJax_Preview">\beta_{i,1}^d</span><script type="math/tex">\beta_{i,1}^d</script></span>. Unicode characters are accepted too, as long as they are valid, when used within python identifiers.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In most modern text editor, greek characters can be typed, by entering their latex representation (like <code>beta</code>) and pressing Tab.</p>
+</div>
+<p>Symbols are sorted by type as in the following example:</p>
+<pre class="highlight"><code class="language-yaml">symbols:
+  states: [a, b]
+  controls: [u, v]
+  exogenous: [e]
+  parameters: [rho]</code></pre>
+<p>Note that each type of symbol is associated with a symbol list (like <code>[a,b]</code>).</p>
+<div class="admonition alert">
+<p class="admonition-title">Alert</p>
+<p>A common mistake consists in forgetting the commas, and use spaces only inside list. This doesn't work since the space will be ignored and the two symbols recognized as one.</p>
+</div>
+<p>The exact list of symbols to declare depends on which algorithm is meant to be used. In general, one needs to supply at least <em>states</em> (endogenous states), <em>exogenous</em> (for exogenous shocks), <em>controls</em> for 
+decision variables, and <em>parameters</em> for scalar parameters, that the model can depend on.</p>
+<h3 id="declaration-of-equations">Declaration of equations</h3>
+<p>The <code>equations</code> section contains blocks of equations sorted by type.</p>
+<p>Expressions follow (roughly) the Dynare conventions. Common arithmetic
+operators ([+,-,*,/,\^]{.title-ref}) are allowed with conventional
+priorities as well as usual functions (<code>sqrt</code>, <code>log</code>, <code>exp</code>, <code>sin</code>, <code>cos</code>, <code>tan</code>,
+<code>asin</code>, <code>acos</code>, <code>atan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>asinh</code>, <code>acosh</code>, <code>atanh</code>).
+The definitions of these functions match the definitions from the
+<code>numpy</code> package.</p>
+<p>All symbols appearing in an expression must
+either be declared in the <code>symbols</code> section or be one of the predefined functions. Parameters (that are time invariant) are ntot subscripted, while all other symbol types, are variables, indexed by time. A variable <code>v</code> appear as <code>v[t-1]</code> (for <span class="arithmatex"><span class="MathJax_Preview">v_{t-1}</span><script type="math/tex">v_{t-1}</script></span>), <code>v[t]</code> (for <span class="arithmatex"><span class="MathJax_Preview">v_t</span><script type="math/tex">v_t</script></span>), 
+or <code>v[t+1]</code> (for <span class="arithmatex"><span class="MathJax_Preview">v_t</span><script type="math/tex">v_t</script></span>).</p>
+<!-- Any symbol [s]{.title-ref} that is not a parameter
+is assumed to be considered at date [t]{.title-ref}. Values at date
+[t+1]{.title-ref} and [t-1]{.title-ref} are denoted by
+[s(1)]{.title-ref} and [s(-1)]{.title-ref} respectively. -->
+
+<p>All equations are implicitly enclosed by the expectation operator
+<span class="arithmatex"><span class="MathJax_Preview">E_t\left[\cdots \right]</span><script type="math/tex">E_t\left[\cdots \right]</script></span>. Consequently, the law of motion for the capital</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">k_{t+1} = (1-\delta) k_{t} +  i_{t} + \epsilon_t</div>
+<script type="math/tex; mode=display">k_{t+1} = (1-\delta) k_{t} +  i_{t} + \epsilon_t</script>
+</div>
+<p>is written (in a <code>transition</code> section) as:</p>
+<pre class="highlight"><code class="language-yaml">k[t] = (1-δ)*k[t-1] + i[t-1]</code></pre>
+<p>while the Euler </p>
+<div class="arithmatex">
+<div class="MathJax_Preview">E_t \left[ \beta \left( \frac{c_{t+1}}{c_t} + (1-\delta)+r_{t+1} \right) \right] - 1</div>
+<script type="math/tex; mode=display">E_t \left[ \beta \left( \frac{c_{t+1}}{c_t} + (1-\delta)+r_{t+1} \right) \right] - 1</script>
+</div>
+<p>would be written (in the <code>arbitrage</code> section) as:</p>
+<pre class="highlight"><code class="language-yaml">β*(c[t]/c[t+1])^(σ)*(1-δ+r[t+1]) - 1   # note that expectiation is operator</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In Python, the exponent operator is denoted by [**]{.title-ref} while
+the caret operator [\^]{.title-ref} represents bitwise XOR. In dolo
+models, we ignore this distinction and interpret both as an exponent.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default evaluator in dolo preserves the evaluation order. Thus
+<code>(c[t+1]/c[t])^(-gamma)</code> is not evaluated in the same way (and is numerically
+more stable) than <code>c(1)^(-gamma)/c^(-gamma)</code>. Currently, this is not
+true for symbolically computed derivatives, as expressions are
+automatically simplified, implying that execution order is not
+guaranteed. This impacts only higher order perturbations.</p>
+</div>
+<p>An equation can consist of one expression, or two expressions separated
+by [=]{.title-ref}. There are two types of equation blocks:</p>
+<ul>
+<li><strong>Condition blocks</strong>: in these blocks, each equation <code>lhs = rhs</code> define the scalar value <code>(rhs)-(lhs)</code>. A list of of such equations, i.e a block, defines a multivariate function of the appearing symbols. Certain     condition blocks, can be associated with complementarity conditions separated by <code>⟂</code> (or <code>|</code>) as in  <code>rhs-lhs ⟂ 0 &lt; x &lt; 1</code>. In this case it is advised to omit the equal sign in order to make it easier to interpret the complementarity. Also, when complementarity conditions are used, the ordering of variables appearing in the complementarities must match the declaration order (more in section Y).</li>
+<li><strong>Definition blocks</strong>: the differ from condition blocks in that they define a group of variables (<code>states</code> or <code>auxiliaries</code>) as a function of the right hand side.</li>
+</ul>
+<p>The types of variables appearing on the right hand side depend on the
+block type. The variables enumerated on the left hand-side must appear
+in the declaration order.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the RBC example, the <code>definitions</code> block defines variables (<code>y,c,rk,w</code>)
+that can be directly deduced from the states and the controls:</p>
+<pre class="highlight"><code class="language-yaml">definitions:
+    - y[t] = z[t]*k[t]^alpha*n[t]^(1-alpha)
+    - c[t] = y[t] - i[t]
+    - rk[t] = alpha*y[t]/k[t]
+    - w[t] = (1-alpha)*y[t]/w[t]</code></pre>
+</div>
+<p>Note that the declaration order matches the order in which variables
+appear on the left hand side. Also, these variables are defined
+recursively: <code>c</code>, <code>rk</code> and <code>w</code> depend on the value for <code>y</code>. In contrast
+to the calibration block, the definition order matters. Assuming that
+variables where listed as (<code>c,y,rk,w</code>) the following block would provide
+incorrect result since <code>y</code> is not known when <code>c</code> is evaluated.</p>
+<pre class="highlight"><code class="language-yaml">definitions:
+    - c[t] = y[t] - i[t]
+    - y[t] = z[t]*k[t]^alpha*n[t]^(1-alpha)
+    - rk[t] = alpha*y[t]/k[t]
+    - w[t] = (1-alpha)*y[t]/w[t]</code></pre>
+<h3 id="calibration-section">Calibration section</h3>
+<p>The role of the calibration section consists in providing values for the
+parameters and the variables. The calibration of all parameters
+appearing in the equation is of course strictly necessary while the the
+calibration of other types of variables is useful to define the
+steady-state or an initial guess to the steady-state.</p>
+<p>The calibrated values are also substituted in other sections, including
+<code>exgogenous</code> and <code>options</code> sections. This is
+particularly useful to make the covariance matrix depend on model
+parameters, or to adapt the state-space to the model's calibration.</p>
+<p>The calibration is given by an associative dictionary mapping symbols to
+define with values. The values can be either a scalar or an expression.
+All symbols are treated in the same way, and values can depend upon each
+other as long as there is a way to resolve them recursively.</p>
+<p>In particular, it is possible to define a parameter in order to target a
+special value of an endogenous variable at the steady-state. This is
+done in the RBC example where steady-state labour is targeted with
+<code>n: 0.33</code> and the parameter <code>phi</code> calibrated so that the optimal labour
+supply equation holds at the steady-state (<code>chi: w/c^sigma/n^eta</code>).</p>
+<p>All symbols that are defined in the [symbols]{.title-ref} section but do not appear in the calibration section are initialized with the value [nan]{.title-ref} without issuing any warning.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>No clear long term policy has been established yet about how to deal with undeclared symbols in the calibration section. Avoid them. TODO: reevaluate</p>
+</div>
+<h3 id="domain-section">Domain section</h3>
+<p>The domain section contains boundaries for each endogenous state as in
+the following example:</p>
+<pre class="highlight"><code class="language-yaml">domain:
+    k: [0.5*k, 2*k]
+    z: [-σ_z*3, σ_z*3]</code></pre>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the above example, values can refer to the calibration dictionary.   Hence, <code>0.5 k</code> means <code>50%</code> of steady-state  <code>k</code>. Keys, are not replaced.</p>
+</div>
+<h3 id="exogenous-shocks-specification">Exogenous shocks specification</h3>
+<div class="admonition alert">
+<p class="admonition-title">Alert</p>
+<p>This section is out-of-date. Syntax has changed.
+Many more shocks options are allowed. See <a href="../processes/">processes</a> for a more recent description of the shocks.</p>
+<p>TODO: redo</p>
+</div>
+<p>The type of exogenous shock associated to a model determines the kind of decision rule, whih will be obtained by the solvers. Shocks can pertain to one of the following categories: continuous i.i.d. shocks (Normal law), continous autocorrelated process (VAR1 process) or a discrete markov chain. The type of the shock is specified using yaml type annotations (starting with exclamation mark) The exogenous shock section can refer to parameters specified in the calibration section. Here are some examples for each type of shock:</p>
+<h4 id="normal">Normal</h4>
+<p>For Dynare and continuous-states models, one has to specifiy a
+multivariate distribution of the i.i.d. process for the vector of
+exogenous  variaibles (otherwise they are assumed to be constantly equal to zero). This is done
+in the <code>exogenous</code> section. A gaussian distrubution (only one supported
+so far), is specified by supplying the covariance matrix as a list of
+list as in the following example.</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !Normal:
+    Sigma: [ [sigma_1, 0.0],
+            [0.0, sigma_2] ]</code></pre>
+<div class="admonition alert">
+<p class="admonition-title">Alert</p>
+<p>The shocks syntax is currently rather unforgiving. Normal shocks expect
+a covariance matrix (i.e. a list of list) and the keyword is <code>Sigma</code> not <code>sigma</code>.</p>
+</div>
+<h4 id="markov-chains">Markov chains</h4>
+<p>Markov chains are constructed by providing a list of nodes and a
+transition matrix.</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !MarkovChain
+    values: [[-0.01, 0.1],[0.01, 0.1]]
+    transitions: [[0.9, 0.1], [0.1, 0.9]]</code></pre>
+<p>It is also possible to combine markov chains together.</p>
+<pre class="highlight"><code class="language-yaml">exogenous: !Product
+    - !MarkovChain
+        values: [[-0.01, 0.1],[0.01, 0.1]]
+        transitions: [[0.9, 0.1], [0.1, 0.9]]
+    - !MarkovChain
+        values: [[-0.01, 0.1],[0.01, 0.1]]
+        transitions: [[0.9, 0.1], [0.1, 0.9]]</code></pre>
+<h3 id="options">Options</h3>
+<p>The [options]{.title-ref} section contains all informations necessary to
+solve the model. It can also contain arbitrary additional informations.
+The section follows the mini-language convention, with all calibrated
+values replaced by scalars and all keywords allowed.</p>
+<p>Global solutions require the definition of an approximation space. The
+lower, upper bounds and approximation orders (number of nodes in each
+dimension) are defined as in the following example:</p>
+<pre class="highlight"><code class="language-yaml">options:
+    grid: !Cartesian
+        n: [10, 50]
+    arbitrary_information: 42</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../installation/" class="btn btn-neutral float-left" title="Install"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../model_api/" class="btn btn-neutral float-right" title="Model API">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../installation/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../model_api/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/mkapi.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@5"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

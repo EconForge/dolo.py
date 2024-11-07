@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>Model Specification - Dolo</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/all.css" rel="stylesheet" />
+        <link href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css" rel="stylesheet" />
+        <link href="../css/mkapi-common.css" rel="stylesheet" />
+        <link href="../css/mkapi-readthedocs.css" rel="stylesheet" />
+        <link href="../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Model Specification";
+        var mkdocs_page_input_path = "model_specification.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Dolo
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../installation/">Install</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Modeling</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../modeling_language/">The Dolo Language</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../model_api/">Model API</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Model Specification</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#variables">Variables</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#variable-types">Variable types</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#state-space">State-space</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#equations">Equations</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#valid-equations">Valid equations</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#equation-types">Equation Types</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#transitions">Transitions</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#auxiliary-variables">Auxiliary variables</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#utility-function-and-bellman-equation">Utility function and Bellman equation</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#value">Value</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#boundaries">Boundaries</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#euler-equation">Euler equation</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#expectations">Expectations</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#generalized-expectations">Generalized expectations</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#euler-equation-with-expectations">Euler equation with expectations</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#direct-response-function">Direct response function</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../processes/">Processes</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Local Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../steady_state/">Steady-State</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../perturbation/">Perturbation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Perfect Foresight Algorithm</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../perfect_foresight/">Perfect Foresight</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Global Solution Algorithms</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../parameterized_expectations/">Parameterized Expectations</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../time_iteration/">Time Iteration</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../value_iteration/">Value Iteration</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Post Processing</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../inspect/">Inspecting the Solution</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../simulation/">Simulation</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Misc</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../finite_iteration/">Finite Horizon Time Iteration</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Dolo</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Modeling</li>
+      <li class="breadcrumb-item active">Model Specification</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="model-specification">Model Specification</h1>
+<h2 id="variables">Variables</h2>
+<h3 id="variable-types">Variable types</h3>
+<p>The following types of variables can be used in models:</p>
+<blockquote>
+<ul>
+<li><code>exogenous</code> (<code>m</code>) (can be autocorrelated)</li>
+<li><code>states</code> (<code>s</code>)</li>
+<li><code>controls</code> (<code>x</code>)</li>
+<li><code>rewards</code> (<code>r</code>)</li>
+<li><code>values</code> (<code>v</code>)</li>
+<li><code>expectations</code> (<code>z</code>)</li>
+<li><code>parameters</code> (<code>p</code>)</li>
+</ul>
+</blockquote>
+<p>Symbol types that are present in a model are always listed in that
+order.</p>
+<h3 id="state-space">State-space</h3>
+<p>The unknown vector of controls <span class="arithmatex"><span class="MathJax_Preview">x</span><script type="math/tex">x</script></span> is a function <span class="arithmatex"><span class="MathJax_Preview">\varphi</span><script type="math/tex">\varphi</script></span> of the
+states, both exogenous (<span class="arithmatex"><span class="MathJax_Preview">m</span><script type="math/tex">m</script></span>) and endogenous (<span class="arithmatex"><span class="MathJax_Preview">s</span><script type="math/tex">s</script></span>) In
+general we have:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">x = \varphi(m, s)</div>
+<script type="math/tex; mode=display">x = \varphi(m, s)</script>
+</div>
+<p>In case the exogenous process is iid, dolo looks for a decision rule <span class="arithmatex"><span class="MathJax_Preview">x=\varphi(s)</span><script type="math/tex">x=\varphi(s)</script></span>.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>This fact must be kept in mind when designing a model.
+TODO: explain how one can get the RBC wrong...</p>
+</div>
+<p>The function <span class="arithmatex"><span class="MathJax_Preview">\varphi</span><script type="math/tex">\varphi</script></span> is typically approximated by the solution
+algorithm. It can be either a Taylor expansion, or an intepolating
+object (splines, smolyak). In both cases, it behaves like a numpy gufunc
+and can be called on a vector or a list of points:</p>
+<pre class="highlight"><code class="language-python"># for an iid model
+dr = perturb(model)
+m0, s0 = model.calibration['exogenous', 'states']
+dr(m0, s0)                               # evaluates on a vector
+dr(m0, s0[None,:].repeat(10, axis=0) )   # works on a list of points too</code></pre>
+<h2 id="equations">Equations</h2>
+<h3 id="valid-equations">Valid equations</h3>
+<p>The various equations that can be defined using these symbol types is
+summarized in the following table. They are also reviewed below with
+more details.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Standard name</th>
+<th>Short name</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transitions</td>
+<td><code>transition</code></td>
+<td><code>g</code></td>
+<td><code>s = g(m(-1), s(-1),x(-1),m)</code></td>
+</tr>
+<tr>
+<td>Lower bound</td>
+<td><code>controls_lb</code></td>
+<td><code>lb</code></td>
+<td><code>x_lb = lb(m, s)</code></td>
+</tr>
+<tr>
+<td>Upper bound</td>
+<td><code>controls_ub</code></td>
+<td><code>ub</code></td>
+<td><code>x_ub = ub(m, s)</code></td>
+</tr>
+<tr>
+<td>Utility</td>
+<td><code>utility</code></td>
+<td><code>u</code></td>
+<td><code>r = u(m,s,x)</code></td>
+</tr>
+<tr>
+<td>Value updating</td>
+<td><code>alue_updating</code></td>
+<td><code>v</code></td>
+<td><code>w = v(s,x,v,s(1),x(1),w(1))</code></td>
+</tr>
+<tr>
+<td>Arbitrage</td>
+<td><code>arbitrage</code></td>
+<td><code>f</code></td>
+<td><code>0=f(m,s,x,m(1),s(1),x(1))</code></td>
+</tr>
+<tr>
+<td>Expectations</td>
+<td><code>expectation</code></td>
+<td><code>h</code></td>
+<td><code>z=h(s(1),x(1))</code></td>
+</tr>
+<tr>
+<td>Generalized  expectations</td>
+<td><code>expectation_2</code></td>
+<td><code>h_2</code></td>
+<td><code>z=h_2(s,x,m(1),s(1),x(1))</code></td>
+</tr>
+<tr>
+<td>Arbitrage  (explicit    expectations)</td>
+<td><code>arbitrage_2</code></td>
+<td><code>f_2</code></td>
+<td><code>0=f_2(s,x,z)</code></td>
+</tr>
+<tr>
+<td>Direct response</td>
+<td><code>direct_response</code></td>
+<td><code>d</code></td>
+<td><code>x=d(s,z)</code></td>
+</tr>
+</tbody>
+</table>
+<p>When present these functions can be accessed from the <code>model.functions</code>
+dictionary by using the standard name. For instance to compute the
+auxiliary variables at the steady-state one can compute:</p>
+<pre class="highlight"><code class="language-python"># recover steady-state values
+e = model.calibration['exogenous']
+s = model.calibration['states']
+x = model.calibration['controls']
+p = model.calibration['parameters']
+
+# compute the vector of auxiliary variables
+a = model.functions['auxiliary']
+y = a(e,s,x,p)
+
+# it should correspond to the calibrated values:
+calib_y = model.calibration['auxiliaries']
+assert( abs(y - calib_y).max() &lt; 0.0000001 )</code></pre>
+<h3 id="equation-types">Equation Types</h3>
+<h4 id="transitions">Transitions</h4>
+<pre class="highlight"><code>- name: `transition`
+- short name: `g`</code></pre>
+<p>Transitions are given by a function <span class="arithmatex"><span class="MathJax_Preview">g</span><script type="math/tex">g</script></span> such that at all times:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">s_t = g(m_{t-1}, s_{t-1}, x_{t-1}, m_t)</div>
+<script type="math/tex; mode=display">s_t = g(m_{t-1}, s_{t-1}, x_{t-1}, m_t)</script>
+</div>
+<p>where <span class="arithmatex"><span class="MathJax_Preview">m_t</span><script type="math/tex">m_t</script></span> is a vector of exogenous shocks</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In the RBC model, the vector of states is <span class="arithmatex"><span class="MathJax_Preview">s_t=(a_t,k_t)</span><script type="math/tex">s_t=(a_t,k_t)</script></span>. The
+transitions are:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">\begin{eqnarray}a_t &amp;= &amp; \rho a_{t-1} + \epsilon_t\\
+k_t &amp; = &amp; (1-\delta) k_{t-1} + i_{t-1}\end{eqnarray}</div>
+<script type="math/tex; mode=display">\begin{eqnarray}a_t &= & \rho a_{t-1} + \epsilon_t\\
+k_t & = & (1-\delta) k_{t-1} + i_{t-1}\end{eqnarray}</script>
+</div>
+<p>The yaml file is amended with:</p>
+<pre class="highlight"><code class="language-yaml">symbols:
+    states: [a,k]
+    controls: [i]
+    shocks: [ϵ]
+    ...
+equations:
+    transition:
+        a[t] = rho*a[t-1] + ϵ[t]
+        k = k[t-1]*(1-δ) + i[t-1]</code></pre>
+</div>
+<p>Note that the transitions are given in the declaration order.</p>
+<h4 id="auxiliary-variables">Auxiliary variables</h4>
+<pre class="highlight"><code>- name: `auxiliary`
+- short name: `a`</code></pre>
+<p>In order to reduce the number of variables, it is useful to define
+auxiliary variables <span class="arithmatex"><span class="MathJax_Preview">y_t</span><script type="math/tex">y_t</script></span> using a function <span class="arithmatex"><span class="MathJax_Preview">a</span><script type="math/tex">a</script></span> such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">y_t = a(m_t, s_t, x_t)</div>
+<script type="math/tex; mode=display">y_t = a(m_t, s_t, x_t)</script>
+</div>
+<p>When they appear in an equation they are automatically substituted by
+the corresponding expression in <span class="arithmatex"><span class="MathJax_Preview">m_t</span><script type="math/tex">m_t</script></span>, <span class="arithmatex"><span class="MathJax_Preview">s_t</span><script type="math/tex">s_t</script></span> and <span class="arithmatex"><span class="MathJax_Preview">x_t</span><script type="math/tex">x_t</script></span>. Note that auxiliary
+variables are not explicitely listed in the following definition.
+Implicitly, wherever states and controls are allowed with the same date
+in an equation type, then auxiliary variable are also allowed as long as the variables, they depend on are allowed. </p>
+<p>Auxiliary variables are defined in a special <code>definitions</code> block.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In the RBC model, three auxiliary variables are defined
+<span class="arithmatex"><span class="MathJax_Preview">y_t, c_t, r_{k,t}</span><script type="math/tex">y_t, c_t, r_{k,t}</script></span> and <span class="arithmatex"><span class="MathJax_Preview">w_t</span><script type="math/tex">w_t</script></span>. They are a closed form function of
+<span class="arithmatex"><span class="MathJax_Preview">a_t, k_t, i_t, n_t</span><script type="math/tex">a_t, k_t, i_t, n_t</script></span>. Defining these variables speeds up computation
+since they are don't need to be solved for or interpolated.</p>
+</div>
+<h4 id="utility-function-and-bellman-equation">Utility function and Bellman equation</h4>
+<pre class="highlight"><code>- name: `utility`
+- short name: `u`</code></pre>
+<p>The (separable) value equation defines the value <span class="arithmatex"><span class="MathJax_Preview">v_t</span><script type="math/tex">v_t</script></span> of a given policy
+as:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">v_t = u(m_t, s_t,x_t) + \beta E_t \left[ v_{t+1} \right]</div>
+<script type="math/tex; mode=display">v_t = u(m_t, s_t,x_t) + \beta E_t \left[ v_{t+1} \right]</script>
+</div>
+<p>This gives rise to the Bellman equation:</p>
+<blockquote>
+<div class="arithmatex">
+<div class="MathJax_Preview">v_t = \max_{x_t} \left( u(m_t,s_t,x_t) + \beta E_t \left[ v_{t+1} \right] \right)</div>
+<script type="math/tex; mode=display">v_t = \max_{x_t} \left( u(m_t,s_t,x_t) + \beta E_t \left[ v_{t+1} \right] \right)</script>
+</div>
+</blockquote>
+<p>These two equations are characterized by the reward function <span class="arithmatex"><span class="MathJax_Preview">u</span><script type="math/tex">u</script></span> and the
+discount rate <span class="arithmatex"><span class="MathJax_Preview">\beta</span><script type="math/tex">\beta</script></span>. Function <span class="arithmatex"><span class="MathJax_Preview">u</span><script type="math/tex">u</script></span> defines the vector of symbols
+<code>rewards</code>. Since the definition of <span class="arithmatex"><span class="MathJax_Preview">u</span><script type="math/tex">u</script></span> alone is not sufficient, the
+parameter used for the discount factor must be given to routines that
+compute the value. Several values can be computed at once, if <span class="arithmatex"><span class="MathJax_Preview">U</span><script type="math/tex">U</script></span> is a
+vector function and <span class="arithmatex"><span class="MathJax_Preview">\beta</span><script type="math/tex">\beta</script></span> a vector of discount factors, but in that
+case in cannot be used to solve for the Bellman equation.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>Our RBC example defines the value as
+<span class="arithmatex"><span class="MathJax_Preview">v_t = \frac{(c_t)^{1-\gamma}}{1-\gamma} + \beta E_t v_{t+1}</span><script type="math/tex">v_t = \frac{(c_t)^{1-\gamma}}{1-\gamma} + \beta E_t v_{t+1}</script></span>. This
+information is coded using: ## TODO add labour to utility</p>
+<pre class="highlight"><code class="language-yaml">symbols:
+    ...
+    rewards: [r]
+
+equations:
+    ...
+    utility:
+        - r[t] = c[t]^(1-γ)/(1-γ)
+
+calibration:
+    ...
+    beta: 0.96   # beta is the default name of the discount</code></pre>
+</div>
+<h4 id="value">Value</h4>
+<pre class="highlight"><code>- name: `value`
+- short name: `w`</code></pre>
+<p>A more general updating equation can be useful to express non-separable
+utilities or prices. the vector of (generalized) values <span class="arithmatex"><span class="MathJax_Preview">v^{*}</span><script type="math/tex">v^{*}</script></span> are
+defined by a function <code>w</code> such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">v_t = w(m_t,s_t,x_t,v_t,m_{t+1},s_{t+1},x_{t+1},v_{t+1})</div>
+<script type="math/tex; mode=display">v_t = w(m_t,s_t,x_t,v_t,m_{t+1},s_{t+1},x_{t+1},v_{t+1})</script>
+</div>
+<p>As in the separable case, this function can either be used to compute
+the value of a given policy <span class="arithmatex"><span class="MathJax_Preview">x=\varphi()</span><script type="math/tex">x=\varphi()</script></span> or in order solve the
+generalized Bellman equation:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">v_t = \max_{x_t} \left( w(m_t,s_t,x_t,v_t,m_{t+1},s_{t+1},x_{t+1},v_{t+1}) \right)</div>
+<script type="math/tex; mode=display">v_t = \max_{x_t} \left( w(m_t,s_t,x_t,v_t,m_{t+1},s_{t+1},x_{t+1},v_{t+1}) \right)</script>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>Instead of defining the rewards of the RBC example, one can instead
+define a value updating equation instead:</p>
+<pre class="highlight"><code class="language-yaml">symbols:
+    ...
+    values: [v]
+
+equations:
+    ...
+    value:
+        - v[t] = c[t]^(1-γ)/(1-γ)*(1-n[t]) + β*v[t+1]</code></pre>
+</div>
+<h4 id="boundaries">Boundaries</h4>
+<pre class="highlight"><code>- name: `controls_lb` and `controls_ub`
+- short name: `lb` and `ub`</code></pre>
+<p>The optimal controls must also satisfy bounds that are function of
+states. There are two functions <span class="arithmatex"><span class="MathJax_Preview">\underline{b}()</span><script type="math/tex">\underline{b}()</script></span> and <span class="arithmatex"><span class="MathJax_Preview">\overline{b}()</span><script type="math/tex">\overline{b}()</script></span>
+such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">\underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, /s_t)</div>
+<script type="math/tex; mode=display">\underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, /s_t)</script>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In our formulation of the RBC model we have excluded negative
+investment, implying <span class="arithmatex"><span class="MathJax_Preview">i_t \geq 0</span><script type="math/tex">i_t \geq 0</script></span>. On the other hand, labour cannot be
+negative so that we add lower bounds to the model:</p>
+<pre class="highlight"><code class="language-yaml">equations:
+    ...
+    controls_lb:
+        i = 0
+        n = 0</code></pre>
+<p>TODO: this makes no sense.</p>
+<p>Specifying the lower bound on labour actually has no effect since agents
+endogeneously choose to work a positive amount of time in order to
+produce some consumption goods. As for upper bounds, it is not necessary
+to impose some: the maximum amount of investment is limited by the Inada
+conditions on consumption. As for labour <code>n</code>, it can be arbitrarily
+large without creating any paradox. Thus the upper bounds are omitted
+(and internally treated as infinite values).</p>
+</div>
+<h4 id="euler-equation">Euler equation</h4>
+<pre class="highlight"><code>- name: `arbitrage` (`equilibrium`)
+- short name: `f`</code></pre>
+<p>A general formulation of the Euler equation is:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">0 = E_t \left[ f(m_t, s_t, x_t, m_{t+1}, s_{t+1}, x_{t+1}) \right]</div>
+<script type="math/tex; mode=display">0 = E_t \left[ f(m_t, s_t, x_t, m_{t+1}, s_{t+1}, x_{t+1}) \right]</script>
+</div>
+<p>Note that the Euler equation and the boundaries interact via
+"complementarity conditions". Evaluated at one given state, with the
+vector of controls <span class="arithmatex"><span class="MathJax_Preview">x=(x_1, ..., x_i, ..., x_{n_x})</span><script type="math/tex">x=(x_1, ..., x_i, ..., x_{n_x})</script></span>, the Euler equation
+gives us the residuals <span class="arithmatex"><span class="MathJax_Preview">r=(f_1, ..., f_i, ...,
+f_{n_x})</span><script type="math/tex">r=(f_1, ..., f_i, ...,
+f_{n_x})</script></span>. Suppose that the <span class="arithmatex"><span class="MathJax_Preview">i</span><script type="math/tex">i</script></span>-th control <span class="arithmatex"><span class="MathJax_Preview">x_i</span><script type="math/tex">x_i</script></span> is supposed to lie in
+the interval <span class="arithmatex"><span class="MathJax_Preview">[ \underline{b}_i, \overline{b}_i ]</span><script type="math/tex">[ \underline{b}_i, \overline{b}_i ]</script></span>. Then one of the
+following conditions must be true:</p>
+<ul>
+<li><span class="arithmatex"><span class="MathJax_Preview">f_i</span><script type="math/tex">f_i</script></span> = 0</li>
+<li><span class="arithmatex"><span class="MathJax_Preview">f_i&lt;0</span><script type="math/tex">f_i<0</script></span> and <span class="arithmatex"><span class="MathJax_Preview">x_i=\overline{b}_i</span><script type="math/tex">x_i=\overline{b}_i</script></span></li>
+<li><span class="arithmatex"><span class="MathJax_Preview">f_i&gt;0</span><script type="math/tex">f_i>0</script></span> and <span class="arithmatex"><span class="MathJax_Preview">x_i=\underline{b}_i</span><script type="math/tex">x_i=\underline{b}_i</script></span></li>
+</ul>
+<p>By definition, this set of conditions is denoted by:</p>
+<ul>
+<li><span class="arithmatex"><span class="MathJax_Preview">f_i = 0 \perp \underline{b}_i \leq x_i \leq \overline{b}_i</span><script type="math/tex">f_i = 0 \perp \underline{b}_i \leq x_i \leq \overline{b}_i</script></span></li>
+</ul>
+<p>These notations extend to a vector setting so that the Euler equations
+can also be written:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">0 = E_t \left[ f(m_t, s_t, x_t, m_{t+1}, s_{t+1}, x_{t+1}) \right] \perp \underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, s_t)</div>
+<script type="math/tex; mode=display">0 = E_t \left[ f(m_t, s_t, x_t, m_{t+1}, s_{t+1}, x_{t+1}) \right] \perp \underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, s_t)</script>
+</div>
+<p>Specifying the boundaries together with Euler equation, or providing
+them separately is exactly equivalent. In any case, when the boundaries
+are finite and occasionally binding, some attention should be devoted to
+write the Euler equations in a consistent manner. In particular, note
+that the Euler equations are order-sensitive.</p>
+<p>The Euler conditions, together with the complementarity conditions
+typically often come from Kuhn-Tucker conditions associated with the
+Bellman problem, but that is not true in general.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>The RBC model has two Euler equations associated with investment and
+labour supply respectively. They are added to the model as:</p>
+<pre class="highlight"><code class="language-yaml">arbitrage:
+    - 1 - beta*(c[t]/c[t+1])^(sigma)*(1-delta+rk[t+1])  ⟂ 0 &lt;= i[t] &lt;= inf
+    - w - chi*n[t]^eta*c[t]^sigma                       ⟂ 0 &lt;= n[t] &lt;= inf</code></pre>
+<p>Putting the complementarity conditions close to the Euler equations,
+instead of entering them as separate equations, helps to check the sign
+of the Euler residuals when constraints are binding. Here, when
+investment is less desirable, the first expression becomes bigger. When
+the representative is prevented to invest less due to the constraint
+(i.e. <span class="arithmatex"><span class="MathJax_Preview">i_t=0</span><script type="math/tex">i_t=0</script></span>), the expression is then <em>positive</em> consistently with the
+complementarity conventions.</p>
+</div>
+<h4 id="expectations">Expectations</h4>
+<pre class="highlight"><code>- name: `expectation`
+- short name: `h`</code></pre>
+<p>The vector of explicit expectations <span class="arithmatex"><span class="MathJax_Preview">z_t</span><script type="math/tex">z_t</script></span> is defined by a function <span class="arithmatex"><span class="MathJax_Preview">h</span><script type="math/tex">h</script></span>
+such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">z_t = E_t \left[ h(m_{t+1}, s_{t+1},x_{t+1}) \right]</div>
+<script type="math/tex; mode=display">z_t = E_t \left[ h(m_{t+1}, s_{t+1},x_{t+1}) \right]</script>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<p>In the RBC example, one can define. the expected value tomorrow of one additional unit invested tomorrow:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">m_t=\beta c_{t+1}^{-\sigma}*(1-\delta+r_{k,t+1})</div>
+<script type="math/tex; mode=display">m_t=\beta c_{t+1}^{-\sigma}*(1-\delta+r_{k,t+1})</script>
+</div>
+<p>It is a pure expectational variable in the sense that it is solely determined by future states and decisions. In the model file, it would be defined as:</p>
+<pre class="highlight"><code class="language-yaml">
+symbols:
+  ...
+  expectations: [z]
+
+equations:
+  expectations:
+    - z = beta*(c[t+1])^(-sigma)*(1-delta+rk[t+1])</code></pre>
+</div>
+<h4 id="generalized-expectations">Generalized expectations</h4>
+<pre class="highlight"><code>- name: `expectation_2`
+- short name: `h_2`</code></pre>
+<p>The vector of generalized explicit expectations <span class="arithmatex"><span class="MathJax_Preview">z_t</span><script type="math/tex">z_t</script></span> is defined by a
+function <span class="arithmatex"><span class="MathJax_Preview">h^{\star}</span><script type="math/tex">h^{\star}</script></span> such that:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">z_t = E_t \left[ h^{\star}(m_t, s_t,x_t,m_{t+1},s_{t+1},x_{t+1}) \right]</div>
+<script type="math/tex; mode=display">z_t = E_t \left[ h^{\star}(m_t, s_t,x_t,m_{t+1},s_{t+1},x_{t+1}) \right]</script>
+</div>
+<h4 id="euler-equation-with-expectations">Euler equation with expectations</h4>
+<pre class="highlight"><code>- name: `arbitrage_2` (`equilibrium_2`)
+- short name: `f_2`</code></pre>
+<p>If expectations are defined using one of the two preceding definitions,
+the Euler equation can be rewritten as:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">0 = f(m_t, s_t, x_t, z_t) \perp \underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, s_t)</div>
+<script type="math/tex; mode=display">0 = f(m_t, s_t, x_t, z_t) \perp \underline{b}(m_t, s_t) \leq x_t \leq \overline{b}(m_t, s_t)</script>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Given the definition of the expectation variable <span class="arithmatex"><span class="MathJax_Preview">m_t</span><script type="math/tex">m_t</script></span>, today's
+consumption is given by: <span class="arithmatex"><span class="MathJax_Preview">c_t = z_t^{-\frac{1}{sigma}}</span><script type="math/tex">c_t = z_t^{-\frac{1}{sigma}}</script></span> so the Euler
+equations are rewritten as:</p>
+<pre class="highlight"><code class="language-yaml">arbitrage_2:
+    - 1 - beta*(c[t])^(sigma)/m[t]   | 0 &lt;= i[t] &lt;= inf
+    - w[t] - chi*n[t]^eta*c[t]^sigma    | 0 &lt;= n[t] &lt;= inf</code></pre>
+<p>Note the type of the arbitrage equation (<code>arbitrage_2</code> instead of
+<code>arbitrage</code>).</p>
+<p>However <span class="arithmatex"><span class="MathJax_Preview">c_t</span><script type="math/tex">c_t</script></span> is not a control itself, but the controls <span class="arithmatex"><span class="MathJax_Preview">i_t, n_t</span><script type="math/tex">i_t, n_t</script></span> can be easily deduced:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">\begin{eqnarray}
+    n_t &amp; =&amp; ((1-\alpha) z_t k_t^\alpha \frac{m_t}{\chi})^{\frac{1}{\eta+\alpha}} \\
+    i_t &amp; = &amp; z_t k_t^{\alpha} n_t^{1-\alpha} - (m_t)^{-\frac{1}{\sigma}}
+\end{eqnarray}</div>
+<script type="math/tex; mode=display">\begin{eqnarray}
+    n_t & =& ((1-\alpha) z_t k_t^\alpha \frac{m_t}{\chi})^{\frac{1}{\eta+\alpha}} \\
+    i_t & = & z_t k_t^{\alpha} n_t^{1-\alpha} - (m_t)^{-\frac{1}{\sigma}}
+\end{eqnarray}</script>
+</div>
+<p>This translates into the following YAML code:</p>
+<pre class="highlight"><code class="language-yaml">arbitrage_2:
+    - n[t] = ((1-alpha)*a[t]*k[t]^alpha*m[t]/chi)^(1/(eta+alpha))
+    - i[t] = z[t]*k[t]^alpha*n[t]^(1-alpha) - m[t]^(-1/sigma)</code></pre>
+</div>
+<h4 id="direct-response-function">Direct response function</h4>
+<pre class="highlight"><code>- name: `direct_response`
+- short name: `d`</code></pre>
+<p>In some simple cases, there a function <span class="arithmatex"><span class="MathJax_Preview">d()</span><script type="math/tex">d()</script></span> giving an explicit
+definition of the controls:</p>
+<div class="arithmatex">
+<div class="MathJax_Preview">x_t = d(m_t, s_t, z_t)</div>
+<script type="math/tex; mode=display">x_t = d(m_t, s_t, z_t)</script>
+</div>
+<p>Compared to the preceding Euler equation, this formulation saves
+computational time by removing the need to solve a nonlinear system to
+recover the controls implicitly defined by the Euler equation.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../model_api/" class="btn btn-neutral float-left" title="Model API"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../processes/" class="btn btn-neutral float-right" title="Processes">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../model_api/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../processes/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../js/mkapi.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+      <script src="https://cdn.jsdelivr.net/npm/vega-embed@5"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
