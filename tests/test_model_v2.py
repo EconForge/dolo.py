@@ -552,6 +552,11 @@ def test_repr_html_uses_dynspec_latex():
 
 def test_standalone_bounds_groups():
     m = ModelV2.from_yaml(yaml_compose(GROWTH_MODEL), filename="growth_vi")
+    from dolo.algos.value_iteration import value_iteration
+
+    res = value_iteration(m, verbose=False, maxit=200)
+    assert res.v_converged and res.x_converged
+    assert res.v_err < 1e-6
 
     assert set(("controls_lb", "controls_ub")) <= set(m.functions)
     lb = m.functions["controls_lb"]
@@ -573,3 +578,78 @@ def test_standalone_bounds_groups():
         rbc_iid.functions["arbitrage_lb"],
         rbc_iid.functions["arbitrage_ub"],
     ]
+
+
+GROWTH_MODEL_VI = """
+name: growth_vi_comp
+symbols:
+  exogenous: [e]
+  states: [k]
+  controls: [c]
+  values: [V]
+  rewards: [u]
+  parameters: [beta, alpha, delta, sig_e]
+equations:
+  transition:
+    - k[t] = exp(e[t])*((1-delta)*k[t-1] + k[t-1]^alpha - c[t-1])
+  arbitrage: |
+    0 ⟂ 1e-4 <= c[t] <= (1-delta)*k[t] + k[t]^alpha
+  felicity:
+    - u[t] = log(c[t])
+  value:
+    - V[t] = log(c[t]) + beta*V[t+1]
+calibration:
+  beta: 0.95
+  alpha: 0.3
+  delta: 0.1
+  sig_e: 0.01
+  k: 1.5
+  c: 0.3
+  V: log(0.3)/(1-beta)
+  u: log(0.3)
+  e: 0.0
+exogenous: !UNormal
+  sigma: 0.01
+domain:
+  k: [0.3, 4.5]
+options:
+  grid: !Cartesian
+    n: [20]
+"""
+
+
+def test_value_iteration_parity(tmp_path):
+    """`value_iteration` converges on a bounded model on BOTH importers
+    (bounds via arbitrage complementarities, through `model.x_bounds`),
+    with identical policies and value functions."""
+    from dolo.algos.value_iteration import value_iteration
+
+    fname = tmp_path / "growth_vi_comp.yaml"
+    fname.write_text(GROWTH_MODEL_VI)
+
+    old = dolo.yaml_import(str(fname))
+    new = dolo.yaml_import_v2(str(fname))
+
+    r_o = value_iteration(old, verbose=False, maxit=200)
+    r_n = value_iteration(new, verbose=False, maxit=200)
+    assert r_o.v_converged and r_o.x_converged
+    assert r_n.v_converged and r_n.x_converged
+    assert r_o.v_err < 1e-6
+
+    grid, _ = new.discretize()
+    s = grid["endo"].nodes
+    m0 = np.zeros((len(s), 1))
+
+    # policy and value: bit-identical across importers
+    assert np.array_equal(
+        np.asarray(r_o.dr.eval_ms(m0, s)), np.asarray(r_n.dr.eval_ms(m0, s))
+    )
+    assert np.allclose(
+        np.asarray(r_o.drv.eval_ms(m0, s)), np.asarray(r_n.drv.eval_ms(m0, s))
+    )
+
+    # the solution is feasible: controls within [lb, ub] on the grid
+    x = np.asarray(r_n.dr.eval_ms(m0, s)).ravel()
+    lb = np.repeat(1e-4, len(s))
+    ub = 0.9 * s[:, 0] + s[:, 0] ** 0.3
+    assert (x >= lb - 1e-6).all() and (x <= ub + 1e-6).all()

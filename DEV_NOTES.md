@@ -91,7 +91,9 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
 - **algorithm smoke tests on ModelV2** (§6.3): `perturb` + `simulate`
   (identical driving process → near-bit-equal paths), `time_iteration`
   (5×5 grid → decision rules equal to 1e-8), `egm` (decision rule
-  exactly equal).
+  exactly equal), `value_iteration` (bounded growth model, converged,
+  bit-identical policy on both importers; also runs on standalone
+  `controls_lb/controls_ub` groups).
 - `.dyno` import, `@options`/`@domain` handling, and `discretize()` on
   `.dyno` models.
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
@@ -100,7 +102,7 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   notation + dataframe shifts).
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 49 passed.
+Full suite: `pixi run --environment dev pytest -q` → 50 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
@@ -188,24 +190,28 @@ Benchmarks to run/inspect:
 
 ## 6. Known gaps / next steps
 
-1. **value_iteration** (investigated 2026-10-16 — partially resolved):
-   - *Bounds aliasing*: fixed. `LoosyDict.__getitem__` used to resolve
-     equivalences *before* real keys, so explicit `controls_lb` groups
-     were hijacked by the `controls_lb`→`arbitrage_lb` alias. Real keys
-     now win; regression test in `test_standalone_bounds_groups`.
-   - *Remaining, pre-existing and backend-independent*: on the only
-     example models with `value`/`felicity` groups (rbc_ar1/iid/mc) the
-     problem is ill-posed for value iteration — no upper bounds on n/i
-     and `c^(1-sigma)` (sigma=5) has a pole at c=0, so V explodes
-     (~1e44 on iteration 1). With finite bounds (`n<=1`,
-     `i<=exp(z)*k^alpha`, or a log-utility growth model) iterations 1-2
-     behave, then `evaluate_policy` diverges (~1e280) because
-     `DecisionRule` polynomial extrapolation runs on states pushed
-     ~40% outside the `@domain` box by boundary-exploring policies.
-     Legacy cannot run value_iteration at all in this repo (no
-     recipe/alias for `controls_lb`). Conclusion: an **algorithm-side**
-     fix (feasibility guard for the initial policy + bounded
-     extrapolation), out of scope for the importer migration.
+1. **value_iteration** (fixed 2026-10-16):
+   - *Bounds aliasing*: fixed earlier. `LoosyDict.__getitem__` used to
+     resolve equivalences *before* real keys, so explicit `controls_lb`
+     groups were hijacked by the `controls_lb`→`arbitrage_lb` alias.
+     Real keys now win; regression test in `test_standalone_bounds_groups`.
+   - *Algorithm-side fixes* (in `src/dolo/algos/value_iteration.py`,
+     benefit both importers):
+     - bounds are read through `model.x_bounds` instead of hardcoded
+       `functions["controls_lb"]` — legacy models with ⟂
+       complementarities can now run value_iteration at all;
+     - the initial constant policy is clipped to [lb, ub] on the grid
+       (the calibrated controls may be infeasible and drive states
+       negative);
+     - the Bellman operator clips transition states to the grid box
+       before interpolation (`update_value`, `choice_value`), so
+       boundary-exploring policies can't feed unbounded polynomial
+       extrapolation into the operator — previously diverged to ~1e280.
+   - Result: on a bounded growth model both importers converge
+     (v_err ~1e-8, x_err 0) with **bit-identical** policies and value
+     functions (`test_value_iteration_parity`). Still model-side: value
+     iteration is only well-posed with upper bounds on controls and a
+     domain covering the attainable states.
 2. **Shape-regression tests**: done (see §3).
 3. **Algorithm smoke tests on ModelV2** (time_iteration/perturb/simulate/
    egm/value_iteration): done for the first four (§3); value_iteration

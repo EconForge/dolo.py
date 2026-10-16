@@ -17,6 +17,17 @@ def constant_policy(model):
     return ConstantDecisionRule(model.calibration["controls"])
 
 
+def _clip_state(s, grid):
+    """Clamp states to the grid box so off-domain points can't feed
+    unbounded polynomial extrapolation into the Bellman iteration (the
+    value function is only defined on the grid)."""
+    lo = getattr(grid, "min", None)
+    hi = getattr(grid, "max", None)
+    if lo is None or hi is None:
+        return s
+    return np.minimum(np.maximum(s, lo), hi)
+
+
 from .results import AlgoResult, ValueIterationResult
 
 
@@ -50,8 +61,16 @@ def value_iteration(
 
     transition = model.functions["transition"]
     felicity = model.functions["felicity"]
-    controls_lb = model.functions["controls_lb"]
-    controls_ub = model.functions["controls_ub"]
+    # bounds come from the model adapters: explicit `controls_lb`/`controls_ub`
+    # sections, or the bounds extracted from arbitrage complementarities.
+    x_bounds = model.x_bounds
+    if x_bounds is None:
+        raise Exception(
+            "value_iteration requires control bounds: declare "
+            "`controls_lb`/`controls_ub` sections or arbitrage "
+            "complementarities."
+        )
+    controls_lb, controls_ub = x_bounds
 
     parms = model.calibration["parameters"]
     discount = model.calibration["beta"]
@@ -79,8 +98,15 @@ def value_iteration(
     mdr = constant_policy(model)
 
     controls_0 = np.zeros((n_ms, N, n_x))
+    p_batched = np.repeat(parms[None, :], N, axis=0)
     for i_ms in range(n_ms):
-        controls_0[i_ms, :, :] = mdr.eval_is(i_ms, s)
+        m = np.repeat(dprocess.node(i_ms)[None, :], N, axis=0)
+        lb_i = controls_lb(m, s, p_batched)
+        ub_i = controls_ub(m, s, p_batched)
+        x_i = mdr.eval_is(i_ms, s)
+        # the calibrated controls may violate the bounds: project onto
+        # [lb, ub] (feasible constant policy, keeps transitioned states sane)
+        controls_0[i_ms, :, :] = np.clip(x_i, lb_i, ub_i)
 
     values_0 = np.zeros((n_ms, N, 1))
     # for i_ms in range(n_ms):
@@ -214,6 +240,7 @@ def choice_value(transition, felicity, i_ms, s, x, drv, dprocess, parms, beta):
         M = dprocess.inode(i_ms, I_ms)
         prob = dprocess.iweight(i_ms, I_ms)
         S = transition(m, s, x, M, parms)
+        S = _clip_state(S, drv.endo_grid)
         V = drv(I_ms, S)[0]
         cont_v += prob * V
     return felicity(m, s, x, parms) + beta * cont_v
@@ -388,6 +415,7 @@ def update_value(val, g, s, x, v, dr, drv, dprocess, parms):
             prob = dprocess.iweight(i_ms, I_ms)
 
             S = g(m, s, xm, M, parms)
+            S = _clip_state(S, drv.endo_grid)
             XM = dr.eval_ijs(i_ms, I_ms, S)
             VM = drv.eval_ijs(i_ms, I_ms, S)
             rr = val(m, s, xm, vm, M, S, XM, VM, parms)
