@@ -234,7 +234,9 @@ Benchmarks to run/inspect:
    **Handover ready**: `examples/dyno/rbc_dolo_comp.dyno` (target-syntax
    mock, does not parse yet) + `docs/dynospec_requirements.md` (exact
    grammar/API/recipe changes + acceptance criteria); written to hand to
-   a dyno-side agent.
+   a dyno-side agent. Decision recorded there: untimed variables are a
+   **non-goal** for dynospec (a name without `[t]` stays a constant);
+   that normalization remains a dolo-YAML-legacy shim on our side.
 7. **ModelV2 display**: `_repr_html_` added on top of dynspec latex
    (`x[t-1]` → `x_{t-1}`, spelled greek → greek commands, residuals
    column); `__str__` follows the legacy layout (header, equations with

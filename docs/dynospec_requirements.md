@@ -109,14 +109,19 @@ than grammar (grammar can't know `exp` is a function while `k` is a
 variable):
 
 - parenthesis timing `x(1)` → `x[t+1]`, `x(-1)` → `x[t-1]`;
-- untimed symbols read as date 0: `i` → `i[t]` inside equations;
 - `exp(2)` / `log(x)` must **not** be rewritten (function calls with
   numeric/expr arguments are calls).
 
+**Non-goal: untimed variables.** A variable name without a time index is
+a constant/parameter in dynspec, and that stays. The "untimed symbol
+means date 0" convention exists only in old dolo-YAML files; dolo keeps
+normalizing *those* in its own YAML-path shim
+(`dolo/compiler/equation_preprocess.py`) until that legacy syntax is
+gone. Do not add implicit `[t]` to dynspec.
+
 Suggested placement: an `analyze`/`symbolic` utility
 `canonicalize_timing(tree_or_text, variable_names)` + re-parse, so dolo
-can drop its regex `normalize_timing` (dolo/compiler/equation_preprocess.py
-`_timing_renamer`, `normalize_timing`, `rewrite_timing_calls`).
+can drop its regex `normalize_timing` / `rewrite_timing_calls`.
 
 Also trivial: accept `==` wherever `=` is accepted today (dolo files use
 both for equality/assignment). One-line grammar alias.
@@ -212,6 +217,8 @@ covering both `arbitrage`-attached complementarities and the standalone
   rules) — your call; dolo consumes it through the helpers of §3.
 - Legacy `|` and `x(1)` support are *optional*; skip them and old-style
   YAML files just keep a thin dolo-side shim until the next release.
+  Untimed variables are a **non-goal** (§2.3): dynospec never adds
+  implicit `[t]`; that normalization stays on dolo's YAML legacy path.
 - dolang, the legacy `Model` importer, and YAML-tag objects are out of
   scope here.
 
