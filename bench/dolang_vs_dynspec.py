@@ -22,7 +22,8 @@ Both functions expose the same calling convention:
     f(m, s, x, M, S, X, p)            -> (N,2) for (N,n) row-vectorized args
     f(m, s, x, M, S, X, p, diff=True) -> value + one jacobian per arg group
 
-Run:  pixi run --environment dev python bench/dolang_vs_dynspec.py
+Run:  pixi run --environment dev python bench/dolang_vs_dynspec.py          # dolang vs dynspec+jax
+      pixi run --environment dev python bench/dolang_vs_dynspec.py --hand   # + hand-written JAX reference
 """
 
 import time
@@ -66,21 +67,32 @@ ALL_VARS = [
 ]
 
 
-def timings_table(name_leg, fn_leg, name_new, fn_new):
-    """Time point / vectorized / diff calls; return (headers, rows)."""
-    headers = ("call", name_leg, name_new, "ratio (×)")
+def timings_table(name_leg, fn_leg, name_new, fn_new, name_hand=None, fn_hand=None):
+    """Time point / vectorized / diff calls; return (headers, rows).
+
+    An optional third (hand-written reference) column participates in the
+    point/vectorized rows only.
+    """
+    headers = ("call", name_leg, name_new)
+    if fn_hand is not None:
+        headers = headers + (name_hand,)
+    headers = headers + ("ratio (new/leg)",)
     rows = []
 
     def bench(kind):
         if kind == "point":
+            base = (M0, S0, X0, M0, S0, X0, P0)
             return (
-                lambda: fn_leg(M0, S0, X0, M0, S0, X0, P0),
-                lambda: fn_new(M0, S0, X0, M0, S0, X0, P0),
+                (lambda: fn_leg(*base)),
+                (lambda: fn_new(*base)),
+                (lambda: fn_hand(*base) if fn_hand else None),
             )
         if kind == "diff":
+            base = (M0, S0, X0, M0, S0, X0, P0)
             return (
-                lambda: fn_leg(M0, S0, X0, M0, S0, X0, P0, diff=True),
-                lambda: fn_new(M0, S0, X0, M0, S0, X0, P0, diff=True),
+                (lambda: fn_leg(*base, diff=True)),
+                (lambda: fn_new(*base, diff=True)),
+                None,
             )
         if kind == "vectorized":
             # larger batch: amortizes jax dispatch/device_put overhead
@@ -91,24 +103,27 @@ def timings_table(name_leg, fn_leg, name_new, fn_new):
                 np.tile(X0, (n_vec, 1)),
             )
             return (
-                lambda: fn_leg(M, S, X, M, S, X, P0),
-                lambda: fn_new(M, S, X, M, S, X, P0),
+                (lambda: fn_leg(M, S, X, M, S, X, P0)),
+                (lambda: fn_new(M, S, X, M, S, X, P0)),
+                (lambda: fn_hand(M, S, X, M, S, X, P0) if fn_hand else None),
             )
         raise ValueError(kind)
 
     def sync(call):
         """Run a call and force completion (jax may defer CPU work:
-        without block_until_ready, timings under-estimate jax side)."""
+        without block_until_ready, timings under-estimate the jax side)."""
         res = call()
         if hasattr(res, "block_until_ready"):
             res.block_until_ready()
         return res
 
     for kind, n_loops in (("point", 300), ("vectorized", 30), ("diff", 20)):
-        c_leg, c_new = bench(kind)
+        c_leg, c_new, c_hand = bench(kind)
         # warm-up (numba/XLA compile)
         sync(c_leg)
         sync(c_new)
+        if c_hand:
+            sync(c_hand)
         t0 = time.perf_counter()
         for _ in range(n_loops):
             sync(c_leg)
@@ -117,18 +132,29 @@ def timings_table(name_leg, fn_leg, name_new, fn_new):
         for _ in range(n_loops):
             sync(c_new)
         t_new = (time.perf_counter() - t0) / n_loops * 1e6
-        rows.append(
-            (kind, f"{t_leg:8.1f} µs", f"{t_new:8.1f} µs", f"{t_new / t_leg:4.1f}")
-        )
+        row = [kind, f"{t_leg:8.1f} µs", f"{t_new:8.1f} µs"]
+        if c_hand:
+            t0 = time.perf_counter()
+            for _ in range(n_loops):
+                sync(c_hand)
+            t_hand = (time.perf_counter() - t0) / n_loops * 1e6
+            row.append(f"{t_hand:8.1f} µs")
+        elif fn_hand is not None:
+            row.append("            n/a")
+        row.append(f"{t_new / t_leg:4.1f}")
+        rows.append(row)
     return headers, rows
 
 
 def print_table(headers, rows):
-    w = [max(len(h), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
+    def cell(row, i):
+        return row[i] if i < len(row) else ""
+
+    w = [max(len(h), *(len(cell(r, i)) for r in rows)) for i, h in enumerate(headers)]
     print("  " + "  ".join(h.ljust(w[i]) for i, h in enumerate(headers)))
     print("  " + "  ".join("-" * w[i] for i in range(len(headers))))
     for r in rows:
-        print("  " + "  ".join(r[i].ljust(w[i]) for i in range(len(r))))
+        print("  " + "  ".join(cell(r, i).ljust(w[i]) for i in range(len(headers))))
 
 
 # ---------------------------------------------------------------------------
@@ -337,12 +363,65 @@ def build_jax_function():
 
 
 # ---------------------------------------------------------------------------
+# C. hand-written JAX reference
+# ---------------------------------------------------------------------------
+
+
+def build_hand_function():
+    """Reference implementation: the same arithmetic written by hand.
+
+    This is what the production emitter (`functions_v2._emit`, committed
+    in the latest migration stage) produces when tracing the equations:
+    a plain nested jnp expression over the row vectors, with only the
+    per-variable indexing ops from slicing the input groups.
+    """
+    import jax
+    import jax.numpy as jnp
+
+    jax.config.update("jax_enable_x64", True)
+
+    @jax.jit
+    def raw(m, s, x, M, S, X, p):
+        beta, sigma, eta, chi, delta, alpha = p
+        z, k = s[..., 0], s[..., 1]
+        n, i = x[..., 0], x[..., 1]
+        Z, K = S[..., 0], S[..., 1]
+        Np, Ip = X[..., 0], X[..., 1]
+        y = jnp.exp(z) * k**alpha * n ** (1 - alpha)
+        c = y - i
+        rk = alpha * y / k
+        w = (1 - alpha) * y / n
+        Y = jnp.exp(Z) * K**alpha * Np ** (1 - alpha)
+        C = Y - Ip
+        RK = alpha * Y / K
+        return jnp.stack(
+            [
+                chi * n**eta * c**sigma - w,
+                1 - beta * (c / C) ** sigma * (1 - delta + RK),
+            ],
+            axis=-1,
+        )
+
+    def f(*args, diff=False):
+        if diff:
+            raise NotImplementedError("hand-written reference is value-only")
+        return np.asarray(raw(*[jnp.asarray(a, dtype=jnp.float64) for a in args]))
+
+    return f
+
+
+# ---------------------------------------------------------------------------
 # run it
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import sys
+
+    with_hand = "--hand" in sys.argv
     print("=" * 66)
     print("One arbitrage function, two compilation paths")
+    if with_hand:
+        print("(+ hand-written JAX reference, run with --hand)")
     print("=" * 66)
     print("\nequations:")
     for e in EQUATIONS:
@@ -369,8 +448,14 @@ if __name__ == "__main__":
     print("  point   :", f_dolang(M0, S0, X0, M0, S0, X0, P0))
 
     print("\n" + "=" * 66)
-    print("B. dynspec + JAX: parse -> recipe check -> interpreted jnp kernel")
+    print("B. dynspec + JAX: parse -> recipe check -> kernel")
     print("=" * 66)
+    print(
+        "   (example shows the historical interpreted kernel; production\n"
+        "    now uses the emitted-expressions stage in\n"
+        "    src/dolo/compiler/functions_v2.py::_emit -- see --hand for\n"
+        "    the shape of graph that stage produces)"
+    )
     f_jax, (def_res, f_res, defs_block) = build_jax_function()
     from dyno.dynspec.grammar import parser
 
@@ -402,10 +487,21 @@ if __name__ == "__main__":
     for i, (a, b) in enumerate(zip(d_leg[1:], d_jax[1:])):
         print(f"  jacobian #{i} (analytic vs fd): max diff {np.abs(a - b).max():.2e}")
 
+    f_hand = build_hand_function() if with_hand else None
+    if f_hand is not None:
+        v_h = f_hand(M, S, X, M, S, X, P0)
+        print(f"  hand-written == dolang      : {np.allclose(v_leg, v_h)}")
+        print(f"  hand-written == dynspec+jax : {np.allclose(v_jax, v_h)}")
+
     print("\n" + "=" * 66)
     print("timing (warm, per call)")
     print("=" * 66)
-    headers, rows = timings_table("dolang", f_dolang, "dynspec+jax", f_jax)
+    if f_hand is not None:
+        headers, rows = timings_table(
+            "dolang", f_dolang, "dynspec+jax", f_jax, "hand-jax", f_hand
+        )
+    else:
+        headers, rows = timings_table("dolang", f_dolang, "dynspec+jax", f_jax)
     print_table(headers, rows)
     print(
         "\n  note: the point-call gap is dominated by jax.device_put of the\n"
@@ -421,18 +517,20 @@ if __name__ == "__main__":
     print("   block_until_ready before timing is stopped)")
     sizes = [10_000, 100_000, 1_000_000, 5_000_000]
     rng = np.random.default_rng(0)
-    print(
+    cols = (
         "  "
         + "N".rjust(10)
         + " | "
         + "dolang".rjust(12)
         + " | "
         + "dynspec+jax".rjust(12)
+        + (" | " + "hand-jax".rjust(12) if f_hand is not None else "")
         + " | "
         + "jax Mpts/s".rjust(11)
         + " | "
         + "equal".rjust(6)
     )
+    print(cols)
     for n in sizes:
         M = rng.normal(size=(n, 1))
         S = rng.normal(size=(n, 2))
@@ -441,6 +539,9 @@ if __name__ == "__main__":
         f_dolang(M, S, X, M, S, X, P0)
         w = f_jax(M, S, X, M, S, X, P0)
         w.block_until_ready() if hasattr(w, "block_until_ready") else None
+        if f_hand is not None:
+            w = f_hand(M, S, X, M, S, X, P0)
+            w.block_until_ready() if hasattr(w, "block_until_ready") else None
         t0 = time.perf_counter()
         v_leg = f_dolang(M, S, X, M, S, X, P0)
         t_leg = time.perf_counter() - t0
@@ -448,7 +549,14 @@ if __name__ == "__main__":
         v_jax = f_jax(M, S, X, M, S, X, P0)
         v_jax.block_until_ready() if hasattr(v_jax, "block_until_ready") else None
         t_jax = time.perf_counter() - t0
+        hand_col = ""
+        if f_hand is not None:
+            t0 = time.perf_counter()
+            v_hand = f_hand(M, S, X, M, S, X, P0)
+            v_hand.block_until_ready() if hasattr(v_hand, "block_until_ready") else None
+            t_hand = time.perf_counter() - t0
+            hand_col = f" | {t_hand*1e3:9.1f} ms"
         print(
-            f"  {n:>10,} | {t_leg*1e3:9.1f} ms | {t_jax*1e3:9.1f} ms | "
+            f"  {n:>10,} | {t_leg*1e3:9.1f} ms | {t_jax*1e3:9.1f} ms{hand_col} | "
             f"{n / t_jax / 1e6:9.1f}     | {str(np.allclose(v_leg, v_jax, equal_nan=True)):>6}"
         )
