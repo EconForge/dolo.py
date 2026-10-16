@@ -35,3 +35,24 @@ def yaml_import(fname, check=True, check_only=False):
 
     return Model(data, check=check)
     # from dolo.compiler.model import SymbolicModel
+
+
+def yaml_import_v2(fname, filename=None, check=True):
+    """Import a dolo YAML model using the dynspec-based importer (ModelV2)."""
+    from dolo.compiler.model_v2 import yaml_compose, ModelV2
+
+    txt = read_file_or_url(fname)
+    data = yaml_compose(txt)
+    if filename is None:
+        filename = str(fname)
+    return ModelV2.from_yaml(data, filename=filename, check=check)
+
+
+def dyno_import(fname, filename=None, check=True):
+    """Import a ``.dyno`` model file using the dynspec-based importer (ModelV2)."""
+    from dolo.compiler.model_v2 import ModelV2
+
+    txt = read_file_or_url(fname)
+    if filename is None:
+        filename = str(fname)
+    return ModelV2.from_dyno(txt, filename=filename, check=check)

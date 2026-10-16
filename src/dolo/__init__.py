@@ -13,6 +13,7 @@ import dolo.numeric.distribution
 # del dolo.numeric.grids
 
 from dolo.compiler.model_import import yaml_import
+from dolo.compiler.model_import import yaml_import_v2, dyno_import
 from dolo.misc.display import pcat
 from dolo.misc.groot import groot
 from dolo.misc.dprint import dprint

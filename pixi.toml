@@ -29,6 +29,13 @@ hatchling = "==1.26.3"
 
 [pypi-dependencies]
 dolo = { path = ".", editable = true }
+# Development uses the local dyno.py checkout; `min-deps` overrides this
+# with the published `dynopy` package (see ci/check_deps.py).
+dynopy = { path = "../dyno.py", editable = true }
+# jax comes from PyPI: conda-forge does not package jaxlib for win-64.
+# Upper bound (<0.5): jaxlib dropped macosx_x86_64 wheels in 0.5.0, and the
+# project's CI/lock matrix still includes the osx-64 platform.
+jax = ">=0.4.38,<0.5"
 
 [dependencies]
 python = ">=3.12,<3.14"
@@ -40,7 +47,11 @@ xarray = ">=2024.1.0,<2025"
 quantecon = ">=0.7.2,<0.8"
 interpolation = ">=2.2.7,<3"
 multipledispatch = ">=0.6.0,<0.7"
+numba = ">=0.60.0,<0.70"
 dolang = ">=0.0.21,<0.1"
+# Constrained for the dev workspace only: the Jupyter/MkDocs conda stack
+# freely picks rich==15, but the `dynopy` PyPI dependency requires rich<15.
+rich = "<15"
 pyyaml = ">=6.0,<7"
 pytest = ">=9.0.2,<10"
 black = ">=26.1.0,<27"
@@ -115,8 +126,15 @@ xarray = "==2024.7.0"
 quantecon = "==0.7.2"
 interpolation = "==2.2.7"
 multipledispatch = "==0.6.0"
+numba = "==0.60.0"
 dolang = "==0.0.21"
 pyyaml = "==6.0.1"
+
+# The default `dynopy = { path = ... }` entry is a development shortcut that
+# cannot be used in a reproducible CI environment; pin the published package.
+[feature.min-deps.pypi-dependencies]
+dynopy = "==0.1.13"
+jax = "==0.4.38"
 
 [environments]
 test = ["test"]

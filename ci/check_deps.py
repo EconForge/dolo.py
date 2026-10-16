@@ -75,9 +75,24 @@ def main() -> int:
         requirements[normalize_name(conda_name)] = spec
 
     workspace = {normalize_name(k): v for k, v in pixi["dependencies"].items()}
+    # PyPI dependencies live in their own table.  A package may be declared
+    # there instead of in ``[dependencies]`` (e.g. ``dynopy``, which only
+    # exists on PyPI).  Table-valued entries (``{ path = ..., editable =
+    # true }``) are development shortcuts: their presence is checked, but
+    # they do not carry a version spec to compare against pyproject.toml.
+    pypi_workspace = {
+        normalize_name(k): v for k, v in pixi.get("pypi-dependencies", {}).items()
+    }
     min_deps = {
         normalize_name(k): v
         for k, v in pixi["feature"]["min-deps"]["dependencies"].items()
+    }
+    min_deps_pypi = {
+        normalize_name(k): v
+        for k, v in pixi.get("feature", {})
+        .get("min-deps", {})
+        .get("pypi-dependencies", {})
+        .items()
     }
 
     # Python floor.
@@ -97,26 +112,44 @@ def main() -> int:
 
     # Runtime dependencies.
     for name, spec in requirements.items():
-        if name not in workspace:
-            errors.append(f"{name}: missing from pixi.toml [dependencies]")
-        elif normalize_spec(workspace[name]) != normalize_spec(spec):
+        if name in workspace:
+            if normalize_spec(workspace[name]) != normalize_spec(spec):
+                errors.append(
+                    f"{name}: pixi.toml [dependencies] has {workspace[name]!r}, "
+                    f"pyproject.toml has {spec!r}"
+                )
+        elif name in pypi_workspace:
+            pypi_spec = pypi_workspace[name]
+            if isinstance(pypi_spec, str):
+                if normalize_spec(pypi_spec) != normalize_spec(spec):
+                    errors.append(
+                        f"{name}: pixi.toml [pypi-dependencies] has "
+                        f"{pypi_spec!r}, pyproject.toml has {spec!r}"
+                    )
+            # Table entries (path deps) have no comparable version spec.
+        else:
             errors.append(
-                f"{name}: pixi.toml [dependencies] has {workspace[name]!r}, "
-                f"pyproject.toml has {spec!r}"
+                f"{name}: missing from pixi.toml [dependencies]"
+                " and [pypi-dependencies]"
             )
         floor = lower_bound(spec)
         if floor is None:
             errors.append(f"{name}: no lower bound in pyproject.toml ({spec!r})")
         else:
             expected_pin = MIN_DEPS_OVERRIDES.get(name, f"=={floor}")
-            if min_deps.get(name) != expected_pin:
+            pin = min_deps.get(name)
+            if pin is None:
+                pin = min_deps_pypi.get(name)
+            if pin != expected_pin:
                 errors.append(
-                    f"{name}: pixi.toml [feature.min-deps.dependencies] has "
-                    f"{min_deps.get(name)!r}, expected {expected_pin!r}"
+                    f"{name}: pixi.toml [feature.min-deps] pins it to "
+                    f"{pin!r}, expected {expected_pin!r}"
                 )
-    for name in sorted(set(min_deps) - set(requirements) - {"python"}):
+    for name in sorted(
+        (set(min_deps) | set(min_deps_pypi)) - set(requirements) - {"python"}
+    ):
         errors.append(
-            f"{name}: pinned in [feature.min-deps.dependencies] "
+            f"{name}: pinned in [feature.min-deps] "
             "but not a dependency in pyproject.toml"
         )
 
