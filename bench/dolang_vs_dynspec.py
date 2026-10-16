@@ -176,7 +176,31 @@ def build_dolang_function():
         _, gufun = make_method_from_factory(factory, vectorize=True, debug=True)
     generated_source = buf.getvalue()
 
-    return standard_function(gufun, n_output=len(content)), factory, generated_source
+    # A second, SINGLE-THREADED numba variant of the same generated source:
+    # dolang's gufun uses `target="parallel"` (prange over rows); plain
+    # numba.guvectorize defaults to one thread.  Keeping both isolates the
+    # effect of threading.
+    import numba
+
+    ns = {
+        "exp": np.exp,
+        "log": np.log,
+        "sqrt": np.sqrt,
+        "abs": np.abs,
+        "min": np.minimum,
+        "max": np.maximum,
+    }
+    exec(generated_source, ns)
+    fty = "void(f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:])"
+    sig = "(a),(n),(n),(a),(n),(n),(q)->(n)"
+    gufun_1thread = numba.guvectorize([fty], sig)(ns["arbitrage"])
+
+    return (
+        standard_function(gufun, n_output=len(content)),
+        standard_function(gufun_1thread, n_output=len(content)),
+        factory,
+        generated_source,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -422,10 +446,16 @@ if __name__ == "__main__":
             "[bold blue]1/3  dolang[/bold blue] → FlatFunctionFactory → numba guvectorize"
         )
     )
-    f_dolang, factory, guf_src = build_dolang_function()
+    f_dolang, f_dolang_1thr, factory, guf_src = build_dolang_function()
     console.print(
         "  factory arguments: "
         + ", ".join(f"{k}({len(v)})" for k, v in factory.arguments.items())
+    )
+    console.print(
+        '  [dim]dolang compiles the gufunc with target="parallel" (prange over '
+        "rows);\n"
+        "  a single-threaded twin is built from the same source for the "
+        "comparison.[/dim]"
     )
     console.print("  point:", f_dolang(M0, S0, X0, M0, S0, X0, P0), "\n")
     console.print(
@@ -491,13 +521,15 @@ if __name__ == "__main__":
     console.print()
     table = Table(title="timing — warm calls, µs (best of 3)")
     table.add_column("call", justify="left", style="cyan")
-    table.add_column("dolang gufunc", justify="right", style="green")
-    table.add_column("emitted jit", justify="right", style="yellow")
+    table.add_column("gufunc 8-thread", justify="right", style="green")
+    table.add_column("gufunc 1-thread", justify="right", style="yellow")
+    table.add_column("emitted jit", justify="right", style="magenta")
     table.add_column("handcoded jit", justify="right", style="magenta")
-    table.add_column("emit/gufunc", justify="right")
+    table.add_column("emit/par", justify="right")
 
     pt = (
         lambda: f_dolang(M0, S0, X0, M0, S0, X0, P0),
+        lambda: f_dolang_1thr(M0, S0, X0, M0, S0, X0, P0),
         lambda: f_jax(M0, S0, X0, M0, S0, X0, P0),
         lambda: f_hand(M0, S0, X0, M0, S0, X0, P0),
     )
@@ -509,6 +541,7 @@ if __name__ == "__main__":
     )
     vec = (
         lambda: f_dolang(Mv, Sv, Xv, Mv, Sv, Xv, P0),
+        lambda: f_dolang_1thr(Mv, Sv, Xv, Mv, Sv, Xv, P0),
         lambda: f_jax(Mv, Sv, Xv, Mv, Sv, Xv, P0),
         lambda: f_hand(Mv, Sv, Xv, Mv, Sv, Xv, P0),
     )
@@ -517,34 +550,40 @@ if __name__ == "__main__":
         lambda: f_jax(M0, S0, X0, M0, S0, X0, P0, diff=True),
     )
 
-    t0, t1, t2 = [time_it(c, 300) for c in pt]
+    t0, t1, t2, t3 = [time_it(c, 300) for c in pt]
     table.add_row(
-        f"[bold]point[/bold] (300 loops)",
+        "[bold]point[/bold] (300 loops)",
         f"{t0:.1f}",
         f"{t1:.1f}",
         f"{t2:.1f}",
-        f"{t1 / t0:.1f}×",
+        f"{t3:.1f}",
+        f"{t2 / t0:.1f}×",
     )
-    t0, t1, t2 = [time_it(c, 30) for c in vec]
+    t0, t1, t2, t3 = [time_it(c, 30) for c in vec]
     table.add_row(
         f"[bold]vectorized {n_vec} rows[/bold] (30 loops)",
         f"{t0:.1f}",
         f"{t1:.1f}",
         f"{t2:.1f}",
-        f"{t1 / t0:.1f}×",
+        f"{t3:.1f}",
+        f"{t2 / t0:.1f}×",
     )
     t0, t1 = [time_it(c, 30) for c in diff]
     table.add_row(
         "[bold]diff=True[/bold] (30 loops)",
         f"{t0:.1f}",
+        "n/a",
         f"{t1:.1f}",
         "n/a",
         f"{t1 / t0:.1f}×",
     )
     console.print(table)
     console.print(
-        "[dim]point-call gap is dominated by jax device_put of small input "
-        "arrays (~60µs each); vectorized calls amortize it.[/dim]"
+        "[dim]point-call gap for jax is dominated by device_put of small "
+        "input arrays (~60µs each); vectorized calls amortize it.  The\n"
+        "gufunc 1-thread column is the same generated numba source compiled "
+        'without target="parallel" — on one thread jax is the faster\n'
+        "kernel (see the scaling table).[/dim]"
     )
 
     # --- scaling --------------------------------------------------------
@@ -553,8 +592,9 @@ if __name__ == "__main__":
         title="large-batch scaling — one warm call per size, f64 random rows, sync-forced"
     )
     stab.add_column("N", justify="right", style="cyan")
-    stab.add_column("gufunc", justify="right", style="green")
-    stab.add_column("emitted jit", justify="right", style="yellow")
+    stab.add_column("gufunc 8-thr", justify="right", style="green")
+    stab.add_column("gufunc 1-thr", justify="right", style="yellow")
+    stab.add_column("emitted jit", justify="right", style="magenta")
     stab.add_column("handcoded jit", justify="right", style="magenta")
     stab.add_column("emit Mpts/s", justify="right")
     stab.add_column("equal", justify="right")
@@ -565,6 +605,7 @@ if __name__ == "__main__":
         Xv = np.abs(rng.normal(size=(n, 2))) + 0.1
         args = (Mv, Sv, Xv, Mv, Sv, Xv, P0)
         v_dolang = f_dolang(*args)
+        f_dolang_1thr(*args)
         w = f_jax(*args)
         w.block_until_ready() if hasattr(w, "block_until_ready") else None
         w = f_hand(*args)
@@ -572,6 +613,9 @@ if __name__ == "__main__":
         t0 = time.perf_counter()
         f_dolang(*args)
         t_dol = time.perf_counter() - t0
+        t0 = time.perf_counter()
+        f_dolang_1thr(*args)
+        t_dol1 = time.perf_counter() - t0
         t0 = time.perf_counter()
         v_jax = f_jax(*args)
         v_jax.block_until_ready() if hasattr(v_jax, "block_until_ready") else None
@@ -583,9 +627,16 @@ if __name__ == "__main__":
         stab.add_row(
             f"{n:,}",
             f"{t_dol * 1e3:.1f} ms",
+            f"{t_dol1 * 1e3:.1f} ms",
             f"{t_jax * 1e3:.1f} ms",
             f"{t_h * 1e3:.1f} ms",
             f"{n / t_jax / 1e6:.1f}",
             f"{np.allclose(v_dolang, v_jax, equal_nan=True)}",
         )
     console.print(stab)
+    console.print(
+        "[dim]on a single thread the jit kernel is ~2-3× faster than numba; "
+        'the gufunc\'s 7-8× thread scaling (target="parallel") is what\n'
+        "leaves jax behind at 8 cores — xla's fusion-level parallelism "
+        "reaches ~2.8× on this CPU.[/dim]"
+    )
