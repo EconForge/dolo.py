@@ -96,18 +96,26 @@ def timings_table(name_leg, fn_leg, name_new, fn_new):
             )
         raise ValueError(kind)
 
+    def sync(call):
+        """Run a call and force completion (jax may defer CPU work:
+        without block_until_ready, timings under-estimate jax side)."""
+        res = call()
+        if hasattr(res, "block_until_ready"):
+            res.block_until_ready()
+        return res
+
     for kind, n_loops in (("point", 300), ("vectorized", 30), ("diff", 20)):
         c_leg, c_new = bench(kind)
         # warm-up (numba/XLA compile)
-        c_leg()
-        c_new()
+        sync(c_leg)
+        sync(c_new)
         t0 = time.perf_counter()
         for _ in range(n_loops):
-            c_leg()
+            sync(c_leg)
         t_leg = (time.perf_counter() - t0) / n_loops * 1e6
         t0 = time.perf_counter()
         for _ in range(n_loops):
-            c_new()
+            sync(c_new)
         t_new = (time.perf_counter() - t0) / n_loops * 1e6
         rows.append(
             (kind, f"{t_leg:8.1f} µs", f"{t_new:8.1f} µs", f"{t_new / t_leg:4.1f}")
@@ -409,7 +417,10 @@ if __name__ == "__main__":
     print("\n" + "=" * 66)
     print("large-batch scaling (single warm call per size)")
     print("=" * 66)
+    print("  (f64, random distinct rows, device work forced with")
+    print("   block_until_ready before timing is stopped)")
     sizes = [10_000, 100_000, 1_000_000, 5_000_000]
+    rng = np.random.default_rng(0)
     print(
         "  "
         + "N".rjust(10)
@@ -423,19 +434,21 @@ if __name__ == "__main__":
         + "equal".rjust(6)
     )
     for n in sizes:
-        M = np.broadcast_to(M0, (n, 1))
-        S = np.ascontiguousarray(np.broadcast_to(S0, (n, 2)))
-        X = np.ascontiguousarray(np.broadcast_to(X0, (n, 2)))
+        M = rng.normal(size=(n, 1))
+        S = rng.normal(size=(n, 2))
+        X = np.abs(rng.normal(size=(n, 2))) + 0.1  # keep controls positive
         # warm (also compiles the kernel for this shape)
-        _ = f_dolang(M, S, X, M, S, X, P0)
-        _ = f_jax(M, S, X, M, S, X, P0)
+        f_dolang(M, S, X, M, S, X, P0)
+        w = f_jax(M, S, X, M, S, X, P0)
+        w.block_until_ready() if hasattr(w, "block_until_ready") else None
         t0 = time.perf_counter()
         v_leg = f_dolang(M, S, X, M, S, X, P0)
         t_leg = time.perf_counter() - t0
         t0 = time.perf_counter()
         v_jax = f_jax(M, S, X, M, S, X, P0)
+        v_jax.block_until_ready() if hasattr(v_jax, "block_until_ready") else None
         t_jax = time.perf_counter() - t0
         print(
             f"  {n:>10,} | {t_leg*1e3:9.1f} ms | {t_jax*1e3:9.1f} ms | "
-            f"{n / t_jax / 1e6:9.1f}     | {str(np.allclose(v_leg, v_jax)):>6}"
+            f"{n / t_jax / 1e6:9.1f}     | {str(np.allclose(v_leg, v_jax, equal_nan=True)):>6}"
         )

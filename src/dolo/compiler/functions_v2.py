@@ -2,11 +2,18 @@
 Functions backend for :class:`dolo.compiler.model_v2.ModelV2`.
 
 Equation trees are produced (and conformity-checked) by ``dyno.dynspec``;
-this module compiles them into callables using JAX as described in the
-migration plan (design decision D2: *interpreted* evaluation first,
-``jax.jit``/``jax.vmap`` around ``dyno.dynspec.analyze.EquationsEvaluator``
-with a JAX function table — generating dedicated source code can come
-later, behind the same interface).
+this module compiles them into JAX-backed callables.
+
+Two compilation stages exist in the migration history:
+
+1. *interpreted* (first prototype): ``EquationsEvaluator`` walking each
+   lark tree at trace time inside ``jax.jit``/``jax.vmap`` — the runtime
+   was compiled, but the traced program carried dict-staging/gather ops
+   that hurt fusion (~1.4x vs. hand-written jax on large batches);
+2. *emitted* (current): each equation tree is compiled once at build
+   time into a closure that assembles the arithmetic expression
+   directly (see ``_emit``), so the traced jaxpr is a plain nested
+   arithmetic graph, like hand-written jnp code.
 
 The callables reproduce the legacy dolo function API exactly, so that
 ``dolo.algos`` does not need to change:
@@ -329,19 +336,80 @@ def _new_evaluator(context: Dict[str, Any], assign: bool) -> EquationsEvaluator:
     return ev
 
 
+# ---------------------------------------------------------------------------
+# expression emission: compile each dynspec tree into a closure that builds
+# the jax expression directly (no dict staging / gathers in the traced
+# program).  All lark walking happens here, at build time.
+# ---------------------------------------------------------------------------
+
+
+def _emit(tree, assign: bool = False) -> Callable:
+    """Compile one equation tree into ``fn(ctx) -> value``.
+
+    ``ctx`` maps variable ``(name, shift)`` keys to arrays, and plain
+    ``name`` keys to constants (parameters, ``inf``).  The returned
+    closure contains no python book-keeping: evaluating it at trace time
+    produces a plain nested arithmetic jaxpr, like hand-written jnp code.
+    """
+    data = tree.data
+    c = tree.children
+
+    if data == "number":
+        v = float(c[0])
+        return lambda ctx: v
+    if data == "constant":
+        name = str(c[0].children[0])
+        return lambda ctx: ctx[name]
+    if data == "variable":
+        name = str(c[0].children[0])
+        shift = int(str(c[2].children[0])) if c[2].children else 0
+        return lambda ctx: ctx[(name, shift)]
+    if data == "value":
+        name = str(c[0].children[0])
+        t = int(str(c[1].children[0]))
+        return lambda ctx: ctx.get(("value", name, t), ctx.get(name, np.nan))
+    if data in ("add", "sub", "mul", "div"):
+        a, b = _emit(c[0]), _emit(c[1])
+        if data == "add":
+            return lambda ctx: a(ctx) + b(ctx)
+        if data == "sub":
+            return lambda ctx: a(ctx) - b(ctx)
+        if data == "mul":
+            return lambda ctx: a(ctx) * b(ctx)
+        return lambda ctx: a(ctx) / b(ctx)
+    if data == "neg":
+        a = _emit(c[0])
+        return lambda ctx: -a(ctx)
+    if data == "pow":
+        a, b = _emit(c[0]), _emit(c[1])
+        return lambda ctx: a(ctx) ** b(ctx)
+    if data == "call":
+        fname = str(c[0].children[0])
+        args = [_emit(arg) for arg in c[1:]]
+        fn = JNP_FUNCTIONS[fname]
+        return lambda ctx: (
+            fn(*[a(ctx) for a in args]) if len(args) > 1 else fn(args[0](ctx))
+        )
+    if data == "equality":
+        if assign:
+            return _emit(c[1])
+        lhs, rhs = _emit(c[0]), _emit(c[1])
+        return lambda ctx: rhs(ctx) - lhs(ctx)
+    if data == "bare_formula":
+        return _emit(c[0])
+    raise NotImplementedError(f"Cannot compile dynspec node '{data}'.")
+
+
 def _eval_definitions_at_shift(
     def_equations: Sequence[Any],
     variables: Dict[str, Dict[int, Any]],
     constants: Dict[str, Any],
     shift: int,
 ) -> None:
-    """Evaluate definition equations with all variables at date ``shift``.
+    """[not used anymore — expression emission replaced the interpreter;
+    kept for reference until the migration is complete.]
 
-    Definitions are written at date 0 (``aux[t] = f(x[t], ...)``); to obtain
-    ``aux[t+shift]`` we stage every known variable at its ``shift`` value
-    into the date-0 slot, run the block topologically, and store the results
-    back at ``shift``.  Same semantics as
-    ``dyno.dynspec.funcgen._evaluate_definitions_at_shift`` but JAX-native.
+    Evaluate definition equations with all variables at date ``shift``.
     """
     for eq in def_equations:
         name = extract_lhs_variable(eq)
@@ -415,49 +483,79 @@ def make_function(
     arg_groups = layout.layout
     n_variable_args = len(arg_groups)
 
+    # --- emit equations at build time (all lark walking happens here) --
+    def_names = set(definitions_block.variable_names) if definitions_block else set()
+    needed_shifts: List[int] = []
+    if layout.with_definitions and definitions_block is not None:
+        shifts: set[int] = set()
+        for eq in equations:
+            for vname, sset in extract_variables_from_equation(eq).items():
+                if vname in def_names:
+                    shifts.update(sset)
+        needed_shifts = sorted(shifts)
+
+    if layout.assign:
+        lhs_names = [extract_lhs_variable(eq) for eq in equations]
+        if any(l is None for l in lhs_names):
+            raise ValueError(
+                f"{name}: assignment semantics need a variable lhs per equation"
+            )
+        eq_fns = [_emit(eq, assign=True) for eq in equations]
+    else:
+        lhs_names = []
+        eq_fns = [_emit(eq, assign=False) for eq in equations]
+
+    def_fns = None
+    if definitions_block is not None and (
+        layout.with_definitions or name == "auxiliary"
+    ):
+        def_fns = [
+            (extract_lhs_variable(eq), _emit(eq, assign=True))
+            for eq in definitions_block.equations
+        ]
+
     def _core(*jargs):
         params = jargs[-1]
-        ctx_vars: Dict[str, Dict[int, Any]] = {}
+        # ctx: plain-name keys -> constants/parameters; (name, shift) -> vars
+        ctx: dict = dict(SPECIAL_CONSTANTS)
+        for i, pname in enumerate(parameters):
+            ctx[pname] = params[i]
         for (group, shift), arr in zip(arg_groups, jargs[:-1]):
             for j, vname in enumerate(variables[group]):
-                ctx_vars.setdefault(vname, {})[shift] = arr[j]
-        constants = dict(SPECIAL_CONSTANTS)
-        constants.update((p, params[i]) for i, p in enumerate(parameters))
-        context = {
-            "constants": constants,
-            "variables": ctx_vars,
-            "values": {},
-            "processes": {},
-            "steady_states": {},
-        }
+                ctx[(vname, shift)] = arr[j]
 
-        if layout.with_definitions and definitions_block is not None:
-            shifts: set[int] = set()
-            for eq in equations:
-                for vname, sset in extract_variables_from_equation(eq).items():
-                    if vname in definitions_block.variable_names:
-                        shifts.update(sset)
-            for shift in sorted(shifts):
-                _eval_definitions_at_shift(
-                    definitions_block.equations, ctx_vars, constants, shift
-                )
+        if needed_shifts and def_fns is not None:
+            for shift in needed_shifts:
+                loc: dict = {}
+                for key, val in ctx.items():
+                    if isinstance(key, tuple):
+                        if key[1] == shift:
+                            loc[(key[0], 0)] = val
+                    else:
+                        loc[key] = val
+                for vname, dfn in def_fns:
+                    res = dfn(loc)
+                    loc[(vname, 0)] = res
+                    ctx[(vname, shift)] = res
 
-        ev = _new_evaluator(context, assign=layout.assign)
-        results = [ev.visit(eq) for eq in equations]
-
-        if layout.output_group is not None:
-            names = variables[layout.output_group]
-            if names:
-                return jnp.stack([ctx_vars[vname][0] for vname in names])
+        if layout.assign:
+            for vname, efn in zip(lhs_names, eq_fns):
+                ctx[(vname, 0)] = efn(ctx)
+            if layout.output_group is not None:
+                names = variables[layout.output_group]
+                if names:
+                    return jnp.stack([ctx[(vname, 0)] for vname in names])
+                return jnp.zeros(0)
             return jnp.zeros(0)
-        if results:
-            return jnp.stack(results)
+
+        if eq_fns:
+            return jnp.stack([efn(ctx) for efn in eq_fns])
         return jnp.zeros(0)
 
-    # NOTE: the interpreted graph executes *much* faster under vmap (XLA
-    # vectorizes/fuses the ops) than as scalar point evaluations — even with
-    # a batch of size 1 (17µs vs 490µs on rbc's f).  The point path below
-    # therefore runs through a vmap variant where `p` is not mapped.
+    # Emission happens at build time; the traced core is a plain nested
+    # arithmetic expression.  The point path below reuses the vmapped
+    # kernel (batch of 1) because vmap execution is efficient here and
+    # `p` stays unmapped.
     point_fn = _with_arity(n_variable_args + 1, _core)
     n_total = n_variable_args + 1
     batch = jax.jit(jax.vmap(point_fn, in_axes=[0] * n_total))
