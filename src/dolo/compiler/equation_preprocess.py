@@ -79,6 +79,28 @@ _timing_renamer = re.compile(
 )
 
 
+def rewrite_timing_calls(line: str, symbols: set[str]) -> str:
+    """Rewrite dolo parenthesis timing ``x(±d)`` into dynspec ``x[t±d]``.
+
+    Only known symbol names are touched, so function calls (``log(2)``)
+    and other parentheses pass through untouched.  Unlike
+    :func:`normalize_timing`, untimed symbols are *not* suffixed with
+    ``[t]`` — used where plain names must remain constants
+    (``eval_formula``).
+    """
+
+    def _ren(m):
+        name = m.group("neg") if m.group("neg") is not None else m.group("name")
+        if name not in symbols:
+            return m.group(0)
+        d = int(m.group("nd") if m.group("nd") is not None else m.group("d"))
+        if d == 0:
+            return f"{name}[t]"
+        return f"{name}[t+{d}]" if d > 0 else f"{name}[t{d}]"
+
+    return _timing_renamer.sub(_ren, line)
+
+
 def normalize_timing(line: str, symbols: set[str]) -> str:
     """Rewrite dolo timing conveniences into dynspec `x[t±d]` syntax.
 

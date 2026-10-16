@@ -152,6 +152,26 @@ def list_symbols(tree) -> set[str]:
     return collector.names
 
 
+class _TimedVariableCollector(Interpreter):
+    """Collect (name, shift) pairs of timed variables in a dynspec tree."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.pairs: set[tuple[str, int]] = set()
+
+    def variable(self, tree) -> None:
+        name = _SymbolCollector._name_of(tree.children[0])
+        timing = tree.children[2].children
+        shift = int(str(timing[0])) if timing else 0
+        self.pairs.add((name, shift))
+
+
+def _timed_variables(tree) -> set[tuple[str, int]]:
+    collector = _TimedVariableCollector()
+    collector.visit(tree)
+    return collector.pairs
+
+
 # ---------------------------------------------------------------------------
 # scalar evaluation / calibration solving
 # ---------------------------------------------------------------------------
@@ -802,11 +822,46 @@ class ModelV2:
         return residuals(self, calib)
 
     def eval_formula(self, expr, dataframe=None, calib=None):
-        from dolo.compiler.eval_formula import eval_formula
+        """Evaluate a formula with dolo timing notation (``k(0)``, ``k(-1)``).
 
+        Untimed names are resolved against the calibration; timed names
+        (``x(±d)``) are looked up as columns of `dataframe`, shifted by
+        `d` rows (`x(1)` = one period back, like the legacy evaluator).
+        ``k[t±d]`` (dynspec) timing is accepted as well.  Built on
+        ``dyno.dynspec`` — no dolang involved.
+        """
         if calib is None:
             calib = self.calibration
-        return eval_formula(expr, dataframe=dataframe, context=calib)
+        context = calib.flat if isinstance(calib, CalibrationDict) else dict(calib)
+
+        columns = set(dataframe.columns) if dataframe is not None else set()
+        variable_names = (
+            {n for g, names in self.symbols.items() if g != "parameters" for n in names}
+            | set(self.definitions)
+            | set(columns)
+        )
+
+        expr = _pre.rewrite_timing_calls(str(expr), variable_names)
+        tree = parser.parse(expr, start="formula")
+
+        variables: Dict[str, Dict[int, Any]] = {}
+        if dataframe is not None:
+            for name, shift in _timed_variables(tree):
+                variables.setdefault(name, {})[shift] = dataframe[name].shift(shift)
+            import pandas as pd
+
+            context = dict(context)
+            context["t_"] = pd.Series(dataframe.index, index=dataframe.index)
+
+        ev = FormulaEvaluator(
+            {
+                "constants": dict(context),
+                "variables": variables,
+                "values": {},
+                "processes": {},
+            }
+        )
+        return ev.visit(tree)
 
     def __str__(self):
         from dolo.misc.termcolor import colored

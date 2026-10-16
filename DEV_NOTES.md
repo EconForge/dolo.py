@@ -96,8 +96,10 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   `.dyno` models.
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
   aliases) + alias still working when the group is absent.
+- `eval_formula` on ModelV2 against the legacy evaluator (timing
+  notation + dataframe shifts).
 
-Full suite: `pixi run --environment dev pytest -q` → 47 passed.
+Full suite: `pixi run --environment dev pytest -q` → 48 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
@@ -209,8 +211,14 @@ Benchmarks to run/inspect:
    `equation_preprocess.py` and `langspec.py`.
 7. **ModelV2 display**: `__str__` is basic; `_repr_html_` still uses
    `dolang.latex` through old code paths; port to dynspec latex.
-8. `eval_formula` on ModelV2 still calls the dolang-backed function —
-   move to dynspec evaluator.
+8. `eval_formula` on ModelV2 moved to the dynspec evaluator
+   (`dyno.dynspec.FormulaEvaluator`): `k(0)`-style timing rewritten by
+   `equation_preprocess.rewrite_timing_calls`, timed names resolved as
+   shifted dataframe columns, untimed names as calibration constants,
+   `k[t±d]` dynspec timing accepted. Parity test added. The legacy
+   `Model.eval_formula` (dolang-based) stays as is.
+   Remaining niceties: greek-letter key normalization
+   (`stringify_symbol`), `t_` semantics already covered.
 9. `discretize()` on `.dyno` models requires `@domain`; test added
    (`test_dyno_options_and_domain`). Old `Model` and `dolo.yaml_import`
    remain the default — decide when/if to switch.
