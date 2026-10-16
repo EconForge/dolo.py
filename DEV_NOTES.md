@@ -44,7 +44,7 @@ Under `src/dolo/compiler/`:
 | `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments, states = transition LHGs, auxiliaries = definitions LHGs, controls = free vars in any group (arbitrage scanned first). |
 | `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. `check_equation_group`/`build_definitions_block` from dynspec do conformity + DAG. |
 | `equation_preprocess.py` | TEMP | Normalizes dolo-only syntax before dynspec parsing: `⟂` / legacy `|` complementarity splitting, `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. To be deleted once dynspec supports it natively. |
-| `langspec.py` | TEMP | Choke point around dolang features we still use: `language_element`, `eval_data`, `greek_tolerance`, `ModelError`, `solve_triangular_system`. |
+| `langspec.py` | TEMP | Choke point around dolang: currently re-exports only `eval_data` (the single dolang utility the new path still needs); gone once that call site is reimplemented. |
 | `model_import.py` | extended | `yaml_import` unchanged; new `yaml_import_v2` and `dyno_import`. Exported from `dolo/__init__.py`. |
 | `model.py`, `factories.py`, `recipes.py/.yaml` … | legacy | untouched, still the default and the fallback. |
 
@@ -238,8 +238,12 @@ Benchmarks to run/inspect:
    shifted dataframe columns, untimed names as calibration constants,
    `k[t±d]` dynspec timing accepted. Parity test added. The legacy
    `Model.eval_formula` (dolang-based) stays as is.
-   Remaining niceties: greek-letter key normalization
-   (`stringify_symbol`), `t_` semantics already covered.
+   Greek/symbol-key normalization needs nothing dynspec-side: the
+   legacy `stringify_symbol` only appends dolang's trailing `_`
+   convention, which dynspec never uses (greek letters are native
+   grammar names and calibration keys match symbols verbatim).
+   Also: `langspec.py` trimmed to the single used export (`eval_data`);
+   the module disappears when that one call site is reimplemented.
 9. `discretize()` on `.dyno` models requires `@domain`; test added
    (`test_dyno_options_and_domain`). Old `Model` and `dolo.yaml_import`
    remain the default — decide when/if to switch.

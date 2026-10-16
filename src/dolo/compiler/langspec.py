@@ -1,37 +1,27 @@
 """
 ``langspec`` — TEMPORARY compatibility shim around ``dolang``.
 
-While dolo's model importer is being migrated to ``dyno.dynspec``, we keep
-using a handful of dolang utilities for the parts that dynspec does not
-cover yet:
+While dolo's model importer is being migrated to ``dyno.dynspec``, the only
+dolang utility the new code path still uses is:
 
-- ``language_element``: registers tagged YAML objects (``!Normal``,
-  ``!Product``, ``!Conditional`` ...) as PyYAML constructors;
 - ``eval_data``: recursively evaluates YAML section content (calibration
-  values, domains, grid options) against a symbol dictionary;
-- ``solve_triangular_system``: solves symbolic equations in dependency order;
-- ``greek_tolerance``: decorator accepting greek-letter keyword arguments;
-- ``ModelError``: the error type raised for model specification mistakes.
+  values, domains, grid options, tagged process objects) against a symbol
+  dictionary.
+
+The tagged-object registration itself (``language_element``) happens in the
+legacy modules ``dolo.compiler.objects``, ``dolo.numeric.processes`` and
+``dolo.numeric.distribution``, which still import dolang directly.
 
 RULES
 -----
-* New dolo code must obtain this functionality through this module
+* New dolo code must obtain dolang functionality through this module
   (``from dolo.compiler import langspec``), never by importing dolang
   directly.
-* Each entry point should eventually be reimplemented in-house (or moved to
-  ``dyno.dynspec``) and removed from this module.  Keep the module small:
-  it is a parking lot, not a home.
+* Shrink, don't grow: once ``eval_data`` is reimplemented in-house (it
+  only resolves a handful of tagged YAML objects) this module is deleted
+  entirely.
 """
 
-# Re-export the dolang language machinery (lazy imports keep dolo's top-level
-# import cheap; dolang itself becomes optional once these are replaced).
-from dolang.language import language_element, eval_data, ModelError, greek_tolerance
-from dolang.triangular_solver import solve_triangular_system
+from dolang.language import eval_data
 
-__all__ = [
-    "language_element",
-    "eval_data",
-    "ModelError",
-    "greek_tolerance",
-    "solve_triangular_system",
-]
+__all__ = ["eval_data"]
