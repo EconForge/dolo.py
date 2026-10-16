@@ -42,7 +42,7 @@ Under `src/dolo/compiler/`:
 | file | status | content |
 |---|---|---|
 | `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments, states = transition LHGs, auxiliaries = definitions LHGs, controls = free vars in any group (arbitrage scanned first). |
-| `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees to expression closures (build time). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. `check_equation_group`/`build_definitions_block` from dynspec do conformity + DAG. |
+| `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. `check_equation_group`/`build_definitions_block` from dynspec do conformity + DAG. |
 | `equation_preprocess.py` | TEMP | Normalizes dolo-only syntax before dynspec parsing: `⟂` / legacy `|` complementarity splitting, `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. To be deleted once dynspec supports it natively. |
 | `langspec.py` | TEMP | Choke point around dolang features we still use: `language_element`, `eval_data`, `greek_tolerance`, `ModelError`, `solve_triangular_system`. |
 | `model_import.py` | extended | `yaml_import` unchanged; new `yaml_import_v2` and `dyno_import`. Exported from `dolo/__init__.py`. |
@@ -153,13 +153,21 @@ Conclusions:
 2. The ranking flips only because dolang's guvectorize uses
    `target="parallel"` (prange over rows, 7-8× scaling) while XLA-CPU's
    fusion-level parallelism reaches ~2.8× on this workload.
-3. Point-call latency (scipy-style algos, `value_iteration`):
-   legacy ~5.5µs vs jax ~470µs, **almost entirely** ~60µs/call × 7 small
-   numpy→device transfers. Mitigations not yet done: numpy-math table for
-   tiny calls, or pre-placing inputs, or batching inside the algo.
+3. Point-call latency — **numpy fast path implemented**: point *and*
+   row-vectorized calls made entirely from numpy arrays now evaluate the
+   same emitted expressions through numpy closures (no device transfers,
+   no jit dispatch): `f` point 23µs (was ~470, legacy 5.5), `g` point
+   9µs (was ~470, legacy 4.9). Macro effect: `time_iteration` on a 5×5
+   grid 14.5s → 6.8s, `egm` 6.6s → 2.6s. JAX is still used for jax
+   array inputs, tracers and `diff=True`.
+   Still open: default-grid `time_iteration` (100×100) at 28.5s vs
+   legacy 20.8s — residual dominated by shared numba/dispatch infra plus
+   numpy-batched kernels being ~6× the numba gufunc at 10k rows (jax
+   beats numpy only above ~1M rows). Closes either with pre-placed
+   device arrays or the backend choice below.
 4. `diff=True`: legacy 48µs (finite-diff on the compiled kernel), emitted
-   ~0.6ms (one cached jacrev) — acceptable, could drop with a
-   forward-mode kernel.
+   ~0.6ms (one cached jacrev) — acceptable, only called in outer loops
+   (perturb setup, perfect_foresight, euler residuals).
 
 ### Open performance question
 > "It might be that we will still offer a numba option after all…"
@@ -202,11 +210,12 @@ Benchmarks to run/inspect:
 3. **Algorithm smoke tests on ModelV2** (time_iteration/perturb/simulate/
    egm/value_iteration): done for the first four (§3); value_iteration
    excluded per 1 above.
-4. **Wrapper marshaling** (§5.x): done for the cheap half — already-device
-   `jax float64` arrays skip `jnp.asarray(dtype=...)`. Returning device
-   arrays behind an opt-in is still open. Point-call path (§5.3, numpy
-   math table / input caching) also still open.
-5. **Point-call path** (see §5.3): numpy math table or input caching.
+4. **Wrapper marshaling**: done — plain-numpy point/batched calls go
+   through the numpy closure family; already-device `jax float64` arrays
+   skip `jnp.asarray(dtype=...)`. Returning device arrays behind an opt-in
+   is still open.
+5. **Point-call path**: done via the numpy closure family (§5.3). Optional
+   follow-ups: pre-placed device arrays, or the numba backend choice.
 6. **dyno.py-side grammar work** (in a dyno.py branch, later): add `⟂`
    (+ maybe dolo timing conventions) and unify recipes, then delete
    `equation_preprocess.py` and `langspec.py`.

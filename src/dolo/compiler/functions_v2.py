@@ -86,6 +86,32 @@ JNP_FUNCTIONS: Dict[str, Callable[..., Any]] = {
 # Named constants made available inside equation expressions.
 SPECIAL_CONSTANTS = {"inf": np.inf}
 
+# numpy mirror of JNP_FUNCTIONS: the emitted expression closures are
+# independent of the backend, so the same trees compile twice — to jnp
+# (jit/vmap/diff) and to plain numpy (the low-latency point-call path).
+NP_FUNCTIONS: Dict[str, Callable[..., Any]] = {
+    "exp": np.exp,
+    "log": np.log,
+    "sqrt": np.sqrt,
+    "abs": np.abs,
+    "sin": np.sin,
+    "cos": np.cos,
+    "tan": np.tan,
+    "sinh": np.sinh,
+    "cosh": np.cosh,
+    "tanh": np.tanh,
+    "asin": np.arcsin,
+    "acos": np.arccos,
+    "atan": np.arctan,
+    "max": np.maximum,
+    "min": np.minimum,
+    "log10": np.log10,
+    "log2": np.log2,
+    "floor": np.floor,
+    "ceil": np.ceil,
+    "pow": np.power,
+}
+
 
 class GroupLayout:
     """How a legacy function maps positional arguments to (group, shift)."""
@@ -343,13 +369,16 @@ def _new_evaluator(context: Dict[str, Any], assign: bool) -> EquationsEvaluator:
 # ---------------------------------------------------------------------------
 
 
-def _emit(tree, assign: bool = False) -> Callable:
+def _emit(
+    tree, assign: bool = False, functions: Dict[str, Callable] = JNP_FUNCTIONS
+) -> Callable:
     """Compile one equation tree into ``fn(ctx) -> value``.
 
     ``ctx`` maps variable ``(name, shift)`` keys to arrays, and plain
     ``name`` keys to constants (parameters, ``inf``).  The returned
-    closure contains no python book-keeping: evaluating it at trace time
-    produces a plain nested arithmetic jaxpr, like hand-written jnp code.
+    closure contains no python book-keeping: evaluating it produces a
+    plain nested arithmetic expression.  ``functions`` selects the math
+    backend (jnp for tracing, numpy for the point-call path).
     """
     data = tree.data
     c = tree.children
@@ -369,7 +398,7 @@ def _emit(tree, assign: bool = False) -> Callable:
         t = int(str(c[1].children[0]))
         return lambda ctx: ctx.get(("value", name, t), ctx.get(name, np.nan))
     if data in ("add", "sub", "mul", "div"):
-        a, b = _emit(c[0]), _emit(c[1])
+        a, b = _emit(c[0], functions=functions), _emit(c[1], functions=functions)
         if data == "add":
             return lambda ctx: a(ctx) + b(ctx)
         if data == "sub":
@@ -378,25 +407,25 @@ def _emit(tree, assign: bool = False) -> Callable:
             return lambda ctx: a(ctx) * b(ctx)
         return lambda ctx: a(ctx) / b(ctx)
     if data == "neg":
-        a = _emit(c[0])
+        a = _emit(c[0], functions=functions)
         return lambda ctx: -a(ctx)
     if data == "pow":
-        a, b = _emit(c[0]), _emit(c[1])
+        a, b = _emit(c[0], functions=functions), _emit(c[1], functions=functions)
         return lambda ctx: a(ctx) ** b(ctx)
     if data == "call":
         fname = str(c[0].children[0])
-        args = [_emit(arg) for arg in c[1:]]
-        fn = JNP_FUNCTIONS[fname]
+        args = [_emit(arg, functions=functions) for arg in c[1:]]
+        fn = functions[fname]
         return lambda ctx: (
             fn(*[a(ctx) for a in args]) if len(args) > 1 else fn(args[0](ctx))
         )
     if data == "equality":
         if assign:
-            return _emit(c[1])
-        lhs, rhs = _emit(c[0]), _emit(c[1])
+            return _emit(c[1], functions=functions)
+        lhs, rhs = _emit(c[0], functions=functions), _emit(c[1], functions=functions)
         return lambda ctx: rhs(ctx) - lhs(ctx)
     if data == "bare_formula":
-        return _emit(c[0])
+        return _emit(c[0], functions=functions)
     raise NotImplementedError(f"Cannot compile dynspec node '{data}'.")
 
 
@@ -500,63 +529,87 @@ def make_function(
             raise ValueError(
                 f"{name}: assignment semantics need a variable lhs per equation"
             )
-        eq_fns = [_emit(eq, assign=True) for eq in equations]
+        eq_fns_j = [_emit(eq, assign=True) for eq in equations]
+        eq_fns_n = [_emit(eq, assign=True, functions=NP_FUNCTIONS) for eq in equations]
     else:
         lhs_names = []
-        eq_fns = [_emit(eq, assign=False) for eq in equations]
+        eq_fns_j = [_emit(eq, assign=False) for eq in equations]
+        eq_fns_n = [_emit(eq, assign=False, functions=NP_FUNCTIONS) for eq in equations]
 
-    def_fns = None
+    def_fns_j = None
+    def_fns_n = None
     if definitions_block is not None and (
         layout.with_definitions or name == "auxiliary"
     ):
-        def_fns = [
+        # same trees, both backends
+        def_fns_j = [
             (extract_lhs_variable(eq), _emit(eq, assign=True))
             for eq in definitions_block.equations
         ]
+        def_fns_n = [
+            (extract_lhs_variable(eq), _emit(eq, assign=True, functions=NP_FUNCTIONS))
+            for eq in definitions_block.equations
+        ]
 
-    def _core(*jargs):
-        params = jargs[-1]
-        # ctx: plain-name keys -> constants/parameters; (name, shift) -> vars
-        ctx: dict = dict(SPECIAL_CONSTANTS)
-        for i, pname in enumerate(parameters):
-            ctx[pname] = params[i]
-        for (group, shift), arr in zip(arg_groups, jargs[:-1]):
-            for j, vname in enumerate(variables[group]):
-                ctx[(vname, shift)] = arr[j]
+    def _make_core(xm, eq_fns, def_fns):
+        """Build the backend-specific core: identical bookkeeping, `xm` is
+        either jnp (traced) or np (plain arrays)."""
 
-        if needed_shifts and def_fns is not None:
-            for shift in needed_shifts:
-                loc: dict = {}
-                for key, val in ctx.items():
-                    if isinstance(key, tuple):
-                        if key[1] == shift:
-                            loc[(key[0], 0)] = val
-                    else:
-                        loc[key] = val
-                for vname, dfn in def_fns:
-                    res = dfn(loc)
-                    loc[(vname, 0)] = res
-                    ctx[(vname, shift)] = res
+        def core(*jargs):
+            params = jargs[-1]
+            # ctx: plain-name keys -> constants/parameters; (name, shift) -> vars
+            ctx: dict = dict(SPECIAL_CONSTANTS)
+            # 1-d parameters (point calls, or `p` unmapped under vmap) give
+            # scalars; 2-d parameters (numpy-batched calls) give columns.
+            if params.ndim == 1:
+                pvals = [params[i] for i in range(params.shape[0])]
+            else:
+                pvals = [params[:, i] for i in range(params.shape[1])]
+            for i, pname in enumerate(parameters):
+                ctx[pname] = pvals[i]
+            for (group, shift), arr in zip(arg_groups, jargs[:-1]):
+                # under vmap each group arrives as a 1-d row (`arr[j]` is a
+                # scalar); the numpy-batched core feeds (N, n_g) arrays, so
+                # transpose first to index columns.
+                arr_t = arr.T if arr.ndim == 2 else arr
+                for j, vname in enumerate(variables[group]):
+                    ctx[(vname, shift)] = arr_t[j]
 
-        if layout.assign:
-            for vname, efn in zip(lhs_names, eq_fns):
-                ctx[(vname, 0)] = efn(ctx)
-            if layout.output_group is not None:
-                names = variables[layout.output_group]
-                if names:
-                    return jnp.stack([ctx[(vname, 0)] for vname in names])
-                return jnp.zeros(0)
-            return jnp.zeros(0)
+            if needed_shifts and def_fns is not None:
+                for shift in needed_shifts:
+                    loc: dict = {}
+                    for key, val in ctx.items():
+                        if isinstance(key, tuple):
+                            if key[1] == shift:
+                                loc[(key[0], 0)] = val
+                        else:
+                            loc[key] = val
+                    for vname, dfn in def_fns:
+                        res = dfn(loc)
+                        loc[(vname, 0)] = res
+                        ctx[(vname, shift)] = res
 
-        if eq_fns:
-            return jnp.stack([efn(ctx) for efn in eq_fns])
-        return jnp.zeros(0)
+            if layout.assign:
+                for vname, efn in zip(lhs_names, eq_fns):
+                    ctx[(vname, 0)] = efn(ctx)
+                if layout.output_group is not None:
+                    names = variables[layout.output_group]
+                    if names:
+                        return xm.stack([ctx[(vname, 0)] for vname in names])
+                    return xm.zeros(0)
+                return xm.zeros(0)
+
+            if eq_fns:
+                return xm.stack([efn(ctx) for efn in eq_fns])
+            return xm.zeros(0)
+
+        return _with_arity(n_variable_args + 1, core)
 
     # Emission happens at build time; the traced core is a plain nested
-    # arithmetic expression.  The point path below reuses the vmapped
-    # kernel (batch of 1) because vmap execution is efficient here and
+    # arithmetic expression.  The jax point path reuses the vmapped
+    # kernel (batch of 1) because vmap execution is efficient there and
     # `p` stays unmapped.
-    point_fn = _with_arity(n_variable_args + 1, _core)
+    point_fn = _make_core(jnp, eq_fns_j, def_fns_j)
     n_total = n_variable_args + 1
     batch = jax.jit(jax.vmap(point_fn, in_axes=[0] * n_total))
     batch_pt = jax.jit(jax.vmap(point_fn, in_axes=[0] * n_variable_args + [None]))
@@ -566,6 +619,11 @@ def make_function(
         return batch_pt(*expanded, a[-1])[0]
 
     point = jax.jit(_with_arity(n_total, _point_impl))
+
+    # Point calls on plain numpy arrays go through the numpy closures —
+    # same emitted expressions, no device transfers, no jit dispatch
+    # (DEV_NOTES §5.3 / §6.5: ~470µs -> ~µs for scipy-style algos).
+    point_np = _make_core(np, eq_fns_n, def_fns_n)
 
     # --- `diff=True`: one jacrev of the concatenated variable args, cached
     # by jit (recomputing it per argument group retraces six functions per
@@ -597,6 +655,39 @@ def make_function(
             return []
 
     def fn(*args, diff=False):
+        # numpy-only calls: plain arrays avoid all jax marshaling (no
+        # device transfers, no jit dispatch — DEV_NOTES §5.3 / §6.5).
+        # Covered: point (1-d) and row-vectorized (2-d) inputs.
+        if not diff and all(isinstance(a, np.ndarray) for a in args):
+            ndims = {a.ndim for a in args}
+            if any(d > 2 for d in ndims):
+                raise ValueError(
+                    "dolo functions accept point (1-d) or row-vectorized (2-d) "
+                    "arguments only."
+                )
+            if 2 not in ndims:
+                return np.asarray(point_np(*args))
+            N = max(a.shape[0] for a in args if a.ndim == 2)
+            bargs = []
+            for a in args:
+                if a.ndim == 1:
+                    bargs.append(np.broadcast_to(a, (N, a.shape[0])))
+                elif a.ndim == 2:
+                    if a.shape[0] != N:
+                        raise ValueError(
+                            "Inconsistent number of points across arguments."
+                        )
+                    bargs.append(a)
+                else:
+                    bargs.append(np.broadcast_to(a, (N,)))
+            # numpy closures produce (n_out, N); return (N, n_out).
+            # Row-independent equations (e.g. literal bounds `0.0`/`-inf`)
+            # yield scalars, hence 1-d stacks: repeat them over N.
+            res = np.asarray(point_np(*bargs)).T
+            if res.ndim == 1:
+                res = np.repeat(res[None, :], N, axis=0)
+            return res
+
         # Skip the `jnp.asarray(..., dtype=float64)` marshaling for device
         # arrays that already satisfy the dtype — algos that hold jax
         # arrays across calls avoid the extra copy/pass cost (DEV_NOTES §6.4).
