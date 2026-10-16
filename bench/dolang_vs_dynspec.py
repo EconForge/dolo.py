@@ -404,3 +404,38 @@ if __name__ == "__main__":
         "  small input arrays (~60us each on this CPU jaxlib), not by the\n"
         "  compiled kernel; vectorized calls amortize it."
     )
+
+    # --- large-batch scaling: 10k / 100k / 1M rows ---------------------
+    print("\n" + "=" * 66)
+    print("large-batch scaling (single warm call per size)")
+    print("=" * 66)
+    sizes = [10_000, 100_000, 1_000_000, 5_000_000]
+    print(
+        "  "
+        + "N".rjust(10)
+        + " | "
+        + "dolang".rjust(12)
+        + " | "
+        + "dynspec+jax".rjust(12)
+        + " | "
+        + "jax Mpts/s".rjust(11)
+        + " | "
+        + "equal".rjust(6)
+    )
+    for n in sizes:
+        M = np.broadcast_to(M0, (n, 1))
+        S = np.ascontiguousarray(np.broadcast_to(S0, (n, 2)))
+        X = np.ascontiguousarray(np.broadcast_to(X0, (n, 2)))
+        # warm (also compiles the kernel for this shape)
+        _ = f_dolang(M, S, X, M, S, X, P0)
+        _ = f_jax(M, S, X, M, S, X, P0)
+        t0 = time.perf_counter()
+        v_leg = f_dolang(M, S, X, M, S, X, P0)
+        t_leg = time.perf_counter() - t0
+        t0 = time.perf_counter()
+        v_jax = f_jax(M, S, X, M, S, X, P0)
+        t_jax = time.perf_counter() - t0
+        print(
+            f"  {n:>10,} | {t_leg*1e3:9.1f} ms | {t_jax*1e3:9.1f} ms | "
+            f"{n / t_jax / 1e6:9.1f}     | {str(np.allclose(v_leg, v_jax)):>6}"
+        )
