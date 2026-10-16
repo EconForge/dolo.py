@@ -1,12 +1,10 @@
 # TARGET SYNTAX — mock file for the dyno-side `⟂` grammar work.
 #
-# ⚠ Does NOT parse with dynospec ≤ 0.1.x. It is the *spec* of what dolo's
-#   importer expects once the complementarity support lands (see
-#   docs/dynospec_requirements.md). Once implemented, this file must load
-#   with:  `ModelV2.from_dyno(...)`  and produce the same model as the
-#   YAML twin `examples/models/rbc.yaml`.
+# Parses with dynospec ≥ 0.1.14+albop/dynspec (`⟂` support landed there);
+# loads through `ModelV2.from_dyno(...)` and reproduces the YAML twin
+# `examples/models/rbc.yaml` (see docs/dynospec_requirements.md).
 #
-# What is new relative to today's dynspec grammar:
+# What is new relative to the released dynospec grammar:
 #   1. `⟂` complementarity suffix on arbitrage equations
 #      `residual ⟂ lb <= x[t] <= ub`  (bounds may be omitted -> ±inf)
 #   2. legacy syntax also accepted (optional): `|` separator, one-sided bound

@@ -258,6 +258,45 @@ def test_dyno_import_rbc():
         assert np.allclose([c.flat[n] for n in names], [yc.flat[n] for n in names])
 
 
+def test_dyno_comp_import_rbc():
+    """The `⟂` complementarity `.dyno` syntax (dynospec native parsing)
+    loads to the same model as the YAML twin, bounds included."""
+    fname = "examples/dyno/rbc_dolo_comp.dyno"
+    with open(fname, "rt", encoding="utf-8") as f:
+        txt = f.read()
+    model = ModelV2.from_dyno(txt, filename=fname)
+    yaml_model = _load_v2("examples/models/rbc.yaml")
+
+    assert model.symbols["states"] == yaml_model.symbols["states"]
+    assert model.symbols["controls"] == yaml_model.symbols["controls"]
+    assert model.symbols["exogenous"] == yaml_model.symbols["exogenous"]
+    assert "arbitrage_lb" in model.functions
+    assert "arbitrage_ub" in model.functions
+
+    # bounds: `n` bounded below by 0, `i` unbounded (the YAML-twin bounds)
+    dm, ym = model, yaml_model
+    for name in ("arbitrage_lb", "arbitrage_ub"):
+        args_d = _bound_args(dm.calibration)
+        args_y = _bound_args(ym.calibration)
+        _assert_alike(dm.functions[name](*args_d), ym.functions[name](*args_y), name)
+
+    # residual groups agree with the YAML twin on each model's calibration
+    for name in ("arbitrage", "transition", "auxiliary"):
+        cd, cy = dm.calibration, ym.calibration
+        md, sd, xd, pd = cd["exogenous"], cd["states"], cd["controls"], cd["parameters"]
+        my, sy, xy, py = cy["exogenous"], cy["states"], cy["controls"], cy["parameters"]
+        if name == "transition":
+            vd = dm.functions[name](md, sd, xd, md, pd)
+            vy = ym.functions[name](my, sy, xy, my, py)
+        elif name == "auxiliary":
+            vd = dm.functions[name](md, sd, xd, pd)
+            vy = ym.functions[name](my, sy, xy, py)
+        else:
+            vd = dm.functions[name](md, sd, xd, md, sd, xd, pd)
+            vy = ym.functions[name](my, sy, xy, my, sy, xy, py)
+        assert np.allclose(vd, vy), name
+
+
 def test_import_entry_points():
     model = dolo.yaml_import_v2("examples/models/rbc.yaml")
     assert "arbitrage" in model.functions

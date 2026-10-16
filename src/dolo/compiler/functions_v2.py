@@ -424,6 +424,10 @@ def _emit(
             return _emit(c[1], functions=functions)
         lhs, rhs = _emit(c[0], functions=functions), _emit(c[1], functions=functions)
         return lambda ctx: rhs(ctx) - lhs(ctx)
+    if data == "complementarity":
+        # `res ⟂ lb <= x <= ub`: the residual is the equation, bounds are
+        # compiled as separate `*_lb` / `*_ub` groups (dynospec convention)
+        return _emit(c[0], assign=assign, functions=functions)
     if data == "bare_formula":
         return _emit(c[0], functions=functions)
     raise NotImplementedError(f"Cannot compile dynspec node '{data}'.")

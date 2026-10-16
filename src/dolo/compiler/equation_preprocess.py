@@ -2,12 +2,16 @@
 TEMPORARY module : normalization of dolo-style equation strings.
 
 The end game (see the migration plan in the repo history / PR) is that
-*all* equation parsing happens in ``dyno.dynspec``, with the ``⟂``
-complementarity operator and dolo's timing conventions added to the
-dynspec grammar itself.  Until then, dolo YAML models keep their current
-syntax (``⟂`` bounds, legacy ``|`` bounds, ``==``, parenthesis timing
-``x(1)`` and untimed symbols such as ``e_z``) and this module rewrites
-them, line by line, into plain dynspec-grammar text.
+*all* equation parsing happens in ``dyno.dynspec``.  Complementarity
+conditions (``⟂`` / legacy ``|``) are already parsed natively by
+dynospec (``albop/dynspec`` branch) and split structurally by
+``model_v2._complementarity_parts``.
+
+What remains in this module is dolo-only *timing* syntax that dynospec
+deliberately does not support (untimed symbols are constants there):
+parenthesis timing ``x(1)`` and untimed-symbol dating ``x`` → ``x[t]``,
+plus ``==`` normalization.  Rewritten line by line into plain
+dynspec-grammar text before parsing.
 
 Everything in here is considered throwaway; do NOT import from this module
 outside of ``dolo.compiler.model_v2``.
@@ -16,63 +20,6 @@ outside of ``dolo.compiler.model_v2``.
 from __future__ import annotations
 
 import re
-
-
-def split_complementarity(
-    line: str, control: str | None = None
-) -> tuple[str, str | None, str | None]:
-    """Split a dolo equation carrying a complementarity bound.
-
-    An equation can be of the forms:
-
-        <residual> ⟂ <lb> <= x[t] <= <ub>     (recommended)
-        <residual> ⟂ <lb> <= x[t]             (legacy, one-sided)
-        <residual> | <lb> <= x[t] <= <ub>     (legacy separator)
-
-    where the bound expressions contain the current *control* variable.
-    Returns ``(residual, lower_bound, upper_bound)``; bounds are ``None``
-    when there is no complementarity on the line.
-    """
-    s = line
-
-    # Locate the separator: "⟂" always wins over "|" (the latter is only
-    # treated as a separator when it is followed by an inequality).
-    sep = None
-    if "⟂" in s:
-        sep = "⟂"
-    elif "|" in s:
-        head, tail = s.split("|", 1)
-        if "<=" in tail or ">=" in tail:
-            sep = "|"
-        else:
-            return s, None, None
-    else:
-        return s, None, None
-
-    residual, comp = [e.strip() for e in s.split(sep, 1)]
-    comp = comp.strip()
-
-    # Expected middle term: the control variable, optionally timed.
-    pattern = re.compile(
-        r"^(?P<lb>.*?)\s*<=\s*(?P<var>\w+)\s*(\[(?:t[+-]?\d*)\]\s*)?"
-        r"(?:<=\s*(?P<ub>.*))?$"
-    )
-    match = pattern.match(comp)
-    if match is None:
-        raise Exception(f"Unable to parse complementarity condition '{comp}'")
-    lb, middle, ub = match.group("lb").strip(), match.group("var"), match.group("ub")
-    if control is not None and middle != control:
-        raise Exception(
-            f"Complementarity condition '{comp}' incorrect. "
-            f"Expected '{control}' instead of '{middle}'."
-        )
-    if lb == "":
-        lb = "-inf"
-    ub = (ub or "inf").strip()
-    if ub == "":
-        ub = "inf"
-    return residual, lb, ub
-
 
 _timing_renamer = re.compile(
     r"(?<![\w])(?:(?P<neg>\w+)\(\s*-\s*(?P<nd>\d+)\s*\)|(?P<name>\w+)\(\s*(?P<d>-?\d+)\s*\))"

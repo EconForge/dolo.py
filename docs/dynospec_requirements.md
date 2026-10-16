@@ -11,6 +11,26 @@ The target artifact this enables:
 syntax described below. Once implemented, that file must load through
 `ModelV2.from_dyno` and reproduce `examples/models/rbc.yaml`.
 
+## Status (2026-10-16)
+
+Implemented on dyno.py `albop/dynspec` (commit `1874e94`): §2.1 grammar
+(`complementarity` rule, `⟂`/`|`, TimeFixer normalization to
+`complementarity(residual, lb, x, ub)` with explicit `-inf`/`inf`),
+residual-only evaluation / `extract_variables_from_equation`, `\perp`
+latex, built-in `inf`, example file + tests. **dolo now consumes the
+structure** (`model_v2._complementarity_parts`) on both the `.dyno` and
+YAML paths; its text-level `split_complementarity` is deleted, and
+`examples/dyno/rbc_dolo_comp.dyno` loads as a real test
+(`test_dyno_comp_import_rbc`, bounds equal to the YAML twin).
+
+Still open on the dyno side:
+- §4 — the `arbitrage_bounds` group spec in `DTCC_RECIPE` (dolo still
+  hardcodes `_BOUND_SPEC`),
+- §2.3 — optional `x(1)` timing canonicalization utility + `==` alias,
+- §2.2 — verify tagged `[controls_lb]`/`[controls_ub]` blocks pass
+  through `DynoFile` (they already parse as equalities; dolo classifies
+  by tag).
+
 ---
 
 ## 1. Why

@@ -275,6 +275,7 @@ class ModelV2:
         name: Optional[str] = None,
         filename: str = "<string>",
         check: bool = True,
+        bounds: Optional[Dict[str, List[Any]]] = None,
     ) -> None:
         self.symbols = {k: list(v) for k, v in symbols.items()}
         self.__equations_text__ = {k: list(v) for k, v in equations.items()}
@@ -290,6 +291,12 @@ class ModelV2:
         self.__equations_trees__: Optional[Dict[str, List[Any]]] = None
         self.__bound_text__: Dict[str, List[str]] = {}
         self.__bound_trees__: Dict[str, List[Any]] = {}
+        # parsed complementarity bounds (from `.dyno` import): group name
+        # (`arbitrage_lb`/`arbitrage_ub`/…) -> bound trees, one per equation.
+        if bounds:
+            for bname, trees in bounds.items():
+                self.__bound_trees__[bname] = list(trees)
+                self.__bound_text__[bname] = [str_expression(t) for t in trees]
         self.__calibration__ = None
         self.__exogenous__ = None
         self.__functions__ = None
@@ -432,10 +439,41 @@ class ModelV2:
             symbols["auxiliaries"] = auxiliaries
 
         equations_text: Dict[str, List[str]] = {}
+        bounds: Dict[str, List[Any]] = {}
         for group, eqs in grouped.items():
             if group == "definitions" or len(eqs) == 0:
                 continue
-            equations_text[group] = [_tree_text(eq) for eq in eqs]
+            texts: List[str] = []
+            lbs: List[Any] = []
+            ubs: List[Any] = []
+            any_bound = False
+            for i, eq in enumerate(eqs):
+                comp = _complementarity_parts(eq)
+                if comp is None:
+                    texts.append(_tree_text(eq))
+                    lbs.append(None)
+                    ubs.append(None)
+                    continue
+                residual, lb, xname, ub = comp
+                if group == "arbitrage" and controls and i < len(controls):
+                    if xname != controls[i]:
+                        raise Exception(
+                            f"Complementarity condition in `[arbitrage]` "
+                            f"equation {i + 1} is incorrect. Expected "
+                            f"'{controls[i]}' instead of '{xname}'."
+                        )
+                texts.append(_tree_text(residual))
+                lbs.append(lb)
+                ubs.append(ub)
+                any_bound = True
+            equations_text[group] = texts
+            if any_bound:
+                bounds[f"{group}_lb"] = [
+                    t if t is not None else _neg_inf_tree() for t in lbs
+                ]
+                bounds[f"{group}_ub"] = [
+                    t if t is not None else _inf_tree() for t in ubs
+                ]
 
         definitions: Dict[str, str] = {}
         for eq in grouped["definitions"]:
@@ -471,6 +509,7 @@ class ModelV2:
             name=dynofile.metadata.get("name"),
             filename=filename,
             check=check,
+            bounds=bounds,
         )
         model.__dyno_context__ = context
         return model
@@ -487,7 +526,14 @@ class ModelV2:
         }
 
     def _parse_group_trees(self) -> Dict[str, List[Any]]:
-        """Parse raw equation strings into dynspec trees (with normalization)."""
+        """Parse raw equation strings into dynspec trees (with normalization).
+
+        Complementarities (`res ⟂ lb <= x[t] <= ub`) are parsed natively by
+        dynospec: the residual stays the equation, the bounds become the
+        `*_lb` / `*_ub` bound-tree groups.  The legacy dolo timing
+        conveniences (untimed symbols, `x(1)`, `==`) are still normalized at
+        text level — they are not part of dynospec.
+        """
         trees: Dict[str, List[Any]] = {}
         # Variable (non-parameter) symbols are the only names that get timed.
         variable_symbols = {
@@ -496,40 +542,52 @@ class ModelV2:
         controls = list(self.symbols["controls"])
 
         for group, lines in self.__equations_text__.items():
-            out: List[Any] = []
-            bounds: Dict[str, List[str]] = {"lb": [], "ub": []}
-            for i, line in enumerate(lines):
+            out = []
+            for line in lines:
                 if group in ("controls_lb", "controls_ub"):
-                    # standalone bounds: `i = 0` style lines, keep the rhs
+                    # standalone bounds: `c = 0.1` style lines, keep the rhs
                     if "=" in line:
                         line = line.split("=", 1)[1].strip()
-                    control = None
-                else:
-                    control = (
-                        controls[i]
-                        if group == "arbitrage" and i < len(controls)
-                        else None
-                    )
-                residual, lb, ub = _pre.split_complementarity(line, control=control)
-                out.append(_pre.normalize_timing(residual, variable_symbols))
-                if lb is not None:
-                    bounds["lb"].append(_pre.normalize_timing(lb, variable_symbols))
-                    bounds["ub"].append(_pre.normalize_timing(ub, variable_symbols))
-            trees[group] = _parse_block("\n".join(out))
-            if bounds["lb"]:
-                # pad with -inf/inf so that there is one entry per control
-                n = len(lines)
-                while len(bounds["lb"]) < n:
-                    bounds["lb"].append("-inf")
-                    bounds["ub"].append("inf")
-                self.__bound_text__[f"{group}_lb"] = bounds["lb"]
-                self.__bound_text__[f"{group}_ub"] = bounds["ub"]
-                self.__bound_trees__[f"{group}_lb"] = _parse_block(
-                    "\n".join(bounds["lb"])
-                )
-                self.__bound_trees__[f"{group}_ub"] = _parse_block(
-                    "\n".join(bounds["ub"])
-                )
+                out.append(_pre.normalize_timing(line, variable_symbols))
+
+            bound_lb: List[Any] = []
+            bound_ub: List[Any] = []
+            group_trees: List[Any] = []
+            any_bound = False
+            for i, t in enumerate(_parse_block("\n".join(out))):
+                comp = _complementarity_parts(t)
+                if comp is None:
+                    group_trees.append(t)
+                    bound_lb.append(None)
+                    bound_ub.append(None)
+                    continue
+                residual, lb, xname, ub = comp
+                if group == "arbitrage" and controls and i < len(controls):
+                    if xname != controls[i]:
+                        raise Exception(
+                            f"Complementarity condition in `{group}` equation "
+                            f"{i + 1} is incorrect. Expected '{controls[i]}' "
+                            f"instead of '{xname}'."
+                        )
+                any_bound = True
+                group_trees.append(residual)
+                bound_lb.append(lb)
+                bound_ub.append(ub)
+
+            trees[group] = group_trees
+            if any_bound:
+                # pad non-complementarity equations with -inf/inf bounds so
+                # that there is one bound per equation (dolo convention)
+                lb_trees = [t if t is not None else _neg_inf_tree() for t in bound_lb]
+                ub_trees = [t if t is not None else _inf_tree() for t in bound_ub]
+                self.__bound_trees__[f"{group}_lb"] = lb_trees
+                self.__bound_trees__[f"{group}_ub"] = ub_trees
+                self.__bound_text__[f"{group}_lb"] = [
+                    str_expression(t) for t in lb_trees
+                ]
+                self.__bound_text__[f"{group}_ub"] = [
+                    str_expression(t) for t in ub_trees
+                ]
         return trees
 
     @property
@@ -1044,6 +1102,35 @@ def _parse_block(text: str) -> List[Any]:
         return []
     tree = parser.parse(text, start="equation_block")
     return list(tree.children)
+
+
+def _complementarity_parts(tree) -> Optional[tuple[Any, Any, str, Any]]:
+    """Split a dynspec `complementarity` tree into its parts.
+
+    Returns ``(residual, lb, middle_name, ub)``, or ``None`` for plain
+    equations.  The dynospec grammar normalizes every complementarity to
+    ``complementarity(residual, lb, x, ub)`` with explicit `-inf`/`inf`
+    bounds (`⟂` and legacy `|` separators).
+    """
+    if getattr(tree, "data", None) != "complementarity":
+        return None
+    res, lb, x, ub = tree.children
+    name = str(x.children[0].children[0])
+    return res, lb, name, ub
+
+
+def _inf_tree():
+    """A dynspec tree for the built-in constant `inf` (bounds padding)."""
+    from lark import Tree, Token
+
+    return Tree("constant", [Tree("name", [Token("NAME", "inf")])])
+
+
+def _neg_inf_tree():
+    """A dynspec tree for `-inf`."""
+    from lark import Tree
+
+    return Tree("neg", [_inf_tree()])
 
 
 def _tree_text(tree) -> str:

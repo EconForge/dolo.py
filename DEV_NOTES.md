@@ -10,11 +10,13 @@ Date of last update: 2026-10-16. Read this instead of re-reading the whole conve
 
 Rewrite dolo's model *import* so that:
 
-- D1 — dolo depends on **dyno.py** (`dynopy`) and uses `dyno.dynspec` for
-  equation parsing, conformity checking and recipes. During development
-  pixi uses the local checkout at `../dyno.py` as an editable path
-  dependency; `min-deps` pins the published `dynopy==0.1.13`.
-  **Do not touch dyno.py code for now.**
+- D1 — dolo depends on **dyno.py** (`dynopy` on PyPI, `dyno` project
+  name) and uses `dyno.dynspec` for equation parsing, conformity
+  checking and recipes. During development pixi uses the local checkout
+  at `../dyno.py` as an editable path dependency (with a PYTHONPATH
+  guard so it wins over the locked PyPI dynopy — see §4); `min-deps`
+  pins the published `dynopy==0.1.13`. **dyno.py code is not modified
+  by dolo work.**
 - D2 — equation evaluation/differentiation uses **JAX**. Two stages
   happened: (a) `EquationsEvaluator` walking lark trees at trace time
   ("interpreted"), then (b) expression **emission** (`_emit`): each tree
@@ -43,7 +45,7 @@ Under `src/dolo/compiler/`:
 |---|---|---|
 | `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments, states = transition LHGs, auxiliaries = definitions LHGs, controls = free vars in any group (arbitrage scanned first). |
 | `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. `check_equation_group`/`build_definitions_block` from dynspec do conformity + DAG. |
-| `equation_preprocess.py` | TEMP | Normalizes dolo-only syntax before dynspec parsing: `⟂` / legacy `|` complementarity splitting, `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. To be deleted once dynspec supports it natively. |
+| `equation_preprocess.py` | TEMP | Normalizes the remaining dolo-only timing syntax before dynspec parsing: `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. Complementarity splitting is **gone**: `⟂`/legacy `|` conditions are parsed natively by dynospec (dyno.py `albop/dynspec` branch) and split structurally by `model_v2._complementarity_parts`. To be deleted once legacy-YAML timing syntax stops being needed. |
 | `langspec.py` | TEMP | Choke point around dolang: currently re-exports only `eval_data` (the single dolang utility the new path still needs); gone once that call site is reimplemented. |
 | `model_import.py` | extended | `yaml_import` unchanged; new `yaml_import_v2` and `dyno_import`. Exported from `dolo/__init__.py`. |
 | `model.py`, `factories.py`, `recipes.py/.yaml` … | legacy | untouched, still the default and the fallback. |
@@ -72,8 +74,9 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
 ```
 
 `.dyno` examples: `examples/dyno/rbc_dolo.dyno` (copy of dyno.py's demo);
-`examples/dyno/rbc_dolo_comp.dyno` is a **target-syntax mock** (`⟂`
-complementarities) for the dyno-side grammar work — not yet parseable.
+`examples/dyno/rbc_dolo_comp.dyno` uses the `⟂` complementarity syntax —
+parses with dyno.py's `albop/dynspec` branch (not with released dynopy
+≤0.1.14) and is covered by `test_dyno_comp_import_rbc`.
 
 ## 3. Tests
 
@@ -100,15 +103,17 @@ complementarities) for the dyno-side grammar work — not yet parseable.
   on standalone `controls_lb/controls_ub` groups).
 - vectorized `diff=True` (row-vectorized args) matches legacy `numdiff`
   bit-for-bit (jacobians for every argument but p).
-- `.dyno` import, `@options`/`@domain` handling, and `discretize()` on
-  `.dyno` models.
+- `.dyno` import, `@options`/`@domain` handling, `discretize()` on
+  `.dyno` models, and the `⟂`-complementarity example
+  (`rbc_dolo_comp.dyno`, native dynospec parsing) vs its YAML twin —
+  bounds and residual groups equal.
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
   aliases) + alias still working when the group is absent.
 - `eval_formula` on ModelV2 against the legacy evaluator (timing
   notation + dataframe shifts).
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 54 passed.
+Full suite: `pixi run --environment dev pytest -q` → 55 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
@@ -119,8 +124,14 @@ produce identical results to legacy.
 - `pyproject.toml` added: `dynopy>=0.1.13,<0.2`, `jax>=0.4.38,<0.5`,
   `numba>=0.60.0,<0.70`.
 - `pixi.toml`:
-  - `[pypi-dependencies]`: `dolo` + `dynopy = { path = "../dyno.py",
-    editable = true }` + `jax >=0.4.38,<0.5`.
+  - `[pypi-dependencies]`: `dolo` + `dyno = { path = "../dyno.py",
+    editable = true }` (the local checkout's canonical project name is
+    `dyno`; PyPI publishing name stays `dynopy`) + `jax >=0.4.38,<0.5`.
+  - `[activation.env]`: `PYTHONPATH = "$PIXI_PROJECT_ROOT/../dyno.py/src"`
+    — `dolo` also declares `dynopy` as a PyPI dep, so the lock installs
+    the *published* dynopy whose `dyno/` package dir would shadow the
+    editable branch checkout; PYTHONPATH puts the checkout first.
+    Temporary until the next dynopy release ships the `⟂` grammar.
   - `[feature.min-deps.pypi-dependencies]`: `dynopy ==0.1.13`, `jax ==0.4.38`.
   - conda `[dependencies]`: `rich = "<15"` (the Jupyter/MkDocs stack pins
     conda rich 15 while dynopy needs rich<15).
@@ -128,7 +139,8 @@ produce identical results to legacy.
   win-64; jaxlib dropped macosx_x86_64 wheels in 0.5.0 and the workspace
   still locks osx-64. jaxlib 0.4.38 has wheels for every platform×py312/313.
 - `ci/check_deps.py` now understands `[pypi-dependencies]` (incl.
-  min-deps pypi) and table-valued path entries; verified green.
+  min-deps pypi), table-valued path entries, and the `dynopy`-PyPI-name
+  ↔ `dyno`-project-name alias; verified green.
 
 ## 5. Performance: everything learned
 
@@ -228,15 +240,18 @@ Benchmarks to run/inspect:
    is still open.
 5. **Point-call path**: done via the numpy closure family (§5.3). Optional
    follow-ups: pre-placed device arrays, or the numba backend choice.
-6. **dyno.py-side grammar work** (in a dyno.py branch, later): add `⟂`
-   (+ maybe dolo timing conventions) and unify recipes, then delete
-   `equation_preprocess.py` and `langspec.py`.
-   **Handover ready**: `examples/dyno/rbc_dolo_comp.dyno` (target-syntax
-   mock, does not parse yet) + `docs/dynospec_requirements.md` (exact
-   grammar/API/recipe changes + acceptance criteria); written to hand to
-   a dyno-side agent. Decision recorded there: untimed variables are a
-   **non-goal** for dynospec (a name without `[t]` stays a constant);
-   that normalization remains a dolo-YAML-legacy shim on our side.
+6. **dyno.py-side grammar work**: complementarity support **landed** on
+   dyno.py's `albop/dynspec` branch (`res ⟂ lb <= x[t] <= ub`, legacy
+   `|`, TimeFixer normalization to `complementarity(res, lb, x, ub)`,
+   residual-only evaluation/extraction, `\perp` latex, `inf` constant).
+   dolo consumes it structurally on both import paths
+   (`_complementarity_parts`); `split_complementarity` deleted.
+   Still open: the `arbitrage_bounds` recipe spec in `DTCC_RECIPE`
+   (dolo still hardcodes `_BOUND_SPEC`), optional `x(1)` timing
+   canonicalization utility, `==` alias — see
+   `docs/dynospec_requirements.md`; then delete
+   `equation_preprocess.py` (untimed→`[t]` stays a dolo-YAML-legacy
+   shim, non-goal for dynospec) and `langspec.py`.
 7. **ModelV2 display**: `_repr_html_` added on top of dynspec latex
    (`x[t-1]` → `x_{t-1}`, spelled greek → greek commands, residuals
    column); `__str__` follows the legacy layout (header, equations with
