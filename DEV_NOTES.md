@@ -263,7 +263,8 @@ python3 ci/check_deps.py
 ```
 
 Commit trail on `feat/dyno-importer` (most → least recent):
-29a277f numpy closure family for point/batched calls ·
+f0828bb __str__ polish · 675bfbb langspec trim · 5132e09 vectorized diff ·
+219f9de value_iteration fixes · 29a277f numpy closure family ·
 8a510c8 dynspec-latex _repr_html_ · 434faa0 dynspec eval_formula ·
 f987b3e algo smoke + shape tests, bounds alias fix ·
 b2df39b threading decomposition · 742395d rich example + p-broadcast fix ·
