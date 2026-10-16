@@ -176,6 +176,18 @@ GROUP_LAYOUTS: Dict[str, GroupLayout] = {
         layout=[("exogenous", 0), ("states", 0)],
         assign=False,
     ),
+    # standalone bounds groups (docs use `controls_lb`/`controls_ub`,
+    # e.g. `controls_lb: {i = 0, n = 0}`), same signature as above
+    "controls_lb": GroupLayout(
+        recipe_group="arbitrage_bounds",
+        layout=[("exogenous", 0), ("states", 0)],
+        assign=False,
+    ),
+    "controls_ub": GroupLayout(
+        recipe_group="arbitrage_bounds",
+        layout=[("exogenous", 0), ("states", 0)],
+        assign=False,
+    ),
     # --- additional dtcc groups (dolo/compiler/recipes.yaml) ---------
     "value": GroupLayout(
         recipe_group="value",
@@ -442,9 +454,49 @@ def make_function(
             return jnp.stack(results)
         return jnp.zeros(0)
 
+    # NOTE: the interpreted graph executes *much* faster under vmap (XLA
+    # vectorizes/fuses the ops) than as scalar point evaluations — even with
+    # a batch of size 1 (17µs vs 490µs on rbc's f).  The point path below
+    # therefore runs through a vmap variant where `p` is not mapped.
     point_fn = _with_arity(n_variable_args + 1, _core)
-    point = jax.jit(point_fn)
-    batch = jax.jit(jax.vmap(point_fn))
+    n_total = n_variable_args + 1
+    batch = jax.jit(jax.vmap(point_fn, in_axes=[0] * n_total))
+    batch_pt = jax.jit(jax.vmap(point_fn, in_axes=[0] * n_variable_args + [None]))
+
+    def _point_impl(*a):
+        expanded = [jnp.expand_dims(x, 0) for x in a[:-1]]
+        return batch_pt(*expanded, a[-1])[0]
+
+    point = jax.jit(_with_arity(n_total, _point_impl))
+
+    # --- `diff=True`: one jacrev of the concatenated variable args, cached
+    # by jit (recomputing it per argument group retraces six functions per
+    # call).  Like `point`, it goes through the vmap graph.
+    sizes = [len(variables[g]) for g, _ in arg_groups]
+
+    def _split_and_eval_b(v, vp):
+        parts = []
+        k = 0
+        for sz in sizes:
+            parts.append(v[None, k : k + sz])
+            k += sz
+        return batch_pt(*parts, vp)[0]
+
+    _cum = np.cumsum(sizes)
+
+    if sizes:
+        _jacobian = jax.jit(jax.jacrev(_split_and_eval_b, argnums=0))
+
+        def _diff_all(jargs):
+            vp = jargs[-1]
+            v = jnp.concatenate(jargs[:-1])
+            J = _jacobian(v, vp)
+            return [np.asarray(p) for p in jnp.split(J, _cum[:-1], axis=1)]
+
+    else:
+
+        def _diff_all(jargs):
+            return []
 
     def fn(*args, diff=False):
         jargs = [jnp.asarray(a, dtype=jnp.float64) for a in args]
@@ -475,16 +527,7 @@ def make_function(
                     bjargs.append(jnp.broadcast_to(a, (N,)))
             return np.asarray(batch(*bjargs))
         if diff:
-            values = [np.asarray(point(*jargs))]
-            for i in range(n_variable_args):
-
-                def _jac(u, i=i):
-                    args2 = list(jargs)
-                    args2[i] = u
-                    return point(*args2)
-
-                values.append(np.asarray(jax.jacrev(_jac)(jargs[i])))
-            return values
+            return [np.asarray(point(*jargs)), *_diff_all(jargs)]
         return np.asarray(point(*jargs))
 
     fn.__name__ = name

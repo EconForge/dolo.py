@@ -112,9 +112,9 @@ def _assert_alike(v_old, v_new, name=""):
     finite = np.isfinite(a) & np.isfinite(b)
     if not (np.isnan(a) == np.isnan(b)).all():
         raise AssertionError(f"{name}: NaN positions differ:\n{a}\nvs\n{b}")
-    assert np.allclose(a[finite], b[finite]), (
-        f"{name}: maxdiff {np.abs(a[finite] - b[finite]).max() if finite.any() else 0}"
-    )
+    assert np.allclose(
+        a[finite], b[finite]
+    ), f"{name}: maxdiff {np.abs(a[finite] - b[finite]).max() if finite.any() else 0}"
 
 
 @pytest.mark.parametrize("fname", MODEL_FILES)

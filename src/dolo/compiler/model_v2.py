@@ -479,9 +479,17 @@ class ModelV2:
             out: List[Any] = []
             bounds: Dict[str, List[str]] = {"lb": [], "ub": []}
             for i, line in enumerate(lines):
-                control = (
-                    controls[i] if group == "arbitrage" and i < len(controls) else None
-                )
+                if group in ("controls_lb", "controls_ub"):
+                    # standalone bounds: `i = 0` style lines, keep the rhs
+                    if "=" in line:
+                        line = line.split("=", 1)[1].strip()
+                    control = None
+                else:
+                    control = (
+                        controls[i]
+                        if group == "arbitrage" and i < len(controls)
+                        else None
+                    )
                 residual, lb, ub = _pre.split_complementarity(line, control=control)
                 out.append(_pre.normalize_timing(residual, variable_symbols))
                 if lb is not None:
@@ -658,7 +666,7 @@ class ModelV2:
         if grid_type in ("cartesian", "cartesiangrid"):
             from dolo.numeric.grids import UniformCartesianGrid
 
-            orders = grid_section.get("n")
+            orders = grid_section.get("n") or grid_section.get("orders")
             if orders is None:
                 orders = [20] * len(domain.min)
             return UniformCartesianGrid(min=domain.min, max=domain.max, n=orders)
@@ -720,7 +728,12 @@ class ModelV2:
             )
 
         functions = LoosyDict(
-            equivalences={"equilibrium": "arbitrage", "optimality": "arbitrage"}
+            equivalences={
+                "equilibrium": "arbitrage",
+                "optimality": "arbitrage",
+                "controls_lb": "arbitrage_lb",
+                "controls_ub": "arbitrage_ub",
+            }
         )
         for fname, eqs in trees.items():
             if fname not in functions_v2.GROUP_LAYOUTS:
@@ -762,6 +775,9 @@ class ModelV2:
     def functions(self) -> LoosyDict:
         if self.__functions__ is None:
             self.__functions__ = self._build_functions()
+            # legacy algorithm internals (`egm`) read these attributes
+            self.__original_functions__ = self.__functions__
+            self.__original_gufunctions__ = self.__functions__
         return self.__functions__
 
     @property
