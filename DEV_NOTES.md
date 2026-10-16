@@ -43,8 +43,13 @@ Under `src/dolo/compiler/`:
 
 | file | status | content |
 |---|---|---|
-| `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments, states = transition LHGs, auxiliaries = definitions LHGs, controls = free vars in any group (arbitrage scanned first). |
-| `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. `check_equation_group`/`build_definitions_block` from dynspec do conformity + DAG. |
+| `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments,
+  states = transition LHGs, auxiliaries = definitions LHGs, controls =
+  complementarity-bounded variables (arbitrage first), then free
+  right-hand-side variables of any group; assignment-group targets
+  (value → values, felicity → rewards, …) are classified, not treated
+  as free controls. |
+| `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. Conformity + DAG come from dyno (`check_equation_group`/`build_definitions_block`); the group specs — incl. `arbitrage_bounds` and standalone `controls_lb`/`controls_ub` (full `x[t] = bound` equality trees, assignment semantics) — are read from `dyno.dynspec.recipe.DTCC_RECIPE` (dolo's `_BOUND_SPEC` deleted). Complementarity-bearing `arbitrage` blocks are conformity-checked by dyno's complementarity rules (positional + bounds). |
 | `equation_preprocess.py` | TEMP | Normalizes the remaining dolo-only timing syntax before dynspec parsing: `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. Complementarity splitting is **gone**: `⟂`/legacy `|` conditions are parsed natively by dynospec (dyno.py `albop/dynspec` branch) and split structurally by `model_v2._complementarity_parts`. To be deleted once legacy-YAML timing syntax stops being needed. |
 | `langspec.py` | TEMP | Choke point around dolang: currently re-exports only `eval_data` (the single dolang utility the new path still needs); gone once that call site is reimplemented. |
 | `model_import.py` | extended | `yaml_import` unchanged; new `yaml_import_v2` and `dyno_import`. Exported from `dolo/__init__.py`. |
@@ -106,14 +111,18 @@ parses with dyno.py's `albop/dynspec` branch (not with released dynopy
 - `.dyno` import, `@options`/`@domain` handling, `discretize()` on
   `.dyno` models, and the `⟂`-complementarity example
   (`rbc_dolo_comp.dyno`, native dynospec parsing) vs its YAML twin —
-  bounds and residual groups equal.
+  bounds and residual groups equal; `[controls_lb]`/`[controls_ub]`
+  tagged sections in `.dyno` files (dyno recipe specs drive conformity
+  and compilation).
+- complementarity conformity: the i-th complementarity must bound the
+  i-th control (`test_complementarity_positional_check`, dyno message).
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
   aliases) + alias still working when the group is absent.
 - `eval_formula` on ModelV2 against the legacy evaluator (timing
   notation + dataframe shifts).
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 55 passed.
+Full suite: `pixi run --environment dev pytest -q` → 57 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
@@ -240,15 +249,16 @@ Benchmarks to run/inspect:
    is still open.
 5. **Point-call path**: done via the numpy closure family (§5.3). Optional
    follow-ups: pre-placed device arrays, or the numba backend choice.
-6. **dyno.py-side grammar work**: complementarity support **landed** on
-   dyno.py's `albop/dynspec` branch (`res ⟂ lb <= x[t] <= ub`, legacy
-   `|`, TimeFixer normalization to `complementarity(res, lb, x, ub)`,
-   residual-only evaluation/extraction, `\perp` latex, `inf` constant).
-   dolo consumes it structurally on both import paths
-   (`_complementarity_parts`); `split_complementarity` deleted.
-   Still open: the `arbitrage_bounds` recipe spec in `DTCC_RECIPE`
-   (dolo still hardcodes `_BOUND_SPEC`), optional `x(1)` timing
-   canonicalization utility, `==` alias — see
+6. **dyno.py-side grammar work**: landed on dyno.py's `albop/dynspec`
+   branch — `⟂`/`|` parsing + `TimeFixer` normalization
+   (`1874e94`), **recipes.yaml / check_group / check_model +
+   complementarity conformity** (`e3596bc`: `arbitrage_bounds`,
+   `controls_lb`, `controls_ub` specs and the positional rule).
+   dolo consumes all of it: group specs come from `DTCC_RECIPE`
+   (`_BOUND_SPEC` deleted), complementarity conformity drives compile
+   errors, `extract_complementarity`/`extract_rhs_variables` power
+   `.dyno` inference. Still open: optional `x(1)` timing
+   canonicalization utility + `==` alias — see
    `docs/dynospec_requirements.md`; then delete
    `equation_preprocess.py` (untimed→`[t]` stays a dolo-YAML-legacy
    shim, non-goal for dynospec) and `langspec.py`.

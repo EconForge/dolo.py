@@ -46,7 +46,11 @@ from lark.visitors import Interpreter
 
 from dyno.dynspec.grammar import parser, str_expression
 from dyno.dynspec.analyze import FormulaEvaluator
-from dyno.dynspec.recipe import extract_lhs_variable
+from dyno.dynspec.recipe import (
+    extract_lhs_variable,
+    extract_complementarity,
+    extract_rhs_variables,
+)
 
 from dolo.compiler import equation_preprocess as _pre
 from dolo.compiler import functions_v2
@@ -412,12 +416,41 @@ class ModelV2:
             for eq in grouped["definitions"]
             if (lhs := extract_lhs_variable(eq)) is not None
         ]
-        reserved = (
-            set(parameters) | set(exogenous_names) | set(states) | set(auxiliaries)
-        )
+        # variables defined by assignment groups (transition -> states,
+        # definitions -> auxiliaries, value -> values, felicity -> rewards …)
+        # are not free variables: reserve their left-hand sides so the control
+        # scan cannot pick them up.  Assignment groups that *define controls*
+        # (standalone bounds, direct responses) seed the controls list instead.
+        defined: Dict[str, List[str]] = {}
         controls: List[str] = []
-        # controls = free variables appearing in any equation group, in the
-        # order they show up in the arbitrage block first, then the rest.
+        for gname, layout in functions_v2.GROUP_LAYOUTS.items():
+            if not (layout.assign and layout.output_group):
+                continue
+            for eq in grouped.get(gname, []):
+                lhs = extract_lhs_variable(eq)
+                if lhs is None:
+                    continue
+                if layout.output_group == "controls":
+                    if lhs not in controls:
+                        controls.append(lhs)
+                else:
+                    defined.setdefault(layout.output_group, []).append(lhs)
+
+        reserved = (
+            set(parameters)
+            | set(exogenous_names)
+            | set(states)
+            | set(auxiliaries)
+            | {n for names in defined.values() for n in names}
+        )
+        # controls = the variables bounded by complementarities (they may not
+        # appear in the residual at all: `0 ⟂ 0 <= c[t] <= 1`), then the free
+        # variables of any equation group — RHS occurrences only, in the order
+        # they show up in the arbitrage block first.
+        for eq in grouped.get("arbitrage", []):
+            if (comp := extract_complementarity(eq)) is not None:
+                if comp.variable not in controls:
+                    controls.append(comp.variable)
         scan_order = (
             ["arbitrage"]
             + [g for g in grouped if g not in ("arbitrage", "definitions")]
@@ -425,7 +458,7 @@ class ModelV2:
         )
         for group in scan_order:
             for eq in grouped[group]:
-                for name in extract_variables_in(eq):
+                for name in extract_rhs_variables(eq):
                     if name not in reserved and name not in controls:
                         controls.append(name)
 
@@ -437,6 +470,9 @@ class ModelV2:
         }
         if auxiliaries:
             symbols["auxiliaries"] = auxiliaries
+        for group_name, names in defined.items():
+            if group_name not in symbols:
+                symbols[group_name] = names
 
         equations_text: Dict[str, List[str]] = {}
         bounds: Dict[str, List[Any]] = {}
@@ -447,24 +483,16 @@ class ModelV2:
             lbs: List[Any] = []
             ubs: List[Any] = []
             any_bound = False
-            for i, eq in enumerate(eqs):
-                comp = _complementarity_parts(eq)
+            for eq in eqs:
+                comp = extract_complementarity(eq)
                 if comp is None:
                     texts.append(_tree_text(eq))
                     lbs.append(None)
                     ubs.append(None)
                     continue
-                residual, lb, xname, ub = comp
-                if group == "arbitrage" and controls and i < len(controls):
-                    if xname != controls[i]:
-                        raise Exception(
-                            f"Complementarity condition in `[arbitrage]` "
-                            f"equation {i + 1} is incorrect. Expected "
-                            f"'{controls[i]}' instead of '{xname}'."
-                        )
-                texts.append(_tree_text(residual))
-                lbs.append(lb)
-                ubs.append(ub)
+                texts.append(_tree_text(eq))
+                lbs.append(comp.lower)
+                ubs.append(comp.upper)
                 any_bound = True
             equations_text[group] = texts
             if any_bound:
@@ -529,50 +557,37 @@ class ModelV2:
         """Parse raw equation strings into dynspec trees (with normalization).
 
         Complementarities (`res ⟂ lb <= x[t] <= ub`) are parsed natively by
-        dynospec: the residual stays the equation, the bounds become the
-        `*_lb` / `*_ub` bound-tree groups.  The legacy dolo timing
-        conveniences (untimed symbols, `x(1)`, `==`) are still normalized at
-        text level — they are not part of dynospec.
+        dynospec and kept as equations: conformity (positional rule, bounds
+        groups) is checked by `dyno.dynspec.recipe.check_equation_group`
+        against the DTCC recipe; the bounds still become the `*_lb` / `*_ub`
+        bound-tree groups.  The legacy dolo timing conveniences (untimed
+        symbols, `x(1)`, `==`) are normalized at text level first — they are
+        not part of dynospec.
         """
         trees: Dict[str, List[Any]] = {}
         # Variable (non-parameter) symbols are the only names that get timed.
         variable_symbols = {
             n for g, names in self.symbols.items() if g != "parameters" for n in names
         }
-        controls = list(self.symbols["controls"])
 
         for group, lines in self.__equations_text__.items():
-            out = []
-            for line in lines:
-                if group in ("controls_lb", "controls_ub"):
-                    # standalone bounds: `c = 0.1` style lines, keep the rhs
-                    if "=" in line:
-                        line = line.split("=", 1)[1].strip()
-                out.append(_pre.normalize_timing(line, variable_symbols))
+            out = [_pre.normalize_timing(line, variable_symbols) for line in lines]
 
             bound_lb: List[Any] = []
             bound_ub: List[Any] = []
             group_trees: List[Any] = []
             any_bound = False
-            for i, t in enumerate(_parse_block("\n".join(out))):
-                comp = _complementarity_parts(t)
+            for t in _parse_block("\n".join(out)):
+                comp = extract_complementarity(t)
                 if comp is None:
                     group_trees.append(t)
                     bound_lb.append(None)
                     bound_ub.append(None)
                     continue
-                residual, lb, xname, ub = comp
-                if group == "arbitrage" and controls and i < len(controls):
-                    if xname != controls[i]:
-                        raise Exception(
-                            f"Complementarity condition in `{group}` equation "
-                            f"{i + 1} is incorrect. Expected '{controls[i]}' "
-                            f"instead of '{xname}'."
-                        )
                 any_bound = True
-                group_trees.append(residual)
-                bound_lb.append(lb)
-                bound_ub.append(ub)
+                group_trees.append(t)
+                bound_lb.append(comp.lower)
+                bound_ub.append(comp.upper)
 
             trees[group] = group_trees
             if any_bound:
@@ -1041,12 +1056,6 @@ class ModelV2:
 # ---------------------------------------------------------------------------
 
 
-def extract_variables_in(tree) -> set:
-    from dyno.dynspec.recipe import extract_variables_from_equation
-
-    return set(extract_variables_from_equation(tree).keys())
-
-
 def _name_of(node) -> Optional[str]:
     if node is None:
         return None
@@ -1102,21 +1111,6 @@ def _parse_block(text: str) -> List[Any]:
         return []
     tree = parser.parse(text, start="equation_block")
     return list(tree.children)
-
-
-def _complementarity_parts(tree) -> Optional[tuple[Any, Any, str, Any]]:
-    """Split a dynspec `complementarity` tree into its parts.
-
-    Returns ``(residual, lb, middle_name, ub)``, or ``None`` for plain
-    equations.  The dynospec grammar normalizes every complementarity to
-    ``complementarity(residual, lb, x, ub)`` with explicit `-inf`/`inf`
-    bounds (`⟂` and legacy `|` separators).
-    """
-    if getattr(tree, "data", None) != "complementarity":
-        return None
-    res, lb, x, ub = tree.children
-    name = str(x.children[0].children[0])
-    return res, lb, name, ub
 
 
 def _inf_tree():

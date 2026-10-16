@@ -13,23 +13,29 @@ syntax described below. Once implemented, that file must load through
 
 ## Status (2026-10-16)
 
-Implemented on dyno.py `albop/dynspec` (commit `1874e94`): §2.1 grammar
-(`complementarity` rule, `⟂`/`|`, TimeFixer normalization to
-`complementarity(residual, lb, x, ub)` with explicit `-inf`/`inf`),
-residual-only evaluation / `extract_variables_from_equation`, `\perp`
-latex, built-in `inf`, example file + tests. **dolo now consumes the
-structure** (`model_v2._complementarity_parts`) on both the `.dyno` and
-YAML paths; its text-level `split_complementarity` is deleted, and
-`examples/dyno/rbc_dolo_comp.dyno` loads as a real test
-(`test_dyno_comp_import_rbc`, bounds equal to the YAML twin).
+Implemented on dyno.py `albop/dynspec`:
 
-Still open on the dyno side:
-- §4 — the `arbitrage_bounds` group spec in `DTCC_RECIPE` (dolo still
-  hardcodes `_BOUND_SPEC`),
-- §2.3 — optional `x(1)` timing canonicalization utility + `==` alias,
-- §2.2 — verify tagged `[controls_lb]`/`[controls_ub]` blocks pass
-  through `DynoFile` (they already parse as equalities; dolo classifies
-  by tag).
+- `1874e94` — §2.1 grammar (`complementarity` rule, `⟂`/`|`, TimeFixer
+  normalization to `complementarity(residual, lb, x, ub)` with explicit
+  `-inf`/`inf`), residual-only evaluation /
+  `extract_variables_from_equation`, `\perp` latex, built-in `inf`,
+  example file + tests.
+- `e3596bc` — **§4 recipes**: YAML recipe loading, `check_group` /
+  `check_model`, complementarity conformity (i-th complementarity
+  bounds the i-th control; bounds restricted to the spec), bundled
+  `recipes.yaml` with `arbitrage_bounds`, `controls_lb`/`controls_ub`
+  groups, and `extract_complementarity`/`extract_rhs_variables`.
+
+**dolo consumes all of it**: group specs come from `DTCC_RECIPE` (its
+`_BOUND_SPEC` is deleted), complementarity conformity produces the
+compile-time errors, `extract_complementarity`/`extract_rhs_variables`
+drive `.dyno` symbol inference, and both are committed tests
+(`test_dyno_comp_import_rbc`, `test_dyno_standalone_bounds_sections`,
+`test_complementarity_positional_check`).
+
+Still open:
+- §2.3 — optional `x(1)` timing canonicalization utility + `==` alias
+  (untimed→`[t]` is a confirmed non-goal).
 
 ---
 

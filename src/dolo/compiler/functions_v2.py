@@ -131,21 +131,6 @@ class GroupLayout:
         self.output_group = output_group
 
 
-# Bounds: residual-free expressions over (m, s) and parameters, one per
-# control variable, in equation order.
-_BOUND_SPEC = EquationGroupSpec(
-    name="arbitrage_bounds",
-    allowed=[
-        VariableSpec("exogenous", 0),
-        VariableSpec("states", 0),
-        VariableSpec("parameters", 0),
-    ],
-    target=None,
-    recursive=False,
-    n_equations="controls",
-)
-
-
 def _group_spec(
     name: str,
     allowed: list[tuple[str, int]],
@@ -210,16 +195,20 @@ GROUP_LAYOUTS: Dict[str, GroupLayout] = {
         assign=False,
     ),
     # standalone bounds groups (docs use `controls_lb`/`controls_ub`,
-    # e.g. `controls_lb: {i = 0, n = 0}`), same signature as above
+    # e.g. `controls_lb: {i = 0, n = 0}`): dyno's recipe treats each line
+    # as `x[t] = <bound>` defining one control, so they compile with
+    # assignment semantics; same (m, s, p) signature as arbitrage bounds
     "controls_lb": GroupLayout(
-        recipe_group="arbitrage_bounds",
+        recipe_group="controls_lb",
         layout=[("exogenous", 0), ("states", 0)],
-        assign=False,
+        assign=True,
+        output_group="controls",
     ),
     "controls_ub": GroupLayout(
-        recipe_group="arbitrage_bounds",
+        recipe_group="controls_ub",
         layout=[("exogenous", 0), ("states", 0)],
-        assign=False,
+        assign=True,
+        output_group="controls",
     ),
     # --- additional dtcc groups (dolo/compiler/recipes.yaml) ---------
     "value": GroupLayout(
@@ -350,9 +339,15 @@ _EXTRA_GROUP_SPECS: Dict[str, EquationGroupSpec] = {
 
 _SPECS: Dict[str, EquationGroupSpec] = {
     name: DTCC_RECIPE.get_group_spec(name)
-    for name in ("definitions", "transition", "arbitrage")
+    for name in (
+        "definitions",
+        "transition",
+        "arbitrage",
+        "arbitrage_bounds",
+        "controls_lb",
+        "controls_ub",
+    )
 }
-_SPECS["arbitrage_bounds"] = _BOUND_SPEC
 _SPECS.update(_EXTRA_GROUP_SPECS)
 
 

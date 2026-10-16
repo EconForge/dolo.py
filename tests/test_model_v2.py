@@ -297,6 +297,70 @@ def test_dyno_comp_import_rbc():
         assert np.allclose(vd, vy), name
 
 
+DYNO_STANDALONE_BOUNDS = """
+@name: standalone_bounds
+beta <- 0.95
+alpha <- 0.3
+delta <- 0.1
+c[~] <- 0.3
+k[~] <- 1.5
+e[t] <- N(0, 0.01)
+[transition] :: { k[t] = exp(e[t])*((1-delta)*k[t-1] + k[t-1]^alpha - c[t-1]) }
+[felicity] :: { u[t] = log(c[t]) }
+[value] :: { V[t] = log(c[t]) + beta*V[t+1] }
+[controls_lb] :: { c[t] = 0.001 }
+[controls_ub] :: { c[t] = (1-delta)*k[t] + k[t]^alpha }
+"""
+
+
+def test_dyno_standalone_bounds_sections():
+    """`.dyno` models with `[controls_lb]`/`[controls_ub]` tagged sections:
+    symbol inference classifies the bounded variables as controls (and
+    `value`/`felicity` targets as values/rewards), and the bound
+    functions compile against dyno's recipe specs."""
+    model = ModelV2.from_dyno(DYNO_STANDALONE_BOUNDS, filename="standalone_bounds")
+
+    assert model.symbols["controls"] == ["c"]
+    assert model.symbols["values"] == ["V"]
+    assert model.symbols["rewards"] == ["u"]
+
+    p = model.calibration["parameters"]
+    e = model.calibration["exogenous"]
+    s = model.calibration["states"]
+    lb, ub = model.x_bounds
+    assert np.allclose(lb(e, s, p), [0.001])
+    assert np.allclose(ub(e, s, p), [0.9 * s[0] + s[0] ** 0.3])
+
+
+def test_complementarity_positional_check():
+    """The i-th complementarity must bound the i-th control (checked by
+    dyno's conformity when the controls order is known from `symbols:`)."""
+    bad_yaml = """
+name: bad_comp
+symbols:
+  exogenous: [e]
+  states: [k]
+  controls: [n, c]
+  parameters: [beta]
+equations:
+  transition:
+    - k[t] = k[t-1] - c[t-1] + n[t-1]
+  arbitrage: |
+    1 - beta*log(n[t]) ⟂ 0 <= c[t] <= 1
+    k[t] - c[t] ⟂ 0 <= n[t] <= 1
+calibration:
+  beta: 0.95
+  n: 0.5
+  c: 0.5
+  k: 1.0
+  e: 0.0
+exogenous: !Normal
+  Σ: [[0.01]]
+"""
+    with pytest.raises(ValueError, match="expected the complementarity to bound 'n'"):
+        ModelV2.from_yaml(yaml_compose(bad_yaml), filename="bad_comp")
+
+
 def test_import_entry_points():
     model = dolo.yaml_import_v2("examples/models/rbc.yaml")
     assert "arbitrage" in model.functions
