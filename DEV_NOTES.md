@@ -106,7 +106,7 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   notation + dataframe shifts).
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 53 passed.
+Full suite: `pixi run --environment dev pytest -q` → 54 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
@@ -231,7 +231,9 @@ Benchmarks to run/inspect:
    `equation_preprocess.py` and `langspec.py`.
 7. **ModelV2 display**: `_repr_html_` added on top of dynspec latex
    (`x[t-1]` → `x_{t-1}`, spelled greek → greek commands, residuals
-   column); no dolang. `__str__` remains basic — optional polish.
+   column); `__str__` follows the legacy layout (header, equations with
+   `N : residual : equation` rows, definitions block, red non-zero
+   residuals); no dolang.
 8. `eval_formula` on ModelV2 moved to the dynspec evaluator
    (`dyno.dynspec.FormulaEvaluator`): `k(0)`-style timing rewritten by
    `equation_preprocess.rewrite_timing_calls`, timed names resolved as

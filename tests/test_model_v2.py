@@ -550,6 +550,19 @@ def test_repr_html_uses_dynspec_latex():
     assert "arbitrage_lb" not in html
 
 
+def test_str_display():
+    new = _load_v2("examples/models/rbc.yaml")
+    s = str(new)
+    assert s.startswith("Model:\n------")
+    for line in ("Equations:", "arbitrage", "transition", "definitions", "y ="):
+        assert line in s
+    # residual column format: "N : value : equation"
+    i = s.index("arbitrage\n")
+    row = s[i:].splitlines()[1]
+    assert row.strip().startswith("1 :")
+    assert " : chi" in row
+
+
 def test_standalone_bounds_groups():
     m = ModelV2.from_yaml(yaml_compose(GROWTH_MODEL), filename="growth_vi")
     from dolo.algos.value_iteration import value_iteration

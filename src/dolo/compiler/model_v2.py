@@ -866,30 +866,40 @@ class ModelV2:
     def __str__(self):
         from dolo.misc.termcolor import colored
 
-        ss = (
+        s = (
             f'Model:\n------\nname: "{self.name}"\n'
             f'type: "{self.model_type}"\nfile: "{self.filename}"\n'
         )
-        ss += "\nEquations:\n----------\n\n"
+        ss = "\nEquations:\n----------\n\n"
         res = self.residuals() if self.functions else {}
-        res = {**res, "definitions": None}
-        for group, eqs in self.equations.items():
+
+        equations = self.equations.copy()
+        if self.definitions:
+            equations["definitions"] = [
+                f"{lhs} = {rhs}" for lhs, rhs in self.definitions.items()
+            ]
+        for group, eqs in equations.items():
             if group in ("arbitrage_lb", "arbitrage_ub"):
-                continue
+                continue  # bounds are shown embedded in the arbitrage lines
+            vals_group = res.get(group)
             ss += f"{group}\n"
             for i, eq in enumerate(eqs):
-                val = None
-                if group in res and res[group] is not None:
-                    val = res[group][i]
+                val = (
+                    vals_group[i]
+                    if vals_group is not None and i < len(vals_group)
+                    else None
+                )
                 if val is None:
-                    ss += f" {i+1:2} : {eq!s} : {0.0}\n"
+                    ss += f" {i+1:2} : {eq}\n"
                 else:
-                    val_str = f"{val:.4f}"
+                    if abs(val) < 1e-8:
+                        val = 0.0
+                    vals = f"{val:.4f}"
                     if abs(val) > 1e-8:
-                        val_str = colored(val_str, "red")
-                    ss += f" {i+1:2} : {val_str} : {eq!s}\n"
+                        vals = colored(vals, "red")
+                    ss += f" {i+1:2} : {vals} : {eq}\n"
             ss += "\n"
-        return ss
+        return s + ss
 
     def __repr__(self):
         return self.__str__()
