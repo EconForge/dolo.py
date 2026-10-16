@@ -112,6 +112,34 @@ _BOUND_SPEC = EquationGroupSpec(
     n_equations="controls",
 )
 
+
+def _group_spec(
+    name: str,
+    allowed: list[tuple[str, int]],
+    target: str | None,
+    recursive: bool,
+) -> EquationGroupSpec:
+    """Build a dolo-style group spec (translating `dolo/compiler/recipes.yaml`).
+
+    The target variable group is added to the allowed shifts at 0 (its
+    left-hand-side occurrence is collected as a variable too), and
+    auxiliaries are allowed at shifts 0/1 like the legacy importer did.
+    """
+    varspecs = [VariableSpec(g, s) for g, s in allowed]
+    if target is not None:
+        varspecs.append(VariableSpec(target, 0))
+    varspecs.extend([VariableSpec("auxiliaries", 0), VariableSpec("auxiliaries", 1)])
+    varspecs.append(VariableSpec("parameters", 0))
+    return EquationGroupSpec(
+        name=name,
+        allowed=varspecs,
+        target=target,
+        recursive=recursive,
+        n_equations=None,
+        optional=True,
+    )
+
+
 GROUP_LAYOUTS: Dict[str, GroupLayout] = {
     "transition": GroupLayout(
         recipe_group="transition",
@@ -148,6 +176,131 @@ GROUP_LAYOUTS: Dict[str, GroupLayout] = {
         layout=[("exogenous", 0), ("states", 0)],
         assign=False,
     ),
+    # --- additional dtcc groups (dolo/compiler/recipes.yaml) ---------
+    "value": GroupLayout(
+        recipe_group="value",
+        layout=[
+            ("exogenous", 0),
+            ("states", 0),
+            ("controls", 0),
+            ("values", 0),
+            ("exogenous", 1),
+            ("states", 1),
+            ("controls", 1),
+            ("values", 1),
+        ],
+        assign=True,
+        with_definitions=True,
+        output_group="values",
+    ),
+    "felicity": GroupLayout(
+        recipe_group="felicity",
+        layout=[("exogenous", 0), ("states", 0), ("controls", 0)],
+        assign=True,
+        with_definitions=True,
+        output_group="rewards",
+    ),
+    "expectation": GroupLayout(
+        recipe_group="expectation",
+        layout=[("exogenous", 1), ("states", 1), ("controls", 1)],
+        assign=True,
+        with_definitions=True,
+        output_group="expectations",
+    ),
+    "half_transition": GroupLayout(
+        recipe_group="half_transition",
+        layout=[("exogenous", -1), ("poststates", -1), ("exogenous", 0)],
+        assign=True,
+        with_definitions=True,
+        output_group="states",
+    ),
+    "direct_response": GroupLayout(
+        recipe_group="direct_response",
+        layout=[("exogenous", 0), ("states", 0), ("expectations", 0)],
+        assign=True,
+        with_definitions=True,
+        output_group="controls",
+    ),
+    "direct_response_egm": GroupLayout(
+        recipe_group="direct_response_egm",
+        layout=[("exogenous", 0), ("poststates", 0), ("expectations", 0)],
+        assign=True,
+        with_definitions=True,
+        output_group="controls",
+    ),
+    "reverse_state": GroupLayout(
+        recipe_group="reverse_state",
+        layout=[("exogenous", 0), ("poststates", 0), ("controls", 0)],
+        assign=True,
+        with_definitions=True,
+        output_group="states",
+    ),
+    "arbitrage_exp": GroupLayout(
+        recipe_group="arbitrage_exp",
+        layout=[("states", 0), ("controls", 0)],
+        assign=False,
+        with_definitions=True,
+    ),
+}
+
+_EXTRA_GROUP_SPECS: Dict[str, EquationGroupSpec] = {
+    "value": _group_spec(
+        "value",
+        [
+            ("exogenous", 0),
+            ("states", 0),
+            ("controls", 0),
+            ("values", 0),
+            ("exogenous", 1),
+            ("states", 1),
+            ("controls", 1),
+            ("values", 1),
+        ],
+        target="values",
+        recursive=False,
+    ),
+    "felicity": _group_spec(
+        "felicity",
+        [("exogenous", 0), ("states", 0), ("controls", 0)],
+        target="rewards",
+        recursive=True,
+    ),
+    "expectation": _group_spec(
+        "expectation",
+        [("exogenous", 1), ("states", 1), ("controls", 1)],
+        target="expectations",
+        recursive=False,
+    ),
+    "half_transition": _group_spec(
+        "half_transition",
+        [("exogenous", -1), ("poststates", -1), ("exogenous", 0)],
+        target="states",
+        recursive=False,
+    ),
+    "direct_response": _group_spec(
+        "direct_response",
+        [("exogenous", 0), ("states", 0), ("expectations", 0)],
+        target="controls",
+        recursive=True,
+    ),
+    "direct_response_egm": _group_spec(
+        "direct_response_egm",
+        [("exogenous", 0), ("poststates", 0), ("expectations", 0)],
+        target="controls",
+        recursive=True,
+    ),
+    "reverse_state": _group_spec(
+        "reverse_state",
+        [("exogenous", 0), ("poststates", 0), ("controls", 0)],
+        target="states",
+        recursive=True,
+    ),
+    "arbitrage_exp": _group_spec(
+        "arbitrage_exp",
+        [("states", 0), ("controls", 0)],
+        target=None,
+        recursive=False,
+    ),
 }
 
 _SPECS: Dict[str, EquationGroupSpec] = {
@@ -155,6 +308,7 @@ _SPECS: Dict[str, EquationGroupSpec] = {
     for name in ("definitions", "transition", "arbitrage")
 }
 _SPECS["arbitrage_bounds"] = _BOUND_SPEC
+_SPECS.update(_EXTRA_GROUP_SPECS)
 
 
 def _new_evaluator(context: Dict[str, Any], assign: bool) -> EquationsEvaluator:
@@ -224,6 +378,11 @@ def _with_arity(n_args: int, core: Callable) -> Callable:
 
         def f(a0, a1, a2, a3, a4, a5, a6):
             return core(a0, a1, a2, a3, a4, a5, a6)
+
+    elif n_args == 9:
+
+        def f(a0, a1, a2, a3, a4, a5, a6, a7, a8):
+            return core(a0, a1, a2, a3, a4, a5, a6, a7, a8)
 
     else:
         raise NotImplementedError(f"No explicit signature for {n_args} args.")

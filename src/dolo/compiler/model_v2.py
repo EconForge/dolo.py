@@ -353,10 +353,10 @@ class ModelV2:
         context = dynofile.context
 
         # --- classify equations by their block tags --------------------
+        # Equation types are denoted by tags: [definitions]/[transition]/
+        # [arbitrage]/[value]/...
         grouped: Dict[str, List[Any]] = {
-            "definitions": [],
-            "transition": [],
-            "arbitrage": [],
+            name: [] for name in list(functions_v2.GROUP_LAYOUTS) + ["definitions"]
         }
         for eq in dynofile.equations:
             meta = getattr(eq.meta, "statement_metadata", {}) or {}
@@ -365,6 +365,8 @@ class ModelV2:
                 if group in tags:
                     grouped[group].append(eq)
                     break
+            # untagged/unknown-tagged equations are not dolo equation groups
+            # and are ignored
 
         # --- infer symbol groups ---------------------------------------
         parameters = list(context["constants"].keys())
@@ -389,7 +391,12 @@ class ModelV2:
         controls: List[str] = []
         # controls = free variables appearing in any equation group, in the
         # order they show up in the arbitrage block first, then the rest.
-        for group in ("arbitrage", "transition", "definitions"):
+        scan_order = (
+            ["arbitrage"]
+            + [g for g in grouped if g not in ("arbitrage", "definitions")]
+            + ["definitions"]
+        )
+        for group in scan_order:
             for eq in grouped[group]:
                 for name in extract_variables_in(eq):
                     if name not in reserved and name not in controls:
@@ -406,7 +413,7 @@ class ModelV2:
 
         equations_text: Dict[str, List[str]] = {}
         for group, eqs in grouped.items():
-            if group == "definitions":
+            if group == "definitions" or len(eqs) == 0:
                 continue
             equations_text[group] = [_tree_text(eq) for eq in eqs]
 
@@ -419,12 +426,19 @@ class ModelV2:
         # --- calibration from constants + steady states ----------------
         calibration = dict(context["constants"])
         steady = context.get("steady_states", {})
-        for group in ("exogenous", "states", "controls", "auxiliaries"):
-            for name in symbols.get(group, []):
-                default = DEFAULT_INITIAL_VALUES.get(group, np.nan)
+        for group, names in symbols.items():
+            if group == "parameters":
+                continue
+            default = DEFAULT_INITIAL_VALUES.get(group, np.nan)
+            for name in names:
                 calibration[name] = steady.get(name, default)
 
         exogenous = _convert_processes(context.get("processes", {}))
+
+        # @options: / @domain: one-liners are exposed as plain dicts
+        # through dyno's metadata machinery.
+        options = dynofile.metadata.get("options") or {}
+        domain = dynofile.metadata.get("domain")
 
         model = cls(
             symbols=symbols,
@@ -432,8 +446,8 @@ class ModelV2:
             definitions=definitions,
             calibration=calibration,
             exogenous=exogenous,
-            domain=None,
-            options={},
+            domain=domain,
+            options=options,
             name=dynofile.metadata.get("name"),
             filename=filename,
             check=check,
@@ -446,16 +460,11 @@ class ModelV2:
     # ------------------------------------------------------------------
 
     def _dynspec_variables(self) -> Dict[str, List[str]]:
-        variables = {
-            "exogenous": self.symbols["exogenous"],
-            "states": self.symbols["states"],
-            "controls": self.symbols["controls"],
-            "parameters": self.symbols["parameters"],
+        return {
+            group: list(names)
+            for group, names in self.symbols.items()
+            if group != "parameters"
         }
-        aux = self.symbols.get("auxiliaries")
-        if aux:
-            variables["auxiliaries"] = list(aux)
-        return variables
 
     def _parse_group_trees(self) -> Dict[str, List[Any]]:
         """Parse raw equation strings into dynspec trees (with normalization)."""
@@ -554,7 +563,10 @@ class ModelV2:
     def options(self) -> Dict[str, Any]:
         if self.__options__ is None:
             node = self.__options_node__
-            self.__options__ = _node_to_native(node) if node is not None else {}
+            if isinstance(node, dict):
+                self.__options__ = node
+            else:
+                self.__options__ = _node_to_native(node) if node is not None else {}
         return self.__options__
 
     # ------------------------------------------------------------------
@@ -710,13 +722,22 @@ class ModelV2:
         functions = LoosyDict(
             equivalences={"equilibrium": "arbitrage", "optimality": "arbitrage"}
         )
-        for fname in ("transition", "arbitrage"):
+        for fname, eqs in trees.items():
+            if fname not in functions_v2.GROUP_LAYOUTS:
+                raise NotImplementedError(
+                    f"Equation group `{fname}` is not supported by ModelV2 yet."
+                )
+            layout = functions_v2.GROUP_LAYOUTS[fname]
+            if fname == "arbitrage" or layout.with_definitions:
+                defs = self.__defs_block__
+            else:
+                defs = None
             functions[fname] = functions_v2.compile_group(
                 name=fname,
-                equations=trees[fname],
+                equations=eqs,
                 variables=variables,
                 parameters=parameters,
-                definitions_block=self.__defs_block__,
+                definitions_block=defs,
             )
         if definitions_trees:
             functions["auxiliary"] = functions_v2.compile_group(
