@@ -1,17 +1,42 @@
+# Python
 *.pyc
-*.mypy_cache*
-*__pycache__
+**/__pycache__/
 *.ipynb_checkpoints*
-doc/*
-*pickle
-*whl
-*tar.gz
+.mypy_cache/
+.mypy*
+.pytest_cache/
+.coverage
+coverage.xml
+
+# pixi
+.pixi/
+
+# builds and distributions
+*.whl
+*.tar.gz
+*.conda
+dist/
+build/
 PKG-INFO
-*.txt
-site/*
+*.pickle
+
+# poetry leftovers
 poetry.lock
+.venv/
+
+# docs
+site/
+doc/*
+
+# generated model outputs (root level only; the example data in examples/ is tracked)
+/models
+/models_
+/models_with_errors
+/notebooks
+
+# misc legacy
+*.txt
+setup.py
 client_id
 pkgs/cache
 pkgs/urls
-setup.py
-.venv/*

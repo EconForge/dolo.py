@@ -1,7 +1,16 @@
+image: gitpod/workspace-full
+
 tasks:
-  - init: pip install poetry
-    command: poetry install
+  - name: install pixi and the dev environment
+    init: |
+      curl -fsSL https://pixi.sh/install.sh | bash
+      echo 'export PATH="$HOME/.pixi/bin:$PATH"' >> ~/.bashrc
+    command: |
+      export PATH="$HOME/.pixi/bin:$PATH"
+      pixi install -e dev
 
 vscode:
   extensions:
-    - albop.dolo-language@0.0.1:3kIHCMgRrQLdEp4cLmH24w==
+    - ms-python.python
+    - jjjermiah.pixi-vscode
+    - albop.dolo-language

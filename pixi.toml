@@ -1,0 +1,129 @@
+[workspace]
+authors = ["Pablo Winant <pablo.winant@gmail.com>"]
+description = "Economic Modeling in Python"
+channels = ["https://prefix.dev/econforge", "conda-forge"]
+
+preview = ["pixi-build"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+# pyproject.toml is the single source of truth for the package name, version,
+# Python floor (`requires-python`) and runtime dependencies: hatchling builds
+# the wheel from it, and pixi-build-python reads it to build the conda package
+# (so `[package]` declares neither a version nor run-dependencies). The copies
+# of the runtime dependencies in `[dependencies]` and in the `min-deps` feature
+# below are checked against it by `ci/check_deps.py` (`pixi run check-deps`).
+[package]
+name = "dolo"
+
+[package.build]
+backend = { name = "pixi-build-python", version = ">=0.4.0" }
+build-number = 1
+
+[package.build.config]
+noarch = true
+# Map `[project.dependencies]` from pyproject.toml to conda run dependencies.
+ignore-pypi-mapping = false
+
+[package.host-dependencies]
+hatchling = "==1.26.3"
+
+[pypi-dependencies]
+dolo = { path = ".", editable = true }
+
+[dependencies]
+python = ">=3.12,<3.14"
+numpy = ">=2.0.0,<3"
+pandas = ">=2.2.2,<4"
+scipy = ">=1.11.1,<2"
+matplotlib = ">=3.6.0,<4"
+xarray = ">=2024.1.0,<2025"
+quantecon = ">=0.7.2,<0.8"
+interpolation = ">=2.2.7,<3"
+multipledispatch = ">=0.6.0,<0.7"
+dolang = ">=0.0.21,<0.1"
+pyyaml = ">=6.0,<7"
+pytest = ">=9.0.2,<10"
+black = ">=26.1.0,<27"
+
+[feature.test.dependencies]
+pytest = ">=9.0.2,<10"
+coverage = ">=7.13.4,<8"
+pytest-cov = ">=7.0.0,<8"
+
+[feature.test.tasks]
+check-deps = "python ci/check_deps.py"
+test = "pytest"
+cov = "pytest --cov=./ --cov-report=xml"
+
+[feature.lint.dependencies]
+mypy = ">=1.19.1,<2"
+pandas-stubs = ">=3.0.0.260204,<4"
+scipy-stubs = ">=1.17.0.2,<2"
+types-pyyaml = ">=6.0.12.20250915,<7"
+black = ">=26.1.0,<27"
+
+[feature.lint.tasks]
+typecheck = "mypy src --ignore-missing-imports"
+black = "black src tests"
+
+[feature.jupyter.dependencies]
+jupyterlab = ">=4.5.4,<5"
+ipykernel = ">=7.2.0,<8"
+matplotlib = ">=3.10.8,<4"
+notebook = ">=7.5.3,<8"
+
+[feature.jupyter.tasks]
+jlab = { cmd = "ipython kernel install --name $PIXI_ENVIRONMENT_NAME --user && jupyter lab", default-environment = "dev" }
+
+[feature.docs.dependencies]
+mkdocs = ">=1.6.1,<2"
+mkdocstrings-python = ">=2.0.2,<3"
+mkdocs-material = ">=9.7.1,<10"
+pymdown-extensions = ">=10.21.1,<11"
+python-markdown-math = ">=0.9,<0.10"
+zensical = ">=0.0.52,<0.1"
+
+[feature.docs.tasks]
+docs = "zensical serve"
+build-docs = "zensical build"
+
+[feature.release.dependencies]
+twine = ">=6.0.0"
+
+[feature.release.tasks]
+build-dist = "uv build --out-dir dist"
+check-dist = "twine check dist/*"
+publish-testpypi = "uv publish --publish-url https://test.pypi.org/legacy/ dist/*"
+publish-pypi = "uv publish dist/*"
+
+[feature.py312.dependencies]
+python = ">=3.12.0,<3.13"
+
+[feature.py313.dependencies]
+python = ">=3.13.0,<3.14"
+
+# Lowest versions allowed by pyproject.toml: the `min-deps` environment pins
+# every runtime dependency to its floor (and Python to the oldest supported
+# minor version), so that CI runs the test suite against the floors.
+[feature.min-deps.dependencies]
+python = "3.12.*"
+numpy = "==2.0.0"
+pandas = "==2.2.2"
+scipy = "==1.13.1"
+matplotlib = "==3.8.4"
+xarray = "==2024.7.0"
+quantecon = "==0.7.2"
+interpolation = "==2.2.7"
+multipledispatch = "==0.6.0"
+dolang = "==0.0.21"
+pyyaml = "==6.0.1"
+
+[environments]
+test = ["test"]
+prod = ["jupyter"]
+py312 = ["test", "lint", "py312"]
+py313 = ["test", "lint", "py313"]
+min-deps = ["test", "min-deps"]
+
+[environments.dev]
+features = ["test", "lint", "jupyter", "docs", "release"]

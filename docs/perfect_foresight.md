@@ -34,5 +34,5 @@ The stacked system of equations satisfied by the solution is:
 The system is solved using a nonlinear solver.
 
 
-![mkapi](dolo.algos.perfect_foresight.deterministic_solve)
+::: dolo.algos.perfect_foresight.deterministic_solve
 

@@ -1,41 +1,102 @@
 name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
 
-  build:
+  ci:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12" ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["py312", "py313"]
 
-    name: Dolo Python Version ${{ matrix.python-version }}
+    name: Dolo ${{ matrix.python-version }} on ${{ matrix.os }}
     steps:
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup python
-        uses: actions/setup-python@v4
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
+          environments: ${{ matrix.python-version }}
 
-      - name: Install Poetry
-        uses: Gr1N/setup-poetry@v8
-
-      - name: Install dependencies
-        run: poetry install
-        
       - name: Code Quality
-        run: poetry run black . --check
+        run: pixi run --environment ${{ matrix.python-version }} black . --check
 
       - name: Test with pytest
-        run: poetry run pytest --cov=./ --cov-report=xml
+        run: pixi run --environment ${{ matrix.python-version }} pytest --cov=./ --cov-report=xml
 
       - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v1
         with:
           file: ./coverage.xml
           flags: unittests
+
+  min-deps:
+    name: Lowest supported dependency versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that pixi.toml and pyproject.toml dependencies match
+        run: python3 ci/check_deps.py
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          environments: min-deps
+
+      - name: Test with every runtime dependency at its floor
+        run: pixi run --environment min-deps test
+
+  installed-package:
+    name: Installed-package smoke test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Build the wheel
+        run: uv build --wheel --out-dir dist
+
+      - name: Install the wheel into a clean environment
+        run: |
+          uv venv --python 3.12 "$RUNNER_TEMP/venv"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            VENV_PYTHON="$RUNNER_TEMP/venv/Scripts/python.exe"
+          else
+            VENV_PYTHON="$RUNNER_TEMP/venv/bin/python"
+          fi
+          echo "VENV_PYTHON=$VENV_PYTHON" >> "$GITHUB_ENV"
+          uv pip install --python "$VENV_PYTHON" dist/*.whl
+
+      - name: Run the smoke test outside the source tree
+        working-directory: ${{ runner.temp }}
+        run: '"$VENV_PYTHON" "$GITHUB_WORKSPACE/ci/smoke_installed.py"'
+
+  docs:
+    name: Verify Documentation (Zensical)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pixi
+        uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          environments: dev
+
+      - name: Verify Documentation Build (strict)
+        run: pixi run --environment dev zensical build --clean --strict

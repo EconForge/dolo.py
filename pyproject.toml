@@ -1,36 +1,48 @@
-[tool.poetry]
+# pyproject.toml is the single source of truth for the package name, version,
+# Python floor (`requires-python`) and runtime dependencies: hatchling builds
+# the wheel from it, and pixi-build-python reads it to build the conda package
+# (so `pixi.toml` declares neither a version nor run-dependencies). The copies
+# of the runtime dependencies in `pixi.toml` `[dependencies]` and in the
+# `min-deps` feature are checked against this file by `ci/check_deps.py`
+# (`pixi run check-deps`).
+[project]
 name = "dolo"
 version = "0.4.9.20"
-readme = "README.md"
 description = "Economic Modeling in Python"
-authors = ["Winant Pablo <pablo.winant@gmail.com>"]
-license="BSD-2-Clause"
-
-[tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-numpy = ">=2.0.0"
-PyYAML = "^6.0"
-interpolation = "^2.2.7"
-pandas = "^2.2.2"
-matplotlib = "^3.6.0"
-scipy = "^1.11.1"
-quantecon = "^0.7.2"
-xarray = "^2024.1.0"
-multipledispatch = "^0.6.0"
-dolang = "^0.0.21"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.1.3"
-black = "^24.3.0"
-pylint = "^2.15.3"
-mkdocs = "^1.3.1"
-mkapi = "^1.0.14"
-mypy = "^0.971"
-coverage = "^6.4.4"
-pytest-cov = "^3.0.0"
-pymdown-extensions = "^9.5"
-python-markdown-math = "^0.8"
+readme = "README.md"
+authors = [
+    { name = "Pablo Winant", email = "pablo.winant@gmail.com" },
+]
+requires-python = ">= 3.12,<3.14"
+license = "BSD-2-Clause"
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "dolang>=0.0.21,<0.1",
+    "interpolation>=2.2.7,<3",
+    "matplotlib>=3.6.0,<4",
+    "multipledispatch>=0.6.0,<0.7",
+    "numpy>=2.0.0,<3",
+    "pandas>=2.2.2,<4",
+    "pyyaml>=6.0,<7",
+    "quantecon>=0.7.2,<0.8",
+    "scipy>=1.11.1,<2",
+    "xarray>=2024.1.0,<2025",
+]
 
 [build-system]
-requires = ["poetry>=1.8"]
-build-backend = "poetry.masonry.api"
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dolo"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"examples" = "dolo/examples"
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src", "examples", "tests", "README.md", "LICENSE", "pyproject.toml"]

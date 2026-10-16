@@ -1,30 +1,24 @@
 {
-    "extensions": [
-		"ms-python.python",
-		"ms-python.vscode-pylance",
-		"albop.dolo-language"
-	],
-    "settings": {
-		"python.languageServer": "Pylance",
-		"python.linting.enabled": true,
-		"python.linting.pylintEnabled": true,
-		"python.testing.pytestArgs": [
-			"dolo"
-		],
-		"python.formatting.provider": "black",
-		"editor.formatOnSave": true,
-		"python.testing.unittestEnabled": false,
-		"python.testing.pytestEnabled": true,
-		"git.ignoreLimitWarning": true
-	},
-	"build": {
-		"dockerfile": "Dockerfile",
-		"context": "..",
-		"args": {
-			"VARIANT": "3.9",
-			"NODE_VERSION": "lts/*"
-		}
-	},
-	"postCreateCommand": "poetry config virtualenvs.in-project true && poetry install",
-	"remoteUser": "vscode"
+  "name": "dolo.py",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "remoteEnv": {
+    "PATH": "/home/codespace/.pixi/bin:${containerEnv:PATH}"
+  },
+  "postCreateCommand": "bash -lc 'if ! command -v pixi >/dev/null 2>&1; then curl -fsSL https://pixi.sh/install.sh | bash; fi && export PATH=\"$HOME/.pixi/bin:$PATH\" && pixi install -e dev'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "jjjermiah.pixi-vscode",
+        "albop.dolo-language"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.pixi/envs/dev/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": [
+          "tests"
+        ]
+      }
+    }
+  }
 }

@@ -23,7 +23,7 @@ Tabulating a decision rule
 Dolo provides a convenience function to plot the values of a decision
 rule against different values of a state:
 
-![mkapi](dolo.algos.simulations.tabulate)
+::: dolo.algos.simulations.tabulate
 
 Stochastic simulations
 ----------------------
@@ -37,7 +37,7 @@ following labelled axes:
 - N: index of the simulation (`range(0,N)`)
 - V: variables of the model (`model.variables`)
 
-![mkapi](dolo.algos.simulations.simulate)
+::: dolo.algos.simulations.simulate
 
 
 Impulse response functions
@@ -46,7 +46,7 @@ Impulse response functions
 For continuously valued exogenous shocks, one can perform an impulse
 response function:
 
-![mkapi](dolo.algos.simulations.response)
+::: dolo.algos.simulations.response
 
 
 Graphing nonstochastic simulations
@@ -56,4 +56,4 @@ Given one or many nonstochstic simulations of a model, obtained with
 `response`, or `deterministic_solve` it is possible to quickly create an
 irf for multiple variables.
 
-![mkapi](dolo.misc.graphs.plot_irfs)
+::: dolo.misc.graphs.plot_irfs

@@ -17,4 +17,4 @@ equations for the steady state values of the controls, $\overline{x}$,
 which can then be used along with the transition function to find the
 steady state values of the state variables, $\overline{s}$.
 
-![mkapi](dolo.algos.steady_state.residuals)
+::: dolo.algos.steady_state.residuals

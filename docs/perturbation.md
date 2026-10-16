@@ -1,4 +1,4 @@
 Perturbation
 ============
 
-![mkapi](dolo.algos.perturbation.perturb)
+::: dolo.algos.perturbation.perturb

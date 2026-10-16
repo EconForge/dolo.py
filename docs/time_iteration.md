@@ -17,7 +17,7 @@ The time iteration algorithm consists in approximating the optimal controls as a
 $0 = E_t \left[ f\left(m_t, s_{t}, \varphi^{n+1}(m_t, s_t), g(m_t, s_t, \varphi^{n+1}(m_t, s_t), m_{t+1}), \varphi^{n}(m_{t+1},g(m_t, s_t, \varphi^{n+1}(m_t, s_t), m_{t+1})) \right) \right]$
 - Repeat until $\eta_{n+1} = \max_{m,s}\left |\varphi^{n+1}(m,s) - \varphi^{n}(m,s) \right|$ is smaller than prespecified criterium $\tau_{η}$
 
-![mkapi](dolo.algos.time_iteration.time_iteration)
+::: dolo.algos.time_iteration.time_iteration
 
-![mkapi](dolo.algos.results.TimeIterationResult)
+::: dolo.algos.results.TimeIterationResult
 
