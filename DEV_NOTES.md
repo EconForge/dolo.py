@@ -71,7 +71,9 @@ m = yaml_import_v2("examples/models/rbc.yaml")        # classic YAML
 d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
 ```
 
-`.dyno` examples: `examples/dyno/rbc_dolo.dyno` (copy of dyno.py's demo).
+`.dyno` examples: `examples/dyno/rbc_dolo.dyno` (copy of dyno.py's demo);
+`examples/dyno/rbc_dolo_comp.dyno` is a **target-syntax mock** (`⟂`
+complementarities) for the dyno-side grammar work — not yet parseable.
 
 ## 3. Tests
 
@@ -229,6 +231,10 @@ Benchmarks to run/inspect:
 6. **dyno.py-side grammar work** (in a dyno.py branch, later): add `⟂`
    (+ maybe dolo timing conventions) and unify recipes, then delete
    `equation_preprocess.py` and `langspec.py`.
+   **Handover ready**: `examples/dyno/rbc_dolo_comp.dyno` (target-syntax
+   mock, does not parse yet) + `docs/dynospec_requirements.md` (exact
+   grammar/API/recipe changes + acceptance criteria); written to hand to
+   a dyno-side agent.
 7. **ModelV2 display**: `_repr_html_` added on top of dynspec latex
    (`x[t-1]` → `x_{t-1}`, spelled greek → greek commands, residuals
    column); `__str__` follows the legacy layout (header, equations with

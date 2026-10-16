@@ -1,0 +1,97 @@
+# TARGET SYNTAX — mock file for the dyno-side `⟂` grammar work.
+#
+# ⚠ Does NOT parse with dynospec ≤ 0.1.x. It is the *spec* of what dolo's
+#   importer expects once the complementarity support lands (see
+#   docs/dynospec_requirements.md). Once implemented, this file must load
+#   with:  `ModelV2.from_dyno(...)`  and produce the same model as the
+#   YAML twin `examples/models/rbc.yaml`.
+#
+# What is new relative to today's dynspec grammar:
+#   1. `⟂` complementarity suffix on arbitrage equations
+#      `residual ⟂ lb <= x[t] <= ub`  (bounds may be omitted -> ±inf)
+#   2. legacy syntax also accepted (optional): `|` separator, one-sided bound
+#   3. standalone bound sections tagged `[controls_lb]` / `[controls_ub]`
+#   4. dolo timing conveniences (optional): `x(1)`, untimed `x` == `x[t]`
+
+@name: RBC_Dolo_comp
+
+# RBC Model (Dolo-style timing)
+# Converted from dolo.py examples/models/rbc.yaml
+# Timing convention: transitions define states at t from t-1 inputs
+
+# Parameters
+beta <- 0.99
+sigma <- 5
+eta <- 1
+delta <- 0.025
+alpha <- 0.33
+rho <- 0.8
+zbar <- 0
+sig_z <- 0.016
+
+# Steady state
+n[~] <- 0.33
+z[~] <- zbar
+rk[~] <- 1/beta - 1 + delta
+k[~] <- n[~]/(rk[~]/alpha)^(1/(1-alpha))
+y[~] <- exp(z[~])*k[~]^alpha*n[~]^(1-alpha)
+w[~] <- (1-alpha)*y[~]/n[~]
+i[~] <- delta*k[~]
+c[~] <- y[~] - i[~]
+chi <- w[~]/c[~]^sigma/n[~]^eta
+
+# Exogenous
+e_z[t] <- N(0, sig_z^2)
+
+# Definitions: auxiliary variables (recursive block)
+[definitions] :: {
+    y[t] = exp(z[t])*k[t]^alpha*n[t]^(1-alpha)
+    c[t] = y[t] - i[t]
+    rk[t] = alpha*y[t]/k[t]
+    w[t] = (1-alpha)*y[t]/n[t]
+}
+
+# Transition equations: s[t] = f(m[t-1], s[t-1], x[t-1], M[t])
+[transition] :: {
+    z[t] = rho*z[t-1] + e_z[t]
+    k[t] = (1-delta)*k[t-1] + i[t-1]
+}
+
+# Arbitrage equations with `⟂` complementarities:
+#   g_i(m[t], s[t], x[t], m[t+1], s[t+1], x[t+1])  ⟂  lb_i <= x_i[t] <= ub_i
+# The i-th complementarity must involve the i-th control (`n`, then `i`).
+[arbitrage] :: {
+    chi*n[t]^eta*c[t]^sigma - w[t]                               ⟂ 0.0   <= n[t] <= inf
+    1 - beta*(c[t]/c[t+1])^sigma*(1-delta+rk[t+1])               ⟂ -inf  <= i[t] <= inf
+}
+
+# The same group in dolo's legacy notation (optional to support):
+# [arbitrage] :: {
+#     chi*n[t]^eta*c[t]^sigma - w[t]     | 0.0 <= n[t] <= inf
+#     1 - beta*(c[t]/c[t+1])^sigma*(...) | -inf <= i[t]
+# }
+# (`|` is the pre-`⟂` separator; an omitted upper bound means `+inf`, an
+#  omitted lower bound means `-inf`.)
+
+# Alternative bounds declaration, as standalone tagged sections
+# (either/or with complementarities above; dolo accepts both):
+#
+# [controls_lb] :: {
+#     n[t] = 0.0
+#     i[t] = -inf
+# }
+# [controls_ub] :: {
+#     n[t] = inf
+#     i[t] = inf
+# }
+#
+# Bounds expressions may only involve exogenous[t], states[t] and
+# parameters (this is the "arbitrage_bounds" conformity spec).
+
+# dolo timing conveniences (optional to support — see requirements doc):
+#     y[t] = exp(z)*k(t-1)^alpha*n^(1-alpha)      # `k(t-1)` == `k[t-1]`
+#     c[t] = y[t] - i                              # untimed `i` == `i[t]`
+# Function calls with numeric arguments are NOT timing: `exp(1)` stays a call.
+
+@run: steady
+@run: check
