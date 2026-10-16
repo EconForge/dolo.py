@@ -90,10 +90,14 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   inconsistent batch sizes raise.
 - **algorithm smoke tests on ModelV2** (§6.3): `perturb` + `simulate`
   (identical driving process → near-bit-equal paths), `time_iteration`
-  (5×5 grid → decision rules equal to 1e-8), `egm` (decision rule
-  exactly equal), `value_iteration` (bounded growth model, converged,
-  bit-identical policy on both importers; also runs on standalone
-  `controls_lb/controls_ub` groups).
+  (5×5 grid → decision rules equal to 1e-8), `improved_time_iteration`
+  (decision rules equal), `perfect_foresight`/`deterministic_solve`
+  (bit-identical trajectories via vectorized `diff=True`), `egm`
+  (decision rule exactly equal), `value_iteration` (bounded growth
+  model, converged, bit-identical policy on both importers; also runs
+  on standalone `controls_lb/controls_ub` groups).
+- vectorized `diff=True` (row-vectorized args) matches legacy `numdiff`
+  bit-for-bit (jacobians for every argument but p).
 - `.dyno` import, `@options`/`@domain` handling, and `discretize()` on
   `.dyno` models.
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
@@ -102,7 +106,7 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   notation + dataframe shifts).
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 50 passed.
+Full suite: `pixi run --environment dev pytest -q` → 53 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and

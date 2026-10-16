@@ -654,6 +654,50 @@ def make_function(
         def _diff_all(jargs):
             return []
 
+    def _normalize_batched(args):
+        """Validate/broadcast numpy row-vectorized arguments."""
+        N = max(a.shape[0] for a in args if a.ndim == 2)
+        bargs = []
+        for a in args:
+            if a.ndim == 1:
+                bargs.append(np.broadcast_to(a, (N, a.shape[0])))
+            elif a.ndim == 2:
+                if a.shape[0] != N:
+                    raise ValueError("Inconsistent number of points across arguments.")
+                bargs.append(a)
+            else:
+                bargs.append(np.broadcast_to(a, (N,)))
+        return bargs
+
+    def _np_batched(bargs):
+        # numpy closures produce (n_out, N); return (N, n_out).
+        # Row-independent equations (e.g. literal bounds `0.0`/`-inf`)
+        # yield scalars, hence 1-d stacks: repeat them over N.
+        N = max((a.shape[0] for a in bargs if a.ndim == 2), default=1)
+        res = np.asarray(point_np(*bargs)).T
+        if res.ndim == 1:
+            res = np.repeat(res[None, :], N, axis=0)
+        return res
+
+    def _np_vec_diff(args):
+        """Vectorized diff=True on numpy data — mirrors the legacy
+        `standard_function.__vecdiff__`: finite differences (eps=1e-8)
+        w.r.t. every argument but the last (parameters)."""
+        bargs = _normalize_batched(args)
+        out = _np_batched(bargs)
+        N, n_out = out.shape
+        l_dout = []
+        for i in range(len(bargs) - 1):
+            a = bargs[i]
+            dout = np.zeros((N, n_out, a.shape[1]))
+            for j in range(a.shape[1]):
+                xx = list(bargs)
+                xx[i] = a.copy()
+                xx[i][:, j] += 1e-8
+                dout[:, :, j] = (_np_batched(xx) - out) / 1e-8
+            l_dout.append(dout)
+        return [out] + l_dout
+
     def fn(*args, diff=False):
         # numpy-only calls: plain arrays avoid all jax marshaling (no
         # device transfers, no jit dispatch — DEV_NOTES §5.3 / §6.5).
@@ -667,26 +711,21 @@ def make_function(
                 )
             if 2 not in ndims:
                 return np.asarray(point_np(*args))
-            N = max(a.shape[0] for a in args if a.ndim == 2)
-            bargs = []
-            for a in args:
-                if a.ndim == 1:
-                    bargs.append(np.broadcast_to(a, (N, a.shape[0])))
-                elif a.ndim == 2:
-                    if a.shape[0] != N:
-                        raise ValueError(
-                            "Inconsistent number of points across arguments."
-                        )
-                    bargs.append(a)
-                else:
-                    bargs.append(np.broadcast_to(a, (N,)))
-            # numpy closures produce (n_out, N); return (N, n_out).
-            # Row-independent equations (e.g. literal bounds `0.0`/`-inf`)
-            # yield scalars, hence 1-d stacks: repeat them over N.
-            res = np.asarray(point_np(*bargs)).T
-            if res.ndim == 1:
-                res = np.repeat(res[None, :], N, axis=0)
-            return res
+            return _np_batched(_normalize_batched(list(args)))
+
+        # vectorized diff=True on numpy data: finite differences, legacy
+        # `numdiff` semantics (jacobians for every argument but p).
+        if (
+            diff
+            and all(isinstance(a, np.ndarray) for a in args)
+            and any(a.ndim == 2 for a in args)
+        ):
+            if any(a.ndim > 2 for a in args):
+                raise ValueError(
+                    "dolo functions accept point (1-d) or row-vectorized (2-d) "
+                    "arguments only."
+                )
+            return _np_vec_diff(list(args))
 
         # Skip the `jnp.asarray(..., dtype=float64)` marshaling for device
         # arrays that already satisfy the dtype — algos that hold jax

@@ -618,6 +618,74 @@ options:
 """
 
 
+def test_vectorized_diff_parity():
+    """`diff=True` on row-vectorized arguments matches the legacy
+    finite-difference semantics (jacobians for every arg but p)."""
+    old = dolo.yaml_import("examples/models/rbc.yaml")
+    new = _load_v2("examples/models/rbc.yaml")
+
+    c = new.calibration
+    m, s, x, p = c["exogenous"], c["states"], c["controls"], c["parameters"]
+    N = 5
+    mm = np.tile(m, (N, 1))
+    ss = np.tile(s, (N, 1))
+    xx = np.tile(x, (N, 1))
+
+    for name in ("arbitrage", "transition"):
+        f_o = old.functions[name]
+        f_n = new.functions[name]
+        args_o = [mm, ss, xx, mm, ss, xx, p]
+        args_n = [
+            mm.copy(),
+            ss.copy(),
+            xx.copy(),
+            mm.copy(),
+            ss.copy(),
+            xx.copy(),
+            p.copy(),
+        ]
+        if name == "transition":
+            args_o = [mm, ss, xx, mm, p]
+            args_n = [mm.copy(), ss.copy(), xx.copy(), mm.copy(), p.copy()]
+        r_o = f_o(*args_o, diff=True)
+        r_n = f_n(*args_n, diff=True)
+        assert len(r_o) == len(r_n)
+        for a, b in zip(r_o, r_n):
+            assert np.array_equal(np.asarray(a), np.asarray(b)), name
+
+
+def test_improved_time_iteration_parity():
+    from dolo import improved_time_iteration
+
+    old = dolo.yaml_import("examples/models/rbc_iid.yaml")
+    new = _load_v2("examples/models/rbc_iid.yaml")
+
+    sol_o = improved_time_iteration(old, verbose=False)
+    sol_n = improved_time_iteration(new, verbose=False)
+
+    e = new.calibration["exogenous"]
+    s = new.calibration["states"]
+    rng = np.random.RandomState(4)
+    pts = s[None, :] + 0.1 * rng.randn(6, 2)
+    assert np.allclose(
+        np.asarray(sol_o.dr(e, pts)), np.asarray(sol_n.dr(e, pts)), atol=1e-8
+    )
+
+
+def test_perfect_foresight_parity():
+    """`deterministic_solve` (stacked-time, vectorized diff) matches legacy."""
+    from dolo.algos.perfect_foresight import deterministic_solve
+
+    old = dolo.yaml_import("examples/models/rbc.yaml")
+    new = _load_v2("examples/models/rbc.yaml")
+
+    rng = np.random.RandomState(0)
+    eps = 0.02 * rng.randn(40, 1)
+    t_o = deterministic_solve(old, exogenous=eps.copy(), verbose=False, T=40)
+    t_n = deterministic_solve(new, exogenous=eps.copy(), verbose=False, T=40)
+    assert np.array_equal(t_o.values, t_n.values)
+
+
 def test_value_iteration_parity(tmp_path):
     """`value_iteration` converges on a bounded model on BOTH importers
     (bounds via arbitrage complementarities, through `model.x_bounds`),
