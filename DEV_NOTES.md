@@ -218,8 +218,8 @@ Benchmarks to run/inspect:
      domain covering the attainable states.
 2. **Shape-regression tests**: done (see §3).
 3. **Algorithm smoke tests on ModelV2** (time_iteration/perturb/simulate/
-   egm/value_iteration): done for the first four (§3); value_iteration
-   excluded per 1 above.
+   improved_time_iteration/deterministic_solve/egm/value_iteration): all
+   done (§3).
 4. **Wrapper marshaling**: done — plain-numpy point/batched calls go
    through the numpy closure family; already-device `jax float64` arrays
    skip `jnp.asarray(dtype=...)`. Returning device arrays behind an opt-in
