@@ -894,6 +894,79 @@ class ModelV2:
     def __repr__(self):
         return self.__str__()
 
+    def _repr_html_(self):
+        # Equations rendered with dynspec latex (`x[t-1]` -> `x_{t-1}`,
+        # greek names -> greek commands) — no dolang involved.
+        from dyno.dynspec.latex import latex
+
+        def _tex(eq: str) -> str:
+            eq = eq.strip()
+            for sep in ("⟂", "|"):
+                if sep in eq:
+                    eq = eq.split(sep, 1)[0].strip()
+            if "=" in eq:
+                lhs, rhs = [e.strip() for e in eq.split("=", 1)]
+                return f"{latex(lhs)} = {latex(rhs)}"
+            return latex(eq)
+
+        infos = self.infos
+        table_infos = """
+        <table>
+         <td><b>Model</b></td>
+        <tr>
+        <td>name</td>
+        <td>{name}</td>
+        </tr>
+        <tr>
+        <td>type</td>
+        <td>{type}</td>
+        </tr>
+        <tr>
+        <td>filename</td>
+        <td>{filename}</td>
+        </tr>
+        </table>""".format(
+            name=infos["name"],
+            type=infos["type"],
+            filename=infos["filename"].replace("<", "&lt").replace(">", "&gt"),
+        )
+
+        resids = self.residuals() if self.functions else {}
+        equations = self.equations.copy()
+        if self.definitions:
+            equations["definitions"] = [
+                f"{lhs} = {rhs}" for lhs, rhs in self.definitions.items()
+            ]
+
+        table = (
+            '<tr><td><b>Type</b></td><td style="width:80%"><b>Equation</b></td>'
+            "<td><b>Residual</b></td></tr>\n"
+        )
+        for eq_type, eqs in equations.items():
+            if eq_type in ("arbitrage_lb", "arbitrage_ub"):
+                continue  # bounds are shown embedded in the arbitrage lines
+            for i, eq in enumerate(eqs):
+                if eq_type in ("arbitrage", "transition", "arbitrage_exp"):
+                    val = resids[eq_type][i]
+                    if abs(val) > 1e-8:
+                        vals = '<span style="color: red;">{:.4f}</span>'.format(val)
+                    else:
+                        vals = "{:.3f}".format(val)
+                else:
+                    vals = ""
+                try:
+                    lat = "${}$".format(_tex(eq))
+                except Exception:
+                    lat = str(eq).replace("<", "&lt").replace(">", "&gt")
+                h = eq_type if i == 0 else ""
+                fmt_line = "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+                    h, lat, vals
+                )
+                table += fmt_line + "\n"
+        table = "<table>{}</table>".format(table)
+
+        return table_infos + table
+
 
 # ---------------------------------------------------------------------------
 # helpers

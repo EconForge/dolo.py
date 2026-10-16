@@ -538,6 +538,18 @@ def test_eval_formula_parity():
     )
 
 
+def test_repr_html_uses_dynspec_latex():
+    new = _load_v2("examples/models/rbc.yaml")
+    html = new._repr_html_()
+    # dynspec latex: greek names and timing subscripts are rendered
+    assert "\\chi" in html or "\\delta" in html
+    assert "n_{t}" in html
+    assert "<b>Model</b>" in html
+    # definitions block is included, bounds rows are not duplicated
+    assert "definitions" in html
+    assert "arbitrage_lb" not in html
+
+
 def test_standalone_bounds_groups():
     m = ModelV2.from_yaml(yaml_compose(GROWTH_MODEL), filename="growth_vi")
 
