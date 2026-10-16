@@ -597,7 +597,15 @@ def make_function(
             return []
 
     def fn(*args, diff=False):
-        jargs = [jnp.asarray(a, dtype=jnp.float64) for a in args]
+        # Skip the `jnp.asarray(..., dtype=float64)` marshaling for device
+        # arrays that already satisfy the dtype — algos that hold jax
+        # arrays across calls avoid the extra copy/pass cost (DEV_NOTES §6.4).
+        jargs = []
+        for a in args:
+            if isinstance(a, jnp.ndarray) and a.dtype == jnp.float64:
+                jargs.append(a)
+            else:
+                jargs.append(jnp.asarray(a, dtype=jnp.float64))
         ndims = {a.ndim for a in jargs}
         if any(d > 2 for d in ndims):
             raise ValueError(

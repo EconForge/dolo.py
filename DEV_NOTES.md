@@ -51,11 +51,17 @@ Under `src/dolo/compiler/`:
 Algo-compatibility adapters (in `ModelV2`, no algo changes):
 - `functions` is a `LoosyDict` with equivalences `equilibrium`→arbitrage,
   `optimality`→arbitrage, `controls_lb`→arbitrage_lb, `controls_ub`→arbitrage_ub
-  (so `value_iteration` finds bounds).
+  (so `value_iteration` finds bounds). `LoosyDict.__getitem__` resolves
+  **real keys before equivalences**, so standalone `controls_lb`/
+  `controls_ub` equation groups are not hijacked by the aliases.
 - `ModelV2.functions` also sets `__original_functions__` and
   `__original_gufunctions__` (egm reads the latter); the gufunctions
   are our allocating + returning functions (compatible).
 - `endo_grid` accepts both `options.grid.n` and legacy `options.grid.orders`.
+- Standalone bounds groups (`controls_lb:`/`controls_ub:` sections, e.g.
+  `controls_lb: {i = 0}`) build real functions with signature
+  (m[t], s[t], p) — dolo's documented convention; only `ModelV2` supports
+  them (the legacy importer has no recipe for them).
 
 Entry points / how to try:
 
@@ -78,13 +84,24 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
   a synthetic model string),
 - `diff=True` jacobians vs legacy finite-diff (atol 1e-5); pole-tolerant
   comparison (`±inf`/`nan` treated alike),
-- `.dyno` import and `@options`/`@domain` handling.
+- **batched-call shape regression** (DEV_NOTES §6.2): every group returns
+  exactly `(N, n_out)` for row-vectorized args, with parameters either
+  tiled or left 1-d (unmapped) — guards the p-broadcast bug class;
+  inconsistent batch sizes raise.
+- **algorithm smoke tests on ModelV2** (§6.3): `perturb` + `simulate`
+  (identical driving process → near-bit-equal paths), `time_iteration`
+  (5×5 grid → decision rules equal to 1e-8), `egm` (decision rule
+  exactly equal).
+- `.dyno` import, `@options`/`@domain` handling, and `discretize()` on
+  `.dyno` models.
+- standalone `controls_lb`/`controls_ub` groups (real functions, not
+  aliases) + alias still working when the group is absent.
 
-Full suite: `pixi run --environment dev pytest -q` → 36 passed.
+Full suite: `pixi run --environment dev pytest -q` → 47 passed.
 
-Verified manually (not yet committed as tests): `time_iteration`,
-`perturb`, `simulate` and `egm` run on `ModelV2` and produce identical
-results to legacy (seeded sims bit-equal; egm decision rule exactly).
+Previously verified manually (now covered by the tests above):
+`time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and
+produce identical results to legacy.
 
 ## 4. Dependencies (pixi/pyproject)
 
@@ -160,18 +177,32 @@ Benchmarks to run/inspect:
 
 ## 6. Known gaps / next steps
 
-1. **value_iteration correctness**: it "converges" at maxit=500 without
-   meeting tolerance on both importers, decisions diverge — needs a
-   proper convergence check/max-time investigation, then decide whether
-   it's tol, bounds aliasing, or the algorithm.
-2. **Shape-regression tests**: add to `test_model_v2.py` a check that
-   batched calls return exactly (N, n_out) — guards the p-broadcast class
-   of bugs.
+1. **value_iteration** (investigated 2026-10-16 — partially resolved):
+   - *Bounds aliasing*: fixed. `LoosyDict.__getitem__` used to resolve
+     equivalences *before* real keys, so explicit `controls_lb` groups
+     were hijacked by the `controls_lb`→`arbitrage_lb` alias. Real keys
+     now win; regression test in `test_standalone_bounds_groups`.
+   - *Remaining, pre-existing and backend-independent*: on the only
+     example models with `value`/`felicity` groups (rbc_ar1/iid/mc) the
+     problem is ill-posed for value iteration — no upper bounds on n/i
+     and `c^(1-sigma)` (sigma=5) has a pole at c=0, so V explodes
+     (~1e44 on iteration 1). With finite bounds (`n<=1`,
+     `i<=exp(z)*k^alpha`, or a log-utility growth model) iterations 1-2
+     behave, then `evaluate_policy` diverges (~1e280) because
+     `DecisionRule` polynomial extrapolation runs on states pushed
+     ~40% outside the `@domain` box by boundary-exploring policies.
+     Legacy cannot run value_iteration at all in this repo (no
+     recipe/alias for `controls_lb`). Conclusion: an **algorithm-side**
+     fix (feasibility guard for the initial policy + bounded
+     extrapolation), out of scope for the importer migration.
+2. **Shape-regression tests**: done (see §3).
 3. **Algorithm smoke tests on ModelV2** (time_iteration/perturb/simulate/
-   egm/value_iteration) as committed tests with seeded comparisons.
-4. **Wrapper marshaling** (~30-80ms at 5M): avoid
-   `jnp.asarray(a, dtype=jnp.float64)` when dtype already matches;
-   maybe return device arrays behind an opt-in.
+   egm/value_iteration): done for the first four (§3); value_iteration
+   excluded per 1 above.
+4. **Wrapper marshaling** (§5.x): done for the cheap half — already-device
+   `jax float64` arrays skip `jnp.asarray(dtype=...)`. Returning device
+   arrays behind an opt-in is still open. Point-call path (§5.3, numpy
+   math table / input caching) also still open.
 5. **Point-call path** (see §5.3): numpy math table or input caching.
 6. **dyno.py-side grammar work** (in a dyno.py branch, later): add `⟂`
    (+ maybe dolo timing conventions) and unify recipes, then delete
@@ -180,9 +211,9 @@ Benchmarks to run/inspect:
    `dolang.latex` through old code paths; port to dynspec latex.
 8. `eval_formula` on ModelV2 still calls the dolang-backed function —
    move to dynspec evaluator.
-9. `discretize()` on `.dyno` models requires `@domain`; fine but worth a
-   test. Old `Model` and `dolo.yaml_import` remain the default — decide
-   when/if to switch.
+9. `discretize()` on `.dyno` models requires `@domain`; test added
+   (`test_dyno_options_and_domain`). Old `Model` and `dolo.yaml_import`
+   remain the default — decide when/if to switch.
 10. min-deps CI only pins jax from PyPI; keep `check-deps` green when
     adding/removing deps (run `python3 ci/check_deps.py`).
 

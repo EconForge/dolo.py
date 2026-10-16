@@ -65,6 +65,31 @@ def _load_v2(fname):
     return ModelV2.from_yaml(yaml_compose(txt), filename=fname)
 
 
+def _group_spec_for(functions, name):
+    """Recipe spec (dict or plain list) for a group name, or None for
+    complementarity-bound groups."""
+    if name in ("auxiliary",):
+        return _AUXILIARY_SPEC
+    if name in (
+        "arbitrage_lb",
+        "arbitrage_ub",
+        "controls_lb",
+        "controls_ub",
+    ):
+        return _RECIPES["specs"]["arbitrage"]["complementarities"]["left-right"]
+    assert name in _RECIPES["specs"], f"no recipe for {name}"
+    return _RECIPES["specs"][name]
+
+
+def _batched(group_args, N):
+    """Tile the 1-d arguments to N rows; 2-d arguments pass through."""
+    out = []
+    for a in group_args:
+        a = np.asarray(a, dtype=float)
+        out.append(np.tile(a, (N, 1)) if a.ndim == 1 else a)
+    return out
+
+
 @pytest.mark.parametrize("fname", MODEL_FILES)
 def test_parity_with_legacy_importer(fname):
     old = dolo.yaml_import(fname)
@@ -305,3 +330,203 @@ def test_dyno_options_and_domain():
     assert model.domain.max.tolist() == [0.1, 12.0]
     g = model.endo_grid
     assert g.nodes.shape == (16, 2)
+
+    # `discretize()` on .dyno models: exogenous shocks provide the markov
+    # part, `@domain` + `@options.grid` the endogenous part.
+    from dolo.numeric.processes import DiscretizedIIDProcess
+
+    grid, dprocess = model.discretize()
+    assert isinstance(dprocess, DiscretizedIIDProcess)
+    assert dprocess.n_nodes == 1
+    assert grid["endo"].nodes.shape == (16, 2)
+    assert grid["exo"].nodes is None  # iid processes carry an empty grid
+
+
+# ---------------------------------------------------------------------------
+# shape regression tests: batched calls must return exactly (N, n_out)
+# (guards the jax.vmap p-broadcast class of bugs, DEV_NOTES §6.2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("fname", MODEL_FILES)
+def test_batched_calls_return_exact_shapes(fname):
+    new = _load_v2(fname)
+    c = new.calibration
+    N = 7
+
+    for name, fn in new.functions.items():
+        spec = _group_spec_for(new.functions, name)
+        point_args = _group_args(c, spec)
+        pval = np.asarray(fn(*point_args))
+        assert pval.ndim == 1, f"{name}: point call should return a 1-d vector"
+
+        # row-vectorized variable args, parameters kept 1-d (unmapped p):
+        # the result must be (N, n_out) — not (N, n_p, n_out) or similar.
+        batched = _batched(point_args, N)
+        bval = np.asarray(fn(*batched))
+        assert bval.shape == (N, pval.shape[0]), (
+            f"{name}: batched call returned {bval.shape}, "
+            f"expected {(N, pval.shape[0])}"
+        )
+
+        # parameters broadcast as well (legacy does this in `simulate`)
+        bval2 = np.asarray(fn(*_batched(point_args[:-1], N), *point_args[-1:]))
+        assert bval2.shape == (
+            N,
+            pval.shape[0],
+        ), f"{name}: batched call with scalar params returned {bval2.shape}"
+        assert np.allclose(bval, bval2, equal_nan=True)
+
+
+def test_batched_with_inconsistent_shapes_raises():
+    new = _load_v2("examples/models/rbc.yaml")
+    c = new.calibration
+    f = new.functions["transition"]
+    m, s, x, p = c["exogenous"], c["states"], c["controls"], c["parameters"]
+    with pytest.raises(ValueError):
+        f(np.tile(m, (3, 1)), s, x, np.tile(m, (4, 1)), p)
+
+
+# ---------------------------------------------------------------------------
+# algorithm smoke tests on ModelV2 (DEV_NOTES §6.3): same results as legacy
+# ---------------------------------------------------------------------------
+
+
+def test_perturb_and_simulate_parity():
+    from dolo.algos import perturb, simulate
+
+    old = dolo.yaml_import("examples/models/rbc.yaml")
+    new = _load_v2("examples/models/rbc.yaml")
+
+    dr_o = perturb(old, verbose=False).dr
+    dr_n = perturb(new, verbose=False).dr
+
+    e = old.calibration["exogenous"][None, :]
+    s0 = old.calibration["states"][None, :]
+    rng = np.random.RandomState(0)
+    pts = s0 + 0.05 * rng.randn(10, 2)  # includes the steady state
+    pts_m = np.tile(e, (10, 1))
+    assert np.allclose(
+        np.asarray(dr_o.eval_ms(pts_m, pts)),
+        np.asarray(dr_n.eval_ms(pts_m, pts)),
+        atol=1e-7,
+    )
+
+    # identical shocks -> identical paths (1e-7-scale, near-bit-equal)
+    T, N = 40, 3
+    driving = 0.01 * rng.randn(T, N, 1)
+    sim_o = simulate(old, dr_o, driving_process=driving, N=N)
+    sim_n = simulate(new, dr_n, driving_process=driving, N=N)
+    assert np.allclose(sim_o.values, sim_n.values, rtol=1e-9, atol=1e-5)
+
+
+def test_time_iteration_parity(tmp_path):
+    from dolo.algos import time_iteration
+
+    # small grid keeps the smoke test fast (~ a few seconds per importer)
+    src = Path("examples/models/rbc.yaml").read_text()
+    src = src.replace("n: [100, 100]", "n: [5, 5]")
+    fname = tmp_path / "rbc_small.yaml"
+    fname.write_text(src)
+
+    old = dolo.yaml_import(str(fname))
+    new = dolo.yaml_import_v2(str(fname))
+
+    dr_o = time_iteration(old, verbose=False).dr
+    dr_n = time_iteration(new, verbose=False).dr
+
+    e = new.calibration["exogenous"]
+    s = new.calibration["states"]
+    rng = np.random.RandomState(2)
+    pts = s[None, :] + 0.15 * rng.randn(6, 2)
+    assert np.allclose(np.asarray(dr_o(e, pts)), np.asarray(dr_n(e, pts)), atol=1e-8)
+
+
+def test_egm_parity():
+    from dolo.algos.egm import egm
+
+    fname = "examples/models/consumption_savings_iid.yaml"
+    old = dolo.yaml_import(fname)
+    new = _load_v2(fname)
+
+    a_grid = np.linspace(0.1, 10, 10) ** 2
+    sol_o = egm(old, a_grid=a_grid, verbose=False)
+    sol_n = egm(new, a_grid=a_grid, verbose=False)
+
+    e = new.calibration["exogenous"]
+    rng = np.random.RandomState(3)
+    for N in (1, 5):
+        mm = np.tile(e, (N, 1))
+        ss = a_grid[None, :] * (1 + 0.05 * rng.randn(N, 10))
+        xo = np.asarray(sol_o.dr(mm, ss))
+        xn = np.asarray(sol_n.dr(mm, ss))
+        assert np.array_equal(xo, xn)
+
+
+# ---------------------------------------------------------------------------
+# standalone bounds groups (`controls_lb`/`controls_ub`) — DEV_NOTES §6.1:
+# the `controls_lb -> arbitrage_lb` alias must not hijack real keys.
+# ---------------------------------------------------------------------------
+
+GROWTH_MODEL = """
+name: growth_vi
+symbols:
+  exogenous: [e]
+  states: [k]
+  controls: [c]
+  values: [V]
+  rewards: [u]
+  parameters: [beta, alpha, delta, sig_e]
+equations:
+  transition:
+    - k[t] = exp(e[t])*((1-delta)*k[t-1] + k[t-1]^alpha - c[t-1])
+  felicity:
+    - u[t] = log(c[t])
+  value:
+    - V[t] = log(c[t]) + beta*V[t+1]
+  controls_lb:
+    - "c = 1e-4"
+  controls_ub:
+    - "c = (1-delta)*k + k^alpha"
+calibration:
+  beta: 0.95
+  alpha: 0.3
+  delta: 0.1
+  sig_e: 0.01
+  k: 0.9
+  c: 0.3
+  V: log(0.3)/(1-beta)
+  u: log(0.3)
+  e: 0.0
+exogenous: !Normal
+  Σ: [[sig_e**2]]
+domain:
+  k: [0.5, 3.0]
+options:
+  grid: {type: cartesian, n: [12]}
+"""
+
+
+def test_standalone_bounds_groups():
+    m = ModelV2.from_yaml(yaml_compose(GROWTH_MODEL), filename="growth_vi")
+
+    assert set(("controls_lb", "controls_ub")) <= set(m.functions)
+    lb = m.functions["controls_lb"]
+    ub = m.functions["controls_ub"]
+    assert lb is not None and "arbitrage" not in lb.__doc__
+
+    p = m.calibration["parameters"]
+    e = m.calibration["exogenous"]
+    s = m.calibration["states"]
+    assert np.allclose(lb(e, s, p), [1e-4])
+    assert np.allclose(ub(e, s, p), [0.9 * 0.9 + 0.9**0.3])
+
+    assert m.x_bounds == [lb, ub]
+
+    # when no standalone bounds exist, the legacy aliases still work
+    rbc_iid = _load_v2("examples/models/rbc_iid.yaml")
+    assert rbc_iid.functions["controls_lb"] is rbc_iid.functions["arbitrage_lb"]
+    assert rbc_iid.x_bounds == [
+        rbc_iid.functions["arbitrage_lb"],
+        rbc_iid.functions["arbitrage_ub"],
+    ]

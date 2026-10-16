@@ -53,6 +53,9 @@ class LoosyDict(dict):
 
     def __getitem__(self, p):
 
+        if self.__contains__(p):
+            # real keys take precedence over equivalences
+            return super().__getitem__(p)
         if p in self.__equivalences__.keys():
             k = self.__equivalences__[p]
         else:
