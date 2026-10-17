@@ -43,7 +43,7 @@ Under `src/dolo/compiler/`:
 
 | file | status | content |
 |---|---|---|
-| `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `infos`, `__str__`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments,
+| `model_v2.py` | new | `ModelV2` with `from_yaml(...)` (composed node tree) and `from_dyno(...)` (`.dyno` via `dyno.larkfiles.DynoFile`). API: `symbols`, `variables`, `equations`, `definitions`, `calibration`, `exogenous`, `domain`, `endo_grid`, `discretize`, `functions`, `x_bounds`, `residuals`, `eval_formula`, `recalibrate`, `infos`, `__str__`. **Immutable calibration** (dyno semantics): `recalibrate(**overrides)` returns a new independent model; `set_calibration` raises with a pointer to `model = model.recalibrate(...)`. Calibration solved iteratively with the dynspec `FormulaEvaluator` (`_solve_symbolic_dict`). `.dyno` symbol inference: parameters = top-level assignments,
   states = transition LHGs, auxiliaries = definitions LHGs, controls =
   complementarity-bounded variables (arbitrage first), then free
   right-hand-side variables of any group; assignment-group targets
@@ -131,7 +131,7 @@ legacy path renders); `sudden_stop.ipynb` predates the repo (its
   evaluator.
 - `_repr_html_` renders equations with dynspec latex.
 
-Full suite: `pixi run --environment dev pytest -q` → 57 passed.
+Full suite: `pixi run --environment dev pytest -q` → 58 passed.
 
 Previously verified manually (now covered by the tests above):
 `time_iteration`, `perturb`, `simulate` and `egm` run on `ModelV2` and

@@ -560,11 +560,31 @@ class Model(SymbolicModel):
             self.__variables__ = None
             self.__equations__ = None
 
-    def set_calibration(self, *pargs, **kwargs):
+    def recalibrate(self, *pargs, **kwargs):
+        """Return a new, independent model with the given calibration
+        overrides.
+
+        Models are immutable (dyno semantics): the calibration of ``self``
+        is left untouched.  Assign the returned model instead of mutating
+        in place::
+
+            model = model.recalibrate(delta=0.5)
+        """
         if len(pargs) == 1:
-            self.set_calibration(**pargs[0])
-        self.set_changed()
-        self.data["calibration"].update(kwargs)
+            kwargs = dict(pargs[0], **kwargs)
+        fresh = copy.copy(self)
+        fresh.data = copy.deepcopy(self.data)
+        fresh.data["calibration"].update(kwargs)
+        fresh.set_changed()
+        return fresh
+
+    def set_calibration(self, *pargs, **kwargs):
+        raise NotImplementedError(
+            "Models are immutable: `set_calibration` has been removed.\n"
+            "Recalibration returns a new model — assign it instead:\n\n"
+            "    model = model.recalibrate(...)\n\n"
+            "e.g. `model = model.recalibrate(delta=0.5)`."
+        )
 
     @property
     def calibration(self):

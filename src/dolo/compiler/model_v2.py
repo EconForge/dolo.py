@@ -43,6 +43,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import yaml
+import copy
 from lark.visitors import Interpreter
 
 from dyno.dynspec.grammar import parser, str_expression
@@ -649,12 +650,30 @@ class ModelV2:
             self.__calibration__ = CalibrationDict(self.symbols, grouped)
         return self.__calibration__
 
-    def set_calibration(self, *pargs, **kwargs) -> None:
+    def recalibrate(self, *pargs, **kwargs) -> "ModelV2":
+        """Return a new, independent model with the given calibration
+        overrides (immutable semantics).
+
+        ``self`` is left untouched; assign the returned model::
+
+            model = model.recalibrate(delta=0.5)
+        """
         if len(pargs) == 1:
-            return self.set_calibration(**pargs[0])
-        self.__calibration_data__.update(kwargs)
-        self.__calibration__ = None
-        self.__exogenous__ = None
+            kwargs = dict(pargs[0], **kwargs)
+        fresh = copy.copy(self)
+        fresh.__calibration_data__ = dict(self.__calibration_data__)
+        fresh.__calibration_data__.update(kwargs)
+        fresh.__calibration__ = None
+        fresh.__exogenous__ = None
+        return fresh
+
+    def set_calibration(self, *pargs, **kwargs) -> None:
+        raise NotImplementedError(
+            "Models are immutable: `set_calibration` has been removed.\n"
+            "Recalibration returns a new model — assign it instead:\n\n"
+            "    model = model.recalibrate(...)\n\n"
+            "e.g. `model = model.recalibrate(delta=0.5)`."
+        )
 
     @property
     def options(self) -> Dict[str, Any]:

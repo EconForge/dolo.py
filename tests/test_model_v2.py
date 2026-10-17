@@ -361,6 +361,43 @@ exogenous: !Normal
         ModelV2.from_yaml(yaml_compose(bad_yaml), filename="bad_comp")
 
 
+def test_calibration_is_immutable():
+    """Models follow dyno's immutable semantics: `set_calibration` raises
+    with a pointer to `recalibrate`, which returns a new independent model."""
+    msg = "recalibrate"
+
+    for make in (
+        lambda: _load_v2("examples/models/rbc.yaml"),
+        lambda: dolo.yaml_import("examples/models/rbc.yaml"),
+    ):
+        model = make()
+        with pytest.raises(NotImplementedError, match=msg):
+            model.set_calibration(delta=0.5)
+        with pytest.raises(NotImplementedError, match=msg):
+            model.set_calibration({"delta": 0.5})
+
+        fresh = model.recalibrate(delta=0.5)
+        assert fresh is not model
+        assert fresh.calibration["delta"] == pytest.approx(0.5)
+        assert model.calibration["delta"] == pytest.approx(0.025)
+
+        # the recalibrated model evaluates with the new parameters, and stays
+        # independent of further recalibrations
+        m, s, x, p = (
+            fresh.calibration["exogenous"],
+            fresh.calibration["states"],
+            fresh.calibration["controls"],
+            fresh.calibration["parameters"],
+        )
+        k_next = fresh.functions["transition"](m, s, x, m, p)[1]
+        assert np.allclose(k_next, (1 - 0.5) * s[1] + x[1])
+
+        fresh2 = fresh.recalibrate({"delta": 0.4, "beta": 0.9})
+        assert fresh2.calibration["delta"] == pytest.approx(0.4)
+        assert fresh.calibration["delta"] == pytest.approx(0.5)
+        assert model.calibration["delta"] == pytest.approx(0.025)
+
+
 def test_import_entry_points():
     model = dolo.yaml_import_v2("examples/models/rbc.yaml")
     assert "arbitrage" in model.functions
