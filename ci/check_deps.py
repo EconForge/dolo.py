@@ -27,7 +27,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # PyPI name -> conda-forge name, where they differ.
-CONDA_NAMES: dict[str, str] = {}
+# `dynopy` is the PyPI publishing name of the `dyno` project: pyproject.toml
+# declares the PyPI name while pixi installs the conda-forge package `dyno`.
+CONDA_NAMES: dict[str, str] = {"dynopy": "dyno"}
 
 # Packages where the pyproject.toml floor cannot be installed in the
 # min-deps environment (e.g. pyyaml 6.0 has no conda-forge build for

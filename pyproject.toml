@@ -23,7 +23,7 @@ classifiers = [
 ]
 dependencies = [
     "dolang>=0.0.21,<0.1",
-    "dynopy>=0.1.13,<0.2",
+    "dynopy>=0.1.15,<0.2",
     "interpolation>=2.2.7,<3",
     "jax>=0.4.38,<0.5",
     "matplotlib>=3.6.0,<4",

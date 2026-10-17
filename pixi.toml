@@ -1,7 +1,10 @@
 [workspace]
 authors = ["Pablo Winant <pablo.winant@gmail.com>"]
 description = "Economic Modeling in Python"
-channels = ["https://prefix.dev/econforge", "conda-forge"]
+# conda-forge first: with pixi's default strict channel priority, the first
+# channel that carries a package wins, and econforge lags behind conda-forge
+# for `dyno` (the `dynopy` project), so `dyno >=0.1.15` is only reachable here.
+channels = ["conda-forge", "https://prefix.dev/econforge"]
 
 preview = ["pixi-build"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
@@ -29,12 +32,6 @@ hatchling = "==1.26.3"
 
 [pypi-dependencies]
 dolo = { path = ".", editable = true }
-# The `dynopy` project (pyproject.toml's runtime dependency for `dyno`) comes
-# from PyPI: the editable `dolo` above pulls it in anyway, so declaring it here
-# keeps a single provider of the `dyno/` top-level package.  (conda-forge and
-# the econforge channel also package it, under the canonical name `dyno`; using
-# that one instead would install a second copy of the same package.)
-dynopy = ">=0.1.13,<0.2"
 # jax comes from PyPI: conda-forge does not package jaxlib for win-64.
 # Upper bound (<0.5): jaxlib dropped macosx_x86_64 wheels in 0.5.0, and the
 # project's CI/lock matrix still includes the osx-64 platform.
@@ -52,6 +49,9 @@ interpolation = ">=2.2.7,<3"
 multipledispatch = ">=0.6.0,<0.7"
 numba = ">=0.60.0,<0.70"
 dolang = ">=0.0.21,<0.1"
+# conda-forge packages the `dynopy` project (the PyPI name pyproject.toml
+# declares as dolo's runtime dependency) under its canonical name, `dyno`.
+dyno = ">=0.1.15,<0.2"
 # Constrained for the dev workspace only: the Jupyter/MkDocs conda stack
 # freely picks rich==15, but the `dynopy` PyPI dependency requires rich<15.
 rich = "<15"
@@ -131,12 +131,11 @@ interpolation = "==2.2.7"
 multipledispatch = "==0.6.0"
 numba = "==0.60.0"
 dolang = "==0.0.21"
+dyno = "==0.1.15"
 pyyaml = "==6.0.1"
 
-# Pin the published packages that have no usable conda-forge build: `dynopy`
-# is the PyPI distribution name, and jaxlib has no win-64 wheel.
+# Only jax needs a PyPI pin: conda-forge packages no jaxlib for win-64.
 [feature.min-deps.pypi-dependencies]
-dynopy = "==0.1.13"
 jax = "==0.4.38"
 
 [environments]

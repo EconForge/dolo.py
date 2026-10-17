@@ -10,12 +10,15 @@ Date of last update: 2026-10-18. Read this instead of re-reading the whole conve
 
 Rewrite dolo's model *import* so that:
 
-- D1 — dolo depends on **dyno.py** (`dynopy` on PyPI, `dyno` project
-  name) and uses `dyno.dynspec` for equation parsing, conformity
-  checking and recipes. dyno.py is now released, so pixi installs the
-  published PyPI distribution: the earlier local `../dyno.py` editable
-  checkout and its PYTHONPATH guard are gone (see §4); `min-deps` pins
-  the published `dynopy==0.1.13`. **dyno.py code is not modified
+- D1 — dolo depends on **dyno.py** (PyPI name `dynopy`, conda-forge name
+  `dyno`) and uses `dyno.dynspec` for equation parsing, conformity
+  checking and recipes. The `../dyno.py` editable checkout and its
+  PYTHONPATH guard are gone: the released package is used, with the floor
+  raised to **0.1.15** — the first release that ships
+  `dynspec.recipe.extract_complementarity` and that drops the wheel
+  entries that collided case-insensitively (`dyno/examples/RBC.dyno` vs
+  `rbc.dyno`), which broke pip/pixi installs on macOS and Windows.
+  `min-deps` pins the same version. **dyno.py code is not modified
   by dolo work.**
 - D2 — equation evaluation/differentiation uses **JAX**. Two stages
   happened: (a) `EquationsEvaluator` walking lark trees at trace time
@@ -139,26 +142,31 @@ produce identical results to legacy.
 
 ## 4. Dependencies (pixi/pyproject)
 
-- `pyproject.toml` added: `dynopy>=0.1.13,<0.2`, `jax>=0.4.38,<0.5`,
-  `numba>=0.60.0,<0.70`.
+- `pyproject.toml` declares: `dynopy>=0.1.15,<0.2`, `jax>=0.4.38,<0.5`,
+  `numba>=0.60.0,<0.70`, and the rest of the runtime set.
 - `pixi.toml`:
-  - `[pypi-dependencies]`: `dolo` (editable) + `dynopy >=0.1.13,<0.2` +
-    `jax >=0.4.38,<0.5`. `dynopy` is declared explicitly so the
-    environment has a single provider of the `dyno/` package: the
-    editable `dolo` pulls it from PyPI regardless, and adding the conda
-    `dyno` package (conda-forge/econforge) on top would install a second
-    copy of the same top-level package.
-  - `[feature.min-deps.pypi-dependencies]`: `dynopy ==0.1.13`, `jax ==0.4.38`.
-  - The former `../dyno.py` editable path dependency and its
-    `[activation.env]` PYTHONPATH guard are gone: they existed only to
-    prefer the local checkout over the published dynopy.
-  - conda `[dependencies]`: `rich = "<15"` (the Jupyter/MkDocs stack pins
-    conda rich 15 while dynopy needs rich<15).
+  - channels: `["conda-forge", "https://prefix.dev/econforge"]` —
+    conda-forge first, because pixi's default strict channel priority
+    takes a package from the first channel that carries it, and the
+    econforge channel lags conda-forge for `dyno`.
+  - conda `[dependencies]`: `dyno >=0.1.15,<0.2` (the conda-forge name of
+    the `dynopy` project) and `rich = "<15"` (the Jupyter/MkDocs stack
+    pins conda rich 15 while dynopy requires rich<15).
+  - `[pypi-dependencies]`: `dolo` (editable) + `jax >=0.4.38,<0.5`.
+  - `[feature.min-deps]`: conda `dyno ==0.1.15`, pypi `jax ==0.4.38`.
+  - No `[activation.env]` PYTHONPATH guard any more; it existed only to
+    make the local `../dyno.py` checkout win over the published dynopy.
+  - Known wart: the editable `dolo` declares `dynopy` as a PyPI
+    dependency, so the lock installs the PyPI `dynopy` *in addition to*
+    the conda `dyno`. Both are the same release (`dyno` 0.1.15 /
+    `dynopy` 0.1.15), so the files are identical and either copy works;
+    only one of the two is actually needed.
 - Why jax is on PyPI and capped `<0.5`: conda-forge has no jaxlib for
   win-64; jaxlib dropped macosx_x86_64 wheels in 0.5.0 and the workspace
   still locks osx-64. jaxlib 0.4.38 has wheels for every platform×py312/313.
-- `ci/check_deps.py` now understands `[pypi-dependencies]` (incl.
-  min-deps pypi) and table-valued path entries; verified green.
+- `ci/check_deps.py` understands `[pypi-dependencies]` (incl. min-deps
+  pypi) and table-valued path entries, and maps the PyPI name `dynopy`
+  to the conda name `dyno` via `CONDA_NAMES`; verified green.
 
 ## 5. Performance: everything learned
 
