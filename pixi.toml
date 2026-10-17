@@ -29,23 +29,16 @@ hatchling = "==1.26.3"
 
 [pypi-dependencies]
 dolo = { path = ".", editable = true }
-# Development uses the local dyno.py checkout.  The project's canonical name
-# is `dyno`; it is published to PyPI as `dynopy` (the name pyproject.toml
-# declares as dolo's runtime dependency, and what min-deps pins below).
-dyno = { path = "../dyno.py", editable = true }
+# The `dynopy` project (pyproject.toml's runtime dependency for `dyno`) comes
+# from PyPI: the editable `dolo` above pulls it in anyway, so declaring it here
+# keeps a single provider of the `dyno/` top-level package.  (conda-forge and
+# the econforge channel also package it, under the canonical name `dyno`; using
+# that one instead would install a second copy of the same package.)
+dynopy = ">=0.1.13,<0.2"
 # jax comes from PyPI: conda-forge does not package jaxlib for win-64.
 # Upper bound (<0.5): jaxlib dropped macosx_x86_64 wheels in 0.5.0, and the
 # project's CI/lock matrix still includes the osx-64 platform.
 jax = ">=0.4.38,<0.5"
-
-# The dev workspace consumes the local dyno.py checkout (`dyno = { path = ... }`
-# above).  `dolo` also declares the dependency under its PyPI name (dynopy), so
-# pixi locks the *published* dynopy alongside; its `dyno/` package directory in
-# site-packages would shadow the editable branch checkout.  Putting the local
-# checkout first on PYTHONPATH makes the editable win (temporary until dyno.py
-# publishes the next release, when the pinned dynopy catches up).
-[activation.env]
-PYTHONPATH = "$PIXI_PROJECT_ROOT/../dyno.py/src"
 
 [dependencies]
 python = ">=3.12,<3.14"
@@ -140,8 +133,8 @@ numba = "==0.60.0"
 dolang = "==0.0.21"
 pyyaml = "==6.0.1"
 
-# The default `dynopy = { path = ... }` entry is a development shortcut that
-# cannot be used in a reproducible CI environment; pin the published package.
+# Pin the published packages that have no usable conda-forge build: `dynopy`
+# is the PyPI distribution name, and jaxlib has no win-64 wheel.
 [feature.min-deps.pypi-dependencies]
 dynopy = "==0.1.13"
 jax = "==0.4.38"

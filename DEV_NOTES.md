@@ -1,8 +1,8 @@
 # dolo.py — dolang → dynspec transition: status & handover notes
 
-Branch: `feat/dyno-importer` (all the work so far is on this branch, on top of `master`).
+Branch: merged into `master` (the work was done on `feat/dyno-importer`, kept).
 
-Date of last update: 2026-10-16. Read this instead of re-reading the whole conversation.
+Date of last update: 2026-10-18. Read this instead of re-reading the whole conversation.
 
 ---
 
@@ -12,10 +12,10 @@ Rewrite dolo's model *import* so that:
 
 - D1 — dolo depends on **dyno.py** (`dynopy` on PyPI, `dyno` project
   name) and uses `dyno.dynspec` for equation parsing, conformity
-  checking and recipes. During development pixi uses the local checkout
-  at `../dyno.py` as an editable path dependency (with a PYTHONPATH
-  guard so it wins over the locked PyPI dynopy — see §4); `min-deps`
-  pins the published `dynopy==0.1.13`. **dyno.py code is not modified
+  checking and recipes. dyno.py is now released, so pixi installs the
+  published PyPI distribution: the earlier local `../dyno.py` editable
+  checkout and its PYTHONPATH guard are gone (see §4); `min-deps` pins
+  the published `dynopy==0.1.13`. **dyno.py code is not modified
   by dolo work.**
 - D2 — equation evaluation/differentiation uses **JAX**. Two stages
   happened: (a) `EquationsEvaluator` walking lark trees at trace time
@@ -142,23 +142,23 @@ produce identical results to legacy.
 - `pyproject.toml` added: `dynopy>=0.1.13,<0.2`, `jax>=0.4.38,<0.5`,
   `numba>=0.60.0,<0.70`.
 - `pixi.toml`:
-  - `[pypi-dependencies]`: `dolo` + `dyno = { path = "../dyno.py",
-    editable = true }` (the local checkout's canonical project name is
-    `dyno`; PyPI publishing name stays `dynopy`) + `jax >=0.4.38,<0.5`.
-  - `[activation.env]`: `PYTHONPATH = "$PIXI_PROJECT_ROOT/../dyno.py/src"`
-    — `dolo` also declares `dynopy` as a PyPI dep, so the lock installs
-    the *published* dynopy whose `dyno/` package dir would shadow the
-    editable branch checkout; PYTHONPATH puts the checkout first.
-    Temporary until the next dynopy release ships the `⟂` grammar.
+  - `[pypi-dependencies]`: `dolo` (editable) + `dynopy >=0.1.13,<0.2` +
+    `jax >=0.4.38,<0.5`. `dynopy` is declared explicitly so the
+    environment has a single provider of the `dyno/` package: the
+    editable `dolo` pulls it from PyPI regardless, and adding the conda
+    `dyno` package (conda-forge/econforge) on top would install a second
+    copy of the same top-level package.
   - `[feature.min-deps.pypi-dependencies]`: `dynopy ==0.1.13`, `jax ==0.4.38`.
+  - The former `../dyno.py` editable path dependency and its
+    `[activation.env]` PYTHONPATH guard are gone: they existed only to
+    prefer the local checkout over the published dynopy.
   - conda `[dependencies]`: `rich = "<15"` (the Jupyter/MkDocs stack pins
     conda rich 15 while dynopy needs rich<15).
 - Why jax is on PyPI and capped `<0.5`: conda-forge has no jaxlib for
   win-64; jaxlib dropped macosx_x86_64 wheels in 0.5.0 and the workspace
   still locks osx-64. jaxlib 0.4.38 has wheels for every platform×py312/313.
 - `ci/check_deps.py` now understands `[pypi-dependencies]` (incl.
-  min-deps pypi), table-valued path entries, and the `dynopy`-PyPI-name
-  ↔ `dyno`-project-name alias; verified green.
+  min-deps pypi) and table-valued path entries; verified green.
 
 ## 5. Performance: everything learned
 

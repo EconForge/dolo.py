@@ -29,12 +29,6 @@ ROOT = Path(__file__).resolve().parent.parent
 # PyPI name -> conda-forge name, where they differ.
 CONDA_NAMES: dict[str, str] = {}
 
-# PyPI distribution name -> canonical project name, where they differ.
-# `dynopy` is the PyPI publishing name of the `dyno` project: pyproject.toml
-# declares the PyPI name, while the dev workspace installs the local checkout
-# under its canonical project name (`dyno = { path = ... }`).
-PYPI_ALIASES: dict[str, str] = {"dynopy": "dyno"}
-
 # Packages where the pyproject.toml floor cannot be installed in the
 # min-deps environment (e.g. pyyaml 6.0 has no conda-forge build for
 # Python >=3.12).  Values are the pin that min-deps should use instead.
@@ -82,10 +76,11 @@ def main() -> int:
 
     workspace = {normalize_name(k): v for k, v in pixi["dependencies"].items()}
     # PyPI dependencies live in their own table.  A package may be declared
-    # there instead of in ``[dependencies]`` (e.g. ``dynopy``, which only
-    # exists on PyPI).  Table-valued entries (``{ path = ..., editable =
-    # true }``) are development shortcuts: their presence is checked, but
-    # they do not carry a version spec to compare against pyproject.toml.
+    # there instead of in ``[dependencies]`` (e.g. ``jax``, whose conda-forge
+    # jaxlib is not available for win-64).  Table-valued entries (``{ path =
+    # ..., editable = true }``) are development shortcuts: their presence is
+    # checked, but they do not carry a version spec to compare against
+    # pyproject.toml.
     pypi_workspace = {
         normalize_name(k): v for k, v in pixi.get("pypi-dependencies", {}).items()
     }
@@ -133,16 +128,6 @@ def main() -> int:
                         f"{pypi_spec!r}, pyproject.toml has {spec!r}"
                     )
             # Table entries (path deps) have no comparable version spec.
-        elif PYPI_ALIASES.get(name) in pypi_workspace:
-            # e.g. `dynopy` (PyPI) provided by the `dyno` path entry above.
-            pypi_spec = pypi_workspace[PYPI_ALIASES[name]]
-            if isinstance(pypi_spec, str) and normalize_spec(
-                pypi_spec
-            ) != normalize_spec(spec):
-                errors.append(
-                    f"{name}: pixi.toml [pypi-dependencies] has "
-                    f"{pypi_spec!r}, pyproject.toml has {spec!r}"
-                )
         else:
             errors.append(
                 f"{name}: missing from pixi.toml [dependencies]"

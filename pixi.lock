@@ -217,7 +217,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/15/57/7f0283273b69c417071bcd2f4c2ed076479ec5ffc22a647f13c21da8d071/jaxlib-0.4.38-cp313-cp313-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -369,7 +368,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -519,7 +517,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -675,7 +672,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -1028,7 +1024,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/websocket-client-1.9.2-pyh5ded981_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/15/57/7f0283273b69c417071bcd2f4c2ed076479ec5ffc22a647f13c21da8d071/jaxlib-0.4.38-cp313-cp313-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -1313,7 +1308,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zeromq-4.3.5-h5dbc3f3_12.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -1598,7 +1592,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zeromq-4.3.5-h6eb0046_12.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -1882,7 +1875,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -2113,7 +2105,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.7.0-pyhd8ed1ab_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1d/6d/b26eb1e75395925b3a142ed351cbed2ec8212f5c9d937aee3df32c701baa/rpds_py-2026.9.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -2251,7 +2242,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -2387,7 +2377,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -2558,7 +2547,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1c/84/1700cc748d0eaa747486e4e82882d2575224e6e9a3148df583058850c629/rpds_py-2026.9.1-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -2862,7 +2850,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/websocket-client-1.9.2-pyh5ded981_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/15/57/7f0283273b69c417071bcd2f4c2ed076479ec5ffc22a647f13c21da8d071/jaxlib-0.4.38-cp313-cp313-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -3101,7 +3088,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zeromq-4.3.5-h5dbc3f3_12.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -3340,7 +3326,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zeromq-4.3.5-h6eb0046_12.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -3577,7 +3562,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -3800,7 +3784,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1d/6d/b26eb1e75395925b3a142ed351cbed2ec8212f5c9d937aee3df32c701baa/rpds_py-2026.9.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -3965,7 +3948,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -4128,7 +4110,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -4297,7 +4278,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/1c/84/1700cc748d0eaa747486e4e82882d2575224e6e9a3148df583058850c629/rpds_py-2026.9.1-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -4526,7 +4506,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/15/57/7f0283273b69c417071bcd2f4c2ed076479ec5ffc22a647f13c21da8d071/jaxlib-0.4.38-cp313-cp313-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -4691,7 +4670,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -4854,7 +4832,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -5023,7 +5000,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -5241,7 +5217,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.8.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2024.11.0-pyhd8ed1ab_0.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/15/57/7f0283273b69c417071bcd2f4c2ed076479ec5ffc22a647f13c21da8d071/jaxlib-0.4.38-cp313-cp313-manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
@@ -5395,7 +5370,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zlib-ng-2.3.3-h646e873_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -5547,7 +5521,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -5705,7 +5678,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: ../dyno.py
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/22/49/b4418a7a892c0dd64442bbbeef54e1cdfe722dfc5a7bf0d611d3f5f90e99/jax-0.4.38-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/23/05/346f980c4e643f04ec3630c20d8169ffbea5137f6dcf7619d7349f7f9401/Tempita-0.6.0-py3-none-any.whl
@@ -20175,24 +20147,6 @@ packages:
     - zstd >=1.5.7,<1.6.0a0
   size: 387535
   timestamp: 1786599623274
-- pypi: ../dyno.py
-  name: dyno
-  requires_dist:
-  - altair>=5.0.0,<7
-  - interegular>=0.3.3,<0.4
-  - lark>=1.1.7,<2
-  - markdown-it-py>=3.0.0,<5
-  - mdit-py-plugins>=0.4.0,<1
-  - numpy>=1.26.0,<3
-  - pandas>=2.1.1,<4
-  - plotext>=5.3.2,<6
-  - pyyaml>=6.0,<7
-  - rich>=13.0.0,<15
-  - scipy>=1.11.3,<2
-  - tempita>=0.6.0,<0.7
-  - typing-extensions>=4.6.0,<5
-  - sympy>=1.12,<2 ; extra == 'experimental'
-  requires_python: '>=3.12,<3.15'
 - pypi: ./
   name: dolo
   requires_dist:
