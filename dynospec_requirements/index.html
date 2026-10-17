@@ -1,0 +1,1802 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A Python toolkit for modeling, solving, and simulating economic models">
+      
+      
+        <meta name="author" content="EconForge & Pablo Winant">
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="zensical-0.0.52">
+    
+    
+      
+        <title>dynospec requirements — dolo ⟂ complementarity support - Dolo</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../assets/stylesheets/modern/main.8b3b5a67.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../assets/stylesheets/modern/palette.dfe2e883.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-label="Navigation"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#dynospec-requirements-dolo-complementarity-support" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="./.." title="Dolo" class="md-header__button md-logo" aria-label="Dolo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Navigation">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Dolo
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              dynospec requirements — dolo ⟂ complementarity support
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="none" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search" aria-label="Search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="Search">
+  <button type="button" class="md-search__button">
+    Search
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+    </div>
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="./.." class="md-tabs__link">
+        
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../modeling_language/" class="md-tabs__link">
+          
+  
+  Modeling
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../steady_state/" class="md-tabs__link">
+          
+  
+  Local Solution Algorithms
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../perfect_foresight/" class="md-tabs__link">
+          
+  
+  Perfect Foresight Algorithm
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../parameterized_expectations/" class="md-tabs__link">
+          
+  
+  Global Solution Algorithms
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../inspect/" class="md-tabs__link">
+          
+  
+  Post Processing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../finite_iteration/" class="md-tabs__link">
+          
+  
+  Misc
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+      
+        
+      
+    
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="./.." title="Dolo" class="md-nav__button md-logo" aria-label="Dolo" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-book-open" viewBox="0 0 24 24"><path d="M12 5v16M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg>
+
+    </a>
+    Dolo
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Home
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Install
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Modeling
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Modeling
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../modeling_language/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  The dolo language
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model API
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model_specification/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Model Specification
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Shocks
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Local Solution Algorithms
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Local Solution Algorithms
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steady_state/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Steady-state
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../perturbation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Perturbation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Perfect Foresight Algorithm
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Perfect Foresight Algorithm
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../perfect_foresight/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Perfect foresight
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Global Solution Algorithms
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Global Solution Algorithms
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parameterized_expectations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Parameterized expectations
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../time_iteration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Time Iteration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../value_iteration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Value function iteration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Post Processing
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Post Processing
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inspect/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Inspecting the solution
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Simulation
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Misc
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  Misc
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../finite_iteration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Finite iteration
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Reference
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+  API Reference
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  API Reference
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status-2026-10-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Status (2026-10-16)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-why" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        1. Why
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-syntax-to-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2. Syntax to support
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Syntax to support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-complementarities-on-equations" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2.1 <code>⟂</code> complementarities on equations
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-standalone-bounds-sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2.2 Standalone bounds sections
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-dolo-timing-conveniences-dropped-nothing-to-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        2.3 dolo timing conveniences — <em>dropped, nothing to do</em>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-required-api-surface-what-dolo-will-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        3. Required API surface (what dolo will import)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-recipe-change" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        4. Recipe change
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-what-dolo-will-do-once-this-lands-its-cost-not-yours" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        5. What dolo will do once this lands (its cost, not yours)
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-acceptance-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        6. Acceptance criteria
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-decisions-to-take-on-your-side-non-goals" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        7. Decisions to take on your side / non-goals
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+<h1 id="dynospec-requirements-dolo-complementarity-support">dynospec requirements — dolo <code>⟂</code> complementarity support<a class="headerlink" href="#dynospec-requirements-dolo-complementarity-support" title="Permanent link">&para;</a></h1>
+<p>Handover note for the dyno.py side of the dolang → dynspec transition.
+<strong>dolo.py side:</strong> branch <code>feat/dyno-importer</code> of <code>dolo.py</code>, status in
+<code>DEV_NOTES.md</code> (this repo). <strong>dyno.py side:</strong> today's <code>dyno.dynspec</code>
+(grammar <code>grammars/grammar.lark</code>, analyzer <code>analyze.py</code>, recipes
+<code>recipe.py</code>, file parser <code>larkfiles.py</code>).</p>
+<p>The target artifact this enables:
+[dolo.py: examples/dyno/rbc_dolo_comp.dyno] — a <code>.dyno</code> model using the
+syntax described below. Once implemented, that file must load through
+<code>ModelV2.from_dyno</code> and reproduce <code>examples/models/rbc.yaml</code>.</p>
+<h2 id="status-2026-10-16">Status (2026-10-16)<a class="headerlink" href="#status-2026-10-16" title="Permanent link">&para;</a></h2>
+<p>Implemented on dyno.py <code>albop/dynspec</code>:</p>
+<ul>
+<li><code>1874e94</code> — §2.1 grammar (<code>complementarity</code> rule, <code>⟂</code>/<code>|</code>, TimeFixer
+  normalization to <code>complementarity(residual, lb, x, ub)</code> with explicit
+  <code>-inf</code>/<code>inf</code>), residual-only evaluation /
+  <code>extract_variables_from_equation</code>, <code>\perp</code> latex, built-in <code>inf</code>,
+  example file + tests.</li>
+<li><code>e3596bc</code> — <strong>§4 recipes</strong>: YAML recipe loading, <code>check_group</code> /
+  <code>check_model</code>, complementarity conformity (i-th complementarity
+  bounds the i-th control; bounds restricted to the spec), bundled
+  <code>recipes.yaml</code> with <code>arbitrage_bounds</code>, <code>controls_lb</code>/<code>controls_ub</code>
+  groups, and <code>extract_complementarity</code>/<code>extract_rhs_variables</code>.</li>
+</ul>
+<p><strong>dolo consumes all of it</strong>: group specs come from <code>DTCC_RECIPE</code> (its
+<code>_BOUND_SPEC</code> is deleted), complementarity conformity produces the
+compile-time errors, <code>extract_complementarity</code>/<code>extract_rhs_variables</code>
+drive <code>.dyno</code> symbol inference, and both are committed tests
+(<code>test_dyno_comp_import_rbc</code>, <code>test_dyno_standalone_bounds_sections</code>,
+<code>test_complementarity_positional_check</code>).</p>
+<p>Still open:
+- <code>==</code> alias in the grammar (one line; after which dolo's
+  <code>equation_preprocess.py</code> shrinks to nothing or disappears).
+- §2.3 is closed: dolo dropped <code>x(1)</code>/untimed support entirely
+  (2026-10-17, examples migrated to explicit timing).</p>
+<hr />
+<h2 id="1-why">1. Why<a class="headerlink" href="#1-why" title="Permanent link">&para;</a></h2>
+<p>dolo's new importer (<code>dolo.compiler.model_v2</code>) parses model text with
+dynspec, but dolo models carry three syntax features dynspec does not
+have yet. dolo currently rewrites that text <em>before</em> parsing in a
+throwaway module, <code>dolo/compiler/equation_preprocess.py</code> (TEMP). The
+goal of this work: make the grammar natively support the syntax so
+<code>equation_preprocess.py</code> can be deleted. (No dolang code is involved on
+the new path; dolang is out of scope here.)</p>
+<h2 id="2-syntax-to-support">2. Syntax to support<a class="headerlink" href="#2-syntax-to-support" title="Permanent link">&para;</a></h2>
+<h3 id="21-complementarities-on-equations">2.1 <code>⟂</code> complementarities on equations<a class="headerlink" href="#21-complementarities-on-equations" title="Permanent link">&para;</a></h3>
+<p>An equation in a block may carry a complementarity suffix:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;residual&gt;  ⟂  &lt;lb&gt; &lt;= &lt;x&gt;[t] [&lt;= &lt;ub&gt;]
+</span></code></pre></div>
+<ul>
+<li><code>&lt;residual&gt;</code> is the equation as today (<code>bare_formula</code> or <code>equality</code>).</li>
+<li>The bound is attached to exactly one control variable <code>&lt;x&gt;</code> at shift 0.</li>
+<li><code>&lt;lb&gt;</code> / <code>&lt;ub&gt;</code> are formulas. Omitted lower bound → <code>-inf</code>, omitted
+  upper bound → <code>+inf</code>, so these are all valid and equivalent to the
+  full form where the blank side is <code>±inf</code>:</li>
+</ul>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>g  ⟂ 0.0 &lt;= n[t] &lt;= inf
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>g  ⟂ 0.0 &lt;= n[t]                         # one-sided: ub = +inf
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>g  ⟂ -inf &lt;= n[t] &lt;= 1.0                 # lb = -inf
+</span></code></pre></div>
+<ul>
+<li><strong>Positional meaning (dolo convention):</strong> in the <code>[arbitrage]</code> block
+  the i-th equation's complementarity must involve the i-th control
+  (in the model's <code>controls</code> declaration order). Violating this is a
+  conformity error with a clear message ("expected <code>&lt;control_i&gt;[t]</code>,
+  found <code>&lt;other&gt;</code>").</li>
+<li>Legacy separator <code>|</code> (pre-<code>⟂</code> dolo syntax) — <em>optional</em>: dolo only
+  treats <code>|</code> as a separator when it is followed by a comparison
+  (<code>... | 0 &lt;= x[t] &lt;= 1</code>), otherwise it is the (deprecated) OR
+  operator. Supporting it keeps old YAML files on the new parser;
+  <code>⟂</code> is the recommendation going forward.</li>
+</ul>
+<p>Grammar anchors (today, <code>dyno/dynspec/grammars/grammar.lark</code>):</p>
+<ul>
+<li><code>?equation: equality | bare_formula</code> (≈line 31) — add a third
+  alternative,</li>
+<li>terminal <code>COMPARISON: ("&lt;="|"&lt;"|"&gt;"|"&gt;=")</code> already exists (≈line 40)
+  but is only used by <code>t_double_bound</code> (line 41), a useful precedent for
+  the chained bound form.</li>
+</ul>
+<p>Suggested shape (exact AST at your discretion):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>?equation: equality | bare_formula | complementarity
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>complementarity: formula "⟂" comparisons
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>comparisons:     formula COMPARISON variable -&gt; bound (one-sided)
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>               | formula COMPARISON variable COMPARISON formula -&gt; bounds
+</span></code></pre></div>
+<p>with a kept tree so <code>extract_*</code>/<code>str_expression</code>/<code>latex</code> can traverse
+it (see §3).</p>
+<h3 id="22-standalone-bounds-sections">2.2 Standalone bounds sections<a class="headerlink" href="#22-standalone-bounds-sections" title="Permanent link">&para;</a></h3>
+<p>dolo also allows bounds in dedicated equation groups (dolo docs
+convention), keyed by block tag:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[controls_lb] :: {
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    n[t] = 0.0
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    i[t] = -inf
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>}
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>[controls_ub] :: {
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    n[t] = 1.0
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    i[t] = (1-delta)*k[t] + k[t]^alpha
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>}
+</span></code></pre></div>
+<ul>
+<li>Each line is an <code>equality</code> whose LHS is a <em>control</em> variable at
+  shift 0 (already legal grammar — <code>equality: formula "=" formula</code>);
+  the RHS is the bound expression.</li>
+<li>Bounds (here and in §2.1) may only involve <code>exogenous[t]</code>,
+  <code>states[t]</code>, and <code>parameters</code>. <strong>No controls, no auxiliaries, no
+  time shifts.</strong> This is the bounds conformity spec (§4).</li>
+<li>There are exactly <code>len(controls)</code> equations.</li>
+<li><code>rbc_dolo_comp.dyno</code> shows both syntaxes; a model uses either the
+  <code>⟂</code> suffix form or the standalone sections (dolo accepts both).</li>
+</ul>
+<h3 id="23-dolo-timing-conveniences-dropped-nothing-to-do">2.3 dolo timing conveniences — <em>dropped, nothing to do</em><a class="headerlink" href="#23-dolo-timing-conveniences-dropped-nothing-to-do" title="Permanent link">&para;</a></h3>
+<p>Timing is <strong>always explicit</strong> in dynospec: <code>x[t]</code>, <code>x[t-1]</code>, <code>x[t+1]</code>;
+a name without <code>[t]</code> is a constant.  dolo no longer supports the legacy
+dolo conveniences — parenthesis timing (<code>x(1)</code>) and implicit dating of
+untimed variables — neither in model equations nor <code>eval_formula</code>
+(2026-10-17 decision; the examples were migrated to explicit timing and
+the text-level normalization was removed from dolo's importer).  There
+is nothing to implement on the dyno side for this section.</p>
+<p>The only dolo-side text handling left is YAML-section bookkeeping
+(comment stripping, line splitting) and accepting <code>==</code> in place of <code>=</code>
+(<code>dolo/compiler/equation_preprocess.py</code>); the <code>==</code> alias could equally
+well be a grammar alias in dynospec, after which that module disappears.</p>
+<h2 id="3-required-api-surface-what-dolo-will-import">3. Required API surface (what dolo will import)<a class="headerlink" href="#3-required-api-surface-what-dolo-will-import" title="Permanent link">&para;</a></h2>
+<p>Minimum so that <code>dolo.compiler.model_v2</code> can drop the text-level
+preprocessing:</p>
+<ol>
+<li><strong>Parse.</strong> <code>parser.parse(txt, start="equation_block" |
+   "complementarity_block")</code> over the block contents handles every form
+   in §2.1.</li>
+<li><strong>Read the structure.</strong> An analyzer helper à la
+   <code>extract_lhs_variable</code>:
+   <code>extract_complementarity(tree) -&gt; (lb_tree | None, variable_name,
+   ub_tree | None)</code> (or a small dataclass with <code>.lower</code>, <code>.upper</code>,
+   <code>.variable</code>, <code>.shift</code>), returning <code>None</code> for plain equations. Both
+   bound expressions as trees so they can be parsed/stringified/conformity
+   checked.</li>
+<li><strong>Traversal.</strong> <code>extract_variables_from_equation</code> must walk the
+   complementarity subtree (bound expressions count as occurrences).
+   <code>str_expression</code> renders the residual <em>only</em> (dolo's <code>equations</code>
+   dict shows <code>residual</code> and keeps <code>arbitrage_lb</code>/<code>arbitrage_ub</code> as
+   separate groups). Optionally expose full-fidelity rendering.</li>
+<li><strong>Latex.</strong> <code>latex</code> renders <code>⟂</code> as <code>\perp</code> between residual and
+   bounds (or at minimum renders the residual — dolo's <code>_repr_html_</code>
+   shows bounds-less rows).</li>
+<li><strong>Conformity.</strong> <code>check_equation_group(..., spec)</code> on an <code>arbitrage</code>
+   group containing complementarities must verify §2.1's positional
+   rule, one bound per equation, and run the bounds-conformity check of
+   §4 against the <code>arbitrage_bounds</code> spec; on failure the <code>CheckResult</code>
+   lists violations like today. The recipes change of §4 is what makes
+   <code>arbitrage_lb</code>/<code>arbitrage_ub</code> first-class.</li>
+<li><strong>Tags pass through.</strong> <code>DynoFile</code> (larkfiles.py) already preserves
+   block tags in <code>statement_metadata</code>; verify <code>[controls_lb]</code> /
+   <code>[controls_ub]</code> blocks survive as tagged equations (dolo classifies
+   equations by those tags today — <code>ModelV2.from_dyno</code>).</li>
+</ol>
+<h2 id="4-recipe-change">4. Recipe change<a class="headerlink" href="#4-recipe-change" title="Permanent link">&para;</a></h2>
+<p><code>dolo/compiler/functions_v2.py</code> currently hardcodes what should become a
+dynspec group spec (module-level <code>_BOUND_SPEC</code>):</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">EquationGroupSpec</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"arbitrage_bounds"</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">allowed</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">VariableSpec</span><span class="p">(</span><span class="s2">"exogenous"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="n">VariableSpec</span><span class="p">(</span><span class="s2">"states"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="n">VariableSpec</span><span class="p">(</span><span class="s2">"parameters"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="p">],</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">n_equations</span><span class="o">=</span><span class="s2">"controls"</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Land the equivalent in <code>dyno.dynspec.recipe</code> (add to <code>DTCC_RECIPE</code>),
+covering both <code>arbitrage</code>-attached complementarities and the standalone
+<code>controls_lb</code>/<code>controls_ub</code> sections. dolo then:
+- <code>check_equation_group</code> with this spec for bounds conformity,
+- <code>compile_group</code> bounds exactly like any other group.</p>
+<h2 id="5-what-dolo-will-do-once-this-lands-its-cost-not-yours">5. What dolo will do once this lands (its cost, not yours)<a class="headerlink" href="#5-what-dolo-will-do-once-this-lands-its-cost-not-yours" title="Permanent link">&para;</a></h2>
+<ul>
+<li>delete <code>dolo/compiler/equation_preprocess.py</code>;</li>
+<li><code>ModelV2.from_yaml</code> / <code>from_dyno</code> switch from <code>split_complementarity</code></li>
+<li><code>normalize_timing</code> text surgery to the parsed complementarity
+  structure (<code>extract_complementarity</code>) and dynspec recipes;</li>
+<li><code>functions_v2._BOUND_SPEC</code> becomes
+  <code>DTCC_RECIPE.get_group_spec("arbitrage_bounds")</code>.</li>
+</ul>
+<h2 id="6-acceptance-criteria">6. Acceptance criteria<a class="headerlink" href="#6-acceptance-criteria" title="Permanent link">&para;</a></h2>
+<ol>
+<li><code>dolo.py</code> loads <code>examples/dyno/rbc_dolo_comp.dyno</code> with
+   <code>ModelV2.from_dyno</code> with <strong>no preprocessing</strong>, giving
+   <code>symbols</code>, <code>calibration</code>, <code>functions["arbitrage"]</code> +
+   <code>["arbitrage_lb"]</code>/<code>["arbitrage_ub"]</code> identical to
+   <code>yaml_import_v2("examples/models/rbc.yaml")</code>.</li>
+<li>Bounds function values equal the YAML-twin bounds (<code>0.0</code> / <code>inf</code>
+   rows for this RBC).</li>
+<li>Error quality: wrong control in a complementarity raises a
+   conformity error naming expected vs found variable; a bound using
+   <code>controls</code>/<code>auxiliaries</code> or a shifted variable reports a violation.</li>
+<li>Existing dyno tests still pass (plain equations keep working;
+   <code>|</code>-free files are unaffected).</li>
+<li>dolo's migration contract still green: <code>pixi run --environment dev
+   pytest -q</code> (54 tests at the time of writing), then
+   <code>equation_preprocess.py</code> is deleted as a follow-up.</li>
+</ol>
+<h2 id="7-decisions-to-take-on-your-side-non-goals">7. Decisions to take on your side / non-goals<a class="headerlink" href="#7-decisions-to-take-on-your-side-non-goals" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Exact AST node naming/shape for the complementarity (kept vs. filtered
+  rules) — your call; dolo consumes it through the helpers of §3.</li>
+<li>Legacy <code>|</code> separator support is <em>optional</em>; old models using it are
+  parsed by dyno's grammar already.  Parenthesis timing <code>x(1)</code> and
+  untimed-variable dating are <strong>not supported at all</strong> (§2.3): don't add
+  them to dynospec, and dolo no longer normalizes them.</li>
+<li>dolang, the legacy <code>Model</code> importer, and YAML-tag objects are out of
+  scope here.</li>
+</ul>
+<p>Reference: dolo consumers to keep in mind — <code>model_v2._parse_group_trees</code>
+(YAML comp splitting), <code>model_v2.from_dyno</code> (tag classification),
+<code>functions_v2._BOUND_SPEC</code>, <code>_emit</code>'s <code>equality</code> handling, and the tests
+<code>tests/test_model_v2.py::test_dyno_import_rbc</code>,
+<code>::test_standalone_bounds_groups</code>, <code>::test_parity_with_legacy_importer</code>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 EconForge
+    </div>
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate":null,"base":"..","features":["content.code.copy","content.code.annotate","content.code.select","content.footnote.tooltips","content.tabs.link","content.tooltips","navigation.footer","navigation.indexes","navigation.instant","navigation.instant.prefetch","navigation.path","navigation.sections","navigation.tabs","navigation.top","navigation.tracking","search.highlight"],"search":"../assets/javascripts/workers/search.7d14d953.min.js","tags":null,"translations":{"clipboard.copied":"Copied to clipboard","clipboard.copy":"Copy to clipboard","search.result.more.one":"1 more on this page","search.result.more.other":"# more on this page","search.result.none":"No matching documents","search.result.one":"1 matching document","search.result.other":"# matching documents","search.result.placeholder":"Type to start searching","search.result.term.missing":"Missing","select.version":"Select version"},"version":null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.ed145cee.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

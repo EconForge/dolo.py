@@ -1,0 +1,106 @@
+/* Dyno Documentation Custom Styling */
+
+:root {
+  --md-primary-fg-color: #2563eb;
+  --md-primary-fg-color--light: #3b82f6;
+  --md-primary-fg-color--dark: #1d4ed8;
+  --md-accent-fg-color: #0284c7;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #3b82f6;
+  --md-primary-fg-color--light: #60a5fa;
+  --md-primary-fg-color--dark: #2563eb;
+  --md-accent-fg-color: #38bdf8;
+}
+
+/* Feature grid cards */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.grid.cards > ul {
+  display: contents;
+}
+
+.grid.cards > ul > li,
+.card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.25rem 1rem;
+  background-color: var(--md-default-bg-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  list-style: none;
+}
+
+.grid.cards > ul > li:hover,
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border-color: var(--md-primary-fg-color--light);
+}
+
+.card h3 {
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Math block styling */
+.arithmatex {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+div.arithmatex {
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* Tables */
+.md-typeset table:not([class]) {
+  width: 100%;
+  border-collapse: collapse;
+  display: table;
+  margin: 1.5em 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--md-default-fg-color--lightest);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.75rem 1rem;
+}
+
+.md-typeset table:not([class]) td {
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Badge highlights */
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--md-primary-fg-color--lightest, rgba(37,99,235,0.1));
+  color: var(--md-primary-fg-color);
+  margin-right: 0.25rem;
+}
+
+.badge-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.badge-warning {
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #ca8a04;
+}
