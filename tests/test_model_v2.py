@@ -564,10 +564,10 @@ def test_time_iteration_parity(tmp_path):
     from dolo.algos import time_iteration
 
     # small grid keeps the smoke test fast (~ a few seconds per importer)
-    src = Path("examples/models/rbc.yaml").read_text()
+    src = Path("examples/models/rbc.yaml").read_text(encoding="utf-8")
     src = src.replace("n: [100, 100]", "n: [5, 5]")
     fname = tmp_path / "rbc_small.yaml"
-    fname.write_text(src)
+    fname.write_text(src, encoding="utf-8")
 
     old = dolo.yaml_import(str(fname))
     new = dolo.yaml_import_v2(str(fname))
@@ -850,7 +850,10 @@ def test_value_iteration_parity(tmp_path):
     from dolo.algos.value_iteration import value_iteration
 
     fname = tmp_path / "growth_vi_comp.yaml"
-    fname.write_text(GROWTH_MODEL_VI)
+    # `Path.write_text` defaults to the locale encoding, which cannot represent
+    # the `⟂` complementarity symbol (cp1252 on Windows); the model reader
+    # (`dolo.misc.display.read_file_or_url`) decodes as UTF-8.
+    fname.write_text(GROWTH_MODEL_VI, encoding="utf-8")
 
     old = dolo.yaml_import(str(fname))
     new = dolo.yaml_import_v2(str(fname))
