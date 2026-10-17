@@ -14,11 +14,12 @@ from dolo.numeric.optimize.ncpsolve import ncpsolve
 from dolo.numeric.optimize.newton import SerialDifferentiableFunction, newton as serial_newton
 from dolo.numeric.processes import DiscretizedIIDProcess
 
+from dolo.numeric import DiscretizedModel, GArray
 from .invert import solve_tensor
 from .newton import (
     Operator,
     d_filt_dx,
-    euler_residuals,
+    euler_residuals as euler_residuals_acc,
     neumann_solve,
     smooth,
     smooth_nodiff,
@@ -26,10 +27,21 @@ from .newton import (
 from .results import AlgoResult, TimeIterationResult
 
 
-def residuals_simple(f, g, s, x, dr, dprocess, parms):
-    N = s.shape[0]
-    n_s = s.shape[1]
+def euler_residuals_tau(dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule) -> GArray:
+    """Universal Euler residuals written entirely in terms of GArray and Tau."""
+    res = GArray.zeros_like(controls)
+    for i_m, m_val, s_endo in dmodel.regimes():
+        xm = controls[i_m]
+        for prob, S in dmodel.tau.slice_transitions(i_m, m_val, s_endo, xm):
+            XM = dr(S)
+            rr = dmodel.arbitrage(m_val, s_endo, xm, S.exo, S.endo, XM)
+            res[i_m] += prob * rr
+    return res
 
+
+def residuals_simple(f, g, s, x, dr, dprocess, parms):
+    """Legacy residuals computation retained for backward compatibility."""
+    N = s.shape[0]
     res = numpy.zeros_like(x)
 
     for i_ms in range(dprocess.n_nodes):
@@ -60,16 +72,17 @@ def time_iteration(
     verbose: bool = True,
     details: bool = True,
     trace: bool = False,
-    dprocess=None,
     ignore_constraints: bool = False,
     hook=None,
+    # Backward compatibility:
+    dprocess=None,
     **kwargs,
 ) -> TimeIterationResult:
     """Finds a global solution for ``model`` using backward time-iteration.
 
     Parameters
     ----------
-    model : Model
+    model : Model, ModelV2, or DiscretizedModel
         model to be solved
     dr0 : DecisionRule, optional
         initial guess for the decision rule
@@ -154,17 +167,26 @@ def time_iteration(
     else:
         trace_details = None
 
-    grid, dprocess_ = model.discretize()
-    if dprocess is None:
-        dprocess = dprocess_
+    # Construct or adopt DiscretizedModel
+    if isinstance(model, DiscretizedModel):
+        dmodel = model
+    else:
+        grid_options = kwargs.pop("grid_options", None)
+        dprocess_options = kwargs.pop("dprocess_options", {})
+        if dprocess is not None:
+            dprocess_options["dprocess"] = dprocess
+        dmodel = DiscretizedModel(model, grid_options=grid_options, dprocess_options=dprocess_options)
 
-    n_ms = dprocess.n_nodes
+    grid = dmodel.grid
+    dprocess = dmodel.dprocess
+
+    n_ms = dmodel.n_regimes
     n_im = dprocess.n_inodes(0)
 
-    x0 = model.calibration["controls"]
-    parms = model.calibration["parameters"]
+    x0 = dmodel.model.calibration["controls"]
+    parms = dmodel.parms
     n_x = len(x0)
-    n_s = len(model.symbols["states"])
+    n_s = len(dmodel.model.symbols["states"])
 
     endo_grid = grid["endo"]
     exo_grid = grid["exo"]
@@ -184,38 +206,37 @@ def time_iteration(
     s = mdr.endo_grid.nodes
     N = s.shape[0]
 
-    controls_0 = numpy.zeros((n_ms, N, n_x))
+    controls_ga = dmodel.initial_guess()
     if dr0 is None:
-        controls_0[:, :, :] = x0[None, None, :]
+        pass
     else:
         if isinstance(dr0, AlgoResult):
             dr0 = dr0.dr
         try:
             for i_m in range(n_ms):
-                controls_0[i_m, :, :] = dr0(i_m, s)
+                controls_ga[i_m] = dr0(i_m, s)
         except Exception:
             for i_m in range(n_ms):
                 m = dprocess.node(i_m)
-                controls_0[i_m, :, :] = dr0(m, s)
+                controls_ga[i_m] = dr0(m, s)
 
-    f = model.functions["arbitrage"]
-    g = model.functions["transition"]
+    f = dmodel.f
+    g = dmodel.g
 
-    if "arbitrage_lb" in model.functions and with_complementarities:
-        lb_fun = model.functions["arbitrage_lb"]
-        ub_fun = model.functions["arbitrage_ub"]
-        lb = numpy.zeros_like(controls_0) * numpy.nan
-        ub = numpy.zeros_like(controls_0) * numpy.nan
-        for i_m in range(n_ms):
-            m = dprocess.node(i_m)[None, :]
-            p = parms[None, :]
-            m = numpy.repeat(m, N, axis=0)
-            p = numpy.repeat(p, N, axis=0)
-
-            lb[i_m, :, :] = lb_fun(m, s, p)
-            ub[i_m, :, :] = ub_fun(m, s, p)
-        lb_flat = lb.reshape((-1, n_x))
-        ub_flat = ub.reshape((-1, n_x))
+    if with_complementarities:
+        lb_ga = dmodel.lower_bounds()
+        ub_ga = dmodel.upper_bounds()
+        if lb_ga is None or ub_ga is None:
+            with_complementarities = False
+            lb_flat = None
+            ub_flat = None
+            lb = None
+            ub = None
+        else:
+            lb_flat = lb_ga.ravel().reshape((-1, n_x))
+            ub_flat = ub_ga.ravel().reshape((-1, n_x))
+            lb = lb_ga.data
+            ub = ub_ga.data
     else:
         with_complementarities = False
         lb = None
@@ -223,8 +244,8 @@ def time_iteration(
         lb_flat = None
         ub_flat = None
 
-    sh_c = controls_0.shape
-    controls_0 = controls_0.reshape((-1, n_x))
+    sh_c = controls_ga.shape
+    controls_0 = controls_ga.ravel().reshape((-1, n_x))
 
     itprint = IterationsPrinter(
         ("N", int),
@@ -247,14 +268,14 @@ def time_iteration(
         it += 1
         t_start = time.time()
 
-        mdr.set_values(controls_0.reshape(sh_c))
+        mdr.set_values(controls_ga)
 
         if trace:
             trace_details.append({"dr": copy.deepcopy(mdr)})
 
-        fn = lambda x_val: residuals_simple(
-            f, g, s, x_val.reshape(sh_c), mdr, dprocess, parms
-        ).reshape((-1, n_x))
+        fn = lambda x_val: euler_residuals_tau(
+            dmodel, controls_ga.unravel(x_val), mdr
+        ).ravel().reshape((-1, n_x))
         dfn = SerialDifferentiableFunction(fn)
 
         res_0 = fn(controls_0)
@@ -278,9 +299,12 @@ def time_iteration(
                 dfn, controls_0, verbose=verbit, maxit=inner_cfg["maxit"]
             )
 
-        err_step = abs(controls - controls_0).max()
+        new_controls_ga = controls_ga.unravel(controls)
+        err_step = (new_controls_ga - controls_ga).norm()
+        controls_ga = new_controls_ga
         err_SA = err_step / err_0 if not numpy.isnan(err_0) and err_0 > 0 else numpy.nan
         err_0 = err_step
+
 
         # Policy acceleration step
         if acc_cfg is not None and it > acc_cfg["wait"]:
@@ -294,7 +318,7 @@ def time_iteration(
 
             jres_alloc[...] = 0.0
             S_ij_alloc[...] = 0.0
-            junk, jres, fut_S = euler_residuals(
+            junk, jres, fut_S = euler_residuals_acc(
                 f,
                 g,
                 s,
@@ -371,6 +395,8 @@ def time_iteration(
         else:
             controls_0 = controls
 
+        controls_ga = controls_ga.unravel(controls_0)
+
         t_finish = time.time()
         elapsed = t_finish - t_start
 
@@ -381,8 +407,7 @@ def time_iteration(
         if err_step < tol_eta and it > 1:
             break
 
-    controls_0 = controls_0.reshape(sh_c)
-    mdr.set_values(controls_0)
+    mdr.set_values(controls_ga)
 
     if trace:
         trace_details.append({"dr": copy.deepcopy(mdr)})
