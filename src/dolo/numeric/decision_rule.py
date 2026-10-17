@@ -53,6 +53,30 @@ interp_methods = {
 
 class CallableDecisionRule:
     def __call__(self, *args):
+        from dolo.numeric.garray import QP, SliceQP
+        from dolo.numeric.grids import EmptyGrid
+
+        if len(args) == 1 and isinstance(args[0], SliceQP):
+            sqp = args[0]
+            is_empty_exo = hasattr(self, "exo_grid") and isinstance(self.exo_grid, EmptyGrid)
+            if sqp.loc is not None and not is_empty_exo:
+                return self.eval_is(sqp.loc, sqp.endo)
+            return self.eval_s(sqp.endo)
+
+        if len(args) == 1 and isinstance(args[0], QP):
+            qp = args[0]
+            is_empty_exo = hasattr(self, "exo_grid") and isinstance(self.exo_grid, EmptyGrid)
+            if isinstance(qp.loc, tuple) and len(qp.loc) >= 2 and not is_empty_exo:
+                i, s_endo = qp.loc[0], qp.loc[1]
+                s_arr = np.asarray(s_endo)
+                if s_arr.ndim == 1:
+                    return self.eval_is(i, s_arr[None, :])[0, :]
+                return self.eval_is(i, s_arr)
+            val_arr = np.asarray(qp.val)
+            if val_arr.ndim == 1:
+                return self.eval_s(val_arr[None, :])[0, :]
+            return self.eval_s(val_arr)
+
         args = [np.array(e) for e in args]
         if len(args) == 1:
             if args[0].ndim == 1:
@@ -114,6 +138,9 @@ class DecisionRule(CallableDecisionRule):
             self.set_values(values)
 
     def set_values(self, x):
+        from dolo.numeric.garray import GArray
+        if isinstance(x, GArray):
+            x = x.data
         self.coefficients = self.__get_coefficients__(
             self, self.exo_grid, self.endo_grid, self.__interp_method__, x
         )

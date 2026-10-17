@@ -22,3 +22,15 @@ compiled functions of the model.
 ## Steady state and solution algorithms
 
 ::: dolo.algos.time_iteration
+
+::: dolo.algos.newton
+
+## Numeric Core Abstractions
+
+The numeric core provides the grid, transition kernel, and discrete field abstractions:
+
+::: dolo.numeric.discretized_model
+
+::: dolo.numeric.garray
+
+::: dolo.numeric.tau

@@ -62,26 +62,25 @@ for (variable_group, variables) in model.calibration.items():
     and are also evaluated in the other yaml sections, using the supplied value.
 
 
-One uses the `model.set_calibration()` routine to change the calibration of the model.  This one takes either a dict as an argument, or a set of keyword arguments. Both calls are valid:
+One uses the `model.recalibrate()` routine to derive a new model with updated calibration values (models in Dolo are immutable):
 
 ```python
-model.set_calibration( {'delta':0.01} )
-model.set_calibration( {'i': 'delta*k'} )
-model.set_calibration( delta=0.08, k=2.8 )
+# Recalibrate returns a new, independent Model instance
+new_model = model.recalibrate({'delta': 0.01})
+new_model = model.recalibrate(delta=0.08, k=2.8)
 ```
 
 This method also understands symbolic expressions (as string) which makes it possible to define symbols as a function of other symbols:
 
 ```python
-model.set_calibration(beta='1/(1+delta)')
-print(model.get_calibration('beta'))   # -> nan
+new_model = model.recalibrate(beta='1/(1+delta)')
+print(new_model.calibration['beta'])
 
-model.set_calibration(delta=0.04)
-print(model.get_calibration(['beta', 'delta'])) # -> [0.96, 0.04]
+new_model = model.recalibrate(delta=0.04)
+print(new_model.calibration['beta', 'delta'])
 ```
 
-Under the hood, the method stores the symbolic relations between symbols. It is precisely equivalent to use the ``set_calibration`` method
-or to change the values in the yaml files. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.
+Under the hood, the method resolves symbolic relations between symbols. In particular, the calibration order is irrelevant as long as all parameters can be deduced one from another.
 
 
 ## Functions
@@ -162,11 +161,49 @@ The vectorized evaluation is optimized so that it is much faster to make a vecto
 The `exogenous` field contains information about the driving process. To get its default, discretized version, one can call `model.exogenous.discretize()`.
 
 
-## Options structure
-
-
 The ``model.options`` structure holds an information required by a particular solution method. For instance, for global methods, ``model.options['grid']`` is supposed to hold the boundaries and the number nodes at which to interpolate.
 
 ```python
 display( model.options['grid'] )
 ```
+
+
+## Discretized Model and Transitions
+
+For global nonlinear solution methods, continuous models are converted into a discrete numerical representation called a `DiscretizedModel`.
+
+### `DiscretizedModel`
+
+A `DiscretizedModel` encapsulates the triplet $\langle \text{Model}, \; \mathcal{G}, \; \tau \rangle$:
+
+```python
+from dolo import yaml_import
+from dolo.numeric import DiscretizedModel
+
+model = yaml_import("examples/models/rbc.yaml")
+dmodel = DiscretizedModel(model)
+```
+
+Attributes and methods:
+- `dmodel.grid`: The computational domain grid $\mathcal{G}$ (e.g. `ProductGrid` of discrete exogenous nodes and Cartesian endogenous nodes).
+- `dmodel.tau`: The transition operator $\tau$ generating next-state branching distributions.
+- `dmodel.initial_guess()`: Returns a `GArray` of calibrated control values across all grid nodes.
+- `dmodel.lower_bounds()`, `dmodel.upper_bounds()`: Returns `GArray` lower and upper bounds for controls.
+- `dmodel.transition_matrix(dr)`: Computes the full row-stochastic Markov transition matrix $P$ on grid nodes given a solved decision rule `dr`.
+- `dmodel.ergodic_distribution(dr)`: Solves for the stationary distribution $\mu P = \mu$.
+
+### Qualified Points and Batches (`QualifiedPoint` / `QP`)
+
+To separate the computational location (address) from evaluated economic values, Dolo uses qualified points:
+
+- **`QualifiedPoint`** (alias **`QP`**):
+  Bundles `loc` (e.g. regime index or discrete locator) and `val` (continuous economic coordinates $[m, s]$).
+- **`QualifiedBatch`** (alias **`SliceQP`**):
+  Bundles `loc`, `exo`, and `endo` for vectorized operations over an entire continuous slice.
+
+### `GArray` (Grid-Bound Fields)
+
+A `GArray` binds an array of data to a grid $\mathcal{G}$:
+- Supports geometric access: `ga[i_m]` gives the slice for discrete regime $i_m$.
+- Supports numerical solver duality: `ga.ravel()` provides a flat 1D view, and `ga.unravel(flat_array)` reconstructs the structured field.
+- Provides vector arithmetic and maximum-norm calculation: `ga.norm()`.
