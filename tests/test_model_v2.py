@@ -588,9 +588,9 @@ equations:
   value:
     - V[t] = log(c[t]) + beta*V[t+1]
   controls_lb:
-    - "c = 1e-4"
+    - "c[t] = 1e-4"
   controls_ub:
-    - "c = (1-delta)*k + k^alpha"
+    - "c[t] = (1-delta)*k[t] + k[t]^alpha"
 calibration:
   beta: 0.95
   alpha: 0.3
@@ -626,7 +626,6 @@ def test_eval_formula_parity():
             df[name] = val * (1 + 0.02 * rng.randn(6))
 
     exprs = [
-        "delta*k(0)-i(0)",
         "1+1",
         "beta/(1+delta/(1-beta))",
     ]
@@ -635,8 +634,13 @@ def test_eval_formula_parity():
         v_new = new.eval_formula(expr, df)
         np.testing.assert_allclose(v_old, v_new, equal_nan=True)
 
-    # dynspec-style timing is accepted by ModelV2
-    assert new.eval_formula("rho*z[t-1] + e_z", df)[2] == pytest.approx(
+    # explicit dynspec timing (ModelV2 only: the legacy dolang evaluator
+    # speaks its own `k(0)` notation; timing shift semantics coincide)
+    assert new.eval_formula("delta*k[t]-i[t]", df).equals(
+        old.calibration["delta"] * df["k"] - df["i"]
+    )
+    assert new.eval_formula("y[t+1]-y[t]", df).equals(df["y"].shift(1) - df["y"])
+    assert new.eval_formula("rho*z[t-1] + e_z[t]", df)[2] == pytest.approx(
         old.calibration["rho"] * df["z"].shift(1).iloc[2] + df["e_z"].iloc[2]
     )
 

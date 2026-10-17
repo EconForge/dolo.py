@@ -20,7 +20,7 @@ equations:
         1 - beta*(c[t]/c[t+1])^(sigma)*(1-delta+rk[t+1])   ⟂ -inf <= i[t] <= inf
 
     transition: |
-        z[t] = rho*z[t-1] + e_z
+        z[t] = rho*z[t-1] + e_z[t]
         k[t] = (1-delta)*k[t-1] + i[t-1]
 
 calibration:

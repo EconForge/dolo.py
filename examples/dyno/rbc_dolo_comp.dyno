@@ -9,9 +9,10 @@
 #      `residual ⟂ lb <= x[t] <= ub`  (bounds may be omitted -> ±inf)
 #   2. legacy syntax also accepted (optional): `|` separator, one-sided bound
 #   3. standalone bound sections tagged `[controls_lb]` / `[controls_ub]`
-#   4. dolo timing conveniences (optional): `x(1)` == `x[t+1]`
-#      (untimed variables are NOT part of this: a name without [t] is a
-#       constant; the untimed convention stays in legacy dolo-YAML files)
+#
+# Timing is ALWAYS explicit: `x[t]`, `x[t-1]`, `x[t+1]`.  There is no
+# `x(1)` parenthesis timing and no implicit dating — a name without [t]
+# is a constant.
 
 @name: RBC_Dolo_comp
 
@@ -88,11 +89,10 @@ e_z[t] <- N(0, sig_z^2)
 # Bounds expressions may only involve exogenous[t], states[t] and
 # parameters (this is the "arbitrage_bounds" conformity spec).
 
-# dolo timing conveniences (optional to support — see requirements doc):
-#     y[t] = exp(z)*k(t-1)^alpha*n^(1-alpha)      # `k(t-1)` == `k[t-1]`
-# Function calls with numeric arguments are NOT timing: `exp(1)` stays a call.
-# Untimed variables are a NON-GOAL: names without [t] are constants, never
-# implicitly dated — that convention exists only in legacy dolo-YAML files.
+# Timing must be explicit everywhere: `x[t]`, `x[t-1]`, `x[t+1]`.
+# There is no `x(1)` parenthesis timing and no implicit dating; a name
+# without [t] is a constant. Function calls with numeric arguments are
+# calls: `exp(1)` stays `exp(1)`.
 
 @run: steady
 @run: check

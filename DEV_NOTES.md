@@ -50,7 +50,7 @@ Under `src/dolo/compiler/`:
   (value → values, felicity → rewards, …) are classified, not treated
   as free controls. |
 | `functions_v2.py` | new | JAX function backend. `GROUP_LAYOUTS`: transition, arbitrage, auxiliary, arbitrage_lb/ub, controls_lb/ub, value, felicity, expectation, half_transition, direct_response, direct_response_egm, reverse_state, arbitrage_exp (all mirror `dolo/compiler/recipes.yaml` positional signatures, p last). `_emit(tree)` compiles lark trees once at build time into **backend-independent expression closures**, instantiated twice: jnp (jit/vmap/jacrev kernels) and numpy (low-latency point/batched path for numpy inputs). `make_function` builds `jax.jit` point kernel, `jax.vmap` batch kernel, point path via batch-of-1 with p unmapped, and `diff=True` via one cached `jax.jacrev` over concatenated variable args. Conformity + DAG come from dyno (`check_equation_group`/`build_definitions_block`); the group specs — incl. `arbitrage_bounds` and standalone `controls_lb`/`controls_ub` (full `x[t] = bound` equality trees, assignment semantics) — are read from `dyno.dynspec.recipe.DTCC_RECIPE` (dolo's `_BOUND_SPEC` deleted). Complementarity-bearing `arbitrage` blocks are conformity-checked by dyno's complementarity rules (positional + bounds). |
-| `equation_preprocess.py` | TEMP | Normalizes the remaining dolo-only timing syntax before dynspec parsing: `==`→`=`, `x(1)` timing, untimed symbols → `[t]`. Complementarity splitting is **gone**: `⟂`/legacy `|` conditions are parsed natively by dynospec (dyno.py `albop/dynspec` branch) and split structurally by `model_v2._complementarity_parts`. To be deleted once legacy-YAML timing syntax stops being needed. |
+| `equation_preprocess.py` | TEMP | Only dolo-YAML section bookkeeping left: `split_equations` (comment stripping, line splitting) and `normalize_line` (`==`→`=`). Timing conveniences (`x(1)`, untimed symbols → `[t]`) are **no longer supported**: timing is always explicit in examples and importer alike; complementarities and conformity are dynospec-native. Disappears once `==` becomes a dynspec grammar alias. |
 | `langspec.py` | TEMP | Choke point around dolang: currently re-exports only `eval_data` (the single dolang utility the new path still needs); gone once that call site is reimplemented. |
 | `model_import.py` | extended | `yaml_import` unchanged; new `yaml_import_v2` and `dyno_import`. Exported from `dolo/__init__.py`. |
 | `model.py`, `factories.py`, `recipes.py/.yaml` … | legacy | untouched, still the default and the fallback. |
@@ -118,8 +118,9 @@ parses with dyno.py's `albop/dynspec` branch (not with released dynopy
   i-th control (`test_complementarity_positional_check`, dyno message).
 - standalone `controls_lb`/`controls_ub` groups (real functions, not
   aliases) + alias still working when the group is absent.
-- `eval_formula` on ModelV2 against the legacy evaluator (timing
-  notation + dataframe shifts).
+- `eval_formula` on ModelV2: explicit dynspec timing (`k[t±d]`)
+  with dataframe shifts; constant-only parity with the legacy
+  evaluator.
 - `_repr_html_` renders equations with dynspec latex.
 
 Full suite: `pixi run --environment dev pytest -q` → 57 passed.
@@ -257,22 +258,23 @@ Benchmarks to run/inspect:
    dolo consumes all of it: group specs come from `DTCC_RECIPE`
    (`_BOUND_SPEC` deleted), complementarity conformity drives compile
    errors, `extract_complementarity`/`extract_rhs_variables` power
-   `.dyno` inference. Still open: optional `x(1)` timing
-   canonicalization utility + `==` alias — see
+   `.dyno` inference. **Timing conveniences are dropped**: `x(1)` and
+   untimed-variable dating are no longer supported (2026-10-17);
+   examples use explicit `x[t±d]` and the text-level normalization is
+   gone. Still open: `==` as a grammar alias — see
    `docs/dynospec_requirements.md`; then delete
-   `equation_preprocess.py` (untimed→`[t]` stays a dolo-YAML-legacy
-   shim, non-goal for dynospec) and `langspec.py`.
+   `equation_preprocess.py` and `langspec.py`.
 7. **ModelV2 display**: `_repr_html_` added on top of dynspec latex
    (`x[t-1]` → `x_{t-1}`, spelled greek → greek commands, residuals
    column); `__str__` follows the legacy layout (header, equations with
    `N : residual : equation` rows, definitions block, red non-zero
    residuals); no dolang.
 8. `eval_formula` on ModelV2 moved to the dynspec evaluator
-   (`dyno.dynspec.FormulaEvaluator`): `k(0)`-style timing rewritten by
-   `equation_preprocess.rewrite_timing_calls`, timed names resolved as
-   shifted dataframe columns, untimed names as calibration constants,
-   `k[t±d]` dynspec timing accepted. Parity test added. The legacy
-   `Model.eval_formula` (dolang-based) stays as is.
+   (`dyno.dynspec.FormulaEvaluator`): **explicit dynspec timing only**
+   (`k[t]`, `k[t-1]`, `k[t+1]`) — timed names resolved as shifted
+   dataframe columns, untimed names as calibration constants; the
+   legacy `k(0)` notation is no longer accepted. The legacy
+   `Model.eval_formula` (dolang-based, `k(0)` notation) stays as is.
    Greek/symbol-key normalization needs nothing dynspec-side: the
    legacy `stringify_symbol` only appends dolang's trailing `_`
    convention, which dynspec never uses (greek letters are native

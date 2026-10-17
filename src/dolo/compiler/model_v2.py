@@ -12,10 +12,11 @@ Migration plan status (design decisions D1-D4, see planning discussion):
   and the legacy function signatures) mirrors
   :class:`dolo.compiler.model.Model` so that ``dolo.algos`` can run
   unchanged;
-* TEMPORARY: dolo-YAML specific equation syntax (``⟂`` bounds, ``==``,
-  untimed symbols, ``x(1)``) is normalized by
-  ``dolo.compiler.equation_preprocess`` before dynspec parsing, until the
-  dynspec grammar grows native support;
+* TEMPORARY: dolo-YAML section bookkeeping (comment stripping, `==`
+  as `=`) happens in ``dolo.compiler.equation_preprocess``.
+  Complementarities (`⟂`), conformity and timing are all dynospec
+  native: timing must be explicit (`x[t]`, `x[t-1]`, `x[t+1]`); the
+  legacy `x(1)` / untimed-symbol conventions are **not supported**;
 * TEMPORARY: tagged objects (``!Normal``, ``!Cartesian``, ...) still come
   from the dolang ``language_element`` machinery via
   ``dolo.compiler.langspec`` (imported through ``dolo.compiler.objects``,
@@ -554,24 +555,19 @@ class ModelV2:
         }
 
     def _parse_group_trees(self) -> Dict[str, List[Any]]:
-        """Parse raw equation strings into dynspec trees (with normalization).
+        """Parse raw equation strings into dynspec trees.
 
         Complementarities (`res ⟂ lb <= x[t] <= ub`) are parsed natively by
         dynospec and kept as equations: conformity (positional rule, bounds
         groups) is checked by `dyno.dynspec.recipe.check_equation_group`
         against the DTCC recipe; the bounds still become the `*_lb` / `*_ub`
-        bound-tree groups.  The legacy dolo timing conveniences (untimed
-        symbols, `x(1)`, `==`) are normalized at text level first — they are
-        not part of dynospec.
+        bound-tree groups.  Timing is always explicit (`x[t±d]`); only the
+        legacy `==` sign is normalized at text level.
         """
         trees: Dict[str, List[Any]] = {}
-        # Variable (non-parameter) symbols are the only names that get timed.
-        variable_symbols = {
-            n for g, names in self.symbols.items() if g != "parameters" for n in names
-        }
 
         for group, lines in self.__equations_text__.items():
-            out = [_pre.normalize_timing(line, variable_symbols) for line in lines]
+            out = [_pre.normalize_line(line) for line in lines]
 
             bound_lb: List[Any] = []
             bound_ub: List[Any] = []
@@ -795,14 +791,13 @@ class ModelV2:
     # ------------------------------------------------------------------
 
     def _get_definition_trees(self) -> List[Any]:
-        variable_symbols = {
-            n for g, names in self.symbols.items() if g != "parameters" for n in names
-        }
         lines = []
         for lhs, rhs in self.__definitions_text__.items():
-            lhs_n = _pre.normalize_timing(str(lhs), variable_symbols)
-            rhs_n = _pre.normalize_timing(str(rhs), variable_symbols)
-            lines.append(f"{lhs_n} = {rhs_n}")
+            # definition keys are stored untimed (`y`, not `y[t]`): make the
+            # timing explicit — untimed names are constants in dynospec
+            lhs_n = _pre.normalize_line(str(lhs)).strip()
+            rhs_n = _pre.normalize_line(str(rhs)).strip()
+            lines.append(f"{lhs_n}[t] = {rhs_n}")
         return _parse_block("\n".join(lines))
 
     def _build_functions(self) -> LoosyDict:
@@ -895,27 +890,19 @@ class ModelV2:
         return residuals(self, calib)
 
     def eval_formula(self, expr, dataframe=None, calib=None):
-        """Evaluate a formula with dolo timing notation (``k(0)``, ``k(-1)``).
+        """Evaluate a formula with explicit dynospec timing (``k[t]``,
+        ``k[t-1]``, ``k[t+1]``).
 
-        Untimed names are resolved against the calibration; timed names
-        (``x(±d)``) are looked up as columns of `dataframe`, shifted by
-        `d` rows (`x(1)` = one period back, like the legacy evaluator).
-        ``k[t±d]`` (dynspec) timing is accepted as well.  Built on
+        Untimed names are resolved against the calibration; timed names are
+        looked up as columns of `dataframe`, shifted by `d` rows
+        (`x[t+1]` = one period back, like the legacy evaluator).  Built on
         ``dyno.dynspec`` — no dolang involved.
         """
         if calib is None:
             calib = self.calibration
         context = calib.flat if isinstance(calib, CalibrationDict) else dict(calib)
 
-        columns = set(dataframe.columns) if dataframe is not None else set()
-        variable_names = (
-            {n for g, names in self.symbols.items() if g != "parameters" for n in names}
-            | set(self.definitions)
-            | set(columns)
-        )
-
-        expr = _pre.rewrite_timing_calls(str(expr), variable_names)
-        tree = parser.parse(expr, start="formula")
+        tree = parser.parse(str(expr), start="formula")
 
         variables: Dict[str, Dict[int, Any]] = {}
         if dataframe is not None:
