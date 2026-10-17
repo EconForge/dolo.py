@@ -58,14 +58,18 @@ class CallableDecisionRule:
 
         if len(args) == 1 and isinstance(args[0], SliceQP):
             sqp = args[0]
-            is_empty_exo = hasattr(self, "exo_grid") and isinstance(self.exo_grid, EmptyGrid)
+            is_empty_exo = hasattr(self, "exo_grid") and isinstance(
+                self.exo_grid, EmptyGrid
+            )
             if sqp.loc is not None and not is_empty_exo:
                 return self.eval_is(sqp.loc, sqp.endo)
             return self.eval_s(sqp.endo)
 
         if len(args) == 1 and isinstance(args[0], QP):
             qp = args[0]
-            is_empty_exo = hasattr(self, "exo_grid") and isinstance(self.exo_grid, EmptyGrid)
+            is_empty_exo = hasattr(self, "exo_grid") and isinstance(
+                self.exo_grid, EmptyGrid
+            )
             if isinstance(qp.loc, tuple) and len(qp.loc) >= 2 and not is_empty_exo:
                 i, s_endo = qp.loc[0], qp.loc[1]
                 s_arr = np.asarray(s_endo)
@@ -139,6 +143,7 @@ class DecisionRule(CallableDecisionRule):
 
     def set_values(self, x):
         from dolo.numeric.garray import GArray
+
         if isinstance(x, GArray):
             x = x.data
         self.coefficients = self.__get_coefficients__(

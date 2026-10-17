@@ -37,6 +37,7 @@ class QualifiedPoint:
     val : np.ndarray
         Evaluated economic coordinates / values.
     """
+
     loc: Any
     val: np.ndarray
 
@@ -73,6 +74,7 @@ class QualifiedBatch:
     endo : np.ndarray
         Endogenous state matrix, shape (N, n_s).
     """
+
     loc: Any
     exo: np.ndarray
     endo: np.ndarray
@@ -201,4 +203,3 @@ class GArray:
     def __repr__(self) -> str:
         grid_name = type(self.grid).__name__
         return f"GArray(grid={grid_name}, shape={self.data.shape})"
-

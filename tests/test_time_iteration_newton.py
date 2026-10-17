@@ -42,7 +42,9 @@ def test_time_iteration_inner_options(rbc_model):
 
 
 def test_newton_gmres_backtracking(rbc_model):
-    sol = dolo.newton(rbc_model, linsolve="gmres", linesearch="backtracking", verbose=False)
+    sol = dolo.newton(
+        rbc_model, linsolve="gmres", linesearch="backtracking", verbose=False
+    )
     assert sol.converged
     assert sol.iterations < 15
     assert sol.error_res < 1e-7

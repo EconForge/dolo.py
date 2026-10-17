@@ -344,7 +344,12 @@ def newton(
         if linsolve_cfg["method"] == "iti":
             linsolve_cfg["method"] = "neumann"
     else:
-        linsolve_cfg = {"method": "gmres", "maxit": 50, "tol": 1e-8, "precondition": True}
+        linsolve_cfg = {
+            "method": "gmres",
+            "maxit": 50,
+            "tol": 1e-8,
+            "precondition": True,
+        }
 
     if invmethod is not None:
         linsolve_cfg["method"] = "neumann" if invmethod == "iti" else invmethod

@@ -11,7 +11,10 @@ from dolo.misc.itprinter import IterationsPrinter
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.grids import CartesianGrid
 from dolo.numeric.optimize.ncpsolve import ncpsolve
-from dolo.numeric.optimize.newton import SerialDifferentiableFunction, newton as serial_newton
+from dolo.numeric.optimize.newton import (
+    SerialDifferentiableFunction,
+    newton as serial_newton,
+)
 from dolo.numeric.processes import DiscretizedIIDProcess
 
 from dolo.numeric import DiscretizedModel, GArray
@@ -27,7 +30,9 @@ from .newton import (
 from .results import AlgoResult, TimeIterationResult
 
 
-def euler_residuals_tau(dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule) -> GArray:
+def euler_residuals_tau(
+    dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule
+) -> GArray:
     """Universal Euler residuals written entirely in terms of GArray and Tau."""
     res = GArray.zeros_like(controls)
     for i_m, m_val, s_endo in dmodel.regimes():
@@ -175,7 +180,9 @@ def time_iteration(
         dprocess_options = kwargs.pop("dprocess_options", {})
         if dprocess is not None:
             dprocess_options["dprocess"] = dprocess
-        dmodel = DiscretizedModel(model, grid_options=grid_options, dprocess_options=dprocess_options)
+        dmodel = DiscretizedModel(
+            model, grid_options=grid_options, dprocess_options=dprocess_options
+        )
 
     grid = dmodel.grid
     dprocess = dmodel.dprocess
@@ -273,9 +280,11 @@ def time_iteration(
         if trace:
             trace_details.append({"dr": copy.deepcopy(mdr)})
 
-        fn = lambda x_val: euler_residuals_tau(
-            dmodel, controls_ga.unravel(x_val), mdr
-        ).ravel().reshape((-1, n_x))
+        fn = (
+            lambda x_val: euler_residuals_tau(dmodel, controls_ga.unravel(x_val), mdr)
+            .ravel()
+            .reshape((-1, n_x))
+        )
         dfn = SerialDifferentiableFunction(fn)
 
         res_0 = fn(controls_0)
@@ -304,7 +313,6 @@ def time_iteration(
         controls_ga = new_controls_ga
         err_SA = err_step / err_0 if not numpy.isnan(err_0) and err_0 > 0 else numpy.nan
         err_0 = err_step
-
 
         # Policy acceleration step
         if acc_cfg is not None and it > acc_cfg["wait"]:

@@ -3,6 +3,7 @@ import numpy
 
 try:
     from rich.console import Console
+
     HAS_RICH = True
 except ImportError:
     HAS_RICH = False
@@ -82,9 +83,7 @@ class IterationsPrinter:
             if msg:
                 self.console.print(f"[bold cyan]{msg:^{self.table_width}}[/bold cyan]")
             self.console.print(self.box_top)
-            hdr_cells = [
-                f" {h:>{w}} " for h, w in zip(self.names, self.col_widths)
-            ]
+            hdr_cells = [f" {h:>{w}} " for h, w in zip(self.names, self.col_widths)]
             self.console.print("[bold]│" + "│".join(hdr_cells) + "│[/bold]")
             self.console.print(self.box_sep)
             self._header_printed = True
@@ -153,7 +152,9 @@ class IterationsPrinter:
         elapsed = time.time() - self.t_start
 
         if self.use_rich:
-            if getattr(self, "_header_printed", False) and not getattr(self, "_closed", False):
+            if getattr(self, "_header_printed", False) and not getattr(
+                self, "_closed", False
+            ):
                 self.console.print(self.box_bot)
                 self._closed = True
             self.console.print(

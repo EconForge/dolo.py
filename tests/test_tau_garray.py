@@ -8,7 +8,12 @@ import pytest
 from dolo.compiler.model_v2 import ModelV2, yaml_compose
 from dolo.numeric.decision_rule import DecisionRule
 from dolo.numeric.garray import GArray, QP, SliceQP
-from dolo.numeric.grids import UniformCartesianGrid, ProductGrid, UnstructuredGrid, EmptyGrid
+from dolo.numeric.grids import (
+    UniformCartesianGrid,
+    ProductGrid,
+    UnstructuredGrid,
+    EmptyGrid,
+)
 from dolo.numeric.tau import Tau, trembling_hand
 from dolo.numeric.discretized_model import DiscretizedModel
 from dolo.algos.time_iteration import residuals_simple, time_iteration
@@ -24,6 +29,7 @@ def _load_v2(path: str) -> ModelV2:
 # ---------------------------------------------------------------------------
 # 1. GArray and QP Unit Tests
 # ---------------------------------------------------------------------------
+
 
 def test_garray_cartesian():
     grid = UniformCartesianGrid(min=[0.1, 1.0], max=[0.5, 5.0], n=[10, 20])
@@ -79,7 +85,9 @@ def test_qualified_point_and_batch():
     assert "QualifiedPoint" in repr(qp)
 
     # Construct QualifiedBatch
-    batch = QualifiedBatch(loc=1, exo=np.array([0.02]), endo=np.array([[1.0, 2.0], [1.5, 2.5]]))
+    batch = QualifiedBatch(
+        loc=1, exo=np.array([0.02]), endo=np.array([[1.0, 2.0], [1.5, 2.5]])
+    )
     assert batch.val.shape == (2, 3)
     assert np.allclose(batch.val[0], [0.02, 1.0, 2.0])
     assert np.allclose(batch.val[1], [0.02, 1.5, 2.5])
@@ -106,7 +114,10 @@ def test_trembling_hand_1d():
 # 2. Universal Euler Residuals & Parity
 # ---------------------------------------------------------------------------
 
-def euler_residuals(dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule) -> GArray:
+
+def euler_residuals(
+    dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule
+) -> GArray:
     """Universal Euler residuals using Tau, GArray, and direct dr(SliceQP) calls."""
     res = GArray.zeros_like(controls)
     for i, m_val, s_endo in dmodel.regimes():
@@ -119,10 +130,13 @@ def euler_residuals(dmodel: DiscretizedModel, controls: GArray, dr: DecisionRule
     return res
 
 
-@pytest.mark.parametrize("model_path", [
-    "examples/models/rbc_mc.yaml",
-    "examples/models/rbc_iid.yaml",
-])
+@pytest.mark.parametrize(
+    "model_path",
+    [
+        "examples/models/rbc_mc.yaml",
+        "examples/models/rbc_iid.yaml",
+    ],
+)
 def test_tau_euler_parity(model_path: str):
     model = _load_v2(model_path)
     dmodel = DiscretizedModel(model)
@@ -156,6 +170,7 @@ def test_tau_euler_parity(model_path: str):
 # 3. DecisionRule with QP and SliceQP
 # ---------------------------------------------------------------------------
 
+
 def test_decision_rule_qp_dispatch():
     model = _load_v2("examples/models/rbc_mc.yaml")
     dmodel = DiscretizedModel(model)
@@ -185,10 +200,14 @@ def test_decision_rule_qp_dispatch():
 # 4. Transition Matrix & Ergodic Distribution
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("model_path", [
-    "examples/models/rbc_mc.yaml",
-    "examples/models/rbc_iid.yaml",
-])
+
+@pytest.mark.parametrize(
+    "model_path",
+    [
+        "examples/models/rbc_mc.yaml",
+        "examples/models/rbc_iid.yaml",
+    ],
+)
 def test_transition_matrix_and_ergodic(model_path: str):
     model = _load_v2(model_path)
     dmodel = DiscretizedModel(model)
@@ -205,7 +224,9 @@ def test_transition_matrix_and_ergodic(model_path: str):
     # Ergodic distribution
     mu = dmodel.ergodic_distribution(controls)
     assert isinstance(mu, GArray)
-    assert np.isclose(mu.data.sum(), 1.0), f"Ergodic distribution does not sum to 1: {mu.data.sum()}"
+    assert np.isclose(
+        mu.data.sum(), 1.0
+    ), f"Ergodic distribution does not sum to 1: {mu.data.sum()}"
     assert np.all(mu.data >= 0.0), "Negative stationary probabilities!"
 
 
@@ -213,10 +234,14 @@ def test_transition_matrix_and_ergodic(model_path: str):
 # 5. Full Time Iteration Solver Parity
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("model_path", [
-    "examples/models/rbc_mc.yaml",
-    "examples/models/rbc_iid.yaml",
-])
+
+@pytest.mark.parametrize(
+    "model_path",
+    [
+        "examples/models/rbc_mc.yaml",
+        "examples/models/rbc_iid.yaml",
+    ],
+)
 def test_full_solver_parity(model_path: str):
     model = _load_v2(model_path)
     dmodel = DiscretizedModel(model)
@@ -243,12 +268,16 @@ def test_full_solver_parity(model_path: str):
         it += 1
         dr.set_values(controls)
 
-        fn = lambda flat_x: euler_residuals(
-            dmodel, controls.unravel(flat_x), dr
-        ).ravel().reshape((-1, n_x))
+        fn = (
+            lambda flat_x: euler_residuals(dmodel, controls.unravel(flat_x), dr)
+            .ravel()
+            .reshape((-1, n_x))
+        )
 
         dfn = SerialDifferentiableFunction(fn)
-        flat_controls, _ = newton(dfn, controls.ravel().reshape((-1, n_x)), verbose=False, maxit=10)
+        flat_controls, _ = newton(
+            dfn, controls.ravel().reshape((-1, n_x)), verbose=False, maxit=10
+        )
         new_controls = controls.unravel(flat_controls)
 
         err = (new_controls - controls).norm()
@@ -256,9 +285,13 @@ def test_full_solver_parity(model_path: str):
 
     # Parity check on final decision rule coefficients
     if isinstance(sol_legacy.dr.coefficients, list):
-        dr_diff = max(float(np.max(np.abs(c1 - c2))) for c1, c2 in zip(sol_legacy.dr.coefficients, dr.coefficients))
+        dr_diff = max(
+            float(np.max(np.abs(c1 - c2)))
+            for c1, c2 in zip(sol_legacy.dr.coefficients, dr.coefficients)
+        )
     else:
         dr_diff = float(np.max(np.abs(sol_legacy.dr.coefficients - dr.coefficients)))
 
-    assert dr_diff < 1e-5, f"Decision rule parity failed on {model_path}! diff={dr_diff}"
-
+    assert (
+        dr_diff < 1e-5
+    ), f"Decision rule parity failed on {model_path}! diff={dr_diff}"

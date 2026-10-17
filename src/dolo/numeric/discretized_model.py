@@ -89,7 +89,9 @@ class DiscretizedModel:
         if "arbitrage_lb" not in self.model.functions:
             return None
         lb_fun = self.model.functions["arbitrage_lb"]
-        controls_lb = GArray.zeros(self.grid, len(self.model.symbols["controls"]), self.n_regimes)
+        controls_lb = GArray.zeros(
+            self.grid, len(self.model.symbols["controls"]), self.n_regimes
+        )
         N = self.N_endo
         p = np.repeat(self.parms[None, :], N, axis=0)
 
@@ -103,7 +105,9 @@ class DiscretizedModel:
         if "arbitrage_ub" not in self.model.functions:
             return None
         ub_fun = self.model.functions["arbitrage_ub"]
-        controls_ub = GArray.zeros(self.grid, len(self.model.symbols["controls"]), self.n_regimes)
+        controls_ub = GArray.zeros(
+            self.grid, len(self.model.symbols["controls"]), self.n_regimes
+        )
         N = self.N_endo
         p = np.repeat(self.parms[None, :], N, axis=0)
 
@@ -158,7 +162,7 @@ class DiscretizedModel:
         """
         P = self.transition_matrix(controls)
         # Solve mu P = mu  <=>  (P^T - I) mu = 0 with sum(mu) = 1
-        A = (P.T - np.eye(self.N_total))
+        A = P.T - np.eye(self.N_total)
         A[-1, :] = 1.0
         b = np.zeros(self.N_total)
         b[-1] = 1.0
@@ -168,4 +172,3 @@ class DiscretizedModel:
 
         mu = GArray.zeros(self.grid, 1, self.n_regimes)
         return mu.unravel(mu_flat)
-

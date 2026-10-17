@@ -130,9 +130,7 @@ class Tau:
             target_regime = 0 if self.dprocess.n_nodes == 1 else I_m
             yield prob, SliceQP(loc=target_regime, exo=M_val, endo=S_endo)
 
-    def point_transitions(
-        self, s: QP, x: np.ndarray
-    ) -> Iterator[Tuple[float, QP]]:
+    def point_transitions(self, s: QP, x: np.ndarray) -> Iterator[Tuple[float, QP]]:
         """Point-level transition (pure Julia-style).
 
         Given a single state point QP(loc, val) and control vector x,
