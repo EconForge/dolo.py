@@ -83,6 +83,14 @@ d = dyno_import("examples/dyno/rbc_dolo.dyno")        # .dyno with tags
 parses with dyno.py's `albop/dynspec` branch (not with released dynopy
 ≤0.1.14) and is covered by `test_dyno_comp_import_rbc`.
 
+`examples/notebooks/`: migrated to explicit timing — rbc_model's
+`%cat` output refreshed to the current `rbc.yaml`, rmt3_ch11's `pcat`
+points at the local migrated model. Cells calling legacy expression
+APIs (`eval_formula` with `k(0)`, `Rbar_formula` with `c(1)`) and the
+legacy `Model.__str__` outputs keep dolang notation (that is what the
+legacy path renders); `sudden_stop.ipynb` predates the repo (its
+`../models/sudden_stop.yaml` does not exist).
+
 ## 3. Tests
 
 `tests/test_model_v2.py` is the *migration contract*:
