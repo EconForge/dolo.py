@@ -14,36 +14,15 @@ Scalar = Union[int, float]
 # @language_element
 
 
-class Domain:
+from dolo.numeric.spaces import Space, CartesianSpace
+
+Domain = Space
+
+
+class CartesianDomain(CartesianSpace):
+    """Backwards-compatible alias for CartesianSpace."""
+
     pass
-
-
-class CartesianDomain(Domain, dict):
-    def __init__(self, **kwargs):
-        super().__init__()
-        for k, w in kwargs.items():
-            v = kwargs[k]
-            self[k] = np.array(v, dtype=float)
-
-    def discretize(self, n=None):
-        if n == None:
-            n = [10] * (len(self.min))
-        from dolo.numeric.grids import UniformCartesianGrid
-
-        return UniformCartesianGrid(self.min, self.max, n)
-
-    @property
-    def states(self):
-        l = tuple(self.keys())
-        return l
-
-    @property
-    def min(self):
-        return np.array([self[e][0] for e in self.states])
-
-    @property
-    def max(self):
-        return np.array([self[e][1] for e in self.states])
 
 
 # these are dummy objects so far

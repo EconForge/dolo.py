@@ -34,3 +34,7 @@ The numeric core provides the grid, transition kernel, and discrete field abstra
 ::: dolo.numeric.garray
 
 ::: dolo.numeric.tau
+
+::: dolo.numeric.spaces
+
+::: dolo.numeric.approximators

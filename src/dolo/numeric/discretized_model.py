@@ -55,6 +55,52 @@ class DiscretizedModel:
         self.N_endo = self.endo_nodes.shape[0]
         self.N_total = self.n_regimes * self.N_endo
 
+        # Mathematical Space representation
+        from dolo.numeric.spaces import (
+            DiscreteSpace,
+            EmptySpace,
+            ProductSpace,
+            CartesianSpace,
+        )
+
+        exo_space = (
+            DiscreteSpace(self.dprocess.grid.nodes) if self.is_mc else EmptySpace()
+        )
+        if hasattr(model, "domain") and model.domain is not None:
+            endo_space = model.domain
+        else:
+            endo_space = CartesianSpace(min=self.endo_grid.min, max=self.endo_grid.max)
+        self.space = ProductSpace([exo_space, endo_space], names=["exo", "endo"])
+
+        # Approximator
+        from dolo.numeric.approximators import get_approximator
+
+        interp_method = (grid_options or {}).get("interp_method", "cubic")
+        try:
+            self.approximator = get_approximator(
+                self.grid, interp_method=interp_method, space=self.space
+            )
+        except Exception:
+            self.approximator = None
+
+    def decision_rule(
+        self,
+        values: Optional[Union[GArray, np.ndarray]] = None,
+        interp_method: str = "cubic",
+    ) -> Any:
+        """Create a DecisionRule bound to this discretized model."""
+        from dolo.numeric.decision_rule import DecisionRule
+
+        dr = DecisionRule(
+            self.grid.grids[0],
+            self.grid.grids[1],
+            interp_method=interp_method,
+            dprocess=self.dprocess,
+        )
+        if values is not None:
+            dr.fit(values)
+        return dr
+
     def regimes(self) -> Iterator[Tuple[int, np.ndarray, np.ndarray]]:
         """Yields (regime_index, m_value, endo_nodes) for each discrete regime."""
         for i in range(self.n_regimes):

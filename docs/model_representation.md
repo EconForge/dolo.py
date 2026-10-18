@@ -25,32 +25,51 @@ layered abstractions that perform this conversion:
 
 ## 1. Spaces and Grids
 
-### The notion of a *space*
+### The `Space` Hierarchy
 
-Almost every economic model solved by Dolo mixes two kinds of dimensions:
+In economic modeling, variables live on a **mathematical space** (the continuous or discrete domain) rather than a computational grid. The **`Space`** hierarchy in `dolo.numeric.spaces` provides first-class objects for these domains:
 
-- a **discrete** part, capturing exogenous regimes: the nodes of a Markov
-  chain, the quadrature nodes of an i.i.d. shock, or a mixed product of these;
-- a **continuous** part, the endogenous state variables (e.g. capital,
-  productivity, wealth), which are typically bounded to an interval.
+- **`CartesianSpace`**: A continuous bounded hypercube $[\underline{s}, \overline{s}] \subset \mathbb{R}^d$.
+  - In a `CartesianSpace`, location and continuous coordinates coincide (`loc = val = coords`).
+  - Supports domain membership checks (`pt in space`), random sampling (`space.draw()`), and discretization (`space.discretize(n=20)`).
+  - Preserves dict-like indexing `space['k']` for backward compatibility with `model.domain`.
+- **`DiscreteSpace`** (alias **`GridSpace`**): A finite discrete set of points $\{p_1, \dots, p_N\}$ (e.g. Markov states).
+  - In a `DiscreteSpace`, `loc` is the integer regime index $i \in \{0, \dots, N-1\}$, while `val = points[i]`.
+  - Discretizes to an `UnstructuredGrid`.
+- **`ProductSpace`**: The Cartesian product of multiple spaces (e.g. $S_{exo} \times S_{endo}$).
+  - `loc` is a composite tuple `(loc_exo, loc_endo)`, and `val` is concatenated $[m, s]$.
+  - Discretizes to a `ProductGrid`.
+- **`EmptySpace`**: The neutral empty space for models without discrete exogenous states (discretizes to `EmptyGrid`).
 
-The *space* of the model is the product of these two parts. In the current
-implementation the space is **not** a standalone object: it is concretely
-realized by a **grid** — more precisely a `ProductGrid`, the Cartesian product
-of an *exogenous* grid and an *endogenous* grid:
+```python
+from dolo.numeric import CartesianSpace, DiscreteSpace, ProductSpace
+
+# Continuous state space
+endo_space = CartesianSpace(min=[0.1, 1.0], max=[0.5, 5.0], variables=["z", "k"])
+assert [0.2, 2.0] in endo_space
+
+# Discrete regime space
+exo_space = DiscreteSpace([[-0.01], [0.01]], variables=["e"])
+
+# Product space
+space = exo_space * endo_space
+grid = space.discretize(endo={"n": [20, 40]})   # -> ProductGrid
+```
+
+### Grids (Discretizations of Spaces)
+
+A **`Grid`** represents a concrete, discrete set of nodes sampling a `Space`:
 
 $$\mathcal{G} = \mathcal{M} \times \mathcal{S}$$
 
-- $\mathcal{M}$ is the grid of the discretized exogenous process (regimes /
-  shock nodes);
-- $\mathcal{S}$ is the grid of endogenous states (a Cartesian product of
-  intervals).
+- $\mathcal{M}$ is the grid of the discretized exogenous process (regimes / shock nodes);
+- $\mathcal{S}$ is the grid of endogenous states (a Cartesian product of intervals).
 
 A `ProductGrid` bundles the two sub-grids and supports lookup by name:
 
 ```python
 grid.grids      # -> [exo_grid, endo_grid]
-grid["states"]  # -> the endogenous sub-grid
+grid["endo"]    # -> the endogenous sub-grid
 ```
 
 ### Grid types
@@ -255,54 +274,52 @@ x0.norm()                          # L_infinity norm
 
 ## 6. Approximators
 
-The solution algorithms do not return raw point values on the grid; they
-return a decision rule $x = \varphi(S)$ that can be evaluated *anywhere*. The
-objects that interpolate (or otherwise approximate) the policy over the space
-are collectively the **approximators**. In the current implementation these
-live in `dolo.numeric.decision_rule`:
+The solution algorithms do not return raw point values on the grid; they return a decision rule $x = \varphi(S)$ that can be evaluated *anywhere* in the continuous space. The objects that interpolate or approximate the policy are collectively the **approximators** in `dolo.numeric.approximators`:
 
-- **`DecisionRule`** — interpolates a control field stored on an
-  `(exo_grid, endo_grid)` product grid, with an interpolation method selected
-  from `interp_methods`:
+- **`LinearApproximator`**: Piecewise multilinear interpolation on Cartesian grids.
+- **`CubicSplineApproximator`**: Prefiltered cubic spline interpolation on Cartesian grids.
+- **`SmolyakApproximator`**: Multivariate Chebyshev polynomial approximation on Smolyak grids.
+- **`ProductApproximator`**: Regime-wise composite approximator over `ProductGrid` / `ProductSpace` (delegating to continuous approximators per discrete regime).
 
-  | key | interp method |
-  | --- | --- |
-  | `linear` / `multilinear` | piecewise-linear (multilinear) interpolation |
-  | `cubic` | cubic spline (prefiltered) |
-  | `chebychev` | Chebyshev polynomials (reserved) |
+An `Approximator` provides:
+- `app.grid`: The compatible discretization grid.
+- `app.fit(values)`: Fits coefficients from field values on the grid.
+- `app.evaluate_coords(coeffs, s)`: Evaluates approximation at continuous coordinate matrix.
+- `app.evaluate(coeffs, qp)`: Evaluates approximation at a `QualifiedPoint`.
+- `app.evaluate_batch(coeffs, batch)`: Evaluates approximation over a `QualifiedBatch` / `SliceQP`.
 
-- **`ConstantDecisionRule`** — a trivial constant policy (used as a starting
-  point).
-- **`CustomDR`** — a user-supplied closed-form decision rule.
+### DecisionRule and `fit()`
 
-A `DecisionRule` is callable like a `gufunc`, accepting either a `QP` /
-`SliceQP`, `(m, s)` economic coordinates, or `(i, s)` regime indexing:
+A **`DecisionRule`** bundles the space, grid, approximator, and fitted coefficients into a callable object:
 
 ```python
-dr = DecisionRule(exo_grid, endo_grid, interp_method="cubic")
-dr.set_values(x)          # x : GArray or raw array of control values
-dr(i_m, s)                # evaluate in regime i_m at states s
+from dolo.numeric import DecisionRule
+
+# Fluent construction and fitting (matching Julia's fit!):
+dr = DecisionRule(exo_grid, endo_grid, interp_method="cubic").fit(controls_ga)
+
+# dr.set_values is preserved as an alias for backwards compatibility:
+dr.set_values(controls_ga)
+
+# Callable over QP, SliceQP, or regime + continuous coordinates:
+dr(qp)
+dr(slice_qp)
+dr(i_m, s)
 ```
 
-Smolyak interpolation is available through `SmolyakGrid` (and the
-`interpolation` dependency); higher-dimensional and Taylor-based
-approximators (as in Dolo.jl) are planned but not yet wired into the solve
-routines.
+You can also construct a `DecisionRule` directly from a `DiscretizedModel`:
+
+```python
+dr = dmodel.decision_rule(controls_ga, interp_method="cubic")
+```
 
 ---
 
 ## 7. Roadmap
 
-The following pieces of the redesign are still outstanding; this chapter will
-be updated as they land:
+With first-class **`Space`** and **`Approximator`** hierarchies now landed, the remaining items on the redesign roadmap are:
 
-- a first-class **`Space`** object (separating the *domain* from its *node
-  set*), making non-Cartesian and mixed discrete/continuous domains
-  first-class citizens;
-- a unified **`Approximator`** interface (Smolyak, spline, Chebyshev, Taylor)
-  shared by all solution routines;
-- `tau`-based simulation and quadrature (currently `tau_fit` is the reference).
+- **`tau`-based simulation and ergodic analysis**: using $\tau$ directly inside time-series simulation loops (replacing ad-hoc process branching);
+- **Higher-order Taylor approximators**: local perturbation expansions around the steady state implementing the unified `Approximator` interface.
 
-The stable, algorithm-facing `DiscretizedModel` / `tau` / `GArray` / `QP`
-abstractions are already used by the global solvers (see the "Time Iteration"
-chapter).
+The stable, algorithm-facing `DiscretizedModel` / `tau` / `GArray` / `QP` / `Space` / `Approximator` abstractions are used by the global solvers (see the "Time Iteration" chapter).

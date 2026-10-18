@@ -1,3 +1,4 @@
+from typing import Any, Optional, Union
 import numpy
 from numpy import array, zeros
 from interpolation.smolyak import SmolyakGrid as SmolyakGrid0
@@ -113,24 +114,66 @@ class DecisionRule(CallableDecisionRule):
 
     def __init__(
         self,
-        exo_grid: Grid,
-        endo_grid: Grid,
+        exo_grid: Any,
+        endo_grid: Any = None,
         interp_method="cubic",
         dprocess=None,
         values=None,
     ):
+        from dolo.numeric.spaces import Space, ProductSpace, CartesianSpace
+        from dolo.numeric.approximators import Approximator, get_approximator
+        from dolo.numeric.grids import ProductGrid, EmptyGrid
 
-        if interp_method not in interp_methods.keys():
+        if isinstance(exo_grid, Approximator):
+            self.approximator = exo_grid
+            if isinstance(self.approximator.grid, ProductGrid):
+                self.exo_grid = self.approximator.grid.grids[0]
+                self.endo_grid = self.approximator.grid.grids[1]
+            else:
+                self.exo_grid = EmptyGrid()
+                self.endo_grid = self.approximator.grid
+            self.interp_method = getattr(
+                self.approximator, "interp_method", interp_method
+            )
+        elif isinstance(exo_grid, Space):
+            space = exo_grid
+            if isinstance(space, ProductSpace):
+                grid = space.discretize()
+                self.exo_grid = grid.grids[0]
+                self.endo_grid = grid.grids[1]
+            elif isinstance(space, CartesianSpace):
+                self.exo_grid = EmptyGrid()
+                self.endo_grid = space.discretize()
+            else:
+                self.exo_grid = EmptyGrid()
+                self.endo_grid = space.discretize()
+            self.interp_method = interp_method
+            try:
+                self.approximator = get_approximator(
+                    ProductGrid(self.exo_grid, self.endo_grid),
+                    interp_method=interp_method,
+                )
+            except Exception:
+                self.approximator = None
+        else:
+            self.exo_grid = exo_grid
+            self.endo_grid = endo_grid
+            self.interp_method = interp_method
+            try:
+                self.approximator = get_approximator(
+                    ProductGrid(self.exo_grid, self.endo_grid),
+                    interp_method=interp_method,
+                )
+            except Exception:
+                self.approximator = None
+
+        if self.interp_method not in interp_methods.keys():
             raise Exception(
-                f"Unknown interpolation type: {interp_method}. Try one of: {tuple(interp_methods.keys())}"
+                f"Unknown interpolation type: {self.interp_method}. Try one of: {tuple(interp_methods.keys())}"
             )
 
-        self.exo_grid = exo_grid
-        self.endo_grid = endo_grid
-        self.interp_method = interp_method
         self.dprocess = dprocess
-
-        self.__interp_method__ = interp_methods[interp_method]
+        self.__interp_method__ = interp_methods[self.interp_method]
 
         # here we could replace with a caching mechanism resolving dispatch in advance
         self.__eval_ms__ = eval_ms
@@ -139,9 +182,13 @@ class DecisionRule(CallableDecisionRule):
         self.__get_coefficients__ = get_coefficients
 
         if values is not None:
-            self.set_values(values)
+            self.fit(values)
 
-    def set_values(self, x):
+    def fit(self, x):
+        """Fit decision rule coefficients from values on the grid.
+
+        Returns self for fluent chaining: `dr = DecisionRule(...).fit(x)`
+        """
         from dolo.numeric.garray import GArray
 
         if isinstance(x, GArray):
@@ -149,6 +196,10 @@ class DecisionRule(CallableDecisionRule):
         self.coefficients = self.__get_coefficients__(
             self, self.exo_grid, self.endo_grid, self.__interp_method__, x
         )
+        return self
+
+    # Alias for backwards compatibility
+    set_values = fit
 
     def eval_ms(self, m, s):
         return self.__eval_ms__(
