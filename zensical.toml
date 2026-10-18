@@ -22,6 +22,9 @@ nav = [
       "model_specification.md",
       "processes.md",
   ]},
+  { "Model Representation (WIP)" = [
+      "model_representation.md",
+  ]},
   { "Local Solution Algorithms" = [
       "steady_state.md",
       "perturbation.md",
