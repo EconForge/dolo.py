@@ -45,13 +45,29 @@ class Approximator(ABC):
         """Evaluate approximation at continuous coordinate matrix of shape (N, d)."""
         pass
 
-    def evaluate(self, coeffs: Any, qp: QualifiedPoint) -> np.ndarray:
-        """Evaluate approximation at a single QualifiedPoint."""
-        coords = np.asarray(qp.val, dtype=float)
-        if coords.ndim == 1:
-            res = self.evaluate_coords(coeffs, coords[None, :])
-            return res[0]
-        return self.evaluate_coords(coeffs, coords)
+    def evaluate(self, coeffs: Any, *args) -> np.ndarray:
+        """Universal evaluation method for approximation schemes.
+
+        Supports:
+        - `evaluate(coeffs, qp)`: single QualifiedPoint / QP
+        - `evaluate(coeffs, batch)`: QualifiedBatch / SliceQP
+        - `evaluate(coeffs, coords)`: coordinate array (N, d) or (d,)
+        - `evaluate(coeffs, *args)`: multi-argument forms implemented by subclasses
+        """
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, QualifiedBatch):
+                return self.evaluate_batch(coeffs, arg)
+            if isinstance(arg, QualifiedPoint):
+                coords = np.asarray(arg.val, dtype=float)
+                if coords.ndim == 1:
+                    return self.evaluate_coords(coeffs, coords[None, :])[0]
+                return self.evaluate_coords(coeffs, coords)
+            coords = np.asarray(arg, dtype=float)
+            if coords.ndim == 1:
+                return self.evaluate_coords(coeffs, coords[None, :])[0]
+            return self.evaluate_coords(coeffs, coords)
+        raise ValueError(f"Approximator.evaluate cannot handle {len(args)} arguments.")
 
     def evaluate_batch(self, coeffs: Any, batch: QualifiedBatch) -> np.ndarray:
         """Evaluate approximation over a QualifiedBatch / SliceQP."""
@@ -264,9 +280,55 @@ class ProductApproximator(Approximator):
                 "Discrete exogenous states require regime index or QualifiedPoint for evaluation."
             )
 
-    def evaluate(self, coeffs: Any, qp: QualifiedPoint) -> np.ndarray:
+    def evaluate(self, coeffs: Any, *args) -> np.ndarray:
+        """Universal evaluation on ProductApproximator.
+
+        Supports:
+        - `evaluate(coeffs, qp)`: single QualifiedPoint / QP
+        - `evaluate(coeffs, batch)`: QualifiedBatch / SliceQP
+        - `evaluate(coeffs, s)`: continuous endogenous states alone (empty exo or single-regime)
+        - `evaluate(coeffs, i, s)`: discrete regime index `i` + continuous states `s`
+        - `evaluate(coeffs, m, s)`: continuous exogenous `m` + endogenous `s`
+        """
+        if len(args) == 1:
+            arg = args[0]
+            if isinstance(arg, QualifiedBatch):
+                return self.evaluate_batch(coeffs, arg)
+            if isinstance(arg, QualifiedPoint):
+                return self._evaluate_qp(coeffs, arg)
+            # Coordinates array: continuous endogenous states alone
+            return self.evaluate_s(coeffs, np.asarray(arg, dtype=float))
+
+        elif len(args) == 2:
+            a0, a1 = args
+            # Check for discrete regime index `i`
+            if isinstance(a0, (int, np.integer)):
+                s_arr = np.asarray(a1, dtype=float)
+                if s_arr.ndim == 1:
+                    return self.evaluate_regime(coeffs, int(a0), s_arr[None, :])[0]
+                return self.evaluate_regime(coeffs, int(a0), s_arr)
+
+            a0_arr = np.asarray(a0)
+            a1_arr = np.asarray(a1, dtype=float)
+            if a0_arr.dtype.kind in ("i", "u") and a0_arr.ndim == 0:
+                if a1_arr.ndim == 1:
+                    return self.evaluate_regime(coeffs, int(a0_arr), a1_arr[None, :])[0]
+                return self.evaluate_regime(coeffs, int(a0_arr), a1_arr)
+
+            # Continuous (m, s)
+            if a0_arr.ndim == 1 and a1_arr.ndim == 1:
+                return self.evaluate_ms(coeffs, a0_arr[None, :], a1_arr[None, :])[0]
+            return self.evaluate_ms(coeffs, a0_arr, a1_arr)
+
+        raise ValueError(
+            f"ProductApproximator.evaluate cannot handle {len(args)} arguments."
+        )
+
+    def _evaluate_qp(self, coeffs: Any, qp: QualifiedPoint) -> np.ndarray:
         if self.is_empty_exo:
             coords = np.asarray(qp.val, dtype=float)
+            if coords.ndim == 1:
+                return self.sub_approximator.evaluate_coords(coeffs, coords[None, :])[0]
             return self.sub_approximator.evaluate_coords(coeffs, coords)
         elif self.is_discrete_exo:
             i = qp.index
@@ -277,9 +339,12 @@ class ProductApproximator(Approximator):
             )
             if isinstance(qp.loc, tuple) and len(qp.loc) >= 2:
                 endo_coords = qp.loc[1]
-            return self.sub_approximator.evaluate_coords(
-                coeffs[i], np.asarray(endo_coords, dtype=float)
-            )
+            c_arr = np.asarray(endo_coords, dtype=float)
+            if c_arr.ndim == 1:
+                return self.sub_approximator.evaluate_coords(coeffs[i], c_arr[None, :])[
+                    0
+                ]
+            return self.sub_approximator.evaluate_coords(coeffs[i], c_arr)
         elif self.is_cartesian_exo:
             return self.joint_approximator.evaluate(coeffs, qp)
         else:

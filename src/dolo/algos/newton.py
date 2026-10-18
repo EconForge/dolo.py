@@ -428,7 +428,7 @@ def newton(
 
     if dr0 is not None:
         for i_m in range(n_m):
-            x0[i_m, :, :] = dr0.eval_is(i_m, s)
+            x0[i_m, :, :] = dr0(i_m, s)
     ddr.set_values(x0)
 
     if x_lb is not None and complementarities:

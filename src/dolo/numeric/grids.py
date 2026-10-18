@@ -129,8 +129,8 @@ class UniformCartesianGrid(CartesianGrid):
             raise Exception("Not implemented.")
 
         n = np.array(tuple(self.n) + tuple(g.n))
-        min = np.array(tuple(self.min) + tuple(self.min))
-        max = np.array(tuple(self.max) + tuple(self.max))
+        min = np.array(tuple(self.min) + tuple(g.min))
+        max = np.array(tuple(self.max) + tuple(g.max))
 
         return UniformCartesianGrid(min, max, n)
 

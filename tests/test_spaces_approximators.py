@@ -273,3 +273,77 @@ def test_discretized_model_space_and_dr():
     s0 = dmodel.endo_nodes[0:2]
     eval_dr = dr(0, s0)
     assert eval_dr.shape == (2, len(model.calibration["controls"]))
+
+
+def test_unified_decision_rule_and_approximator_evaluation():
+    """Verify that dr(...) and app.evaluate(...) support all calling styles."""
+    import warnings
+
+    # 1. Pure continuous model (empty exogenous)
+    exo_empty = EmptyGrid()
+    endo_cart = UniformCartesianGrid(min=[1.0], max=[5.0], n=[21])
+    grid_iid = ProductGrid(exo_empty, endo_cart)
+    ga_iid = GArray.zeros(grid_iid, n_vars=1)
+    k_nodes = endo_cart.nodes[:, 0]
+    ga_iid.data[0, :, 0] = 2.0 * k_nodes
+
+    dr_iid = DecisionRule(exo_empty, endo_cart).fit(ga_iid)
+
+    # Calling styles for pure continuous:
+    # a) dr(s) 1D
+    assert np.isclose(dr_iid(np.array([2.5]))[0], 5.0)
+    # b) dr(s) 2D
+    assert np.allclose(dr_iid(np.array([[2.5], [3.5]]))[:, 0], [5.0, 7.0])
+    # c) dr(qp)
+    qp_iid = QP(loc=None, val=np.array([2.5]))
+    assert np.isclose(dr_iid(qp_iid)[0], 5.0)
+    # d) dr(slice_qp)
+    slice_iid = SliceQP(loc=None, exo=np.array([]), endo=np.array([[2.5], [3.5]]))
+    assert np.allclose(dr_iid(slice_iid)[:, 0], [5.0, 7.0])
+
+    # 2. Discrete exogenous (Markov chain)
+    exo_disc = UnstructuredGrid([[-0.05], [0.05]])
+    grid_mc = ProductGrid(exo_disc, endo_cart)
+    ga_mc = GArray.zeros(grid_mc, n_vars=1)
+    ga_mc.data[0, :, 0] = 2.0 * k_nodes
+    ga_mc.data[1, :, 0] = 3.0 * k_nodes
+
+    dr_mc = DecisionRule(exo_disc, endo_cart).fit(ga_mc)
+
+    # Calling styles for discrete exogenous:
+    # a) dr(i, s) 1D and 2D
+    assert np.isclose(dr_mc(0, np.array([2.5]))[0], 5.0)
+    assert np.isclose(dr_mc(1, np.array([2.5]))[0], 7.5)
+    assert np.allclose(dr_mc(0, np.array([[2.5], [3.5]]))[:, 0], [5.0, 7.0])
+    # b) dr(qp)
+    qp_mc = QP(loc=(0, [2.5]), val=np.array([-0.05, 2.5]))
+    assert np.isclose(dr_mc(qp_mc)[0], 5.0)
+    # c) dr(slice_qp)
+    slice_mc = SliceQP(loc=1, exo=np.array([0.05]), endo=np.array([[2.5], [3.5]]))
+    assert np.allclose(dr_mc(slice_mc)[:, 0], [7.5, 10.5])
+
+    # 3. Continuous exogenous (VAR1 / joint Cartesian)
+    exo_cart = UniformCartesianGrid(min=[-0.1], max=[0.1], n=[11])
+    grid_var = ProductGrid(exo_cart, endo_cart)
+    ga_var = GArray.zeros(grid_var, n_vars=1)
+    for i, m_val in enumerate(exo_cart.nodes[:, 0]):
+        ga_var.data[i, :, 0] = m_val + 2.0 * k_nodes
+
+    dr_var = DecisionRule(exo_cart, endo_cart).fit(ga_var)
+
+    # Calling styles for continuous exogenous:
+    # a) dr(m, s) 1D and 2D
+    assert np.isclose(dr_var(np.array([0.0]), np.array([2.5]))[0], 5.0)
+    m_pts = np.array([[0.0], [0.0]])
+    s_pts = np.array([[2.5], [3.5]])
+    assert np.allclose(dr_var(m_pts, s_pts)[:, 0], [5.0, 7.0])
+    # b) dr(qp)
+    qp_var = QP(loc=None, val=np.array([0.0, 2.5]))
+    assert np.isclose(dr_var(qp_var)[0], 5.0)
+
+    # 4. Check deprecation warnings on legacy eval_* methods
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        res_dep = dr_mc.eval_is(0, np.array([[2.5]]))
+        assert np.isclose(res_dep[0, 0], 5.0)
+        assert any(issubclass(item.category, DeprecationWarning) for item in w)

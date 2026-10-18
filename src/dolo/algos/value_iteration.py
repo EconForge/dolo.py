@@ -103,7 +103,7 @@ def value_iteration(
         m = np.repeat(dprocess.node(i_ms)[None, :], N, axis=0)
         lb_i = controls_lb(m, s, p_batched)
         ub_i = controls_ub(m, s, p_batched)
-        x_i = mdr.eval_is(i_ms, s)
+        x_i = mdr(i_ms, s)
         # the calibrated controls may violate the bounds: project onto
         # [lb, ub] (feasible constant policy, keeps transitioned states sane)
         controls_0[i_ms, :, :] = np.clip(x_i, lb_i, ub_i)
@@ -150,7 +150,7 @@ def value_iteration(
 
         mdrv = ev.solution
         for i_ms in range(n_ms):
-            values_0[i_ms, :, :] = mdrv.eval_is(i_ms, s)
+            values_0[i_ms, :, :] = mdrv(i_ms, s)
 
         values = values_0.copy()
         controls = controls_0.copy()
@@ -315,7 +315,7 @@ def evaluate_policy(
     else:
         controls = np.zeros((n_ms, N, n_x))
         for i_m in range(n_ms):
-            controls[i_m, :, :] = mdr.eval_is(i_m, s)
+            controls[i_m, :, :] = mdr(i_m, s)
 
     values_0 = np.zeros((n_ms, N, n_v))
     if dr0 is None:
@@ -323,7 +323,7 @@ def evaluate_policy(
             values_0[i_m, :, :] = v0[None, :]
     else:
         for i_m in range(n_ms):
-            values_0[i_m, :, :] = dr0.eval_is(i_m, s)
+            values_0[i_m, :, :] = dr0(i_m, s)
 
     val = model.functions["value"]
     g = model.functions["transition"]

@@ -54,15 +54,17 @@ interp_methods = {
 
 class CallableDecisionRule:
     def __call__(self, *args):
+        # 1. Fast path: delegate directly to approximator when present
+        if hasattr(self, "approximator") and self.approximator is not None:
+            return self.approximator.evaluate(self.coefficients, *args)
+
+        # 2. Fallback for custom / legacy decision rules without Approximator
         from dolo.numeric.garray import QP, SliceQP
         from dolo.numeric.grids import EmptyGrid
 
-        # 1. Single argument: SliceQP, QP, or coordinates array
         if len(args) == 1:
             arg = args[0]
             if isinstance(arg, SliceQP):
-                if hasattr(self, "approximator") and self.approximator is not None:
-                    return self.approximator.evaluate_batch(self.coefficients, arg)
                 is_empty_exo = hasattr(self, "exo_grid") and isinstance(
                     self.exo_grid, EmptyGrid
                 )
@@ -71,8 +73,6 @@ class CallableDecisionRule:
                 return self.eval_s(arg.endo)
 
             if isinstance(arg, QP):
-                if hasattr(self, "approximator") and self.approximator is not None:
-                    return self.approximator.evaluate(self.coefficients, arg)
                 is_empty_exo = hasattr(self, "exo_grid") and isinstance(
                     self.exo_grid, EmptyGrid
                 )
@@ -91,13 +91,11 @@ class CallableDecisionRule:
                     return self.eval_s(val_arr[None, :])[0, :]
                 return self.eval_s(val_arr)
 
-            # Continuous coords array
             s_arr = np.asarray(arg)
             if s_arr.ndim == 1:
                 return self.eval_s(s_arr[None, :])[0, :]
             return self.eval_s(s_arr)
 
-        # 2. Two arguments: (i, s) or (m, s)
         elif len(args) == 2:
             a0, a1 = args
             if isinstance(a0, (int, np.integer)):
@@ -108,13 +106,11 @@ class CallableDecisionRule:
 
             a0_arr = np.asarray(a0)
             a1_arr = np.asarray(a1)
-            if a0_arr.dtype.kind in ("i", "u"):
-                if a0_arr.ndim == 0:
-                    if a1_arr.ndim == 1:
-                        return self.eval_is(int(a0_arr), a1_arr[None, :])[0, :]
-                    return self.eval_is(int(a0_arr), a1_arr)
+            if a0_arr.dtype.kind in ("i", "u") and a0_arr.ndim == 0:
+                if a1_arr.ndim == 1:
+                    return self.eval_is(int(a0_arr), a1_arr[None, :])[0, :]
+                return self.eval_is(int(a0_arr), a1_arr)
 
-            # (m, s) coordinates
             if a0_arr.ndim == 1 and a1_arr.ndim == 1:
                 return self.eval_ms(a0_arr[None, :], a1_arr[None, :])[0, :]
             return self.eval_ms(a0_arr, a1_arr)
@@ -205,34 +201,47 @@ class DecisionRule(CallableDecisionRule):
     set_values = fit
 
     def eval_ms(self, m, s):
-        m_arr = np.asarray(m, dtype=float)
-        s_arr = np.asarray(s, dtype=float)
-        if s_arr.ndim == 1:
-            s_arr = s_arr[None, :]
-        if m_arr.ndim == 1:
-            m_arr = m_arr[None, :]
-        return self.approximator.evaluate_ms(self.coefficients, m_arr, s_arr)
+        """Deprecated: use `dr(m, s)` instead."""
+        import warnings
+
+        warnings.warn(
+            "dr.eval_ms(m, s) is deprecated, use dr(m, s) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self(m, s)
 
     def eval_is(self, i, s):
-        s_arr = np.asarray(s, dtype=float)
-        if s_arr.ndim == 1:
-            s_arr = s_arr[None, :]
-        return self.approximator.evaluate_regime(self.coefficients, int(i), s_arr)
+        """Deprecated: use `dr(i, s)` instead."""
+        import warnings
+
+        warnings.warn(
+            "dr.eval_is(i, s) is deprecated, use dr(i, s) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self(i, s)
 
     def eval_s(self, s):
-        s_arr = np.asarray(s, dtype=float)
-        if s_arr.ndim == 1:
-            s_arr = s_arr[None, :]
-        return self.approximator.evaluate_s(self.coefficients, s_arr)
+        """Deprecated: use `dr(s)` instead."""
+        import warnings
+
+        warnings.warn(
+            "dr.eval_s(s) is deprecated, use dr(s) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self(s)
 
     def eval_ijs(self, i, j, s):
+        """Evaluate policy at transitioned state for regime transition (i -> j)."""
         if isinstance(self.exo_grid, UnstructuredGrid):
-            return self.eval_is(j, s)
+            return self(j, s)
         elif isinstance(self.exo_grid, EmptyGrid):
-            return self.eval_s(s)
+            return self(s)
         elif isinstance(self.exo_grid, CartesianGrid):
             m = self.dprocess.inode(i, j)[None, :].repeat(s.shape[0], axis=0)
-            return self.eval_ms(m, s)
+            return self(m, s)
         else:
             raise NotImplementedError()
 

@@ -131,7 +131,7 @@ def simulate(
             sim_type = "continuous"
             if m0 is None:
                 m0 = model.calibration["exogenous"]
-            x_simul[0, :, :] = dr.eval_ms(m0[None, :], s0[None, :])[0, :]
+            x_simul[0, :, :] = dr(m0[None, :], s0[None, :])[0, :]
         elif len(driving_process.shape) == 2:
             i_simul = driving_process
             nodes = dr.exo_grid.nodes
@@ -139,7 +139,7 @@ def simulate(
             # inds = i_simul.ravel()
             # m_simul = np.reshape( np.concatenate( [nodes[i,:][None,:] for i in inds.ravel()], axis=0 ), inds.shape + (-1,) )
             sim_type = "discrete"
-            x_simul[0, :, :] = dr.eval_is(i0, s0[None, :])[0, :]
+            x_simul[0, :, :] = dr(i0, s0[None, :])[0, :]
         else:
             raise Exception("Incorrect specification of driving values.")
         m0 = m_simul[0, :, :]
@@ -165,7 +165,7 @@ def simulate(
             m_simul = dp.simulate(N, T, i0=i0, stochastic=stochastic)
             i_simul = find_index(m_simul, dp.values)
             m0 = dp.node(i0)
-            x0 = dr.eval_is(i0, s0[None, :])[0, :]
+            x0 = dr(i0, s0[None, :])[0, :]
         else:
             m_simul = process.simulate(N, T, m0=m0, stochastic=stochastic)
             if isinstance(m_simul, xr.DataArray):
@@ -173,7 +173,7 @@ def simulate(
             sim_type = "continuous"
             if m0 is None:
                 m0 = model.calibration["exogenous"]
-            x0 = dr.eval_ms(m0[None, :], s0[None, :])[0, :]
+            x0 = dr(m0[None, :], s0[None, :])[0, :]
             x_simul[0, :, :] = x0[None, :]
 
     f = model.functions["arbitrage"]
@@ -187,12 +187,10 @@ def simulate(
         s = s_simul[i, :, :]
         if sim_type == "discrete":
             i_m = i_simul[i, :]
-            xx = [
-                dr.eval_is(i_m[ii], s[ii, :][None, :])[0, :] for ii in range(s.shape[0])
-            ]
+            xx = [dr(i_m[ii], s[ii, :][None, :])[0, :] for ii in range(s.shape[0])]
             x = np.vstack(xx)
         else:
-            x = dr.eval_ms(m, s)
+            x = dr(m, s)
 
         x_simul[i, :, :] = x
 
@@ -284,10 +282,10 @@ def tabulate(
 
     if i0 is not None:
         m = dp.node(i0)
-        xvec = dr.eval_is(i0, svec)
+        xvec = dr(i0, svec)
     elif m0 is not None:
         m = m0
-        xvec = dr.eval_ms(m0, svec)
+        xvec = dr(m0, svec)
 
     mm = numpy.vstack([m] * n_steps)
     l = [mm, svec, xvec]
@@ -336,7 +334,7 @@ def tabulate_2d(model, dr, states=None, i0=0, s0=None, n=[12, 13]):
         s[i_x] = xx
         for yy in lps[1]:
             s[i_y] = yy
-            x = dr.eval_is(i0, s)
+            x = dr(i0, s)
             vv.append(numpy.concatenate([s, x]))
         vals.append(vv)
     vv = numpy.array(vals)
