@@ -261,7 +261,8 @@ class SymbolicModel:
     @property
     def filename(self):
         try:
-            return self.data["filename"].value
+            fn = self.data["filename"]
+            return fn.value if hasattr(fn, "value") else str(fn)
         except Exception as e:
             return "<string>"
 

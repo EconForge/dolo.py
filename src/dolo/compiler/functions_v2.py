@@ -726,6 +726,17 @@ def make_function(
                 )
             return _np_vec_diff(list(args))
 
+        # Traced under JAX (jit, vmap, grad/jacrev): bypass np.asarray marshaling
+        if not diff and any(isinstance(a, jax.core.Tracer) for a in args):
+            if any(getattr(a, "ndim", 1) == 2 for a in args):
+                N = max(a.shape[0] for a in args if getattr(a, "ndim", 1) == 2)
+                bjargs = [
+                    jnp.broadcast_to(a, (N, a.shape[0])) if getattr(a, "ndim", 1) == 1 else a
+                    for a in args
+                ]
+                return batch(*bjargs)
+            return point_fn(*args)
+
         # Skip the `jnp.asarray(..., dtype=float64)` marshaling for device
         # arrays that already satisfy the dtype — algos that hold jax
         # arrays across calls avoid the extra copy/pass cost (DEV_NOTES §6.4).
@@ -765,6 +776,9 @@ def make_function(
             return [np.asarray(point(*jargs)), *_diff_all(jargs)]
         return np.asarray(point(*jargs))
 
+    fn.point_jnp = point_fn
+    fn.batch_jnp = batch
+    fn.batch_pt = batch_pt
     fn.__name__ = name
     fn.__doc__ = (
         f"Evaluate the {name} equation group of a dolo model "

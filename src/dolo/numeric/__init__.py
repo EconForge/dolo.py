@@ -31,6 +31,10 @@ from dolo.numeric.interpolation_jax import (
     eval_linear_jax,
     eval_linear_point_jax,
 )
+from dolo.numeric.residual_jax import (
+    CompiledResidual,
+    compile_residual,
+)
 
 __all__ = [
     "GArray",
@@ -59,4 +63,6 @@ __all__ = [
     "eval_cubic_point_jax",
     "eval_linear_jax",
     "eval_linear_point_jax",
+    "CompiledResidual",
+    "compile_residual",
 ]
