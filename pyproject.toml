@@ -28,7 +28,6 @@ dependencies = [
     "jax>=0.4.38,<0.5",
     "matplotlib>=3.6.0,<4",
     "numba>=0.60.0,<0.70",
-    "multipledispatch>=0.6.0,<0.7",
     "numpy>=2.0.0,<3",
     "pandas>=2.2.2,<4",
     "pyyaml>=6.0,<7",

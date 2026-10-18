@@ -57,54 +57,71 @@ class CallableDecisionRule:
         from dolo.numeric.garray import QP, SliceQP
         from dolo.numeric.grids import EmptyGrid
 
-        if len(args) == 1 and isinstance(args[0], SliceQP):
-            sqp = args[0]
-            is_empty_exo = hasattr(self, "exo_grid") and isinstance(
-                self.exo_grid, EmptyGrid
-            )
-            if sqp.loc is not None and not is_empty_exo:
-                return self.eval_is(sqp.loc, sqp.endo)
-            return self.eval_s(sqp.endo)
-
-        if len(args) == 1 and isinstance(args[0], QP):
-            qp = args[0]
-            is_empty_exo = hasattr(self, "exo_grid") and isinstance(
-                self.exo_grid, EmptyGrid
-            )
-            if isinstance(qp.loc, tuple) and len(qp.loc) >= 2 and not is_empty_exo:
-                i, s_endo = qp.loc[0], qp.loc[1]
-                s_arr = np.asarray(s_endo)
-                if s_arr.ndim == 1:
-                    return self.eval_is(i, s_arr[None, :])[0, :]
-                return self.eval_is(i, s_arr)
-            val_arr = np.asarray(qp.val)
-            if val_arr.ndim == 1:
-                return self.eval_s(val_arr[None, :])[0, :]
-            return self.eval_s(val_arr)
-
-        args = [np.array(e) for e in args]
+        # 1. Single argument: SliceQP, QP, or coordinates array
         if len(args) == 1:
-            if args[0].ndim == 1:
-                return self.eval_s(args[0][None, :])[0, :]
-            else:
-                return self.eval_s(args[0])
+            arg = args[0]
+            if isinstance(arg, SliceQP):
+                if hasattr(self, "approximator") and self.approximator is not None:
+                    return self.approximator.evaluate_batch(self.coefficients, arg)
+                is_empty_exo = hasattr(self, "exo_grid") and isinstance(
+                    self.exo_grid, EmptyGrid
+                )
+                if arg.loc is not None and not is_empty_exo:
+                    return self.eval_is(arg.loc, arg.endo)
+                return self.eval_s(arg.endo)
+
+            if isinstance(arg, QP):
+                if hasattr(self, "approximator") and self.approximator is not None:
+                    return self.approximator.evaluate(self.coefficients, arg)
+                is_empty_exo = hasattr(self, "exo_grid") and isinstance(
+                    self.exo_grid, EmptyGrid
+                )
+                if (
+                    isinstance(arg.loc, tuple)
+                    and len(arg.loc) >= 2
+                    and not is_empty_exo
+                ):
+                    i, s_endo = arg.loc[0], arg.loc[1]
+                    s_arr = np.asarray(s_endo)
+                    if s_arr.ndim == 1:
+                        return self.eval_is(i, s_arr[None, :])[0, :]
+                    return self.eval_is(i, s_arr)
+                val_arr = np.asarray(arg.val)
+                if val_arr.ndim == 1:
+                    return self.eval_s(val_arr[None, :])[0, :]
+                return self.eval_s(val_arr)
+
+            # Continuous coords array
+            s_arr = np.asarray(arg)
+            if s_arr.ndim == 1:
+                return self.eval_s(s_arr[None, :])[0, :]
+            return self.eval_s(s_arr)
+
+        # 2. Two arguments: (i, s) or (m, s)
         elif len(args) == 2:
-            if args[0].dtype in ("int64", "int32"):
-                i, s = args
-                if s.ndim == 1:
-                    return self.eval_is(i, s[None, :])[0, :]
-                else:
-                    return self.eval_is(i, s)
-                return self.eval_is()
-            else:
-                m, s = args[0], args[1]
-                if s.ndim == 1 and m.ndim == 1:
-                    return self.eval_ms(m[None, :], s[None, :])[0, :]
-                elif m.ndim == 1:
-                    m = m[None, :]
-                elif s.ndim == 1:
-                    s = s[None, :]
-                return self.eval_ms(m, s)
+            a0, a1 = args
+            if isinstance(a0, (int, np.integer)):
+                s_arr = np.asarray(a1)
+                if s_arr.ndim == 1:
+                    return self.eval_is(int(a0), s_arr[None, :])[0, :]
+                return self.eval_is(int(a0), s_arr)
+
+            a0_arr = np.asarray(a0)
+            a1_arr = np.asarray(a1)
+            if a0_arr.dtype.kind in ("i", "u"):
+                if a0_arr.ndim == 0:
+                    if a1_arr.ndim == 1:
+                        return self.eval_is(int(a0_arr), a1_arr[None, :])[0, :]
+                    return self.eval_is(int(a0_arr), a1_arr)
+
+            # (m, s) coordinates
+            if a0_arr.ndim == 1 and a1_arr.ndim == 1:
+                return self.eval_ms(a0_arr[None, :], a1_arr[None, :])[0, :]
+            return self.eval_ms(a0_arr, a1_arr)
+
+        raise ValueError(
+            f"DecisionRule cannot be evaluated with {len(args)} arguments."
+        )
 
 
 class DecisionRule(CallableDecisionRule):
@@ -148,24 +165,18 @@ class DecisionRule(CallableDecisionRule):
                 self.exo_grid = EmptyGrid()
                 self.endo_grid = space.discretize()
             self.interp_method = interp_method
-            try:
-                self.approximator = get_approximator(
-                    ProductGrid(self.exo_grid, self.endo_grid),
-                    interp_method=interp_method,
-                )
-            except Exception:
-                self.approximator = None
+            self.approximator = get_approximator(
+                ProductGrid(self.exo_grid, self.endo_grid),
+                interp_method=interp_method,
+            )
         else:
             self.exo_grid = exo_grid
             self.endo_grid = endo_grid
             self.interp_method = interp_method
-            try:
-                self.approximator = get_approximator(
-                    ProductGrid(self.exo_grid, self.endo_grid),
-                    interp_method=interp_method,
-                )
-            except Exception:
-                self.approximator = None
+            self.approximator = get_approximator(
+                ProductGrid(self.exo_grid, self.endo_grid),
+                interp_method=interp_method,
+            )
 
         if self.interp_method not in interp_methods.keys():
             raise Exception(
@@ -173,13 +184,7 @@ class DecisionRule(CallableDecisionRule):
             )
 
         self.dprocess = dprocess
-        self.__interp_method__ = interp_methods[self.interp_method]
-
-        # here we could replace with a caching mechanism resolving dispatch in advance
-        self.__eval_ms__ = eval_ms
-        self.__eval_is__ = eval_is
-        self.__eval_s__ = eval_s
-        self.__get_coefficients__ = get_coefficients
+        self.coefficients = None
 
         if values is not None:
             self.fit(values)
@@ -193,357 +198,43 @@ class DecisionRule(CallableDecisionRule):
 
         if isinstance(x, GArray):
             x = x.data
-        self.coefficients = self.__get_coefficients__(
-            self, self.exo_grid, self.endo_grid, self.__interp_method__, x
-        )
+        self.coefficients = self.approximator.fit(x)
         return self
 
     # Alias for backwards compatibility
     set_values = fit
 
     def eval_ms(self, m, s):
-        return self.__eval_ms__(
-            self, self.exo_grid, self.endo_grid, self.__interp_method__, m, s
-        )
+        m_arr = np.asarray(m, dtype=float)
+        s_arr = np.asarray(s, dtype=float)
+        if s_arr.ndim == 1:
+            s_arr = s_arr[None, :]
+        if m_arr.ndim == 1:
+            m_arr = m_arr[None, :]
+        return self.approximator.evaluate_ms(self.coefficients, m_arr, s_arr)
 
     def eval_is(self, i, s):
-        return self.__eval_is__(
-            self, self.exo_grid, self.endo_grid, self.__interp_method__, i, s
-        )
+        s_arr = np.asarray(s, dtype=float)
+        if s_arr.ndim == 1:
+            s_arr = s_arr[None, :]
+        return self.approximator.evaluate_regime(self.coefficients, int(i), s_arr)
 
     def eval_s(self, s):
-        return self.__eval_s__(
-            self, self.exo_grid, self.endo_grid, self.__interp_method__, s
-        )
+        s_arr = np.asarray(s, dtype=float)
+        if s_arr.ndim == 1:
+            s_arr = s_arr[None, :]
+        return self.approximator.evaluate_s(self.coefficients, s_arr)
 
     def eval_ijs(self, i, j, s):
-
         if isinstance(self.exo_grid, UnstructuredGrid):
-            out = self.eval_is(j, s)
+            return self.eval_is(j, s)
         elif isinstance(self.exo_grid, EmptyGrid):
-            out = self.eval_s(s)
+            return self.eval_s(s)
         elif isinstance(self.exo_grid, CartesianGrid):
             m = self.dprocess.inode(i, j)[None, :].repeat(s.shape[0], axis=0)
-            out = self.eval_ms(m, s)
+            return self.eval_ms(m, s)
         else:
-            raise Exception("Not Implemented.")
-
-        return out
-
-
-# this is *not* meant to be used by users
-
-from multipledispatch import dispatch
-
-namespace = dict()
-multimethod = dispatch(namespace=namespace)
-
-# Cartesian x Cartesian x Linear
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    x: object,
-):
-    grid = exo_grid + endo_grid
-    xx = x.reshape(tuple(grid.n) + (-1,))
-    return xx.copy()
-
-
-@multimethod
-def eval_ms(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    m: object,
-    s: object,
-):
-
-    assert m.ndim == s.ndim == 2
-
-    grid = exo_grid + endo_grid  # one single CartesianGrid
-
-    coeffs = itp.coefficients
-
-    gg = grid.__numba_repr__()
-    from interpolation.splines import eval_linear
-
-    x = np.concatenate([m, s], axis=1)
-
-    return eval_linear(gg, coeffs, x)
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    i: object,
-    s: object,
-):
-    m = exo_grid.node(i)[None, :]
-    return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
-
-
-# Cartesian x Cartesian x Cubic
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    x: object,
-):
-
-    from interpolation.splines.prefilter_cubic import prefilter_cubic
-
-    grid = exo_grid + endo_grid  # one single CartesianGrid
-    x = x.reshape(tuple(grid.n) + (-1,))
-    gg = grid.__numba_repr__()
-    return prefilter_cubic(gg, x)
-
-
-@multimethod
-def eval_ms(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    m: object,
-    s: object,
-):
-
-    from interpolation.splines import eval_cubic
-
-    assert m.ndim == s.ndim == 2
-
-    grid = exo_grid + endo_grid  # one single CartesianGrid
-    coeffs = itp.coefficients
-
-    gg = grid.__numba_repr__()
-
-    x = np.concatenate([m, s], axis=1)
-
-    return eval_cubic(gg, coeffs, x)
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: CartesianGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    i: object,
-    s: object,
-):
-    m = exo_grid.node(i)[None, :]
-    return eval_ms(itp, exo_grid, endo_grid, interp_type, m, s)
-
-
-# UnstructuredGrid x Cartesian x Linear
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    x: object,
-):
-    return [x[i].reshape(tuple(endo_grid.n) + (-1,)).copy() for i in range(x.shape[0])]
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    i: object,
-    s: object,
-):
-
-    from interpolation.splines import eval_linear
-
-    assert s.ndim == 2
-    coeffs = itp.coefficients[i]
-    gg = endo_grid.__numba_repr__()
-
-    return eval_linear(gg, coeffs, s)
-
-
-# UnstructuredGrid x Cartesian x Cubic
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    x: object,
-):
-    from interpolation.splines.prefilter_cubic import prefilter_cubic
-
-    gg = endo_grid.__numba_repr__()
-    return [
-        prefilter_cubic(gg, x[i].reshape(tuple(endo_grid.n) + (-1,)))
-        for i in range(x.shape[0])
-    ]
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    i: object,
-    s: object,
-):
-
-    from interpolation.splines import eval_cubic
-
-    assert s.ndim == 2
-    coeffs = itp.coefficients[i]
-    gg = endo_grid.__numba_repr__()
-    return eval_cubic(gg, coeffs, s)
-
-
-# UnstructuredGrid x Cartesian x Linear
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    x: object,
-):
-    return [x[i].copy() for i in range(x.shape[0])]
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: UnstructuredGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    i: object,
-    s: object,
-):
-
-    from interpolation.splines import eval_linear
-
-    assert s.ndim == 2
-
-    coeffs = itp.coefficients[i]
-    gg = endo_grid.__numba_repr__()
-
-    return eval_linear(gg, coeffs, s)
-
-
-# Empty x Cartesian x Linear
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    x: object,
-):
-    grid = exo_grid + endo_grid
-    xx = x.reshape(tuple(grid.n) + (-1,))
-    return xx.copy()
-
-
-@multimethod
-def eval_s(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Linear,
-    s: object,
-):
-    from interpolation.splines import eval_linear
-
-    assert s.ndim == 2
-    coeffs = itp.coefficients
-    gg = endo_grid.__numba_repr__()
-    return eval_linear(gg, coeffs, s)
-
-
-# Empty x Cartesian x Cubic
-
-
-@multimethod
-def get_coefficients(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    x: object,
-):
-    from interpolation.splines.prefilter_cubic import prefilter_cubic
-
-    grid = endo_grid  # one single CartesianGrid
-    gg = endo_grid.__numba_repr__()
-    return prefilter_cubic(gg, x[0].reshape(tuple(grid.n) + (-1,)))
-
-
-@multimethod
-def eval_s(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: CartesianGrid,
-    interp_type: Cubic,
-    s: object,
-):
-    from interpolation.splines import eval_cubic
-
-    assert s.ndim == 2
-    coeffs = itp.coefficients
-    gg = endo_grid.__numba_repr__()
-    return eval_cubic(gg, coeffs, s)
-
-
-## an empty grid can be indexed by an integer or a vector
-
-
-@multimethod
-def eval_is(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: object,
-    interp_type: object,
-    i: object,
-    s: object,
-):
-    return eval_s(itp, exo_grid, endo_grid, interp_type, s)
-
-
-@multimethod
-def eval_ms(
-    itp: object,
-    exo_grid: EmptyGrid,
-    endo_grid: object,
-    interp_type: object,
-    m: object,
-    s: object,
-):
-    return eval_s(itp, exo_grid, endo_grid, interp_type, s)
+            raise NotImplementedError()
 
 
 ####

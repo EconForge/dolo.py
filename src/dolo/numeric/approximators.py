@@ -61,15 +61,26 @@ class Approximator(ABC):
 class LinearApproximator(Approximator):
     """Piecewise multilinear interpolation on CartesianGrid."""
 
-    def __init__(self, grid: CartesianGrid, space: Optional[CartesianSpace] = None):
+    def __init__(
+        self,
+        grid: CartesianGrid,
+        space: Optional[CartesianSpace] = None,
+        backend: str = "jax",
+    ):
         self.grid = grid
         self.space = space
+        self.backend = backend
 
     def fit(self, values: Union[GArray, np.ndarray]) -> np.ndarray:
         data = values.data if isinstance(values, GArray) else np.asarray(values)
         return data.reshape(tuple(self.grid.n) + (-1,)).copy()
 
     def evaluate_coords(self, coeffs: np.ndarray, coords: np.ndarray) -> np.ndarray:
+        if self.backend == "jax":
+            from dolo.numeric.interpolation_jax import eval_linear_jax
+
+            return np.asarray(eval_linear_jax(self.grid, coeffs, coords))
+
         from interpolation.splines import eval_linear
 
         pts = np.asarray(coords, dtype=float)
@@ -81,18 +92,34 @@ class LinearApproximator(Approximator):
 class CubicSplineApproximator(Approximator):
     """Prefiltered cubic spline interpolation on CartesianGrid."""
 
-    def __init__(self, grid: CartesianGrid, space: Optional[CartesianSpace] = None):
+    def __init__(
+        self,
+        grid: CartesianGrid,
+        space: Optional[CartesianSpace] = None,
+        backend: str = "jax",
+    ):
         self.grid = grid
         self.space = space
+        self.backend = backend
 
     def fit(self, values: Union[GArray, np.ndarray]) -> np.ndarray:
-        from interpolation.splines.prefilter_cubic import prefilter_cubic
-
         data = values.data if isinstance(values, GArray) else np.asarray(values)
         reshaped = data.reshape(tuple(self.grid.n) + (-1,))
+        if self.backend == "jax":
+            from dolo.numeric.interpolation_jax import prefilter_cubic_jax
+
+            return np.asarray(prefilter_cubic_jax(self.grid, reshaped))
+
+        from interpolation.splines.prefilter_cubic import prefilter_cubic
+
         return prefilter_cubic(self.grid.__numba_repr__(), reshaped)
 
     def evaluate_coords(self, coeffs: np.ndarray, coords: np.ndarray) -> np.ndarray:
+        if self.backend == "jax":
+            from dolo.numeric.interpolation_jax import eval_cubic_jax
+
+            return np.asarray(eval_cubic_jax(self.grid, coeffs, coords))
+
         from interpolation.splines import eval_cubic
 
         pts = np.asarray(coords, dtype=float)
@@ -172,6 +199,8 @@ class ProductApproximator(Approximator):
     def fit(self, values: Union[GArray, np.ndarray]) -> Any:
         data = values.data if isinstance(values, GArray) else np.asarray(values)
         if self.is_empty_exo:
+            if data.ndim == 3 and data.shape[0] == 1:
+                data = data[0]
             return self.sub_approximator.fit(data)
         elif self.is_discrete_exo:
             n_regimes = data.shape[0]
@@ -182,6 +211,48 @@ class ProductApproximator(Approximator):
             raise NotImplementedError(
                 f"Unsupported exo grid type: {type(self.exo_grid)}"
             )
+
+    def evaluate_s(self, coeffs: Any, s: np.ndarray) -> np.ndarray:
+        """Evaluate continuous endogenous states `s` when exogenous state is empty or single-regime."""
+        s_arr = np.asarray(s, dtype=float)
+        if self.is_empty_exo:
+            return self.sub_approximator.evaluate_coords(coeffs, s_arr)
+        if self.is_discrete_exo and self.exo_grid.n_nodes == 1:
+            return self.sub_approximator.evaluate_coords(coeffs[0], s_arr)
+        raise ValueError(
+            "Cannot evaluate 's' alone when exogenous states are non-empty."
+        )
+
+    def evaluate_ms(self, coeffs: Any, m: np.ndarray, s: np.ndarray) -> np.ndarray:
+        """Evaluate continuous endogenous states `s` and exogenous states `m`."""
+        m_arr = np.asarray(m, dtype=float)
+        s_arr = np.asarray(s, dtype=float)
+        if self.is_empty_exo:
+            return self.sub_approximator.evaluate_coords(coeffs, s_arr)
+        elif self.is_cartesian_exo:
+            combined = np.hstack([m_arr, s_arr])
+            return self.joint_approximator.evaluate_coords(coeffs, combined)
+        elif self.is_discrete_exo:
+            if m_arr.ndim == 1:
+                m_arr = m_arr[None, :]
+            if s_arr.ndim == 1:
+                s_arr = s_arr[None, :]
+            if m_arr.shape[0] == 1 and s_arr.shape[0] > 1:
+                m_arr = np.repeat(m_arr, s_arr.shape[0], axis=0)
+            diffs = np.linalg.norm(
+                self.exo_grid.nodes[:, None, :] - m_arr[None, :, :], axis=-1
+            )
+            regimes = np.argmin(diffs, axis=0)
+            n_x = coeffs[0].shape[-1] if hasattr(coeffs[0], "shape") else 1
+            out = np.empty((s_arr.shape[0], n_x), dtype=float)
+            for r in np.unique(regimes):
+                mask = regimes == r
+                out[mask] = self.sub_approximator.evaluate_coords(
+                    coeffs[r], s_arr[mask]
+                )
+            return out
+        else:
+            raise NotImplementedError()
 
     def evaluate_coords(self, coeffs: Any, coords: np.ndarray) -> np.ndarray:
         if self.is_empty_exo:

@@ -24,6 +24,13 @@ from dolo.numeric.approximators import (
     ProductApproximator,
     get_approximator,
 )
+from dolo.numeric.interpolation_jax import (
+    prefilter_cubic_jax,
+    eval_cubic_jax,
+    eval_cubic_point_jax,
+    eval_linear_jax,
+    eval_linear_point_jax,
+)
 
 __all__ = [
     "GArray",
@@ -47,4 +54,9 @@ __all__ = [
     "SmolyakApproximator",
     "ProductApproximator",
     "get_approximator",
+    "prefilter_cubic_jax",
+    "eval_cubic_jax",
+    "eval_cubic_point_jax",
+    "eval_linear_jax",
+    "eval_linear_point_jax",
 ]
