@@ -840,10 +840,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-notion-of-a-space" class="md-nav__link">
+  <a href="#the-space-hierarchy" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The notion of a <em>space</em>
+        The <code>Space</code> Hierarchy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grids-discretizations-of-spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Grids (Discretizations of Spaces)
       </span>
     </span>
   </a>
@@ -985,6 +996,23 @@
       </span>
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="6. Approximators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#decisionrule-and-fit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DecisionRule and <code>fit()</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1712,10 +1740,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-notion-of-a-space" class="md-nav__link">
+  <a href="#the-space-hierarchy" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        The notion of a <em>space</em>
+        The <code>Space</code> Hierarchy
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grids-discretizations-of-spaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Grids (Discretizations of Spaces)
       </span>
     </span>
   </a>
@@ -1858,6 +1897,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6. Approximators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#decisionrule-and-fit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DecisionRule and <code>fit()</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1968,28 +2024,44 @@ layered abstractions that perform this conversion:</p>
 </ol>
 <hr />
 <h2 id="1-spaces-and-grids">1. Spaces and Grids<a class="headerlink" href="#1-spaces-and-grids" title="Permanent link">&para;</a></h2>
-<h3 id="the-notion-of-a-space">The notion of a <em>space</em><a class="headerlink" href="#the-notion-of-a-space" title="Permanent link">&para;</a></h3>
-<p>Almost every economic model solved by Dolo mixes two kinds of dimensions:</p>
+<h3 id="the-space-hierarchy">The <code>Space</code> Hierarchy<a class="headerlink" href="#the-space-hierarchy" title="Permanent link">&para;</a></h3>
+<p>In economic modeling, variables live on a <strong>mathematical space</strong> (the continuous or discrete domain) rather than a computational grid. The <strong><code>Space</code></strong> hierarchy in <code>dolo.numeric.spaces</code> provides first-class objects for these domains:</p>
 <ul>
-<li>a <strong>discrete</strong> part, capturing exogenous regimes: the nodes of a Markov
-  chain, the quadrature nodes of an i.i.d. shock, or a mixed product of these;</li>
-<li>a <strong>continuous</strong> part, the endogenous state variables (e.g. capital,
-  productivity, wealth), which are typically bounded to an interval.</li>
+<li><strong><code>CartesianSpace</code></strong>: A continuous bounded hypercube <span class="arithmatex">\([\underline{s}, \overline{s}] \subset \mathbb{R}^d\)</span>.</li>
+<li>In a <code>CartesianSpace</code>, location and continuous coordinates coincide (<code>loc = val = coords</code>).</li>
+<li>Supports domain membership checks (<code>pt in space</code>), random sampling (<code>space.draw()</code>), and discretization (<code>space.discretize(n=20)</code>).</li>
+<li>Preserves dict-like indexing <code>space['k']</code> for backward compatibility with <code>model.domain</code>.</li>
+<li><strong><code>DiscreteSpace</code></strong> (alias <strong><code>GridSpace</code></strong>): A finite discrete set of points <span class="arithmatex">\(\{p_1, \dots, p_N\}\)</span> (e.g. Markov states).</li>
+<li>In a <code>DiscreteSpace</code>, <code>loc</code> is the integer regime index <span class="arithmatex">\(i \in \{0, \dots, N-1\}\)</span>, while <code>val = points[i]</code>.</li>
+<li>Discretizes to an <code>UnstructuredGrid</code>.</li>
+<li><strong><code>ProductSpace</code></strong>: The Cartesian product of multiple spaces (e.g. <span class="arithmatex">\(S_{exo} \times S_{endo}\)</span>).</li>
+<li><code>loc</code> is a composite tuple <code>(loc_exo, loc_endo)</code>, and <code>val</code> is concatenated <span class="arithmatex">\([m, s]\)</span>.</li>
+<li>Discretizes to a <code>ProductGrid</code>.</li>
+<li><strong><code>EmptySpace</code></strong>: The neutral empty space for models without discrete exogenous states (discretizes to <code>EmptyGrid</code>).</li>
 </ul>
-<p>The <em>space</em> of the model is the product of these two parts. In the current
-implementation the space is <strong>not</strong> a standalone object: it is concretely
-realized by a <strong>grid</strong> — more precisely a <code>ProductGrid</code>, the Cartesian product
-of an <em>exogenous</em> grid and an <em>endogenous</em> grid:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">CartesianSpace</span><span class="p">,</span> <span class="n">DiscreteSpace</span><span class="p">,</span> <span class="n">ProductSpace</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Continuous state space</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">endo_space</span> <span class="o">=</span> <span class="n">CartesianSpace</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="nb">max</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">],</span> <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="s2">"z"</span><span class="p">,</span> <span class="s2">"k"</span><span class="p">])</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">assert</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span> <span class="ow">in</span> <span class="n">endo_space</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Discrete regime space</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">exo_space</span> <span class="o">=</span> <span class="n">DiscreteSpace</span><span class="p">([[</span><span class="o">-</span><span class="mf">0.01</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.01</span><span class="p">]],</span> <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="s2">"e"</span><span class="p">])</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Product space</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">space</span> <span class="o">=</span> <span class="n">exo_space</span> <span class="o">*</span> <span class="n">endo_space</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">space</span><span class="o">.</span><span class="n">discretize</span><span class="p">(</span><span class="n">endo</span><span class="o">=</span><span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">]})</span>   <span class="c1"># -&gt; ProductGrid</span>
+</span></code></pre></div>
+<h3 id="grids-discretizations-of-spaces">Grids (Discretizations of Spaces)<a class="headerlink" href="#grids-discretizations-of-spaces" title="Permanent link">&para;</a></h3>
+<p>A <strong><code>Grid</code></strong> represents a concrete, discrete set of nodes sampling a <code>Space</code>:</p>
 <div class="arithmatex">\[\mathcal{G} = \mathcal{M} \times \mathcal{S}\]</div>
 <ul>
-<li><span class="arithmatex">\(\mathcal{M}\)</span> is the grid of the discretized exogenous process (regimes /
-  shock nodes);</li>
-<li><span class="arithmatex">\(\mathcal{S}\)</span> is the grid of endogenous states (a Cartesian product of
-  intervals).</li>
+<li><span class="arithmatex">\(\mathcal{M}\)</span> is the grid of the discretized exogenous process (regimes / shock nodes);</li>
+<li><span class="arithmatex">\(\mathcal{S}\)</span> is the grid of endogenous states (a Cartesian product of intervals).</li>
 </ul>
 <p>A <code>ProductGrid</code> bundles the two sub-grids and supports lookup by name:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">grid</span><span class="o">.</span><span class="n">grids</span>      <span class="c1"># -&gt; [exo_grid, endo_grid]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">grid</span><span class="p">[</span><span class="s2">"states"</span><span class="p">]</span>  <span class="c1"># -&gt; the endogenous sub-grid</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">grid</span><span class="o">.</span><span class="n">grids</span>      <span class="c1"># -&gt; [exo_grid, endo_grid]</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">grid</span><span class="p">[</span><span class="s2">"endo"</span><span class="p">]</span>    <span class="c1"># -&gt; the endogenous sub-grid</span>
 </span></code></pre></div>
 <h3 id="grid-types">Grid types<a class="headerlink" href="#grid-types" title="Permanent link">&para;</a></h3>
 <p>Grids are defined in <code>dolo.numeric.grids</code>. All grid types expose <code>nodes</code>
@@ -2033,13 +2105,13 @@ of an <em>exogenous</em> grid and an <em>endogenous</em> grid:</p>
 </tr>
 </tbody>
 </table>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformCartesianGrid</span><span class="p">,</span> <span class="n">UnstructuredGrid</span><span class="p">,</span> <span class="n">ProductGrid</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">k_grid</span>   <span class="o">=</span> <span class="n">UniformCartesianGrid</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="nb">max</span><span class="o">=</span><span class="p">[</span><span class="mf">10.0</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">50</span><span class="p">])</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">z_values</span> <span class="o">=</span> <span class="n">UnstructuredGrid</span><span class="p">([[</span><span class="o">-</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">ProductGrid</span><span class="p">(</span><span class="n">z_values</span><span class="p">,</span> <span class="n">k_grid</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">grid</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">shape</span>   <span class="c1"># (2 * 50, 2)  — one node per (regime, k-node) pair</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">UniformCartesianGrid</span><span class="p">,</span> <span class="n">UnstructuredGrid</span><span class="p">,</span> <span class="n">ProductGrid</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">k_grid</span>   <span class="o">=</span> <span class="n">UniformCartesianGrid</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">],</span> <span class="nb">max</span><span class="o">=</span><span class="p">[</span><span class="mf">10.0</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="p">[</span><span class="mi">50</span><span class="p">])</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">z_values</span> <span class="o">=</span> <span class="n">UnstructuredGrid</span><span class="p">([[</span><span class="o">-</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">grid</span> <span class="o">=</span> <span class="n">ProductGrid</span><span class="p">(</span><span class="n">z_values</span><span class="p">,</span> <span class="n">k_grid</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">grid</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">shape</span>   <span class="c1"># (2 * 50, 2)  — one node per (regime, k-node) pair</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2060,11 +2132,11 @@ addressed</em> in the discretized domain. Dolo separates those two roles.</p>
 <li><code>val</code> — the <em>evaluated payload</em>: the continuous economic coordinates
   <span class="arithmatex">\([m, s]\)</span> (and derived quantities) actually passed to the model equations.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">QP</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">qp</span> <span class="o">=</span> <span class="n">QP</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span> <span class="n">s_endo</span><span class="p">),</span> <span class="n">val</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">]))</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">qp</span><span class="o">.</span><span class="n">coords</span>   <span class="c1"># -&gt; np.array([m, s])       (alias for val)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">qp</span><span class="o">.</span><span class="n">index</span>    <span class="c1"># -&gt; i_m                    (first element of a tuple loc)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">QP</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">qp</span> <span class="o">=</span> <span class="n">QP</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span> <span class="n">s_endo</span><span class="p">),</span> <span class="n">val</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="p">,</span> <span class="n">s</span><span class="p">]))</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">qp</span><span class="o">.</span><span class="n">coords</span>   <span class="c1"># -&gt; np.array([m, s])       (alias for val)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">qp</span><span class="o">.</span><span class="n">index</span>    <span class="c1"># -&gt; i_m                    (first element of a tuple loc)</span>
 </span></code></pre></div>
 <h3 id="qualifiedbatch-sliceqp"><code>QualifiedBatch</code> / <code>SliceQP</code><a class="headerlink" href="#qualifiedbatch-sliceqp" title="Permanent link">&para;</a></h3>
 <p>For vectorized operations over a whole continuous sub-grid, a
@@ -2075,10 +2147,10 @@ addressed</em> in the discretized domain. Dolo separates those two roles.</p>
 <li><code>exo</code> — the exogenous state values for the branch, shape <code>(N, n_m)</code>;</li>
 <li><code>endo</code> — the endogenous state matrix, shape <code>(N, n_s)</code>.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">SliceQP</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">SliceQP</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">exo</span><span class="o">=</span><span class="n">M_val</span><span class="p">,</span> <span class="n">endo</span><span class="o">=</span><span class="n">S_endo</span><span class="p">)</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">batch</span><span class="o">.</span><span class="n">val</span>    <span class="c1"># -&gt; hstack([exo, endo]), shape (N, n_m + n_s)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">SliceQP</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">batch</span> <span class="o">=</span> <span class="n">SliceQP</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">j</span><span class="p">,</span> <span class="n">exo</span><span class="o">=</span><span class="n">M_val</span><span class="p">,</span> <span class="n">endo</span><span class="o">=</span><span class="n">S_endo</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">batch</span><span class="o">.</span><span class="n">val</span>    <span class="c1"># -&gt; hstack([exo, endo]), shape (N, n_m + n_s)</span>
 </span></code></pre></div>
 <hr />
 <h2 id="3-the-transition-operator-tau">3. The Transition Operator <code>tau</code><a class="headerlink" href="#3-the-transition-operator-tau" title="Permanent link">&para;</a></h2>
@@ -2098,8 +2170,8 @@ process:</p>
 w_k \cdot f\left(S_t, x_t, S'_k, \varphi(S'_k)\right)\]</div>
 <h3 id="the-tau-object">The <code>Tau</code> object<a class="headerlink" href="#the-tau-object" title="Permanent link">&para;</a></h3>
 <p><code>Tau</code> wraps the transition equation <span class="arithmatex">\(g\)</span> and the discretized process:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tau</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">tau</span> <span class="o">=</span> <span class="n">Tau</span><span class="p">(</span><span class="n">g_fun</span><span class="p">,</span> <span class="n">dprocess</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tau</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">tau</span> <span class="o">=</span> <span class="n">Tau</span><span class="p">(</span><span class="n">g_fun</span><span class="p">,</span> <span class="n">dprocess</span><span class="p">,</span> <span class="n">parms</span><span class="p">)</span>
 </span></code></pre></div>
 <p>It offers three levels of granularity, all of which are generators over
 <code>(weight, next_point)</code> pairs:</p>
@@ -2117,8 +2189,8 @@ w_k \cdot f\left(S_t, x_t, S'_k, \varphi(S'_k)\right)\]</div>
 projects each continuous next-state <span class="arithmatex">\(S_{t+1}\)</span> onto the <span class="arithmatex">\(2^d\)</span> enclosing
 vertices of the Cartesian endogenous grid, using standard multilinear
 (bilinear/trilinear) weights:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">trembling_hand</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">projections</span> <span class="o">=</span> <span class="n">trembling_hand</span><span class="p">(</span><span class="n">endo_grid</span><span class="p">,</span> <span class="n">S_endo</span><span class="p">)</span>   <span class="c1"># [(corner_weight, corner_idx), ...]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">trembling_hand</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">projections</span> <span class="o">=</span> <span class="n">trembling_hand</span><span class="p">(</span><span class="n">endo_grid</span><span class="p">,</span> <span class="n">S_endo</span><span class="p">)</span>   <span class="c1"># [(corner_weight, corner_idx), ...]</span>
 </span></code></pre></div>
 <p>Each projected branch <span class="arithmatex">\((w_k, S'_k)\)</span> is split into <span class="arithmatex">\(2^d\)</span> corner contributions,
 so that the total transition matrix remains row-stochastic. This is the
@@ -2130,11 +2202,11 @@ simulations be computed directly on the grid.</p>
 It bundles the continuous/symbolic model, the grid (the <em>space</em>), and the
 transition operator:</p>
 <div class="arithmatex">\[\langle \text{Model}, \; \mathcal{G}, \; \tau \rangle\]</div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo</span><span class="w"> </span><span class="kn">import</span> <span class="n">yaml_import</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscretizedModel</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">model</span>  <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">"examples/models/rbc.yaml"</span><span class="p">)</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">dmodel</span> <span class="o">=</span> <span class="n">DiscretizedModel</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo</span><span class="w"> </span><span class="kn">import</span> <span class="n">yaml_import</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscretizedModel</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">model</span>  <span class="o">=</span> <span class="n">yaml_import</span><span class="p">(</span><span class="s2">"examples/models/rbc.yaml"</span><span class="p">)</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">dmodel</span> <span class="o">=</span> <span class="n">DiscretizedModel</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Attributes:</p>
 <ul>
@@ -2168,78 +2240,55 @@ dual interface:</p>
   of freedom for SciPy / Newton solvers, and <code>g.unravel(flat)</code> reconstructs
   the structured field, so solvers never touch tensor reshaping.</li>
 </ul>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">x0</span> <span class="o">=</span> <span class="n">dmodel</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">()</span>       <span class="c1"># GArray of controls</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">x0</span><span class="p">[</span><span class="n">i_m</span><span class="p">]</span>                            <span class="c1"># (N_endo, n_x) slice for regime i_m</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">flat</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>                  <span class="c1"># 1-D solver iterate</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">x1</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">unravel</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span>              <span class="c1"># back to a GArray</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">x0</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>                          <span class="c1"># L_infinity norm</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">x0</span> <span class="o">=</span> <span class="n">dmodel</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">()</span>       <span class="c1"># GArray of controls</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">x0</span><span class="p">[</span><span class="n">i_m</span><span class="p">]</span>                            <span class="c1"># (N_endo, n_x) slice for regime i_m</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">flat</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>                  <span class="c1"># 1-D solver iterate</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">x1</span> <span class="o">=</span> <span class="n">x0</span><span class="o">.</span><span class="n">unravel</span><span class="p">(</span><span class="n">flat</span><span class="p">)</span>              <span class="c1"># back to a GArray</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">x0</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>                          <span class="c1"># L_infinity norm</span>
 </span></code></pre></div>
 <p><code>GArray</code> implements the usual array arithmetic (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, unary
 <code>-</code>) and <code>copy()</code>/<code>zeros_like()</code>/<code>ones_like()</code> helpers.</p>
 <hr />
 <h2 id="6-approximators">6. Approximators<a class="headerlink" href="#6-approximators" title="Permanent link">&para;</a></h2>
-<p>The solution algorithms do not return raw point values on the grid; they
-return a decision rule <span class="arithmatex">\(x = \varphi(S)\)</span> that can be evaluated <em>anywhere</em>. The
-objects that interpolate (or otherwise approximate) the policy over the space
-are collectively the <strong>approximators</strong>. In the current implementation these
-live in <code>dolo.numeric.decision_rule</code>:</p>
+<p>The solution algorithms do not return raw point values on the grid; they return a decision rule <span class="arithmatex">\(x = \varphi(S)\)</span> that can be evaluated <em>anywhere</em> in the continuous space. The objects that interpolate or approximate the policy are collectively the <strong>approximators</strong> in <code>dolo.numeric.approximators</code>:</p>
 <ul>
-<li><strong><code>DecisionRule</code></strong> — interpolates a control field stored on an
-  <code>(exo_grid, endo_grid)</code> product grid, with an interpolation method selected
-  from <code>interp_methods</code>:</li>
+<li><strong><code>LinearApproximator</code></strong>: Piecewise multilinear interpolation on Cartesian grids.</li>
+<li><strong><code>CubicSplineApproximator</code></strong>: Prefiltered cubic spline interpolation on Cartesian grids.</li>
+<li><strong><code>SmolyakApproximator</code></strong>: Multivariate Chebyshev polynomial approximation on Smolyak grids.</li>
+<li><strong><code>ProductApproximator</code></strong>: Regime-wise composite approximator over <code>ProductGrid</code> / <code>ProductSpace</code> (delegating to continuous approximators per discrete regime).</li>
 </ul>
-<table>
-<thead>
-<tr>
-<th>key</th>
-<th>interp method</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>linear</code> / <code>multilinear</code></td>
-<td>piecewise-linear (multilinear) interpolation</td>
-</tr>
-<tr>
-<td><code>cubic</code></td>
-<td>cubic spline (prefiltered)</td>
-</tr>
-<tr>
-<td><code>chebychev</code></td>
-<td>Chebyshev polynomials (reserved)</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li><strong><code>ConstantDecisionRule</code></strong> — a trivial constant policy (used as a starting
-  point).</li>
-<li><strong><code>CustomDR</code></strong> — a user-supplied closed-form decision rule.</li>
-</ul>
-<p>A <code>DecisionRule</code> is callable like a <code>gufunc</code>, accepting either a <code>QP</code> /
-<code>SliceQP</code>, <code>(m, s)</code> economic coordinates, or <code>(i, s)</code> regime indexing:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">dr</span> <span class="o">=</span> <span class="n">DecisionRule</span><span class="p">(</span><span class="n">exo_grid</span><span class="p">,</span> <span class="n">endo_grid</span><span class="p">,</span> <span class="n">interp_method</span><span class="o">=</span><span class="s2">"cubic"</span><span class="p">)</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">dr</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>          <span class="c1"># x : GArray or raw array of control values</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">dr</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>                <span class="c1"># evaluate in regime i_m at states s</span>
+<p>An <code>Approximator</code> provides:
+- <code>app.grid</code>: The compatible discretization grid.
+- <code>app.fit(values)</code>: Fits coefficients from field values on the grid.
+- <code>app.evaluate_coords(coeffs, s)</code>: Evaluates approximation at continuous coordinate matrix.
+- <code>app.evaluate(coeffs, qp)</code>: Evaluates approximation at a <code>QualifiedPoint</code>.
+- <code>app.evaluate_batch(coeffs, batch)</code>: Evaluates approximation over a <code>QualifiedBatch</code> / <code>SliceQP</code>.</p>
+<h3 id="decisionrule-and-fit">DecisionRule and <code>fit()</code><a class="headerlink" href="#decisionrule-and-fit" title="Permanent link">&para;</a></h3>
+<p>A <strong><code>DecisionRule</code></strong> bundles the space, grid, approximator, and fitted coefficients into a callable object:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dolo.numeric</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecisionRule</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Fluent construction and fitting (matching Julia's fit!):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">dr</span> <span class="o">=</span> <span class="n">DecisionRule</span><span class="p">(</span><span class="n">exo_grid</span><span class="p">,</span> <span class="n">endo_grid</span><span class="p">,</span> <span class="n">interp_method</span><span class="o">=</span><span class="s2">"cubic"</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">controls_ga</span><span class="p">)</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="c1"># dr.set_values is preserved as an alias for backwards compatibility:</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="n">dr</span><span class="o">.</span><span class="n">set_values</span><span class="p">(</span><span class="n">controls_ga</span><span class="p">)</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Callable over QP, SliceQP, or regime + continuous coordinates:</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="n">dr</span><span class="p">(</span><span class="n">qp</span><span class="p">)</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="n">dr</span><span class="p">(</span><span class="n">slice_qp</span><span class="p">)</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">dr</span><span class="p">(</span><span class="n">i_m</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Smolyak interpolation is available through <code>SmolyakGrid</code> (and the
-<code>interpolation</code> dependency); higher-dimensional and Taylor-based
-approximators (as in Dolo.jl) are planned but not yet wired into the solve
-routines.</p>
+<p>You can also construct a <code>DecisionRule</code> directly from a <code>DiscretizedModel</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">dr</span> <span class="o">=</span> <span class="n">dmodel</span><span class="o">.</span><span class="n">decision_rule</span><span class="p">(</span><span class="n">controls_ga</span><span class="p">,</span> <span class="n">interp_method</span><span class="o">=</span><span class="s2">"cubic"</span><span class="p">)</span>
+</span></code></pre></div>
 <hr />
 <h2 id="7-roadmap">7. Roadmap<a class="headerlink" href="#7-roadmap" title="Permanent link">&para;</a></h2>
-<p>The following pieces of the redesign are still outstanding; this chapter will
-be updated as they land:</p>
+<p>With first-class <strong><code>Space</code></strong> and <strong><code>Approximator</code></strong> hierarchies now landed, the remaining items on the redesign roadmap are:</p>
 <ul>
-<li>a first-class <strong><code>Space</code></strong> object (separating the <em>domain</em> from its <em>node
-  set</em>), making non-Cartesian and mixed discrete/continuous domains
-  first-class citizens;</li>
-<li>a unified <strong><code>Approximator</code></strong> interface (Smolyak, spline, Chebyshev, Taylor)
-  shared by all solution routines;</li>
-<li><code>tau</code>-based simulation and quadrature (currently <code>tau_fit</code> is the reference).</li>
+<li><strong><code>tau</code>-based simulation and ergodic analysis</strong>: using <span class="arithmatex">\(\tau\)</span> directly inside time-series simulation loops (replacing ad-hoc process branching);</li>
+<li><strong>Higher-order Taylor approximators</strong>: local perturbation expansions around the steady state implementing the unified <code>Approximator</code> interface.</li>
 </ul>
-<p>The stable, algorithm-facing <code>DiscretizedModel</code> / <code>tau</code> / <code>GArray</code> / <code>QP</code>
-abstractions are already used by the global solvers (see the "Time Iteration"
-chapter).</p>
+<p>The stable, algorithm-facing <code>DiscretizedModel</code> / <code>tau</code> / <code>GArray</code> / <code>QP</code> / <code>Space</code> / <code>Approximator</code> abstractions are used by the global solvers (see the "Time Iteration" chapter).</p>
 
 
 
