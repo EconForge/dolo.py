@@ -38,7 +38,9 @@ from dolo.numeric.residual_jax import (
 from dolo.numeric.residuals import (
     F,
     dF_1,
+    dF_2,
     F_and_dF_1,
+    PolicyLinearOperator,
 )
 
 __all__ = [
@@ -72,5 +74,8 @@ __all__ = [
     "compile_residual",
     "F",
     "dF_1",
+    "dF_2",
     "F_and_dF_1",
+    "PolicyLinearOperator",
 ]
+

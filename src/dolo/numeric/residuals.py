@@ -24,6 +24,7 @@ from dolo.numeric.discretized_model import DiscretizedModel
 from dolo.numeric.residual_jax import compile_residual, CompiledResidual
 from dolo.numeric.tau import euler_residuals_tau
 from dolo.numeric.optimize.newton import SerialDifferentiableFunction
+from scipy.sparse.linalg import LinearOperator
 
 
 def _resolve_engine(
@@ -122,8 +123,9 @@ def F(
             dr_obj = dr if isinstance(dr, DecisionRule) else dmodel.decision_rule(dr, interp_method=interp_method)
             s_qp = s if isinstance(s, QP) else QP(0, s)
             res = np.zeros_like(x)
+            n_m = len(dmodel.model.symbols["exogenous"]) if "exogenous" in dmodel.model.symbols else len(dmodel.model.calibration.get("exogenous", []))
             for prob, S in dmodel.tau.point_transitions(s_qp, x):
-                rr = dmodel.arbitrage(s_qp.val[:dmodel.n_m], s_qp.val[dmodel.n_m:], x, S.val[:dmodel.n_m], S.val[dmodel.n_m:], dr_obj(S))
+                rr = dmodel.arbitrage(s_qp.val[:n_m], s_qp.val[n_m:], x, S.val[:n_m], S.val[n_m:], dr_obj(S))
                 res += prob * rr
             return res
 
@@ -396,3 +398,487 @@ def F_and_dF_1(
         return res, dres
 
     raise ValueError(f"Unsupported engine: {eng}")
+
+
+class PolicyLinearOperator(LinearOperator):
+    r"""Linear operator representing dF_2 = \partial F / \partial \varphi.
+
+    Acts on policy variations v defined on the continuous state grid:
+        (L @ v)[n] = \sum_k F_{x, k}[n] \cdot v(S_k[n])
+    where v(S_k[n]) is the interpolation of v at the next-period state S_k[n].
+
+    Mirrors Dolo.jl's LL / LinearOperator struct.
+    """
+
+    def __init__(
+        self,
+        dmodel: DiscretizedModel,
+        F_x: Any,
+        S: Any,
+        engine: str = "jax",
+        interp_method: str = "cubic",
+        device: Optional[Any] = None,
+        cr: Optional[CompiledResidual] = None,
+    ):
+        self.dmodel = dmodel
+        self.F_x = F_x
+        self.S = S
+        self.engine = engine
+        self.interp_method = interp_method
+        self.device = device
+        self.cr = cr
+
+        self.n_regimes = dmodel.n_regimes
+        self.endo_grid = dmodel.endo_grid
+        self.N = self.endo_grid.nodes.shape[0]
+        self.n_x = len(dmodel.model.calibration["controls"])
+        self.n_s = len(dmodel.model.symbols["states"])
+        self.grid_shape = tuple(int(x) for x in self.endo_grid.n)
+
+        self.dim = self.n_regimes * self.N * self.n_x
+        super().__init__(dtype=np.float64, shape=(self.dim, self.dim))
+
+    def _matvec(self, x: np.ndarray) -> np.ndarray:
+        x_2d = x.reshape((self.N, self.n_x))
+        out = self.apply(x_2d)
+        return np.asarray(out).ravel()
+
+    def apply(self, v: Union[GArray, np.ndarray, Any]) -> Union[GArray, np.ndarray, Any]:
+        """Apply linear operator to a policy variation v on the grid."""
+        if self.engine in ("jax", "gpu", "cpu"):
+            import jax
+            import jax.numpy as jnp
+            from dolo.numeric.interpolation_jax import (
+                prefilter_cubic_jax,
+                eval_cubic_jax,
+                eval_linear_jax,
+            )
+
+            is_garray = isinstance(v, GArray)
+            v_data = v.data[0] if is_garray else v
+            v_arr = jnp.asarray(v_data, dtype=jnp.float64)
+            orig_ndim = v_arr.ndim
+            if v_arr.ndim == 1:
+                v_arr = v_arr.reshape((self.N, self.n_x))
+
+            if self.device is not None:
+                v_arr = jax.device_put(v_arr, self.device)
+
+            v_reshaped = v_arr.reshape(self.grid_shape + (-1,))
+            if self.interp_method == "cubic":
+                v_coeffs = prefilter_cubic_jax(self.endo_grid, v_reshaped)
+                eval_fn = eval_cubic_jax
+            else:
+                v_coeffs = v_reshaped
+                eval_fn = eval_linear_jax
+
+            out = jnp.zeros_like(v_arr)
+            n_branches = self.F_x.shape[0]
+            for k in range(n_branches):
+                fx_k = self.F_x[k]
+                s_k = self.S[k]
+                v_S_k = eval_fn(self.endo_grid, v_coeffs, s_k)
+                out = out + jnp.einsum("nij,nj->ni", fx_k, v_S_k)
+
+            if self.device is not None:
+                out.block_until_ready()
+
+            if is_garray:
+                res = GArray.zeros_like(v)
+                res[0] = np.asarray(out)
+                return res
+            elif isinstance(v, np.ndarray):
+                if orig_ndim == 1:
+                    return np.asarray(out).ravel()
+                return np.asarray(out)
+            return out
+
+        else:
+            # Vectorized NumPy evaluation
+            is_garray = isinstance(v, GArray)
+            v_arr = np.asarray(v.data if is_garray else v, dtype=np.float64)
+            orig_ndim = v_arr.ndim
+            if v_arr.ndim == 3 and v_arr.shape[0] == 1:
+                v_2d = v_arr[0]
+            elif v_arr.ndim == 1:
+                v_2d = v_arr.reshape((self.N, self.n_x))
+            else:
+                v_2d = v_arr
+
+            policy_ga = self.dmodel.initial_guess()
+            if policy_ga.data.shape == v_2d.shape:
+                policy_ga.data[...] = v_2d
+            else:
+                policy_ga[0] = v_2d
+            dr_v = self.dmodel.decision_rule(policy_ga, interp_method=self.interp_method)
+
+            out = np.zeros_like(v_2d)
+            n_branches = self.F_x.shape[0]
+            for k in range(n_branches):
+                fx_k = np.asarray(self.F_x[k])
+                s_k = np.asarray(self.S[k])
+                v_S_k = dr_v.eval_ijs(0, k, s_k)
+                out += np.einsum("nij,nj->ni", fx_k, v_S_k)
+
+            if is_garray:
+                res = GArray.zeros_like(v)
+                res[0] = out
+                return res
+            elif orig_ndim == 1:
+                return out.ravel()
+            return out
+
+    def __call__(self, v: Any) -> Any:
+        return self.apply(v)
+
+    def __matmul__(self, v: Any) -> Any:
+        return self.apply(v)
+
+    def __mul__(self, alpha: Union[float, int]) -> PolicyLinearOperator:
+        return PolicyLinearOperator(
+            self.dmodel,
+            self.F_x * alpha,
+            self.S,
+            engine=self.engine,
+            interp_method=self.interp_method,
+            device=self.device,
+            cr=self.cr,
+        )
+
+    def __rmul__(self, alpha: Union[float, int]) -> PolicyLinearOperator:
+        return self.__mul__(alpha)
+
+    def preconditioned(self, J: Any) -> PolicyLinearOperator:
+        """Return preconditioned operator J^{-1} L, where J = dF_1 is block-diagonal."""
+        n_branches = self.F_x.shape[0]
+        if self.engine in ("jax", "gpu", "cpu"):
+            import jax
+            import jax.numpy as jnp
+
+            J_arr = jnp.asarray(J.data[0] if isinstance(J, GArray) else J, dtype=jnp.float64)
+            if self.device is not None:
+                J_arr = jax.device_put(J_arr, self.device)
+            new_Fx = jnp.stack(
+                [jnp.linalg.solve(J_arr, self.F_x[k]) for k in range(n_branches)],
+                axis=0,
+            )
+        else:
+            J_arr = np.asarray(J.data[0] if isinstance(J, GArray) else J, dtype=np.float64)
+            new_Fx = np.stack(
+                [np.linalg.solve(J_arr, np.asarray(self.F_x[k])) for k in range(n_branches)],
+                axis=0,
+            )
+
+        return PolicyLinearOperator(
+            self.dmodel,
+            new_Fx,
+            self.S,
+            engine=self.engine,
+            interp_method=self.interp_method,
+            device=self.device,
+            cr=self.cr,
+        )
+
+    def as_matrix(self) -> np.ndarray:
+        """Compute explicit (dim, dim) dense matrix representation."""
+        dim = self.dim
+        mat = np.zeros((dim, dim))
+        e = np.zeros(dim)
+        for i in range(dim):
+            if i > 0:
+                e[i - 1] = 0.0
+            e[i] = 1.0
+            mat[:, i] = self._matvec(e)
+        return mat
+
+    def solve(
+        self,
+        b: Any,
+        linsolve: str = "neumann",
+        tol: float = 1e-8,
+        maxit: int = 50,
+        verbose: bool = False,
+    ) -> Any:
+        """Solve (I - L) x = b using Neumann series or GMRES."""
+        if linsolve == "neumann":
+            x = b.copy()
+            du = b.copy()
+            for it in range(maxit):
+                du = self.apply(du)
+                x = x + du
+                err = np.abs(np.asarray(du)).max()
+                if err < tol:
+                    break
+            return x
+        elif linsolve == "gmres":
+            from scipy.sparse.linalg import gmres as scipy_gmres
+
+            I_minus_L = LinearOperator(
+                dtype=np.float64,
+                shape=self.shape,
+                matvec=lambda v: v - self._matvec(v),
+            )
+            b_np = np.asarray(b.data if isinstance(b, GArray) else b)
+            b_flat = b_np.ravel()
+            sol_flat, info = scipy_gmres(I_minus_L, b_flat, rtol=tol, atol=0.0, maxiter=maxit)
+            sol_reshaped = sol_flat.reshape(b_np.shape)
+            if isinstance(b, GArray):
+                out = GArray.zeros_like(b)
+                out.data[...] = sol_reshaped
+                return out
+            return sol_reshaped
+        else:
+            raise ValueError(f"Unknown linear solver: '{linsolve}'. Use 'neumann' or 'gmres'.")
+
+
+def dF_2(
+    model: Any,
+    *args,
+    engine: str = "auto",
+    backend: Optional[str] = None,
+    interp_method: str = "cubic",
+    device: Optional[Any] = None,
+    **kwargs,
+) -> Union[Tuple[Tuple[Any, Any], ...], PolicyLinearOperator]:
+    r"""Evaluate derivative of dynamic Euler residuals w.r.t the decision rule φ.
+
+    Mirrors Julia Dolo.jl: dF_2(model, s, x, φ) and dF_2(model, controls, φ=None)
+
+    Usage
+    -----
+    1. Grid-level evaluation:
+       L = dF_2(model, controls, dr=None, engine="auto")
+       L @ v        # apply operator to variation v
+       L.as_matrix() # explicit matrix
+
+    2. Point-level evaluation:
+       branches = dF_2(model, s, x, dr)
+       # returns tuple of (F_x, S) for each shock branch k
+
+    Parameters
+    ----------
+    model : Model, ModelV2, or DiscretizedModel
+        The economic model.
+    controls : GArray, np.ndarray, or jnp.ndarray
+        Control policy values across the grid (or point state s if point call).
+    dr : DecisionRule, GArray, or array, optional
+        Decision rule (policy). Defaults to `controls` if omitted.
+    engine / backend : str ("auto", "jax", "gpu", "cpu", "vectorized")
+        Backend engine.
+    interp_method : str ("cubic" or "linear")
+        Interpolation method for decision rule φ.
+    device : jax.Device, optional
+        Target JAX device (e.g. jax.devices('gpu')[0]).
+    """
+    if len(args) == 0:
+        raise ValueError("dF_2 requires at least 1 argument: (model, controls) or (model, s, x, dr)")
+
+    # 1. Point-level dispatch: dF_2(model, s, x, dr)
+    if len(args) >= 2 and (
+        isinstance(args[0], (QP, tuple))
+        or (isinstance(args[0], np.ndarray) and args[0].ndim == 1)
+    ):
+        s, x = args[0], args[1]
+        dr = args[2] if len(args) > 2 else None
+        dmodel = model if isinstance(model, DiscretizedModel) else DiscretizedModel(model, **kwargs)
+        eng = _resolve_engine(dmodel, engine, backend)
+
+        if eng in ("jax", "gpu", "cpu"):
+            import jax
+            import jax.numpy as jnp
+            from dolo.numeric.interpolation_jax import eval_cubic_point_jax, eval_linear_point_jax
+
+            cr = _get_or_compile_jax_residual(dmodel, interp_method=interp_method)
+            policy_for_coeffs = dr if dr is not None else x
+            coeffs = cr.prefilter(policy_for_coeffs)
+
+            s_pt = jnp.asarray(s if not isinstance(s, QP) else s.val, dtype=jnp.float64)
+            x_pt = jnp.asarray(x, dtype=jnp.float64)
+            m_val, inodes, weights = cr.regime_data[0]
+            n_inodes = len(weights)
+
+            branches = []
+            for k in range(n_inodes):
+                M = inodes[k]
+                w = weights[k]
+                S = cr.g_pt(m_val, s_pt, x_pt, M, cr.parms)
+                if interp_method == "cubic":
+                    X = eval_cubic_point_jax(coeffs, S, cr.a, cr.b, cr.n)
+                else:
+                    X = eval_linear_point_jax(coeffs, S, cr.a, cr.b, cr.n)
+                df_dX = jax.jacobian(lambda u: cr.f_pt(m_val, s_pt, x_pt, M, S, u, cr.parms))(X)
+                branches.append((np.asarray(w * df_dX), np.asarray(S)))
+            return tuple(branches)
+        else:
+            # Vectorized point
+            dr_obj = dr if isinstance(dr, DecisionRule) else dmodel.decision_rule(dr if dr is not None else x, interp_method=interp_method)
+            s_val = s.val if isinstance(s, QP) else s
+            n_m = len(dmodel.model.symbols["exogenous"]) if "exogenous" in dmodel.model.symbols else len(dmodel.model.calibration.get("exogenous", []))
+            if isinstance(s, QP):
+                m_val = s_val[:n_m]
+                s_endo = s_val[n_m:]
+            else:
+                m_val = np.asarray(dmodel.dprocess.node(0))
+                s_endo = s_val
+
+            n_inodes = dmodel.dprocess.n_inodes(0)
+
+            branches = []
+            for k in range(n_inodes):
+                M_val = dmodel.dprocess.inode(0, k)
+                w = float(dmodel.dprocess.iweight(0, k))
+                S_endo = dmodel.g(m_val[None, :], s_endo[None, :], x[None, :], M_val[None, :], dmodel.parms)[0]
+                val_next = np.concatenate([M_val, S_endo])
+                target_regime = 0 if dmodel.dprocess.n_nodes == 1 else k
+                S_qp = QP(loc=(target_regime, S_endo), val=val_next)
+                X_next = dr_obj(S_qp)
+
+                ff = SerialDifferentiableFunction(
+                    lambda u: dmodel.arbitrage(m_val[None, :], s_endo[None, :], x[None, :], M_val[None, :], S_endo[None, :], u)
+                )
+                _, rr_X = ff(X_next[None, :])
+                branches.append((w * rr_X[0], S_endo))
+            return tuple(branches)
+
+    # 2. Grid-level dispatch: dF_2(model, controls, dr=None)
+    controls = args[0]
+    dr = args[1] if len(args) > 1 else None
+
+    if isinstance(model, DiscretizedModel):
+        dmodel = model
+    else:
+        grid_options = kwargs.pop("grid_options", None)
+        dprocess_options = kwargs.pop("dprocess_options", {})
+        dmodel = DiscretizedModel(model, grid_options=grid_options, dprocess_options=dprocess_options, **kwargs)
+
+    eng = _resolve_engine(dmodel, engine, backend)
+
+    if eng in ("jax", "gpu", "cpu"):
+        import jax
+        import jax.numpy as jnp
+        from dolo.numeric.interpolation_jax import eval_cubic_point_jax, eval_linear_point_jax
+
+        target_dev = device
+        if target_dev is None:
+            if eng == "gpu":
+                gpus = jax.devices("gpu")
+                if not gpus:
+                    raise RuntimeError("GPU requested (engine='gpu'), but no CUDA device was found.")
+                target_dev = gpus[0]
+            elif eng == "cpu":
+                target_dev = jax.devices("cpu")[0]
+
+        cr = _get_or_compile_jax_residual(dmodel, interp_method=interp_method)
+        policy_for_coeffs = dr if dr is not None else controls
+        coeffs = cr.prefilter(policy_for_coeffs)
+
+        s_nodes = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
+        if isinstance(controls, GArray):
+            x_vals = jnp.asarray(controls[0] if dmodel.n_regimes == 1 else controls.data, dtype=jnp.float64)
+        else:
+            c_arr = jnp.asarray(controls, dtype=jnp.float64)
+            x_vals = c_arr[0] if (dmodel.n_regimes == 1 and c_arr.ndim == 3) else c_arr
+
+        if target_dev is not None:
+            s_nodes = jax.device_put(s_nodes, target_dev)
+            x_vals = jax.device_put(x_vals, target_dev)
+            coeffs = jax.device_put(coeffs, target_dev)
+
+        f_pt = cr.f_pt
+        g_pt = cr.g_pt
+        parms = cr.parms
+        m_val, inodes, weights = cr.regime_data[0]
+        n_inodes = len(weights)
+        a, b, n = cr.a, cr.b, cr.n
+
+        def branch_eval(s, x, coeffs, M, w):
+            S = g_pt(m_val, s, x, M, parms)
+            if interp_method == "cubic":
+                X = eval_cubic_point_jax(coeffs, S, a, b, n)
+            else:
+                X = eval_linear_point_jax(coeffs, S, a, b, n)
+            df_dX = jax.jacobian(lambda u: f_pt(m_val, s, x, M, S, u, parms))(X)
+            return w * df_dX, S
+
+        branch_vmap = jax.jit(jax.vmap(branch_eval, in_axes=(0, 0, None, None, None)))
+
+        F_x_list = []
+        S_list = []
+        for k in range(n_inodes):
+            M = inodes[k]
+            w = weights[k]
+            fx_k, s_k = branch_vmap(s_nodes, x_vals, coeffs, M, w)
+            F_x_list.append(fx_k)
+            S_list.append(s_k)
+
+        F_x_all = jnp.stack(F_x_list, axis=0)  # (K, N, n_x, n_x)
+        S_all = jnp.stack(S_list, axis=0)      # (K, N, n_s)
+
+        if target_dev is not None:
+            F_x_all.block_until_ready()
+            S_all.block_until_ready()
+
+        return PolicyLinearOperator(
+            dmodel,
+            F_x_all,
+            S_all,
+            engine=eng,
+            interp_method=interp_method,
+            device=target_dev,
+            cr=cr,
+        )
+
+    elif eng == "vectorized":
+        # Pure NumPy evaluation
+        controls_ga = controls if isinstance(controls, GArray) else dmodel.initial_guess()
+        if not isinstance(controls, GArray):
+            if controls_ga.data.shape == controls.shape:
+                controls_ga.data[...] = controls
+            elif controls_ga[0].shape == controls.shape:
+                controls_ga[0] = controls
+
+        if isinstance(dr, DecisionRule):
+            dr_obj = dr
+        else:
+            dr_obj = dmodel.decision_rule(controls_ga if dr is None else dr, interp_method=interp_method)
+
+        s_nodes = dmodel.endo_nodes
+        x_vals = controls_ga[0] if isinstance(controls_ga, GArray) else (controls_ga[0] if controls_ga.ndim == 3 else controls_ga)
+        m_val = dmodel.dprocess.node(0)
+        n_inodes = dmodel.dprocess.n_inodes(0)
+        N = s_nodes.shape[0]
+        n_x = len(dmodel.model.calibration["controls"])
+        m_tiled = np.tile(m_val, (N, 1))
+
+        F_x_list = []
+        S_list = []
+        for k in range(n_inodes):
+            M_val = dmodel.dprocess.inode(0, k)
+            M_tiled = np.tile(M_val, (N, 1))
+            w = float(dmodel.dprocess.iweight(0, k))
+
+            S = dmodel.g(m_tiled, s_nodes, x_vals, M_tiled, dmodel.parms)
+            X = dr_obj.eval_ijs(0, k, S)
+
+            ff = SerialDifferentiableFunction(
+                lambda u: dmodel.arbitrage(m_val, s_nodes, x_vals, M_val, S, u)
+            )
+            _, rr_X = ff(X)
+            F_x_list.append(w * rr_X)
+            S_list.append(S)
+
+        F_x_all = np.stack(F_x_list, axis=0)  # (K, N, n_x, n_x)
+        S_all = np.stack(S_list, axis=0)      # (K, N, n_s)
+
+        return PolicyLinearOperator(
+            dmodel,
+            F_x_all,
+            S_all,
+            engine="vectorized",
+            interp_method=interp_method,
+            device=None,
+            cr=None,
+        )
+
+    raise ValueError(f"Unsupported engine: {eng}")
+

@@ -326,7 +326,14 @@ class ProductApproximator(Approximator):
 
     def _evaluate_qp(self, coeffs: Any, qp: QualifiedPoint) -> np.ndarray:
         if self.is_empty_exo:
-            coords = np.asarray(qp.val, dtype=float)
+            endo_coords = (
+                qp.val[-self.endo_grid.d :]
+                if hasattr(self, "endo_grid") and hasattr(qp.val, "shape") and qp.val.ndim == 1 and qp.val.shape[0] > self.endo_grid.d
+                else qp.val
+            )
+            if isinstance(qp.loc, tuple) and len(qp.loc) >= 2:
+                endo_coords = qp.loc[1]
+            coords = np.asarray(endo_coords, dtype=float)
             if coords.ndim == 1:
                 return self.sub_approximator.evaluate_coords(coeffs, coords[None, :])[0]
             return self.sub_approximator.evaluate_coords(coeffs, coords)
