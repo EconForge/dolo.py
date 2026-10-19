@@ -91,3 +91,56 @@ def test_improved_time_iteration_backward_compatibility(rbc_model):
     assert sol.x_converged
     assert sol.f_x < 1e-7
     assert sol.dr is not None
+
+
+def test_newton_engines_parity(rbc_model):
+    import numpy as np
+
+    sol_jax = dolo.newton(rbc_model, engine="jax", verbose=False)
+    assert sol_jax.converged
+    assert sol_jax.error_res < 1e-7
+
+    sol_vec = dolo.newton(rbc_model, engine="vectorized", verbose=False)
+    assert sol_vec.converged
+
+    s_test = rbc_model.discretize()[0]["endo"].nodes
+    np.testing.assert_allclose(sol_jax.dr(s_test), sol_vec.dr(s_test), atol=1e-5)
+
+
+def test_newton_gpu_if_available(rbc_model):
+    import jax
+
+    gpus = jax.devices("gpu")
+    if not gpus:
+        pytest.skip("No GPU available.")
+
+    sol_gpu = dolo.newton(rbc_model, engine="gpu", verbose=False)
+    assert sol_gpu.converged
+    assert sol_gpu.error_res < 1e-7
+
+
+def test_accelerated_time_iteration_jax(rbc_model):
+    sol_jax = dolo.time_iteration(
+        rbc_model, accelerate=True, engine="jax", verbose=False
+    )
+    assert sol_jax.converged
+    assert sol_jax.iterations < 25
+    assert sol_jax.error_step < 1e-5
+
+
+def test_accelerated_time_iteration_gpu_if_available(rbc_model):
+    import jax
+
+    gpus = jax.devices("gpu")
+    if not gpus:
+        pytest.skip("No GPU available.")
+
+    sol_gpu = dolo.time_iteration(
+        rbc_model,
+        accelerate=dict(linsolve="gmres", wait=3),
+        engine="gpu",
+        verbose=False,
+    )
+    assert sol_gpu.converged
+    assert sol_gpu.iterations < 15
+    assert sol_gpu.error_step < 1e-5

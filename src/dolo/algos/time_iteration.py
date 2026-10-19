@@ -366,80 +366,99 @@ def time_iteration(
         # Policy acceleration step
         if acc_cfg is not None and it > acc_cfg["wait"]:
             d = (controls - controls_0).reshape(sh_c)
-
-            # Evaluate derivatives at candidate controls
-            mdr.set_values(controls.reshape(sh_c))
-            res_c, dres_c = dfn(controls)
-            res_c = res_c.reshape(sh_c)
-            dres_c = dres_c.reshape((sh_c[0], N, n_x, n_x))
-
-            jres_alloc[...] = 0.0
-            S_ij_alloc[...] = 0.0
-            junk, jres, fut_S = euler_residuals_acc(
-                f,
-                g,
-                s,
-                controls.reshape(sh_c),
-                mdr,
-                dprocess,
-                parms,
-                diff=False,
-                with_jres=True,
-                set_dr=False,
-                jres=jres_alloc,
-                S_ij=S_ij_alloc,
-            )
-
-            if with_complementarities:
-                res_c, dres_c, jres = smooth(
-                    res_c, dres_c, jres, controls.reshape(sh_c) - lb
-                )
-                res_c[...] *= -1
-                dres_c[...] *= -1
-                jres[...] *= -1
-                res_c, dres_c, jres = smooth(
-                    res_c, dres_c, jres, ub - controls.reshape(sh_c), pos=-1.0
-                )
-                res_c[...] *= -1
-                dres_c[...] *= -1
-                jres[...] *= -1
-
-            jres[...] *= -1.0
-
-            for i_m in range(n_ms):
-                for j_m in range(n_im):
-                    M_mat = jres[i_m, j_m, :, :, :]
-                    X_mat = dres_c[i_m, :, :, :].copy()
-                    solve_tensor(X_mat, M_mat)
-
             acc_method = acc_cfg.get("linsolve", "neumann")
             acc_maxit = acc_cfg.get("maxit", 50)
             acc_tol = acc_cfg.get("tol", 1e-8)
 
-            if acc_method == "gmres":
-                L = Operator(jres, fut_S, mdr_filt)
-                L.addid = True
-                try:
-                    sol_gmres, info = scipy.sparse.linalg.gmres(
-                        L, d.ravel(), rtol=acc_tol, atol=0.0, maxiter=acc_maxit
-                    )
-                except TypeError:
-                    sol_gmres, info = scipy.sparse.linalg.gmres(
-                        L, d.ravel(), tol=acc_tol, maxiter=acc_maxit
-                    )
-                tot = sol_gmres.reshape(d.shape)
+            if use_jax and not with_complementarities:
+                from dolo.numeric.residuals import dF_2
+
+                cand_ga = controls_ga.unravel(controls)
+                mdr.set_values(cand_ga)
+                _, dres_c = dfn(controls)
+                J_c = dres_c[0] if dres_c.ndim == 4 else dres_c
+
+                L_op = dF_2(
+                    dmodel,
+                    cand_ga,
+                    dr=mdr,
+                    engine=eng,
+                    interp_method=interpolation,
+                    device=target_dev,
+                )
+                L_prec = (-1.0) * L_op.preconditioned(J_c)
+                tot = L_prec.solve(d, linsolve=acc_method, tol=acc_tol, maxit=acc_maxit)
+                cand_controls_0 = controls_0 + numpy.asarray(tot).reshape((-1, n_x))
             else:
-                tot, *rest = neumann_solve(
-                    d,
-                    jres,
-                    fut_S,
-                    mdr_filt,
-                    tol=acc_tol,
-                    maxit=acc_maxit,
-                    verbose=(verbose == "full"),
+                # Evaluate derivatives at candidate controls
+                mdr.set_values(controls.reshape(sh_c))
+                res_c, dres_c = dfn(controls)
+                res_c = res_c.reshape(sh_c)
+                dres_c = dres_c.reshape((sh_c[0], N, n_x, n_x))
+
+                jres_alloc[...] = 0.0
+                S_ij_alloc[...] = 0.0
+                junk, jres, fut_S = euler_residuals_acc(
+                    f,
+                    g,
+                    s,
+                    controls.reshape(sh_c),
+                    mdr,
+                    dprocess,
+                    parms,
+                    diff=False,
+                    with_jres=True,
+                    set_dr=False,
+                    jres=jres_alloc,
+                    S_ij=S_ij_alloc,
                 )
 
-            cand_controls_0 = controls_0 + tot.reshape((-1, n_x))
+                if with_complementarities:
+                    res_c, dres_c, jres = smooth(
+                        res_c, dres_c, jres, controls.reshape(sh_c) - lb
+                    )
+                    res_c[...] *= -1
+                    dres_c[...] *= -1
+                    jres[...] *= -1
+                    res_c, dres_c, jres = smooth(
+                        res_c, dres_c, jres, ub - controls.reshape(sh_c), pos=-1.0
+                    )
+                    res_c[...] *= -1
+                    dres_c[...] *= -1
+                    jres[...] *= -1
+
+                jres[...] *= -1.0
+
+                for i_m in range(n_ms):
+                    for j_m in range(n_im):
+                        M_mat = jres[i_m, j_m, :, :, :]
+                        X_mat = dres_c[i_m, :, :, :].copy()
+                        solve_tensor(X_mat, M_mat)
+
+                if acc_method == "gmres":
+                    L = Operator(jres, fut_S, mdr_filt)
+                    L.addid = True
+                    try:
+                        sol_gmres, info = scipy.sparse.linalg.gmres(
+                            L, d.ravel(), rtol=acc_tol, atol=0.0, maxiter=acc_maxit
+                        )
+                    except TypeError:
+                        sol_gmres, info = scipy.sparse.linalg.gmres(
+                            L, d.ravel(), tol=acc_tol, maxiter=acc_maxit
+                        )
+                    tot = sol_gmres.reshape(d.shape)
+                else:
+                    tot, *rest = neumann_solve(
+                        d,
+                        jres,
+                        fut_S,
+                        mdr_filt,
+                        tol=acc_tol,
+                        maxit=acc_maxit,
+                        verbose=(verbose == "full"),
+                    )
+
+                cand_controls_0 = controls_0 + tot.reshape((-1, n_x))
 
             if acc_cfg.get("safeguarded", False):
                 cand_res = fn(cand_controls_0)

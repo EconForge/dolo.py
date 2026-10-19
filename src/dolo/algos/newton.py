@@ -5,6 +5,7 @@ import time
 from functools import reduce
 from math import sqrt
 from operator import mul
+from typing import Optional, Any, Union, Tuple, Dict
 
 from numba import jit
 import numpy
@@ -20,6 +21,15 @@ from dolo.numeric.optimize.newton import SerialDifferentiableFunction
 from .bruteforce_lib import *
 from .invert import *
 from .results import AlgoResult, ImprovedTimeIterationResult, NewtonResult
+from dolo.numeric import DiscretizedModel, GArray
+from dolo.numeric.residuals import (
+    _resolve_engine,
+    F,
+    dF_1,
+    dF_2,
+    F_and_dF_1,
+    PolicyLinearOperator,
+)
 
 
 def prod(l):
@@ -259,6 +269,9 @@ def golden_section_search(f_eval, alpha_min=0.0, alpha_max=1.0, maxiter=8, tol=1
 def newton(
     model: Model,
     *,
+    engine: str = "auto",
+    backend: Optional[str] = None,
+    device: Optional[Any] = None,
     dr0: DecisionRule = None,
     tol_eps: float = 1e-8,
     tol_eta: float = 1e-6,
@@ -387,22 +400,53 @@ def newton(
     )
     itprint.print_header("Start Newton Iterations.")
 
-    f = model.functions["arbitrage"]
-    g = model.functions["transition"]
-    x_lb = model.functions.get("arbitrage_lb", None)
-    x_ub = model.functions.get("arbitrage_ub", None)
+    if isinstance(model, DiscretizedModel):
+        dmodel = model
+    else:
+        grid_options = kwargs.pop("grid_options", None)
+        dprocess_options = kwargs.pop("dprocess_options", {})
+        if dprocess is not None:
+            dprocess_options["dprocess"] = dprocess
+        dmodel = DiscretizedModel(
+            model, grid_options=grid_options, dprocess_options=dprocess_options
+        )
 
-    parms = model.calibration["parameters"]
-
-    grid, dprocess_ = model.discretize()
-    if dprocess is None:
-        dprocess = dprocess_
+    grid = dmodel.grid
+    dprocess = dmodel.dprocess
 
     endo_grid = grid["endo"]
     exo_grid = grid["exo"]
 
+    f = dmodel.f
+    g = dmodel.g
+    x_lb = dmodel.model.functions.get("arbitrage_lb", None)
+    x_ub = dmodel.model.functions.get("arbitrage_ub", None)
+
+    parms = dmodel.parms
+
     n_m = max(dprocess.n_nodes, 1)
-    n_s = len(model.symbols["states"])
+    n_s = len(dmodel.model.symbols["states"])
+
+    eng = _resolve_engine(dmodel, engine, backend)
+    use_jax = eng in ("jax", "gpu", "cpu") and n_m == 1
+    if use_jax:
+        target_dev = device
+        if target_dev is None:
+            if eng == "gpu":
+                import jax
+
+                gpus = jax.devices("gpu")
+                if not gpus:
+                    raise RuntimeError(
+                        "GPU requested (engine='gpu'), but no CUDA device was found."
+                    )
+                target_dev = gpus[0]
+            elif eng == "cpu":
+                import jax
+
+                target_dev = jax.devices("cpu")[0]
+    else:
+        target_dev = None
 
     if interpolation in ("cubic", "linear"):
         ddr = DecisionRule(
@@ -416,9 +460,9 @@ def newton(
 
     s = endo_grid.nodes
     N = s.shape[0]
-    n_x = len(model.symbols["controls"])
+    n_x = len(dmodel.model.symbols["controls"])
     x0 = (
-        model.calibration["controls"][
+        dmodel.model.calibration["controls"][
             None,
             None,
         ]
@@ -456,168 +500,316 @@ def newton(
     err_2 = 10.0
 
     for it in range(maxit):
-        jres[...] = 0.0
-        S_ij[...] = 0.0
+        if use_jax and not complementarities:
+            import jax
+            import jax.numpy as jnp
 
-        t1 = time.time()
-        ddr.set_values(x)
+            t1 = time.time()
+            ddr.set_values(x)
 
-        if trace:
-            trace_details.append({"dr": copy.deepcopy(ddr)})
+            if trace:
+                trace_details.append({"dr": copy.deepcopy(ddr)})
 
-        sh_x = x.shape
-        ff = SerialDifferentiableFunction(
-            lambda u: euler_residuals(
+            # 1. Residuals and Jacobian
+            res, dres = F_and_dF_1(
+                dmodel,
+                x,
+                dr=ddr,
+                engine=eng,
+                interp_method=interpolation,
+                device=target_dev,
+            )
+            res_arr = numpy.asarray(
+                res.data[0]
+                if isinstance(res, GArray)
+                else (res[0] if res.ndim == 3 else res)
+            )
+            dres_arr = numpy.asarray(
+                dres.data[0]
+                if isinstance(dres, GArray)
+                else (dres[0] if dres.ndim == 4 else dres)
+            )
+
+            err_0 = abs(res_arr).max()
+            if err_0 < tol_eps:
+                t2 = time.time()
+                t3 = t2
+                t4 = t2
+                itprint.print_iteration(
+                    N=it,
+                    f_x=err_0,
+                    d_x=0.0,
+                    Time_residuals=t2 - t1,
+                    Time_inversion=0.0,
+                    Time_search=0.0,
+                    Lambda_0=0.0,
+                    N_invert=0,
+                    N_search=0,
+                )
+                break
+
+            t2 = time.time()
+
+            # 2. Block-diagonal solve: ddx = dres^{-1} * res
+            J = jnp.asarray(dres_arr)
+            R = jnp.asarray(res_arr)
+            ddx = numpy.asarray(jnp.linalg.solve(J, R[..., None])[..., 0])
+
+            # 3. Policy linear operator dF_2 and preconditioned inversion
+            solver_method = linsolve_cfg.get("method", "gmres")
+            solver_maxit = linsolve_cfg.get("maxit", 50)
+            solver_tol = linsolve_cfg.get("tol", 1e-8)
+            ttol = max(err_0 / 100, solver_tol)
+
+            L_op = dF_2(
+                dmodel,
+                x,
+                dr=ddr,
+                engine=eng,
+                interp_method=interpolation,
+                device=target_dev,
+            )
+            L_prec = (-1.0) * L_op.preconditioned(J)
+            tot_2d = L_prec.solve(
+                ddx, linsolve=solver_method, tol=ttol, maxit=solver_maxit
+            )
+            tot = numpy.asarray(tot_2d).reshape(x.shape)
+            L_last = L_prec
+            nn = solver_maxit
+            lam0 = 0.01
+
+            t3 = time.time()
+
+            # 4. Line search
+            ls_method = linesearch_cfg.get("method", "backtracking")
+            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
+
+            def eval_res_norm_jax(cand_x):
+                c_res = F(
+                    dmodel,
+                    cand_x,
+                    dr=ddr,
+                    engine=eng,
+                    interp_method=interpolation,
+                    device=target_dev,
+                )
+                c_arr = numpy.asarray(
+                    c_res.data[0]
+                    if isinstance(c_res, GArray)
+                    else (c_res[0] if c_res.ndim == 3 else c_res)
+                )
+                return abs(c_arr).max()
+
+            if ls_method == "golden_section":
+                cand_1 = eval_res_norm_jax(x - tot)
+                if cand_1 < err_0:
+                    best_alpha = 1.0
+                    i_bckstps = 0
+                else:
+                    best_alpha, _ = golden_section_search(
+                        lambda a: eval_res_norm_jax(x - tot * a),
+                        alpha_min=0.0,
+                        alpha_max=1.0,
+                        maxiter=ls_maxsteps,
+                    )
+                    i_bckstps = ls_maxsteps
+                new_x = x - tot * best_alpha
+
+            elif ls_method == "backtracking":
+                steps = 0.5 ** numpy.arange(max(ls_maxsteps, 1))
+                new_x = x - tot
+                i_bckstps = 0
+                for i_bckstps, lam in enumerate(steps):
+                    new_x = x - tot * lam
+                    new_err = eval_res_norm_jax(new_x)
+                    if new_err < err_0:
+                        break
+            else:
+                new_x = x - tot
+                i_bckstps = 0
+
+            err_2 = abs(tot).max()
+            t4 = time.time()
+
+            itprint.print_iteration(
+                N=it,
+                f_x=err_0,
+                d_x=err_2,
+                Time_residuals=t2 - t1,
+                Time_inversion=t3 - t2,
+                Time_search=t4 - t3,
+                Lambda_0=lam0,
+                N_invert=nn,
+                N_search=i_bckstps,
+            )
+
+            x = new_x
+            if err_0 < tol_eps or err_2 < tol_eta:
+                break
+
+        else:
+            jres[...] = 0.0
+            S_ij[...] = 0.0
+
+            t1 = time.time()
+            ddr.set_values(x)
+
+            if trace:
+                trace_details.append({"dr": copy.deepcopy(ddr)})
+
+            sh_x = x.shape
+            ff = SerialDifferentiableFunction(
+                lambda u: euler_residuals(
+                    f,
+                    g,
+                    s,
+                    u.reshape(sh_x),
+                    ddr,
+                    dprocess,
+                    parms,
+                    diff=False,
+                    with_jres=False,
+                    set_dr=False,
+                ).reshape((-1, sh_x[2]))
+            )
+            res, dres = ff(x.reshape((-1, sh_x[2])))
+            res = res.reshape(sh_x)
+            dres = dres.reshape((sh_x[0], sh_x[1], sh_x[2], sh_x[2]))
+            junk, jres, fut_S = euler_residuals(
                 f,
                 g,
                 s,
-                u.reshape(sh_x),
+                x,
                 ddr,
                 dprocess,
                 parms,
                 diff=False,
-                with_jres=False,
+                with_jres=True,
                 set_dr=False,
-            ).reshape((-1, sh_x[2]))
-        )
-        res, dres = ff(x.reshape((-1, sh_x[2])))
-        res = res.reshape(sh_x)
-        dres = dres.reshape((sh_x[0], sh_x[1], sh_x[2], sh_x[2]))
-        junk, jres, fut_S = euler_residuals(
-            f,
-            g,
-            s,
-            x,
-            ddr,
-            dprocess,
-            parms,
-            diff=False,
-            with_jres=True,
-            set_dr=False,
-            jres=jres,
-            S_ij=S_ij,
-        )
-
-        if complementarities:
-            res, dres, jres = smooth(res, dres, jres, x - lb)
-            res[...] *= -1
-            dres[...] *= -1
-            jres[...] *= -1
-            res, dres, jres = smooth(res, dres, jres, ub - x, pos=-1.0)
-            res[...] *= -1
-            dres[...] *= -1
-            jres[...] *= -1
-
-        err_0 = abs(res).max()
-
-        jres[...] *= -1.0
-
-        for i_m in range(n_m):
-            for j_m in range(n_im):
-                M = jres[i_m, j_m, :, :, :]
-                X = dres[i_m, :, :, :].copy()
-                sol = solve_tensor(X, M)
-
-        t2 = time.time()
-
-        # Inversion of (I - L) dx = F_1^{-1} res
-        solver_method = linsolve_cfg.get("method", "gmres")
-        solver_maxit = linsolve_cfg.get("maxit", 50)
-        solver_tol = linsolve_cfg.get("tol", 1e-8)
-
-        if solver_method == "gmres":
-            ddx = solve_gu(dres.copy(), res.copy())
-            L = Operator(jres, fut_S, ddr_filt)
-            n0 = L.counter
-            L.addid = True
-            ttol = max(err_0 / 100, solver_tol)
-            try:
-                sol, info = scipy.sparse.linalg.gmres(
-                    L, ddx.ravel(), rtol=ttol, atol=0.0, maxiter=solver_maxit
-                )
-            except TypeError:
-                sol, info = scipy.sparse.linalg.gmres(
-                    L, ddx.ravel(), tol=ttol, maxiter=solver_maxit
-                )
-            lam0 = 0.01
-            nn = L.counter - n0
-            tot = sol.reshape(ddx.shape)
-        else:
-            # Neumann series
-            tot, nn, lam0 = invert_jac(
-                res,
-                dres,
-                jres,
-                fut_S,
-                ddr_filt,
-                tol=solver_tol,
-                maxit=solver_maxit,
-                verbose=(verbose == "full"),
+                jres=jres,
+                S_ij=S_ij,
             )
 
-        t3 = time.time()
-
-        # Step search / Line search
-        ls_method = linesearch_cfg.get("method", "backtracking")
-        ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
-
-        def eval_residual_norm(cand_x):
-            cand_res = euler_residuals(
-                f, g, s, cand_x, ddr, dprocess, parms, diff=False, set_dr=True
-            )
             if complementarities:
-                cand_res = smooth_nodiff(cand_res, cand_x - lb)
-                cand_res = smooth_nodiff(-cand_res, ub - cand_x)
-            return abs(cand_res).max()
+                res, dres, jres = smooth(res, dres, jres, x - lb)
+                res[...] *= -1
+                dres[...] *= -1
+                jres[...] *= -1
+                res, dres, jres = smooth(res, dres, jres, ub - x, pos=-1.0)
+                res[...] *= -1
+                dres[...] *= -1
+                jres[...] *= -1
 
-        if ls_method == "golden_section":
-            # Check full step first
-            cand_1 = eval_residual_norm(x - tot)
-            if cand_1 < err_0:
-                best_alpha = 1.0
-                i_bckstps = 0
+            err_0 = abs(res).max()
+
+            jres[...] *= -1.0
+
+            for i_m in range(n_m):
+                for j_m in range(n_im):
+                    M = jres[i_m, j_m, :, :, :]
+                    X = dres[i_m, :, :, :].copy()
+                    sol = solve_tensor(X, M)
+
+            t2 = time.time()
+
+            # Inversion of (I - L) dx = F_1^{-1} res
+            solver_method = linsolve_cfg.get("method", "gmres")
+            solver_maxit = linsolve_cfg.get("maxit", 50)
+            solver_tol = linsolve_cfg.get("tol", 1e-8)
+
+            if solver_method == "gmres":
+                ddx = solve_gu(dres.copy(), res.copy())
+                L = Operator(jres, fut_S, ddr_filt)
+                n0 = L.counter
+                L.addid = True
+                ttol = max(err_0 / 100, solver_tol)
+                try:
+                    sol, info = scipy.sparse.linalg.gmres(
+                        L, ddx.ravel(), rtol=ttol, atol=0.0, maxiter=solver_maxit
+                    )
+                except TypeError:
+                    sol, info = scipy.sparse.linalg.gmres(
+                        L, ddx.ravel(), tol=ttol, maxiter=solver_maxit
+                    )
+                lam0 = 0.01
+                nn = L.counter - n0
+                tot = sol.reshape(ddx.shape)
             else:
-                best_alpha, _ = golden_section_search(
-                    lambda a: eval_residual_norm(x - tot * a),
-                    alpha_min=0.0,
-                    alpha_max=1.0,
-                    maxiter=ls_maxsteps,
+                # Neumann series
+                tot, nn, lam0 = invert_jac(
+                    res,
+                    dres,
+                    jres,
+                    fut_S,
+                    ddr_filt,
+                    tol=solver_tol,
+                    maxit=solver_maxit,
+                    verbose=(verbose == "full"),
                 )
-                i_bckstps = ls_maxsteps
-            new_x = x - tot * best_alpha
 
-        elif ls_method == "backtracking":
-            steps = 0.5 ** numpy.arange(max(ls_maxsteps, 1))
-            new_x = x - tot
-            for i_bckstps, lam in enumerate(steps):
-                new_x = x - tot * lam
-                new_err = eval_residual_norm(new_x)
-                if new_err < err_0:
-                    break
-        else:
-            # No line search (full Newton step)
-            new_x = x - tot
-            i_bckstps = 0
+            t3 = time.time()
 
-        err_2 = abs(tot).max()
-        t4 = time.time()
+            # Step search / Line search
+            ls_method = linesearch_cfg.get("method", "backtracking")
+            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
 
-        itprint.print_iteration(
-            N=it,
-            f_x=err_0,
-            d_x=err_2,
-            Time_residuals=t2 - t1,
-            Time_inversion=t3 - t2,
-            Time_search=t4 - t3,
-            Lambda_0=lam0,
-            N_invert=nn,
-            N_search=i_bckstps,
-        )
+            def eval_residual_norm(cand_x):
+                cand_res = euler_residuals(
+                    f, g, s, cand_x, ddr, dprocess, parms, diff=False, set_dr=True
+                )
+                if complementarities:
+                    cand_res = smooth_nodiff(cand_res, cand_x - lb)
+                    cand_res = smooth_nodiff(-cand_res, ub - cand_x)
+                return abs(cand_res).max()
 
-        if err_0 < tol_eps:
-            break
+            if ls_method == "golden_section":
+                # Check full step first
+                cand_1 = eval_residual_norm(x - tot)
+                if cand_1 < err_0:
+                    best_alpha = 1.0
+                    i_bckstps = 0
+                else:
+                    best_alpha, _ = golden_section_search(
+                        lambda a: eval_residual_norm(x - tot * a),
+                        alpha_min=0.0,
+                        alpha_max=1.0,
+                        maxiter=ls_maxsteps,
+                    )
+                    i_bckstps = ls_maxsteps
+                new_x = x - tot * best_alpha
 
-        x = new_x
+            elif ls_method == "backtracking":
+                steps = 0.5 ** numpy.arange(max(ls_maxsteps, 1))
+                new_x = x - tot
+                for i_bckstps, lam in enumerate(steps):
+                    new_x = x - tot * lam
+                    new_err = eval_residual_norm(new_x)
+                    if new_err < err_0:
+                        break
+            else:
+                # No line search (full Newton step)
+                new_x = x - tot
+                i_bckstps = 0
+
+            err_2 = abs(tot).max()
+            t4 = time.time()
+
+            itprint.print_iteration(
+                N=it,
+                f_x=err_0,
+                d_x=err_2,
+                Time_residuals=t2 - t1,
+                Time_inversion=t3 - t2,
+                Time_search=t4 - t3,
+                Lambda_0=lam0,
+                N_invert=nn,
+                N_search=i_bckstps,
+            )
+
+            if err_0 < tol_eps:
+                break
+
+            x = new_x
 
     ddr.set_values(x)
     if trace:
@@ -628,15 +820,26 @@ def newton(
     if not details:
         return ddr
     else:
-        L = Operator(jres, fut_S, ddr_filt)
-        if compute_radius:
-            try:
-                lam_eig = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
-                lam = abs(lam_eig[0])
-            except Exception:
+        if use_jax and not complementarities:
+            L = L_last if "L_last" in locals() else None
+            if compute_radius and L is not None:
+                try:
+                    lam_eig = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+                    lam = abs(lam_eig[0])
+                except Exception:
+                    lam = numpy.nan
+            else:
                 lam = numpy.nan
         else:
-            lam = numpy.nan
+            L = Operator(jres, fut_S, ddr_filt)
+            if compute_radius:
+                try:
+                    lam_eig = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+                    lam = abs(lam_eig[0])
+                except Exception:
+                    lam = numpy.nan
+            else:
+                lam = numpy.nan
 
         return NewtonResult(
             ddr,
