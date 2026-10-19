@@ -29,7 +29,7 @@ from dolo.numeric.interpolation_jax import (
 jax.config.update("jax_enable_x64", True)
 
 
-def _get_raw_jnp_point_fn(fun: Any) -> Callable:
+def _get_raw_jnp_point_fn(fun: Any, model: Any = None, fun_name: str = None) -> Callable:
     """Extract or construct a pure JAX point function from a dolo function."""
     if hasattr(fun, "point_jnp"):
         return fun.point_jnp
@@ -46,8 +46,19 @@ def _get_raw_jnp_point_fn(fun: Any) -> Callable:
                             cand = c.cell_contents
                             if callable(cand) and getattr(cand, "__name__", "") == "f":
                                 return cand
+    # If it's a legacy dolang guvectorize object, try to construct ModelV2
+    if model is not None and hasattr(model, "data") and fun_name is not None:
+        try:
+            from dolo.compiler.model_v2 import ModelV2
+            v2 = ModelV2.from_yaml(model.data)
+            target = "arbitrage" if fun_name in ("f", "arbitrage") else "transition"
+            if target in v2.functions:
+                return v2.functions[target].point_jnp
+        except Exception:
+            pass
     # Fallback to fun directly
     return fun
+
 
 
 class CompiledResidual:
@@ -64,8 +75,8 @@ class CompiledResidual:
         self.diff_mode = diff_mode
 
         # Model functions
-        self.f_pt = _get_raw_jnp_point_fn(dmodel.f)
-        self.g_pt = _get_raw_jnp_point_fn(dmodel.g)
+        self.f_pt = _get_raw_jnp_point_fn(dmodel.f, dmodel.model, "f")
+        self.g_pt = _get_raw_jnp_point_fn(dmodel.g, dmodel.model, "g")
         self.parms = jnp.asarray(dmodel.parms, dtype=jnp.float64)
 
         # Discretization details

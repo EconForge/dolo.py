@@ -35,6 +35,11 @@ from dolo.numeric.residual_jax import (
     CompiledResidual,
     compile_residual,
 )
+from dolo.numeric.residuals import (
+    F,
+    dF_1,
+    F_and_dF_1,
+)
 
 __all__ = [
     "GArray",
@@ -65,4 +70,7 @@ __all__ = [
     "eval_linear_point_jax",
     "CompiledResidual",
     "compile_residual",
+    "F",
+    "dF_1",
+    "F_and_dF_1",
 ]

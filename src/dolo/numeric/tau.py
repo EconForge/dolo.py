@@ -13,7 +13,7 @@ import itertools
 from typing import Any, Iterator, List, Tuple
 import numpy as np
 
-from dolo.numeric.garray import QP, SliceQP
+from dolo.numeric.garray import GArray, QP, SliceQP
 from dolo.numeric.grids import UniformCartesianGrid, CartesianGrid
 
 
@@ -179,3 +179,18 @@ class Tau:
             projections = trembling_hand(endo_grid, S.endo)
             for w_corner, idx_corner in projections:
                 yield target_regime, prob, w_corner, idx_corner
+
+
+def euler_residuals_tau(
+    dmodel: Any, controls: GArray, dr: Any
+) -> GArray:
+    """Universal Euler residuals written entirely in terms of GArray and Tau."""
+    res = GArray.zeros_like(controls)
+    for i_m, m_val, s_endo in dmodel.regimes():
+        xm = controls[i_m]
+        for prob, S in dmodel.tau.slice_transitions(i_m, m_val, s_endo, xm):
+            XM = dr(S)
+            rr = dmodel.arbitrage(m_val, s_endo, xm, S.exo, S.endo, XM)
+            res[i_m] += prob * rr
+    return res
+

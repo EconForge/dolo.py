@@ -28,6 +28,7 @@ from .newton import (
     smooth_nodiff,
 )
 from .results import AlgoResult, TimeIterationResult
+from dolo.numeric.residuals import _resolve_engine, _get_or_compile_jax_residual
 
 
 def euler_residuals_tau(
@@ -67,6 +68,8 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
 def time_iteration(
     model: Model,
     *,
+    engine: str = "auto",
+    backend: str = None,
     dr0: DecisionRule = None,
     tol_eps: float = 1e-8,
     tol_eta: float = 1e-6,
@@ -89,6 +92,8 @@ def time_iteration(
     ----------
     model : Model, ModelV2, or DiscretizedModel
         model to be solved
+    engine / backend : str ("auto", "jax", "gpu", "cpu", "vectorized")
+        computational engine for residual and Jacobian evaluations
     dr0 : DecisionRule, optional
         initial guess for the decision rule
     tol_eps : float (1e-8)
@@ -254,6 +259,30 @@ def time_iteration(
     sh_c = controls_ga.shape
     controls_0 = controls_ga.ravel().reshape((-1, n_x))
 
+    # Engine setup
+    eng = _resolve_engine(dmodel, engine, backend)
+    use_jax = eng in ("jax", "gpu", "cpu") and dmodel.n_regimes == 1
+    if use_jax:
+        import jax
+        import jax.numpy as jnp
+
+        target_dev = None
+        if eng == "gpu":
+            gpus = jax.devices("gpu")
+            if not gpus:
+                raise RuntimeError("GPU requested (engine='gpu'), but no CUDA device was found.")
+            target_dev = gpus[0]
+        elif eng == "cpu":
+            target_dev = jax.devices("cpu")[0]
+
+        cr = _get_or_compile_jax_residual(dmodel, interp_method=interpolation, diff_mode="fwd")
+        s_nodes_jax = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
+        if target_dev is not None:
+            s_nodes_jax = jax.device_put(s_nodes_jax, target_dev)
+    else:
+        cr = None
+        target_dev = None
+
     itprint = IterationsPrinter(
         ("N", int),
         ("Error", float),
@@ -280,15 +309,35 @@ def time_iteration(
         if trace:
             trace_details.append({"dr": copy.deepcopy(mdr)})
 
-        fn = (
-            lambda x_val: euler_residuals_tau(dmodel, controls_ga.unravel(x_val), mdr)
-            .ravel()
-            .reshape((-1, n_x))
-        )
-        dfn = SerialDifferentiableFunction(fn)
+        if use_jax:
+            coeffs_jax = cr.prefilter(controls_ga)
+            if target_dev is not None:
+                coeffs_jax = jax.device_put(coeffs_jax, target_dev)
 
-        res_0 = fn(controls_0)
-        err_res = abs(res_0).max()
+            def dfn_jax(x_val):
+                x_jnp = jnp.asarray(x_val, dtype=jnp.float64)
+                if target_dev is not None:
+                    x_jnp = jax.device_put(x_jnp, target_dev)
+                r_jnp, dr_jnp = cr.F_and_dF_vmap(s_nodes_jax, x_jnp, coeffs_jax)
+                if target_dev is not None:
+                    r_jnp.block_until_ready()
+                    dr_jnp.block_until_ready()
+                return [numpy.asarray(r_jnp), numpy.asarray(dr_jnp)]
+
+            fn = lambda x_val: dfn_jax(x_val)[0]
+            dfn = dfn_jax
+            res_0, _ = dfn(controls_0)
+            err_res = abs(res_0).max()
+        else:
+            fn = (
+                lambda x_val: euler_residuals_tau(dmodel, controls_ga.unravel(x_val), mdr)
+                .ravel()
+                .reshape((-1, n_x))
+            )
+            dfn = SerialDifferentiableFunction(fn)
+
+            res_0 = fn(controls_0)
+            err_res = abs(res_0).max()
 
         if hook:
             hook()
