@@ -438,6 +438,43 @@ class PolicyLinearOperator(LinearOperator):
         self.dim = self.n_regimes * self.N * self.n_x
         super().__init__(dtype=np.float64, shape=(self.dim, self.dim))
 
+        if self.engine in ("jax", "gpu", "cpu") and self.cr is not None:
+            import jax
+            import jax.numpy as jnp
+            from dolo.numeric.interpolation_jax import (
+                prefilter_cubic_jax,
+                eval_linear_point_jax,
+                _eval_cubic_batch_jit,
+            )
+
+            a, b, n = self.cr.a, self.cr.b, self.cr.n
+            grid_shape = self.grid_shape
+            interp_method = self.interp_method
+
+            def _apply_kernel(v_2d, F_x, S):
+                v_reshaped = v_2d.reshape(grid_shape + (-1,))
+                if interp_method == "cubic":
+                    v_coeffs = prefilter_cubic_jax(grid_shape, v_reshaped)
+
+                    def eval_branch(fx_k, s_k):
+                        v_S_k = _eval_cubic_batch_jit(v_coeffs, s_k, a, b, n)
+                        return jnp.einsum("nij,nj->ni", fx_k, v_S_k)
+                else:
+                    v_coeffs = v_reshaped
+
+                    def eval_branch(fx_k, s_k):
+                        v_S_k = jax.vmap(eval_linear_point_jax, in_axes=(None, 0, None, None, None))(
+                            v_coeffs, s_k, a, b, n
+                        )
+                        return jnp.einsum("nij,nj->ni", fx_k, v_S_k)
+
+                branch_results = jax.vmap(eval_branch)(F_x, S)
+                return jnp.sum(branch_results, axis=0)
+
+            self._apply_jit = jax.jit(_apply_kernel)
+        else:
+            self._apply_jit = None
+
     def _matvec(self, x: np.ndarray) -> np.ndarray:
         x_2d = x.reshape((self.N, self.n_x))
         out = self.apply(x_2d)
@@ -464,21 +501,24 @@ class PolicyLinearOperator(LinearOperator):
             if self.device is not None:
                 v_arr = jax.device_put(v_arr, self.device)
 
-            v_reshaped = v_arr.reshape(self.grid_shape + (-1,))
-            if self.interp_method == "cubic":
-                v_coeffs = prefilter_cubic_jax(self.endo_grid, v_reshaped)
-                eval_fn = eval_cubic_jax
+            if self._apply_jit is not None:
+                out = self._apply_jit(v_arr, self.F_x, self.S)
             else:
-                v_coeffs = v_reshaped
-                eval_fn = eval_linear_jax
+                v_reshaped = v_arr.reshape(self.grid_shape + (-1,))
+                if self.interp_method == "cubic":
+                    v_coeffs = prefilter_cubic_jax(self.endo_grid, v_reshaped)
+                    eval_fn = eval_cubic_jax
+                else:
+                    v_coeffs = v_reshaped
+                    eval_fn = eval_linear_jax
 
-            out = jnp.zeros_like(v_arr)
-            n_branches = self.F_x.shape[0]
-            for k in range(n_branches):
-                fx_k = self.F_x[k]
-                s_k = self.S[k]
-                v_S_k = eval_fn(self.endo_grid, v_coeffs, s_k)
-                out = out + jnp.einsum("nij,nj->ni", fx_k, v_S_k)
+                out = jnp.zeros_like(v_arr)
+                n_branches = self.F_x.shape[0]
+                for k in range(n_branches):
+                    fx_k = self.F_x[k]
+                    s_k = self.S[k]
+                    v_S_k = eval_fn(self.endo_grid, v_coeffs, s_k)
+                    out = out + jnp.einsum("nij,nj->ni", fx_k, v_S_k)
 
             if self.device is not None:
                 out.block_until_ready()
