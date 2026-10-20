@@ -10,6 +10,6 @@ from dolo.algos.steady_state import residuals
 from dolo.algos.perturbation import perturb
 from dolo.algos.ergodic import ergodic_distribution
 from dolo.numeric.residuals import F, dF_1, dF_2, F_and_dF_1, PolicyLinearOperator
+from dolo.numeric.discretized_model import discretize, initial_guess, DiscretizedModel
 
 approximate_controls = perturb
-

@@ -65,9 +65,7 @@ def test_residual_vmap_parity_rbc(rbc_model):
 
 def test_derivative_vmap_parity_rbc(rbc_model):
     # Use smaller grid for fast finite-difference reference test
-    dmodel = dolo.numeric.DiscretizedModel(
-        rbc_model, grid_options=dict(n=[15, 15])
-    )
+    dmodel = dolo.numeric.DiscretizedModel(rbc_model, grid_options=dict(n=[15, 15]))
     cr = compile_residual(dmodel, interp_method="cubic", diff_mode="fwd")
 
     controls_ga = dmodel.initial_guess()
@@ -92,9 +90,7 @@ def test_derivative_vmap_parity_rbc(rbc_model):
 
 
 def test_joint_residual_and_derivative_parity(rbc_model):
-    dmodel = dolo.numeric.DiscretizedModel(
-        rbc_model, grid_options=dict(n=[10, 10])
-    )
+    dmodel = dolo.numeric.DiscretizedModel(rbc_model, grid_options=dict(n=[10, 10]))
     cr = compile_residual(dmodel)
     controls_ga = dmodel.initial_guess()
 

@@ -181,9 +181,7 @@ class Tau:
                 yield target_regime, prob, w_corner, idx_corner
 
 
-def euler_residuals_tau(
-    dmodel: Any, controls: GArray, dr: Any
-) -> GArray:
+def euler_residuals_tau(dmodel: Any, controls: GArray, dr: Any) -> GArray:
     """Universal Euler residuals written entirely in terms of GArray and Tau."""
     res = GArray.zeros_like(controls)
     for i_m, m_val, s_endo in dmodel.regimes():
@@ -193,4 +191,3 @@ def euler_residuals_tau(
             rr = dmodel.arbitrage(m_val, s_endo, xm, S.exo, S.endo, XM)
             res[i_m] += prob * rr
     return res
-

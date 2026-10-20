@@ -218,3 +218,34 @@ class DiscretizedModel:
 
         mu = GArray.zeros(self.grid, 1, self.n_regimes)
         return mu.unravel(mu_flat)
+
+
+def discretize(
+    model: Any,
+    grid_options: Optional[Any] = None,
+    dprocess_options: Optional[Dict[str, Any]] = None,
+    **kwargs,
+) -> DiscretizedModel:
+    """Discretize a continuous/symbolic model. Mirrors Dolo.jl: discretize(model, ...)."""
+    if isinstance(model, DiscretizedModel):
+        return model
+    if isinstance(grid_options, int):
+        n_s = (
+            len(model.symbols["states"])
+            if hasattr(model, "symbols") and "states" in model.symbols
+            else 1
+        )
+        grid_options = {"n": [grid_options] * n_s}
+    elif isinstance(grid_options, (list, tuple)):
+        grid_options = {"n": list(grid_options)}
+    return DiscretizedModel(
+        model, grid_options=grid_options, dprocess_options=dprocess_options, **kwargs
+    )
+
+
+def initial_guess(dmodel_or_model: Any, *args, **kwargs) -> Any:
+    """Compute initial guess for policy controls on the grid. Mirrors Dolo.jl: initial_guess(dmodel)."""
+    if hasattr(dmodel_or_model, "initial_guess"):
+        return dmodel_or_model.initial_guess(*args, **kwargs)
+    dmodel = discretize(dmodel_or_model, *args, **kwargs)
+    return dmodel.initial_guess()

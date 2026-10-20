@@ -10,7 +10,9 @@ def rbc_model():
 
 def test_time_iteration_engines_parity(rbc_model):
     # Solve with vectorized
-    sol_vec = dolo.time_iteration(rbc_model, engine="vectorized", maxit=25, verbose=False)
+    sol_vec = dolo.time_iteration(
+        rbc_model, engine="vectorized", maxit=25, verbose=False
+    )
 
     # Solve with jax
     sol_jax = dolo.time_iteration(rbc_model, engine="jax", maxit=25, verbose=False)
@@ -27,6 +29,7 @@ def test_time_iteration_engines_parity(rbc_model):
 
 def test_time_iteration_gpu(rbc_model):
     import jax
+
     gpus = jax.devices("gpu")
     if not gpus:
         pytest.skip("No CUDA GPU available")
@@ -35,7 +38,9 @@ def test_time_iteration_gpu(rbc_model):
     sol_jax = dolo.time_iteration(rbc_model, engine="jax", maxit=15, verbose=False)
 
     s_ss = rbc_model.calibration["states"]
-    np.testing.assert_allclose(sol_gpu.dr(0, s_ss), sol_jax.dr(0, s_ss), rtol=1e-10, atol=1e-10)
+    np.testing.assert_allclose(
+        sol_gpu.dr(0, s_ss), sol_jax.dr(0, s_ss), rtol=1e-10, atol=1e-10
+    )
 
 
 def test_time_iteration_backend_alias(rbc_model):

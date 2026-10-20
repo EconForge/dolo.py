@@ -29,7 +29,9 @@ from dolo.numeric.interpolation_jax import (
 jax.config.update("jax_enable_x64", True)
 
 
-def _get_raw_jnp_point_fn(fun: Any, model: Any = None, fun_name: str = None) -> Callable:
+def _get_raw_jnp_point_fn(
+    fun: Any, model: Any = None, fun_name: str = None
+) -> Callable:
     """Extract or construct a pure JAX point function from a dolo function."""
     if hasattr(fun, "point_jnp"):
         return fun.point_jnp
@@ -50,6 +52,7 @@ def _get_raw_jnp_point_fn(fun: Any, model: Any = None, fun_name: str = None) -> 
     if model is not None and hasattr(model, "data") and fun_name is not None:
         try:
             from dolo.compiler.model_v2 import ModelV2
+
             v2 = ModelV2.from_yaml(model.data)
             target = "arbitrage" if fun_name in ("f", "arbitrage") else "transition"
             if target in v2.functions:
@@ -58,7 +61,6 @@ def _get_raw_jnp_point_fn(fun: Any, model: Any = None, fun_name: str = None) -> 
             pass
     # Fallback to fun directly
     return fun
-
 
 
 class CompiledResidual:
@@ -104,6 +106,20 @@ class CompiledResidual:
                 dtype=jnp.float64,
             )
             self.regime_data.append((m_val, inodes, weights))
+
+        self.same_inodes = all(
+            len(w) == len(self.regime_data[0][2]) for _, _, w in self.regime_data
+        )
+        if self.same_inodes and self.n_regimes > 1:
+            self.m_vals = jnp.stack([m for m, _, _ in self.regime_data], axis=0)
+            self.all_inodes = jnp.stack(
+                [inodes for _, inodes, _ in self.regime_data], axis=0
+            )
+            self.all_weights = jnp.stack([w for _, _, w in self.regime_data], axis=0)
+        else:
+            self.m_vals = None
+            self.all_inodes = None
+            self.all_weights = None
 
         # Build JAX kernels
         self._build_kernels()
@@ -160,6 +176,7 @@ class CompiledResidual:
         diff_fn = jax.jacfwd if self.diff_mode == "fwd" else jax.jacrev
 
         if self.n_regimes == 1:
+
             def dF_pt(s, x, coeffs):
                 return diff_fn(lambda u: F_pt(s, u, coeffs))(x)
 
@@ -175,21 +192,136 @@ class CompiledResidual:
             self.dF_vmap = jax.jit(jax.vmap(dF_pt, in_axes=(0, 0, None)))
             self.F_and_dF_vmap = jax.jit(jax.vmap(F_and_dF_pt, in_axes=(0, 0, None)))
 
+            def branch_eval(s, x, coeffs, M, w):
+                S = g_pt(m_val, s, x, M, parms)
+                X = eval_interp_pt(coeffs, S)
+                df_dX = diff_fn(lambda u: f_pt(m_val, s, x, M, S, u, parms))(X)
+                return w * df_dX, S
+
+            self.dF_2_branch_vmap = jax.jit(
+                jax.vmap(branch_eval, in_axes=(0, 0, None, None, None))
+            )
+
         else:
             # Multi-regime vectorized kernels
             self.regime_vmap = []
             for i_m in range(self.n_regimes):
                 F_regime = functools.partial(F_pt, i_m=i_m)
-                dF_regime = lambda s, x, coeffs: diff_fn(lambda u: F_regime(s, u, coeffs))(x)
-                F_and_dF_regime = lambda s, x, coeffs: (F_regime(s, x, coeffs), dF_regime(s, x, coeffs))
+                dF_regime = lambda s, x, coeffs, F_regime=F_regime: diff_fn(
+                    lambda u: F_regime(s, u, coeffs)
+                )(x)
+                F_and_dF_regime = (
+                    lambda s, x, coeffs, F_regime=F_regime, dF_regime=dF_regime: (
+                        F_regime(s, x, coeffs),
+                        dF_regime(s, x, coeffs),
+                    )
+                )
 
-                self.regime_vmap.append({
-                    "F": jax.jit(jax.vmap(F_regime, in_axes=(0, 0, None))),
-                    "dF": jax.jit(jax.vmap(dF_regime, in_axes=(0, 0, None))),
-                    "F_and_dF": jax.jit(jax.vmap(F_and_dF_regime, in_axes=(0, 0, None))),
-                })
+                self.regime_vmap.append(
+                    {
+                        "F": jax.jit(jax.vmap(F_regime, in_axes=(0, 0, None))),
+                        "dF": jax.jit(jax.vmap(dF_regime, in_axes=(0, 0, None))),
+                        "F_and_dF": jax.jit(
+                            jax.vmap(F_and_dF_regime, in_axes=(0, 0, None))
+                        ),
+                    }
+                )
 
-    def prefilter(self, controls: Union[GArray, np.ndarray, jnp.ndarray]) -> jnp.ndarray:
+            if self.same_inodes:
+
+                def F_pt_all(s, x, coeffs, m_val, inodes, weights):
+                    res = jnp.zeros_like(x)
+                    n_inodes = inodes.shape[0]
+                    for k in range(n_inodes):
+                        M = inodes[k]
+                        w = weights[k]
+                        S = g_pt(m_val, s, x, M, parms)
+                        target_regime = k
+                        X = eval_interp_pt(coeffs[target_regime], S)
+                        r = f_pt(m_val, s, x, M, S, X, parms)
+                        res = res + w * r
+                    return res
+
+                def dF_pt_all(s, x, coeffs, m_val, inodes, weights):
+                    return diff_fn(
+                        lambda u: F_pt_all(s, u, coeffs, m_val, inodes, weights)
+                    )(x)
+
+                def F_and_dF_pt_all(s, x, coeffs, m_val, inodes, weights):
+                    return (
+                        F_pt_all(s, x, coeffs, m_val, inodes, weights),
+                        dF_pt_all(s, x, coeffs, m_val, inodes, weights),
+                    )
+
+                F_regime_v = jax.vmap(F_pt_all, in_axes=(0, 0, None, None, None, None))
+                self.F_all_vmap = jax.jit(
+                    jax.vmap(F_regime_v, in_axes=(None, 0, None, 0, 0, 0))
+                )
+
+                dF_regime_v = jax.vmap(
+                    dF_pt_all, in_axes=(0, 0, None, None, None, None)
+                )
+                self.dF_all_vmap = jax.jit(
+                    jax.vmap(dF_regime_v, in_axes=(None, 0, None, 0, 0, 0))
+                )
+
+                F_and_dF_regime_v = jax.vmap(
+                    F_and_dF_pt_all, in_axes=(0, 0, None, None, None, None)
+                )
+                self.F_and_dF_all_vmap = jax.jit(
+                    jax.vmap(F_and_dF_regime_v, in_axes=(None, 0, None, 0, 0, 0))
+                )
+                n_inodes_const = len(self.regime_data[0][2])
+
+                def dF_2_pt_all(s, x, coeffs, m_val, inodes, weights):
+                    Fx_list = []
+                    S_list = []
+                    for k in range(n_inodes_const):
+                        M = inodes[k]
+                        w = weights[k]
+                        S = g_pt(m_val, s, x, M, parms)
+                        target_regime = k
+                        X = eval_interp_pt(coeffs[target_regime], S)
+                        df_dX = diff_fn(lambda u: f_pt(m_val, s, x, M, S, u, parms))(X)
+                        Fx_list.append(w * df_dX)
+                        S_list.append(S)
+                    return jnp.stack(Fx_list, axis=0), jnp.stack(S_list, axis=0)
+
+                dF_2_regime_v = jax.vmap(
+                    dF_2_pt_all, in_axes=(0, 0, None, None, None, None)
+                )
+                self.dF_2_all_vmap = jax.jit(
+                    jax.vmap(dF_2_regime_v, in_axes=(None, 0, None, 0, 0, 0))
+                )
+            else:
+                self.F_all_vmap = None
+                self.dF_all_vmap = None
+                self.F_and_dF_all_vmap = None
+                self.dF_2_all_vmap = None
+
+            self.dF_2_regimes = []
+            for i_m in range(self.n_regimes):
+                m_val_i, inodes_i, weights_i = self.regime_data[i_m]
+
+                def make_branch_eval_i(m_v):
+                    def branch_eval_i(s, x, coeffs_target, M, w):
+                        S = g_pt(m_v, s, x, M, parms)
+                        X = eval_interp_pt(coeffs_target, S)
+                        df_dX = diff_fn(lambda u: f_pt(m_v, s, x, M, S, u, parms))(X)
+                        return w * df_dX, S
+
+                    return branch_eval_i
+
+                bv_i = jax.jit(
+                    jax.vmap(
+                        make_branch_eval_i(m_val_i), in_axes=(0, 0, None, None, None)
+                    )
+                )
+                self.dF_2_regimes.append((m_val_i, inodes_i, weights_i, bv_i))
+
+    def prefilter(
+        self, controls: Union[GArray, np.ndarray, jnp.ndarray]
+    ) -> jnp.ndarray:
         """Precomputes interpolation coefficients from grid values."""
         if isinstance(controls, GArray):
             c_data = controls.data
@@ -271,9 +403,26 @@ class CompiledResidual:
             return res
 
         # Multi-regime
+        if self.same_inodes and self.F_all_vmap is not None:
+            x_vals = jnp.asarray(
+                controls.data if isinstance(controls, GArray) else controls,
+                dtype=jnp.float64,
+            )
+            res = self.F_all_vmap(
+                s_nodes, x_vals, coeffs, self.m_vals, self.all_inodes, self.all_weights
+            )
+            if isinstance(controls, GArray):
+                out = GArray.zeros_like(controls)
+                out.data[...] = np.asarray(res)
+                return out
+            return res
+
         out_list = []
         for i in range(self.n_regimes):
-            x_i = jnp.asarray(controls[i], dtype=jnp.float64)
+            x_i = jnp.asarray(
+                controls[i] if isinstance(controls, GArray) else controls[i],
+                dtype=jnp.float64,
+            )
             res_i = self.regime_vmap[i]["F"](s_nodes, x_i, coeffs)
             out_list.append(res_i)
 
@@ -306,9 +455,21 @@ class CompiledResidual:
                 x_vals = c_arr[0] if c_arr.ndim == 3 else c_arr
             return self.dF_vmap(s_nodes, x_vals, coeffs)
 
+        if self.same_inodes and self.dF_all_vmap is not None:
+            x_vals = jnp.asarray(
+                controls.data if isinstance(controls, GArray) else controls,
+                dtype=jnp.float64,
+            )
+            return self.dF_all_vmap(
+                s_nodes, x_vals, coeffs, self.m_vals, self.all_inodes, self.all_weights
+            )
+
         out_list = []
         for i in range(self.n_regimes):
-            x_i = jnp.asarray(controls[i], dtype=jnp.float64)
+            x_i = jnp.asarray(
+                controls[i] if isinstance(controls, GArray) else controls[i],
+                dtype=jnp.float64,
+            )
             jac_i = self.regime_vmap[i]["dF"](s_nodes, x_i, coeffs)
             out_list.append(jac_i)
         return jnp.stack(out_list, axis=0)
@@ -337,10 +498,27 @@ class CompiledResidual:
                 return out_res, jac
             return res, jac
 
+        if self.same_inodes and self.F_and_dF_all_vmap is not None:
+            x_vals = jnp.asarray(
+                controls.data if isinstance(controls, GArray) else controls,
+                dtype=jnp.float64,
+            )
+            res, jac = self.F_and_dF_all_vmap(
+                s_nodes, x_vals, coeffs, self.m_vals, self.all_inodes, self.all_weights
+            )
+            if isinstance(controls, GArray):
+                out_res = GArray.zeros_like(controls)
+                out_res.data[...] = np.asarray(res)
+                return out_res, jac
+            return res, jac
+
         res_list = []
         jac_list = []
         for i in range(self.n_regimes):
-            x_i = jnp.asarray(controls[i], dtype=jnp.float64)
+            x_i = jnp.asarray(
+                controls[i] if isinstance(controls, GArray) else controls[i],
+                dtype=jnp.float64,
+            )
             r_i, j_i = self.regime_vmap[i]["F_and_dF"](s_nodes, x_i, coeffs)
             res_list.append(r_i)
             jac_list.append(j_i)
@@ -351,6 +529,74 @@ class CompiledResidual:
                 out_res[i] = np.asarray(res_list[i])
             return out_res, jnp.stack(jac_list, axis=0)
         return jnp.stack(res_list, axis=0), jnp.stack(jac_list, axis=0)
+
+    def dF_2(
+        self,
+        controls: Union[GArray, np.ndarray, jnp.ndarray],
+        coeffs: Optional[jnp.ndarray] = None,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        """Evaluate derivatives w.r.t future decision rule across the grid.
+
+        Returns
+        -------
+        F_x : jnp.ndarray
+            Shape (K, N, n_x, n_x) if 1 regime, or (n_regimes, K, N, n_x, n_x) if multi-regime.
+        S : jnp.ndarray
+            Shape (K, N, n_s) if 1 regime, or (n_regimes, K, N, n_s) if multi-regime.
+        """
+        if coeffs is None:
+            coeffs = self.prefilter(controls)
+
+        s_nodes = jnp.asarray(self.dmodel.endo_nodes, dtype=jnp.float64)
+
+        if self.n_regimes == 1:
+            if isinstance(controls, GArray):
+                x_vals = jnp.asarray(controls[0], dtype=jnp.float64)
+            else:
+                c_arr = jnp.asarray(controls, dtype=jnp.float64)
+                x_vals = c_arr[0] if c_arr.ndim == 3 else c_arr
+            m_val, inodes, weights = self.regime_data[0]
+            n_inodes = len(weights)
+            F_x_list = []
+            S_list = []
+            for k in range(n_inodes):
+                M = inodes[k]
+                w = weights[k]
+                fx_k, s_k = self.dF_2_branch_vmap(s_nodes, x_vals, coeffs, M, w)
+                F_x_list.append(fx_k)
+                S_list.append(s_k)
+            return jnp.stack(F_x_list, axis=0), jnp.stack(S_list, axis=0)
+
+        if self.same_inodes and self.dF_2_all_vmap is not None:
+            x_vals = jnp.asarray(
+                controls.data if isinstance(controls, GArray) else controls,
+                dtype=jnp.float64,
+            )
+            fx, s = self.dF_2_all_vmap(
+                s_nodes, x_vals, coeffs, self.m_vals, self.all_inodes, self.all_weights
+            )
+            return jnp.swapaxes(fx, 1, 2), jnp.swapaxes(s, 1, 2)
+
+        # General multi-regime fallback
+        Fx_regimes = []
+        S_regimes = []
+        for i in range(self.n_regimes):
+            m_val_i, inodes_i, weights_i, bv_i = self.dF_2_regimes[i]
+            x_i = jnp.asarray(
+                controls[i] if isinstance(controls, GArray) else controls[i],
+                dtype=jnp.float64,
+            )
+            fx_list = []
+            s_list = []
+            for k in range(len(weights_i)):
+                M = inodes_i[k]
+                w = weights_i[k]
+                fx_k, s_k = bv_i(s_nodes, x_i, coeffs[k], M, w)
+                fx_list.append(fx_k)
+                s_list.append(s_k)
+            Fx_regimes.append(jnp.stack(fx_list, axis=0))
+            S_regimes.append(jnp.stack(s_list, axis=0))
+        return jnp.stack(Fx_regimes, axis=0), jnp.stack(S_regimes, axis=0)
 
 
 def compile_residual(
@@ -382,19 +628,30 @@ def compile_residual(
     """
     if isinstance(model, str):
         from dolo.compiler.model_import import yaml_import_v2
+
         m_v2 = yaml_import_v2(model)
-        dmodel = DiscretizedModel(m_v2, grid_options=grid_options, dprocess_options=dprocess_options)
+        dmodel = DiscretizedModel(
+            m_v2, grid_options=grid_options, dprocess_options=dprocess_options
+        )
     elif isinstance(model, DiscretizedModel):
         if hasattr(model.f, "point_jnp"):
             dmodel = model
         else:
             # Legacy DiscretizedModel: try to upgrade to ModelV2 if filename is known
             upgraded = False
-            if hasattr(model.model, "filename") and model.model.filename not in (None, "<string>"):
+            if hasattr(model.model, "filename") and model.model.filename not in (
+                None,
+                "<string>",
+            ):
                 try:
                     from dolo.compiler.model_import import yaml_import_v2
+
                     m_v2 = yaml_import_v2(model.model.filename)
-                    dmodel = DiscretizedModel(m_v2, grid_options=grid_options, dprocess_options=dprocess_options)
+                    dmodel = DiscretizedModel(
+                        m_v2,
+                        grid_options=grid_options,
+                        dprocess_options=dprocess_options,
+                    )
                     upgraded = True
                 except Exception:
                     pass
@@ -402,14 +659,26 @@ def compile_residual(
                 dmodel = model
     else:
         from dolo.compiler.model_v2 import ModelV2
-        if not isinstance(model, ModelV2) and hasattr(model, "filename") and model.filename not in (None, "<string>"):
+
+        if (
+            not isinstance(model, ModelV2)
+            and hasattr(model, "filename")
+            and model.filename not in (None, "<string>")
+        ):
             try:
                 from dolo.compiler.model_import import yaml_import_v2
+
                 m_v2 = yaml_import_v2(model.filename)
-                dmodel = DiscretizedModel(m_v2, grid_options=grid_options, dprocess_options=dprocess_options)
+                dmodel = DiscretizedModel(
+                    m_v2, grid_options=grid_options, dprocess_options=dprocess_options
+                )
             except Exception:
-                dmodel = DiscretizedModel(model, grid_options=grid_options, dprocess_options=dprocess_options)
+                dmodel = DiscretizedModel(
+                    model, grid_options=grid_options, dprocess_options=dprocess_options
+                )
         else:
-            dmodel = DiscretizedModel(model, grid_options=grid_options, dprocess_options=dprocess_options)
+            dmodel = DiscretizedModel(
+                model, grid_options=grid_options, dprocess_options=dprocess_options
+            )
 
     return CompiledResidual(dmodel, interp_method=interp_method, diff_mode=diff_mode)

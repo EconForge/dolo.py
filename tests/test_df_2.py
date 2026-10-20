@@ -138,6 +138,7 @@ def test_df_2_preconditioned_and_solve(discretized_rbc):
 
 def test_df_2_gpu_if_available(discretized_rbc):
     import jax
+
     gpus = jax.devices("gpu")
     if not gpus:
         pytest.skip("No CUDA GPU available")

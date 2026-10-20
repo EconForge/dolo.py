@@ -731,7 +731,11 @@ def make_function(
             if any(getattr(a, "ndim", 1) == 2 for a in args):
                 N = max(a.shape[0] for a in args if getattr(a, "ndim", 1) == 2)
                 bjargs = [
-                    jnp.broadcast_to(a, (N, a.shape[0])) if getattr(a, "ndim", 1) == 1 else a
+                    (
+                        jnp.broadcast_to(a, (N, a.shape[0]))
+                        if getattr(a, "ndim", 1) == 1
+                        else a
+                    )
                     for a in args
                 ]
                 return batch(*bjargs)

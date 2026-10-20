@@ -261,7 +261,7 @@ def time_iteration(
 
     # Engine setup
     eng = _resolve_engine(dmodel, engine, backend)
-    use_jax = eng in ("jax", "gpu", "cpu") and dmodel.n_regimes == 1
+    use_jax = eng in ("jax", "gpu", "cpu")
     if use_jax:
         import jax
         import jax.numpy as jnp
@@ -270,12 +270,16 @@ def time_iteration(
         if eng == "gpu":
             gpus = jax.devices("gpu")
             if not gpus:
-                raise RuntimeError("GPU requested (engine='gpu'), but no CUDA device was found.")
+                raise RuntimeError(
+                    "GPU requested (engine='gpu'), but no CUDA device was found."
+                )
             target_dev = gpus[0]
         elif eng == "cpu":
             target_dev = jax.devices("cpu")[0]
 
-        cr = _get_or_compile_jax_residual(dmodel, interp_method=interpolation, diff_mode="fwd")
+        cr = _get_or_compile_jax_residual(
+            dmodel, interp_method=interpolation, diff_mode="fwd"
+        )
         s_nodes_jax = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
         if target_dev is not None:
             s_nodes_jax = jax.device_put(s_nodes_jax, target_dev)
@@ -315,14 +319,17 @@ def time_iteration(
                 coeffs_jax = jax.device_put(coeffs_jax, target_dev)
 
             def dfn_jax(x_val):
-                x_jnp = jnp.asarray(x_val, dtype=jnp.float64)
+                x_reshaped = x_val.reshape(sh_c)
+                x_jnp = jnp.asarray(x_reshaped, dtype=jnp.float64)
                 if target_dev is not None:
                     x_jnp = jax.device_put(x_jnp, target_dev)
-                r_jnp, dr_jnp = cr.F_and_dF_vmap(s_nodes_jax, x_jnp, coeffs_jax)
+                r_jnp, dr_jnp = cr.F_and_dF_1(x_jnp, coeffs_jax)
                 if target_dev is not None:
                     r_jnp.block_until_ready()
                     dr_jnp.block_until_ready()
-                return [numpy.asarray(r_jnp), numpy.asarray(dr_jnp)]
+                r_np = numpy.asarray(r_jnp).reshape((-1, n_x))
+                dr_np = numpy.asarray(dr_jnp).reshape((-1, n_x, n_x))
+                return [r_np, dr_np]
 
             fn = lambda x_val: dfn_jax(x_val)[0]
             dfn = dfn_jax
@@ -330,7 +337,9 @@ def time_iteration(
             err_res = abs(res_0).max()
         else:
             fn = (
-                lambda x_val: euler_residuals_tau(dmodel, controls_ga.unravel(x_val), mdr)
+                lambda x_val: euler_residuals_tau(
+                    dmodel, controls_ga.unravel(x_val), mdr
+                )
                 .ravel()
                 .reshape((-1, n_x))
             )
@@ -353,9 +362,39 @@ def time_iteration(
                 maxit=inner_cfg["maxit"],
             )
         else:
-            [controls, nit] = serial_newton(
-                dfn, controls_0, verbose=verbit, maxit=inner_cfg["maxit"]
-            )
+            if use_jax:
+                inner_maxit = inner_cfg.get("maxit", 20)
+                inner_tol = inner_cfg.get("tol", 1e-10)
+                x_cur = jnp.asarray(controls_0.reshape(sh_c), dtype=jnp.float64)
+                if target_dev is not None:
+                    x_cur = jax.device_put(x_cur, target_dev)
+                nit = 0
+                for _ in range(inner_maxit):
+                    r_cur, J_cur = cr.F_and_dF_1(x_cur, coeffs_jax)
+                    err_cur = float(jnp.abs(r_cur).max())
+                    if err_cur < inner_tol:
+                        break
+                    dx = jnp.linalg.solve(J_cur, r_cur[..., None])[..., 0]
+                    best_x = x_cur
+                    for bck in range(25):
+                        step = 0.5**bck
+                        cand_x = x_cur - dx * step
+                        cand_r = cr.F(cand_x, coeffs_jax)
+                        cand_err = float(jnp.abs(cand_r).max())
+                        if not numpy.isnan(cand_err) and cand_err < err_cur:
+                            best_x = cand_x
+                            break
+                    if best_x is x_cur:
+                        break
+                    x_cur = best_x
+                    nit += 1
+                if target_dev is not None:
+                    x_cur.block_until_ready()
+                controls = numpy.asarray(x_cur).reshape((-1, n_x))
+            else:
+                [controls, nit] = serial_newton(
+                    dfn, controls_0, verbose=verbit, maxit=inner_cfg["maxit"]
+                )
 
         new_controls_ga = controls_ga.unravel(controls)
         err_step = (new_controls_ga - controls_ga).norm()
@@ -369,15 +408,19 @@ def time_iteration(
             acc_method = acc_cfg.get("linsolve", "neumann")
             acc_maxit = acc_cfg.get("maxit", 50)
             acc_tol = acc_cfg.get("tol", 1e-8)
+            safeguarded = acc_cfg.get("safeguarded", False)
 
             if use_jax and not with_complementarities:
                 from dolo.numeric.residuals import dF_2
 
                 cand_ga = controls_ga.unravel(controls)
-                mdr.set_values(cand_ga)
                 _, dres_c = dfn(controls)
-                J_c = dres_c[0] if dres_c.ndim == 4 else dres_c
+                if dmodel.n_regimes == 1:
+                    J_c = dres_c.reshape((N, n_x, n_x))
+                else:
+                    J_c = dres_c.reshape((dmodel.n_regimes, N, n_x, n_x))
 
+                # Evaluate dF_2 at candidate controls x1 with policy φ0 interpolating controls_0
                 L_op = dF_2(
                     dmodel,
                     cand_ga,
@@ -460,11 +503,22 @@ def time_iteration(
 
                 cand_controls_0 = controls_0 + tot.reshape((-1, n_x))
 
-            if acc_cfg.get("safeguarded", False):
-                cand_res = fn(cand_controls_0)
-                if abs(cand_res).max() < err_res:
-                    controls_0 = cand_controls_0
-                else:
+            if safeguarded:
+                c_1 = 1e-4
+                alpha = 0.5
+                lam = numpy.sqrt(1 - 2 * c_1 * alpha)
+                accepted = False
+                tot_flat = numpy.asarray(tot).reshape((-1, n_x))
+                for bck in range(6):
+                    step = alpha**bck
+                    damp_cand = controls_0 + step * tot_flat
+                    damp_res = fn(damp_cand)
+                    damp_err = float(abs(damp_res).max())
+                    if numpy.isfinite(damp_err) and damp_err < lam * err_res:
+                        controls_0 = damp_cand
+                        accepted = True
+                        break
+                if not accepted:
                     controls_0 = controls
             else:
                 controls_0 = cand_controls_0
@@ -472,6 +526,10 @@ def time_iteration(
             controls_0 = controls
 
         controls_ga = controls_ga.unravel(controls_0)
+
+        if acc_cfg is not None and it > acc_cfg["wait"]:
+            res_0 = fn(controls_0)
+            err_res = float(abs(res_0).max())
 
         t_finish = time.time()
         elapsed = t_finish - t_start
@@ -484,6 +542,21 @@ def time_iteration(
             break
 
     mdr.set_values(controls_ga)
+
+    if use_jax:
+        coeffs_final = cr.prefilter(controls_ga)
+        if target_dev is not None:
+            coeffs_final = jax.device_put(coeffs_final, target_dev)
+        x_final = jnp.asarray(controls_0.reshape(sh_c), dtype=jnp.float64)
+        if target_dev is not None:
+            x_final = jax.device_put(x_final, target_dev)
+        res_final = cr.F(x_final, coeffs_final)
+        if target_dev is not None:
+            res_final.block_until_ready()
+        err_res = float(jnp.abs(res_final).max())
+    else:
+        res_0 = fn(controls_0)
+        err_res = float(abs(res_0).max())
 
     if trace:
         trace_details.append({"dr": copy.deepcopy(mdr)})

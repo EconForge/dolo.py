@@ -428,7 +428,7 @@ def newton(
     n_s = len(dmodel.model.symbols["states"])
 
     eng = _resolve_engine(dmodel, engine, backend)
-    use_jax = eng in ("jax", "gpu", "cpu") and n_m == 1
+    use_jax = eng in ("jax", "gpu", "cpu")
     if use_jax:
         target_dev = device
         if target_dev is None:
@@ -519,16 +519,13 @@ def newton(
                 interp_method=interpolation,
                 device=target_dev,
             )
-            res_arr = numpy.asarray(
-                res.data[0]
-                if isinstance(res, GArray)
-                else (res[0] if res.ndim == 3 else res)
-            )
-            dres_arr = numpy.asarray(
-                dres.data[0]
-                if isinstance(dres, GArray)
-                else (dres[0] if dres.ndim == 4 else dres)
-            )
+            res_arr = numpy.asarray(res.data if isinstance(res, GArray) else res)
+            dres_arr = numpy.asarray(dres.data if isinstance(dres, GArray) else dres)
+            if n_m == 1:
+                if res_arr.ndim == 3:
+                    res_arr = res_arr[0]
+                if dres_arr.ndim == 4:
+                    dres_arr = dres_arr[0]
 
             err_0 = abs(res_arr).max()
             if err_0 < tol_eps:
@@ -594,9 +591,7 @@ def newton(
                     device=target_dev,
                 )
                 c_arr = numpy.asarray(
-                    c_res.data[0]
-                    if isinstance(c_res, GArray)
-                    else (c_res[0] if c_res.ndim == 3 else c_res)
+                    c_res.data if isinstance(c_res, GArray) else c_res
                 )
                 return abs(c_arr).max()
 
@@ -824,7 +819,9 @@ def newton(
             L = L_last if "L_last" in locals() else None
             if compute_radius and L is not None:
                 try:
-                    lam_eig = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+                    lam_eig = scipy.sparse.linalg.eigs(
+                        L, k=1, return_eigenvectors=False
+                    )
                     lam = abs(lam_eig[0])
                 except Exception:
                     lam = numpy.nan
@@ -834,7 +831,9 @@ def newton(
             L = Operator(jres, fut_S, ddr_filt)
             if compute_radius:
                 try:
-                    lam_eig = scipy.sparse.linalg.eigs(L, k=1, return_eigenvectors=False)
+                    lam_eig = scipy.sparse.linalg.eigs(
+                        L, k=1, return_eigenvectors=False
+                    )
                     lam = abs(lam_eig[0])
                 except Exception:
                     lam = numpy.nan

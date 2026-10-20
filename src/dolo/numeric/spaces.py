@@ -166,9 +166,13 @@ class CartesianSpace(Space, dict):
     ) -> Grid:
         grid_type = str(type).lower()
         if n is None:
+            n = kwargs.get("orders", kwargs.get("n", None))
+        if n is None:
             n = [20] * self.d
         elif isinstance(n, int):
             n = [n] * self.d
+        else:
+            n = list(n)
 
         if grid_type in ("cartesian", "uniform", "uniformcartesian"):
             return UniformCartesianGrid(self.min, self.max, n)

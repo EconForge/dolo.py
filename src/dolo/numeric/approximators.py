@@ -328,7 +328,10 @@ class ProductApproximator(Approximator):
         if self.is_empty_exo:
             endo_coords = (
                 qp.val[-self.endo_grid.d :]
-                if hasattr(self, "endo_grid") and hasattr(qp.val, "shape") and qp.val.ndim == 1 and qp.val.shape[0] > self.endo_grid.d
+                if hasattr(self, "endo_grid")
+                and hasattr(qp.val, "shape")
+                and qp.val.ndim == 1
+                and qp.val.shape[0] > self.endo_grid.d
                 else qp.val
             )
             if isinstance(qp.loc, tuple) and len(qp.loc) >= 2:

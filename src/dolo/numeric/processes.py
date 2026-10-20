@@ -303,13 +303,15 @@ class ProductProcess(Process):
         self.processes = l
         self.d = sum([e.d for e in self.processes])
 
-    def discretize(self, to=None, options={}):
+    def discretize(self, to=None, options=None, **kwargs):
 
+        if options is None:
+            options = kwargs
         if isinstance(options, dict):
-            kwargs = [options] * len(self.processes)
+            proc_kwargs = [options] * len(self.processes)
         else:
             assert len(options) == len(self.processes)
-            kwargs = options
+            proc_kwargs = options
 
         if to is None:
             if any(
@@ -335,8 +337,11 @@ class ProductProcess(Process):
 
         # discretize children
         discretized_processes = [
-            e.discretize(to=to, **kwargs[i]) for i, e in enumerate(self.processes)
+            e.discretize(to=to, **proc_kwargs[i]) for i, e in enumerate(self.processes)
         ]
+
+        if len(self.processes) == 1:
+            return discretized_processes[0]
 
         return fun(discretized_processes)
 
@@ -356,6 +361,9 @@ def Product(*processes):
 
 
 def product_mc(markov_chains: List[MarkovChain]) -> MarkovChain:
+
+    if len(markov_chains) == 1:
+        return markov_chains[0]
 
     M = [(m.values, m.transitions) for m in markov_chains]
     from dolo.numeric.discretization import tensor_markov

@@ -68,6 +68,7 @@ def test_df_1_and_joint_evaluation(discretized_rbc):
 
 def test_f_gpu_if_available(discretized_rbc):
     import jax
+
     gpus = jax.devices("gpu")
     if not gpus:
         pytest.skip("No CUDA GPU available on system")
@@ -81,4 +82,6 @@ def test_f_gpu_if_available(discretized_rbc):
 
     jac_gpu = dF_1(dmodel, x0, x0, engine="gpu")
     jac_cpu = dF_1(dmodel, x0, x0, engine="cpu")
-    np.testing.assert_allclose(np.asarray(jac_gpu), np.asarray(jac_cpu), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        np.asarray(jac_gpu), np.asarray(jac_cpu), rtol=1e-12, atol=1e-12
+    )
