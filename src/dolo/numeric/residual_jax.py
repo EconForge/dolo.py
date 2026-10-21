@@ -378,30 +378,25 @@ class CompiledResidual:
     def prefilter(
         self, controls: Union[GArray, np.ndarray, jnp.ndarray]
     ) -> jnp.ndarray:
-        """Precomputes interpolation coefficients from grid values."""
-        if isinstance(controls, GArray):
-            c_data = controls.data
-        else:
-            c_data = np.asarray(controls)
+        """Interpolation coefficients of the decision rule from its values on the grid:
+        (*coeffs_shape, n_x) with one regime, (n_regimes, *coeffs_shape, n_x) with several.
 
-        if self.n_regimes == 1:
-            vals = c_data[0] if c_data.ndim == 3 else c_data
-            shaped_vals = vals.reshape(self.grid_shape + (-1,))
-            if self.interp_method == "cubic":
-                return prefilter_cubic_jax(self.grid, shaped_vals)
-            return jnp.asarray(shaped_vals, dtype=jnp.float64)
-        else:
-            # Multi-regime coefficients
-            all_coeffs = []
-            for i in range(self.n_regimes):
-                vals = c_data[i]
-                shaped_vals = vals.reshape(self.grid_shape + (-1,))
-                if self.interp_method == "cubic":
-                    coeffs = prefilter_cubic_jax(self.grid, shaped_vals)
-                else:
-                    coeffs = jnp.asarray(shaped_vals, dtype=jnp.float64)
-                all_coeffs.append(coeffs)
-            return jnp.stack(all_coeffs, axis=0)
+        One jitted computation for all regimes; a device array stays on its device (no copy to
+        the host), a numpy array or GArray is copied to the default device."""
+        from dolo.numeric import policy_operator_jax as poj
+
+        if isinstance(controls, GArray):
+            controls = controls.data
+        if not isinstance(controls, (np.ndarray, jax.Array)):
+            raise TypeError(
+                "prefilter needs the values of the decision rule on the grid (array or "
+                f"GArray), got {type(controls).__name__}"
+            )
+        v = jnp.asarray(controls, dtype=jnp.float64)
+        v = v.reshape((self.n_regimes, -1, v.shape[-1]))
+        order = 3 if self.interp_method == "cubic" else 1
+        C = poj.prefilter(v, self.grid_shape, tuple(range(v.shape[-1])), order)
+        return C[0] if self.n_regimes == 1 else C
 
     def F_point(
         self,

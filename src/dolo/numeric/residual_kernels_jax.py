@@ -403,3 +403,25 @@ class GridKernels:
         next-period states S (n_m, K, N, d)."""
         F_c, S = self.dF_2_compressed(x, C)
         return poj.densify(F_c, self.xcols, self.n_x), S
+
+
+# --------------------------------------------------------------------------------------------
+# Small steps of the solvers, jitted (one dispatch each, no constants copied from the host)
+
+
+@jax.jit
+def max_abs(a):
+    """max |a| (a device scalar: `float()` of it is the only transfer to the host)."""
+    return jnp.abs(a).max()
+
+
+@jax.jit
+def block_solve(J, r):
+    """J^{-1} r for blocks J (..., n, n) and vectors r (..., n)."""
+    return jnp.linalg.solve(J, r[..., None])[..., 0]
+
+
+@jax.jit
+def axpy(x, a, y):
+    """x + a y."""
+    return x + a * y

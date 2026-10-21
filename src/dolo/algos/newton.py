@@ -23,6 +23,7 @@ from .invert import *
 from .results import AlgoResult, ImprovedTimeIterationResult, NewtonResult
 from dolo.numeric import DiscretizedModel, GArray
 from dolo.numeric.residuals import (
+    _get_or_compile_jax_residual,
     _resolve_engine,
     F,
     dF_1,
@@ -499,8 +500,136 @@ def newton(
     err_0 = 10.0
     err_2 = 10.0
 
+    # JAX engines with the grid kernels: controls, coefficients and derivatives stay on the
+    # device; only the errors go to the host
+    cr_fast = None
+    if use_jax and not complementarities:
+        import jax
+        import jax.numpy as jnp
+        from dolo.numeric.residual_kernels_jax import axpy, block_solve, max_abs as _max_abs
+
+        cr = _get_or_compile_jax_residual(dmodel, interp_method=interpolation)
+        cr_fast = cr._fast
+    if cr_fast is not None:
+        x_dev = jax.device_put(jnp.asarray(x, dtype=jnp.float64), target_dev)
+
     for it in range(maxit):
-        if use_jax and not complementarities:
+        if cr_fast is not None:
+            t1 = time.time()
+            if trace:
+                ddr.set_values(numpy.asarray(x_dev))
+                trace_details.append({"dr": copy.deepcopy(ddr)})
+
+            def prefilter(u):
+                C = cr.prefilter(u)
+                return C[None] if n_m == 1 else C
+
+            def max_abs(a):
+                return float(_max_abs(a))
+
+            # 1. Residuals and Jacobian, at x with the decision rule interpolating x
+            coeffs = prefilter(x_dev)
+            R, J = cr_fast.F_and_dF_1(x_dev, coeffs)
+            err_0 = max_abs(R)
+            if err_0 < tol_eps:
+                t2 = time.time()
+                itprint.print_iteration(
+                    N=it,
+                    f_x=err_0,
+                    d_x=0.0,
+                    Time_residuals=t2 - t1,
+                    Time_inversion=0.0,
+                    Time_search=0.0,
+                    Lambda_0=0.0,
+                    N_invert=0,
+                    N_search=0,
+                )
+                break
+            t2 = time.time()
+
+            # 2. Block-diagonal solve: ddx = dres^{-1} * res
+            ddx = block_solve(J, R)
+
+            # 3. Policy linear operator dF_2 and preconditioned inversion
+            solver_method = linsolve_cfg.get("method", "gmres")
+            solver_maxit = linsolve_cfg.get("maxit", 50)
+            solver_tol = linsolve_cfg.get("tol", 1e-8)
+            ttol = max(err_0 / 100, solver_tol)
+            F_c, S = cr_fast.dF_2_compressed(x_dev, coeffs)
+            if n_m == 1:
+                F_c, S = F_c[0], S[0]
+            L_last = None  # free the operator of the previous iteration
+            L_op = PolicyLinearOperator(
+                dmodel,
+                F_c,
+                S,
+                engine=eng,
+                interp_method=interpolation,
+                device=target_dev,
+                cr=cr,
+                cols=cr_fast.xcols,
+            )
+            del F_c, R
+            L_prec = (-1.0) * L_op.preconditioned(J)
+            del L_op, J
+            tot = L_prec.solve(ddx, linsolve=solver_method, tol=ttol, maxit=solver_maxit)
+            L_last = L_prec
+            del L_prec, ddx
+            nn = solver_maxit
+            lam0 = 0.01
+            t3 = time.time()
+
+            # 4. Line search on the residual of the candidate with its own decision rule
+            ls_method = linesearch_cfg.get("method", "backtracking")
+            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
+
+            def eval_res_norm_jax(cand_x):
+                return max_abs(cr_fast.F(cand_x, prefilter(cand_x)))
+
+            if ls_method == "golden_section":
+                cand_1 = eval_res_norm_jax(axpy(x_dev, -1.0, tot))
+                if cand_1 < err_0:
+                    best_alpha = 1.0
+                    i_bckstps = 0
+                else:
+                    best_alpha, _ = golden_section_search(
+                        lambda a: eval_res_norm_jax(axpy(x_dev, -a, tot)),
+                        alpha_min=0.0,
+                        alpha_max=1.0,
+                        maxiter=ls_maxsteps,
+                    )
+                    i_bckstps = ls_maxsteps
+                new_x = axpy(x_dev, -best_alpha, tot)
+            elif ls_method == "backtracking":
+                steps = 0.5 ** numpy.arange(max(ls_maxsteps, 1))
+                new_x = axpy(x_dev, -1.0, tot)
+                i_bckstps = 0
+                for i_bckstps, lam in enumerate(steps):
+                    new_x = axpy(x_dev, -lam, tot)
+                    if eval_res_norm_jax(new_x) < err_0:
+                        break
+            else:
+                new_x = axpy(x_dev, -1.0, tot)
+                i_bckstps = 0
+
+            err_2 = max_abs(tot)
+            t4 = time.time()
+            itprint.print_iteration(
+                N=it,
+                f_x=err_0,
+                d_x=err_2,
+                Time_residuals=t2 - t1,
+                Time_inversion=t3 - t2,
+                Time_search=t4 - t3,
+                Lambda_0=lam0,
+                N_invert=nn,
+                N_search=i_bckstps,
+            )
+            x_dev = new_x
+            if err_0 < tol_eps or err_2 < tol_eta:
+                break
+
+        elif use_jax and not complementarities:
             import jax
             import jax.numpy as jnp
 
@@ -514,7 +643,7 @@ def newton(
             res, dres = F_and_dF_1(
                 dmodel,
                 x,
-                dr=ddr,
+                dr=x,
                 engine=eng,
                 interp_method=interpolation,
                 device=target_dev,
@@ -561,7 +690,7 @@ def newton(
             L_op = dF_2(
                 dmodel,
                 x,
-                dr=ddr,
+                dr=x,
                 engine=eng,
                 interp_method=interpolation,
                 device=target_dev,
@@ -584,10 +713,10 @@ def newton(
             ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
 
             def eval_res_norm_jax(cand_x):
+                # residual of the candidate with its own decision rule
                 c_res = F(
                     dmodel,
                     cand_x,
-                    dr=ddr,
                     engine=eng,
                     interp_method=interpolation,
                     device=target_dev,
@@ -808,6 +937,8 @@ def newton(
 
             x = new_x
 
+    if cr_fast is not None:
+        x = numpy.asarray(x_dev)
     ddr.set_values(x)
     if trace:
         trace_details.append({"dr": copy.deepcopy(ddr)})

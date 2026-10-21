@@ -66,6 +66,15 @@ def _get_or_compile_jax_residual(
     return getattr(dmodel, cache_key)
 
 
+def _check_policy_values(dr: Any) -> None:
+    """The JAX engines interpolate the decision rule from its values on the grid."""
+    if isinstance(dr, DecisionRule):
+        raise TypeError(
+            "with a JAX engine, pass the decision rule as its values on the grid (GArray or "
+            "array, as the controls), not as a DecisionRule"
+        )
+
+
 def F(
     model: Any,
     *args,
@@ -114,7 +123,7 @@ def F(
         or (isinstance(args[0], np.ndarray) and args[0].ndim == 1)
     ):
         s, x = args[0], args[1]
-        dr = args[2] if len(args) > 2 else None
+        dr = args[2] if len(args) > 2 else kwargs.pop("dr", None)
         dmodel = (
             model
             if isinstance(model, DiscretizedModel)
@@ -153,7 +162,7 @@ def F(
 
     # 2. Grid-level dispatch: F(model, controls, dr=None)
     controls = args[0]
-    dr = args[1] if len(args) > 1 else None
+    dr = args[1] if len(args) > 1 else kwargs.pop("dr", None)
 
     # Resolve discretized model
     if isinstance(model, DiscretizedModel):
@@ -188,6 +197,7 @@ def F(
 
         cr = _get_or_compile_jax_residual(dmodel, interp_method=interp_method)
         policy_for_coeffs = dr if dr is not None else controls
+        _check_policy_values(policy_for_coeffs)
         coeffs = cr.prefilter(policy_for_coeffs)
 
         s_nodes = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
@@ -280,7 +290,7 @@ def dF_1(
         raise ValueError("dF_1 requires at least 1 positional argument: controls")
 
     controls = args[0]
-    dr = args[1] if len(args) > 1 else None
+    dr = args[1] if len(args) > 1 else kwargs.pop("dr", None)
 
     if isinstance(model, DiscretizedModel):
         dmodel = model
@@ -316,6 +326,7 @@ def dF_1(
             dmodel, interp_method=interp_method, diff_mode=diff_mode
         )
         policy_for_coeffs = dr if dr is not None else controls
+        _check_policy_values(policy_for_coeffs)
         coeffs = cr.prefilter(policy_for_coeffs)
 
         s_nodes = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
@@ -394,7 +405,7 @@ def F_and_dF_1(
         raise ValueError("F_and_dF_1 requires at least 1 positional argument: controls")
 
     controls = args[0]
-    dr = args[1] if len(args) > 1 else None
+    dr = args[1] if len(args) > 1 else kwargs.pop("dr", None)
 
     if isinstance(model, DiscretizedModel):
         dmodel = model
@@ -430,6 +441,7 @@ def F_and_dF_1(
             dmodel, interp_method=interp_method, diff_mode=diff_mode
         )
         policy_for_coeffs = dr if dr is not None else controls
+        _check_policy_values(policy_for_coeffs)
         coeffs = cr.prefilter(policy_for_coeffs)
 
         s_nodes = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)
@@ -958,7 +970,7 @@ def dF_2(
         or (isinstance(args[0], np.ndarray) and args[0].ndim == 1)
     ):
         s, x = args[0], args[1]
-        dr = args[2] if len(args) > 2 else None
+        dr = args[2] if len(args) > 2 else kwargs.pop("dr", None)
         dmodel = (
             model
             if isinstance(model, DiscretizedModel)
@@ -1053,7 +1065,7 @@ def dF_2(
 
     # 2. Grid-level dispatch: dF_2(model, controls, dr=None)
     controls = args[0]
-    dr = args[1] if len(args) > 1 else None
+    dr = args[1] if len(args) > 1 else kwargs.pop("dr", None)
 
     if isinstance(model, DiscretizedModel):
         dmodel = model
@@ -1091,6 +1103,7 @@ def dF_2(
 
         cr = _get_or_compile_jax_residual(dmodel, interp_method=interp_method)
         policy_for_coeffs = dr if dr is not None else controls
+        _check_policy_values(policy_for_coeffs)
         coeffs = cr.prefilter(policy_for_coeffs)
 
         s_nodes = jnp.asarray(dmodel.endo_nodes, dtype=jnp.float64)

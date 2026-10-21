@@ -65,6 +65,147 @@ def residuals_simple(f, g, s, x, dr, dprocess, parms):
     return res
 
 
+
+def _time_iteration_device(
+    cr,
+    dmodel,
+    x_init,
+    *,
+    eng,
+    device,
+    interpolation,
+    inner_cfg,
+    acc_cfg,
+    tol_eta,
+    tol_eps,
+    maxit,
+    itprint,
+    on_iteration=None,
+):
+    """Time iteration with the controls, the coefficients of the decision rule and all the
+    derivatives kept on the JAX device: only scalars (errors) go to the host during the
+    iterations. Same steps as the loop of `time_iteration`, as in Dolo.jl: per iteration, the
+    decision rule phi_0 interpolates x_0; x_1 solves F(x_1, phi_0) = 0 by Newton steps with
+    backtracking; with acceleration, x_0 + (I - L)^{-1}(x_1 - x_0) with L = -dF_1^{-1} dF_2 at
+    (x_1, phi_0).
+
+    Returns the final controls (device array (n_m, N, n_x)), the number of iterations, the last
+    step and the residual of the final controls (with their own decision rule)."""
+    import jax
+    import jax.numpy as jnp
+    from dolo.numeric.residuals import PolicyLinearOperator
+    from dolo.numeric.residual_kernels_jax import axpy, block_solve, max_abs as _max_abs
+
+    fk = cr._fast
+    n_m = dmodel.n_regimes
+
+    def prefilter(x):
+        C = cr.prefilter(x)
+        return C[None] if n_m == 1 else C
+
+    def max_abs(a):
+        return float(_max_abs(a))
+
+    x0 = jnp.asarray(x_init, dtype=jnp.float64)
+    if device is not None:
+        x0 = jax.device_put(x0, device)
+
+    inner_maxit = inner_cfg.get("maxit", 20)
+    inner_tol = inner_cfg.get("tol", 1e-10)
+    err_step = numpy.inf
+    err_res = numpy.inf
+    err_0 = numpy.nan
+    it = 0
+    while (err_step > tol_eta or err_res > tol_eps) and it < maxit:
+        it += 1
+        t_start = time.time()
+        coeffs = prefilter(x0)
+        r_cur, J_cur = fk.F_and_dF_1(x0, coeffs)
+        err_res = max_abs(r_cur)
+        if on_iteration is not None:
+            on_iteration(x0)
+
+        # inner Newton solver: x1 such that F(x1, phi_0) = 0
+        x_cur = x0
+        nit = 0
+        for i_inner in range(inner_maxit):
+            if i_inner > 0:
+                r_cur, J_cur = fk.F_and_dF_1(x_cur, coeffs)
+            err_cur = max_abs(r_cur)
+            if err_cur < inner_tol:
+                break
+            dx = block_solve(J_cur, r_cur)
+            best_x = None
+            for bck in range(25):
+                cand_x = axpy(x_cur, -(0.5**bck), dx)
+                cand_err = max_abs(fk.F(cand_x, coeffs))
+                if not numpy.isnan(cand_err) and cand_err < err_cur:
+                    best_x = cand_x
+                    break
+            if best_x is None:
+                break
+            x_cur = best_x
+            nit += 1
+        x1 = x_cur
+        r_cur = J_cur = None
+
+        err_step = max_abs(axpy(x1, -1.0, x0))
+        err_SA = err_step / err_0 if not numpy.isnan(err_0) and err_0 > 0 else numpy.nan
+        err_0 = err_step
+
+        if acc_cfg is not None and it > acc_cfg["wait"]:
+            # x = T(x), x1 = T(x0): x = x0 + (I - T')^{-1} (x1 - x0), T' = -F_1^{-1} F_2
+            _, J_1 = fk.F_and_dF_1(x1, coeffs)
+            F_c, S = fk.dF_2_compressed(x1, coeffs)
+            if n_m == 1:
+                F_c, S = F_c[0], S[0]
+            L_op = PolicyLinearOperator(
+                dmodel,
+                F_c,
+                S,
+                engine=eng,
+                interp_method=interpolation,
+                device=device,
+                cr=cr,
+                cols=fk.xcols,
+            )
+            del F_c
+            L_prec = (-1.0) * L_op.preconditioned(J_1)
+            del L_op, J_1
+            tot = L_prec.solve(
+                axpy(x1, -1.0, x0),
+                linsolve=acc_cfg.get("linsolve", "neumann"),
+                tol=acc_cfg.get("tol", 1e-8),
+                maxit=acc_cfg.get("maxit", 50),
+            )
+            del L_prec
+            if acc_cfg.get("safeguarded", False):
+                c_1, alpha = 1e-4, 0.5
+                lam = numpy.sqrt(1 - 2 * c_1 * alpha)
+                x_new = x1
+                for bck in range(6):
+                    cand = axpy(x0, alpha**bck, tot)
+                    cand_err = max_abs(fk.F(cand, coeffs))
+                    if numpy.isfinite(cand_err) and cand_err < lam * err_res:
+                        x_new = cand
+                        break
+            else:
+                x_new = axpy(x0, 1.0, tot)
+            x0 = x_new
+            err_res = max_abs(fk.F(x0, coeffs))
+        else:
+            x0 = x1
+
+        itprint.print_iteration(
+            N=it, Error=err_step, Gain=err_SA, Time=time.time() - t_start, nit=nit
+        )
+        if err_step < tol_eta and it > 1:
+            break
+
+    err_res = max_abs(fk.F(x0, prefilter(x0)))
+    return x0, it, err_step, err_res
+
+
 def time_iteration(
     model: Model,
     *,
@@ -304,7 +445,38 @@ def time_iteration(
     it = 0
     verbit = verbose == "full"
 
-    while (err_step > tol_eta or err_res > tol_eps) and it < maxit:
+    # JAX engines: everything on the device (one regime, or regimes with the same number of
+    # nodes; complementarities still go through the loop below)
+    use_device_loop = use_jax and not with_complementarities and cr._fast is not None
+    if use_device_loop:
+
+        def on_iteration(x):
+            if trace or hook:
+                mdr.set_values(numpy.asarray(x))
+            if trace:
+                trace_details.append({"dr": copy.deepcopy(mdr)})
+            if hook:
+                hook()
+
+        x_final, it, err_step, err_res = _time_iteration_device(
+            cr,
+            dmodel,
+            controls_ga.data,
+            eng=eng,
+            device=target_dev,
+            interpolation=interpolation,
+            inner_cfg=inner_cfg,
+            acc_cfg=acc_cfg,
+            tol_eta=tol_eta,
+            tol_eps=tol_eps,
+            maxit=maxit,
+            itprint=itprint,
+            on_iteration=on_iteration,
+        )
+        controls_0 = numpy.asarray(x_final).reshape((-1, n_x))
+        controls_ga = controls_ga.unravel(controls_0)
+
+    while not use_device_loop and (err_step > tol_eta or err_res > tol_eps) and it < maxit:
         it += 1
         t_start = time.time()
 
@@ -439,7 +611,7 @@ def time_iteration(
                 L_op = dF_2(
                     dmodel,
                     cand_ga,
-                    dr=mdr,
+                    dr=controls_0.reshape(sh_c),
                     engine=eng,
                     interp_method=interpolation,
                     device=target_dev,
@@ -560,7 +732,9 @@ def time_iteration(
 
     mdr.set_values(controls_ga)
 
-    if use_jax:
+    if use_device_loop:
+        pass  # err_res: residual of the final controls, computed on the device
+    elif use_jax:
         coeffs_final = cr.prefilter(controls_ga)
         if target_dev is not None:
             coeffs_final = jax.device_put(coeffs_final, target_dev)
