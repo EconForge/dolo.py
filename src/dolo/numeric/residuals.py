@@ -606,10 +606,10 @@ class PolicyLinearOperator(LinearOperator):
             return self._F_x
         import jax.numpy as jnp
 
+        from dolo.numeric import policy_operator_jax as poj
+
         jx = self._jx
-        Fc = jx["Fc"]
-        F_x = jnp.zeros(Fc.shape[:-1] + (self.n_x,), dtype=Fc.dtype)
-        F_x = F_x.at[..., np.asarray(jx["cols"], dtype=np.int32)].set(jx["scale"] * Fc)
+        F_x = poj.densify(jx["Fc"], jx["cols"], self.n_x, jx["scale"])
         return F_x[0] if self.n_regimes == 1 else F_x
 
     def _apply_device(self, v):
@@ -770,7 +770,9 @@ class PolicyLinearOperator(LinearOperator):
             if self.device is not None:
                 J_arr = jax.device_put(J_arr, self.device)
             # J^{-1} keeps the columns of F_x that are zero
-            return self._derived(Fc=poj.precondition(J_arr, self._jx["Fc"]))
+            Fc = self._jx["Fc"]
+            by_regime = int(np.prod(Fc.shape[:3])) > poj.MAX_BLOCKS
+            return self._derived(Fc=poj.precondition(J_arr, Fc, by_regime=by_regime))
 
         J_arr = np.asarray(J.data if isinstance(J, GArray) else J, dtype=np.float64)
         if self.n_regimes == 1:

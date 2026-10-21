@@ -167,16 +167,35 @@ def compress(F_x):
     return jnp.any(F_x != 0, axis=tuple(range(F_x.ndim - 1)))
 
 
-@jax.jit
-def precondition(J, Fc):
-    """J^{-1} Fc for block-diagonal J (n_m, N, n_x, n_x) and Fc (n_m, K, N, n_x, n_c): each
-    block J[i, n] is inverted once, and the products are written elementwise (a batched solve
-    with the K * n_c right-hand sides needs transposed copies of Fc: slower, more memory)."""
+def _precondition(J, Fc):
     Jinv = jnp.linalg.inv(J)[:, None]  # (n_m, 1, N, n_x, n_x)
     out = jnp.zeros_like(Fc)
     for q in range(Fc.shape[-2]):
         out = out + Jinv[..., :, q, None] * Fc[..., q, None, :]
     return out
+
+
+@partial(jax.jit, static_argnames=("by_regime",))
+def precondition(J, Fc, by_regime=False):
+    """J^{-1} Fc for block-diagonal J (n_m, N, n_x, n_x) and Fc (n_m, K, N, n_x, n_c): each
+    block J[i, n] is inverted once, and the products are written elementwise (a batched solve
+    with the K * n_c right-hand sides needs transposed copies of Fc: slower, more memory).
+    `by_regime`: one regime at a time, to bound the temporaries (slower)."""
+    if not by_regime:
+        return _precondition(J, Fc)
+    return jax.lax.map(lambda a: _precondition(a[0][None], a[1][None])[0], (J, Fc))
+
+
+def densify(Fc, cols, n_x, scale=1.0):
+    """Blocks (..., n_x, n_x) from their columns `cols` (..., n_x, len(cols)), the others zero
+    (a stack: a scatter into zeros needs as much memory again for XLA temporaries)."""
+    pos = {c: i for i, c in enumerate(cols)}
+    zero = jnp.zeros(Fc.shape[:-1], dtype=Fc.dtype)
+    return jnp.stack([scale * Fc[..., pos[j]] if j in pos else zero for j in range(n_x)], axis=-1)
+
+
+# above this number of blocks, the preconditioning goes one regime at a time
+MAX_BLOCKS = 2**20
 
 
 def apply(v, Fc, base, weights, scale, grid_n, cols, order):

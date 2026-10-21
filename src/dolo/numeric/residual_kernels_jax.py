@@ -402,5 +402,4 @@ class GridKernels:
         """Blocks F_x (n_m, K, N, n_x, n_x) of the derivative w.r.t. the decision rule, and the
         next-period states S (n_m, K, N, d)."""
         F_c, S = self.dF_2_compressed(x, C)
-        F_x = jnp.zeros(F_c.shape[:-1] + (self.n_x,), dtype=F_c.dtype)
-        return F_x.at[..., np.asarray(self.xcols, dtype=np.int32)].set(F_c), S
+        return poj.densify(F_c, self.xcols, self.n_x), S
