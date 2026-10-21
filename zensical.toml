@@ -36,6 +36,7 @@ nav = [
       "parameterized_expectations.md",
       "time_iteration.md",
       "value_iteration.md",
+      "engines.md",
   ]},
   { "Post Processing" = [
       "inspect.md",
