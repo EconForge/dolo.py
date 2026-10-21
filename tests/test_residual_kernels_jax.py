@@ -56,13 +56,17 @@ def _models():
     ]
 
 
+@pytest.mark.parametrize("batch", [None, 1], ids=["all_regimes", "regime_by_regime"])
 @pytest.mark.parametrize("interp_method", ["cubic", "linear"])
 @pytest.mark.parametrize("i_model", [0, 1], ids=["rbc", "rbc_mc"])
-def test_fast_kernels_match_point_kernels(i_model, interp_method):
+def test_fast_kernels_match_point_kernels(i_model, interp_method, batch):
     dmodel = _models()[i_model]
     fast = CompiledResidual(dmodel, interp_method=interp_method, fast=True)
     ref = CompiledResidual(dmodel, interp_method=interp_method, fast=False)
     assert fast._fast is not None and ref._fast is None
+    # small models fit at once: force processing the regimes in sequence (lax.map)
+    fast._fast.batch = batch
+    fast._fast._build()
 
     # controls away from the steady state, so that no derivative vanishes by accident
     x0 = dmodel.initial_guess()
@@ -85,3 +89,6 @@ def test_fast_kernels_match_point_kernels(i_model, interp_method):
     Fx0, S0 = ref.dF_2(x, c)
     close(S1, S0)
     close(Fx1, Fx0)
+    F_c, cols, S2 = fast.dF_2_compressed(x, c)
+    close(Fx0[..., list(cols)], F_c)
+    assert np.all(np.delete(np.asarray(Fx0), list(cols), axis=-1) == 0)

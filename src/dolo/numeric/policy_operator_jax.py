@@ -131,18 +131,21 @@ def prefilter(v, grid_n, cols, order):
 @partial(jax.jit, static_argnames=("order",))
 def evaluate(C, base, weights, order):
     """Values (..., n_c) at the points located by `locate` of the splines with coefficients
-    C (n_regimes, *coeffs_shape, n_c): sum_p w0p sum_q w1q ... c, one dimension at a time."""
+    C (n_regimes, *coeffs_shape, n_c): sum_p w0p sum_q w1q ... c, one dimension at a time.
+    `weights` is (..., d, order + 1), or a list of d arrays (..., order + 1)."""
     shape = C.shape[1:-1]
     strides = _strides(shape)
     cf = C.reshape(-1, C.shape[-1])
     d = len(shape)
+    if not isinstance(weights, (list, tuple)):
+        weights = [weights[..., dim, :] for dim in range(d)]
 
     def nested(dim, offset):
         if dim == d:
             return cf[base + offset]
         acc = 0.0
         for p in range(order + 1):
-            acc = acc + weights[..., dim, p, None] * nested(dim + 1, offset + p * strides[dim])
+            acc = acc + weights[dim][..., p, None] * nested(dim + 1, offset + p * strides[dim])
         return acc
 
     return nested(0, 0)
@@ -166,12 +169,14 @@ def compress(F_x):
 
 @jax.jit
 def precondition(J, Fc):
-    """J^{-1} Fc for block-diagonal J (n_m, N, n_x, n_x) and Fc (n_m, K, N, n_x, n_c):
-    one factorization of each block J[i, n] for the K * n_c right-hand sides."""
-    n_m, K, N, n_x, n_c = Fc.shape
-    B = jnp.moveaxis(Fc, 1, 3).reshape(n_m, N, n_x, K * n_c)
-    X = jnp.linalg.solve(J, B)
-    return jnp.moveaxis(X.reshape(n_m, N, n_x, K, n_c), 3, 1)
+    """J^{-1} Fc for block-diagonal J (n_m, N, n_x, n_x) and Fc (n_m, K, N, n_x, n_c): each
+    block J[i, n] is inverted once, and the products are written elementwise (a batched solve
+    with the K * n_c right-hand sides needs transposed copies of Fc: slower, more memory)."""
+    Jinv = jnp.linalg.inv(J)[:, None]  # (n_m, 1, N, n_x, n_x)
+    out = jnp.zeros_like(Fc)
+    for q in range(Fc.shape[-2]):
+        out = out + Jinv[..., :, q, None] * Fc[..., q, None, :]
+    return out
 
 
 def apply(v, Fc, base, weights, scale, grid_n, cols, order):

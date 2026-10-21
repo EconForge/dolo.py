@@ -586,6 +586,28 @@ class CompiledResidual:
             return out_res, jnp.stack(jac_list, axis=0)
         return jnp.stack(res_list, axis=0), jnp.stack(jac_list, axis=0)
 
+    def dF_2_compressed(
+        self,
+        controls: Union[GArray, np.ndarray, jnp.ndarray],
+        coeffs: Optional[jnp.ndarray] = None,
+    ) -> Tuple[jnp.ndarray, Tuple[int, ...], jnp.ndarray]:
+        """As `dF_2`, with only the columns `cols` of F_x (the others are zero everywhere):
+        returns (F_x[..., cols], cols, S). Avoids building the dense blocks."""
+        if self._fast is None:
+            F_x, S = self.dF_2(controls, coeffs)
+            return F_x, tuple(range(F_x.shape[-1])), S
+        if coeffs is None:
+            coeffs = self.prefilter(controls)
+        x_vals = jnp.asarray(
+            controls.data if isinstance(controls, GArray) else controls, dtype=jnp.float64
+        )
+        if self.n_regimes == 1:
+            x_vals = x_vals[0] if x_vals.ndim == 3 else x_vals
+            F_c, S = self._fast.dF_2_compressed(x_vals[None], coeffs[None])
+            return F_c[0], self._fast.xcols, S[0]
+        F_c, S = self._fast.dF_2_compressed(x_vals, coeffs)
+        return F_c, self._fast.xcols, S
+
     def dF_2(
         self,
         controls: Union[GArray, np.ndarray, jnp.ndarray],

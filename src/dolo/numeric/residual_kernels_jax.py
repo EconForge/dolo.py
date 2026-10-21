@@ -24,7 +24,7 @@ Only the columns of the decision rule that f depends on are interpolated.
 
 from __future__ import annotations
 
-from functools import reduce
+from functools import partial, reduce
 from typing import Callable, List, Sequence, Tuple
 
 import jax
@@ -218,8 +218,17 @@ class ColoredJacobian:
 # Kernels
 
 
+def _over_regimes(fn, mapped, shared, batch):
+    """fn(*mapped_i, *shared) for each regime i (leading axis of the `mapped` arrays): all at
+    once (vmap) when `batch` is None, else `batch` regimes at a time (lax.map), which bounds
+    the memory of the XLA temporaries."""
+    if batch is None:
+        return jax.vmap(lambda *m: fn(*m, *shared))(*mapped)
+    return jax.lax.map(lambda m: fn(*m, *shared), tuple(mapped), batch_size=batch)
+
+
 class GridKernels:
-    """F, (F, dF_1) and dF_2 on (n_m, N, n_x) arrays of controls, for all regimes at once.
+    """F, (F, dF_1) and dF_2 on (n_m, N, n_x) arrays of controls, for all regimes.
 
     Parameters
     ----------
@@ -229,18 +238,27 @@ class GridKernels:
     regimes : (K,) regime of each node of the exogenous process.
     m_vals, inodes, weights : (n_m, n_e), (n_m, K, n_e), (n_m, K).
     parms, s_nodes : parameters and grid nodes (N, d).
+    max_points : the kernels process at most this many (regime, node, grid point) triples at
+        once (more regimes are processed in sequence): bounds the XLA temporaries (about 0.8 kB
+        per triple for F_and_dF_1 on integration_B).
     """
 
-    def __init__(self, f_pt, g_pt, grid, order, regimes, m_vals, inodes, weights, parms, s_nodes, n_x):
+    def __init__(
+        self, f_pt, g_pt, grid, order, regimes, m_vals, inodes, weights, parms, s_nodes, n_x,
+        max_points=2**20,
+    ):
         self.f_pt, self.g_pt = f_pt, g_pt
         self.grid = tuple((float(a), float(b), int(n)) for a, b, n in grid)
-        self.grid_n = tuple(g[2] for g in self.grid)
         self.order = order
-        self.regimes = jnp.asarray(regimes, dtype=jnp.int32)[None, :, None]
+        self.regimes = jnp.asarray(regimes, dtype=jnp.int32)[:, None]  # (K, 1)
         self.m_vals, self.inodes, self.weights = m_vals, inodes, weights
         self.parms, self.s_nodes = parms, s_nodes
         self.n_x = n_x
-        d = s_nodes.shape[1]
+        n_m, K = inodes.shape[:2]
+        N, d = s_nodes.shape
+        self.d = d
+        triples = n_m * K * N
+        self.batch = None if triples <= max_points else max(1, max_points // (K * N))
 
         # structural sparsity, at an arbitrary point (it does not depend on the values of the
         # variables, but uses those of the parameters: see `_propagate`)
@@ -253,15 +271,15 @@ class GridKernels:
         nc = len(self.xcols)
 
         def f_lin(m, s, u, M, S0, Xc0, Gc, p):
-            """f with the decision rule linearized at S0: X = X0 + G (S(u) - S0)."""
+            """f with the decision rule linearized at S0: X = X0 + sum_j G_j (S_j(u) - S0_j)."""
             S = g_pt(m, s, u, M, p)
             dS = S - S0
             Xc = Xc0
             for j in range(d):
-                Xc = Xc + Gc[:, j] * dS[j]
+                Xc = Xc + Gc[j] * dS[j]
             return f_pt(m, s, u, M, S, self._scatter(Xc), p)
 
-        G0 = np.ones((nc, d))
+        G0 = [np.ones(nc)] * d
         pat_x = jacobian_pattern(
             lambda u: f_lin(m0, s0, u, M0, S0, np.ones(nc), G0, p0), (x0,), 0
         )
@@ -278,71 +296,82 @@ class GridKernels:
 
     def _build(self):
         f_pt, g_pt, f_lin = self.f_pt, self.g_pt, self._f_lin
-        order, grid = self.order, self.grid
+        order, grid, batch = self.order, self.grid, self.batch
         jac_x, jac_X, scatter = self.jac_x, self.jac_X, self._scatter
         xcols = np.asarray(self.xcols, dtype=np.int32)
 
-        def grid_map(one, in_axes_n, in_axes_k, in_axes_i):
-            """vmap of `one` over grid points n, nodes k and regimes i."""
-            return jax.vmap(jax.vmap(jax.vmap(one, in_axes_n), in_axes_k), in_axes_i)
+        def over_nodes(one, axes_n, axes_k):
+            """`one` mapped over grid points n and nodes k (within one regime)."""
+            return jax.vmap(jax.vmap(one, axes_n), axes_k)
 
         @jax.jit
         def S_all(s, x, mv, IN, p):
             one = lambda m, sn, xn, M: g_pt(m, sn, xn, M, p)
-            return grid_map(one, (None, 0, 0, None), (None, None, None, 0), (0, None, 0, 0))(
-                mv, s, x, IN
-            )
+            per_regime = over_nodes(one, (None, 0, 0, None), (None, None, None, 0))
+            return jax.vmap(per_regime, (0, None, 0, 0))(mv, s, x, IN)
 
-        @jax.jit
-        def spline(C, S, regimes):
-            base, W = poj.locate(S, regimes, grid, order)
-            return poj.evaluate(C[..., xcols], base, W, order)
-
-        @jax.jit
-        def spline_grad(C, S, regimes):
-            base, W, dW = poj.locate(S, regimes, grid, order, derivative=True)
+        @partial(jax.jit, static_argnames=("j",))
+        def spline(C, S, regimes, j=-1):
+            """Decision rule (columns xcols) at S (n_m, K, N, d); with j >= 0, its derivative
+            w.r.t. S_j."""
             Cc = C[..., xcols]
-            X = poj.evaluate(Cc, base, W, order)
-            d = S.shape[-1]
-            G = [poj.evaluate(Cc, base, W.at[..., j, :].set(dW[..., j, :]), order) for j in range(d)]
-            return X, jnp.stack(G, axis=-1)
 
-        axes_n = (None, 0, 0, None, None, 0, 0)
-        axes_k = (None, None, None, 0, 0, 0, 0)
-        axes_i = (0, None, 0, 0, 0, 0, 0)
+            def per_regime(S_i):
+                if j < 0:
+                    base, W = poj.locate(S_i, regimes, grid, order)
+                else:
+                    base, W, dW = poj.locate(S_i, regimes, grid, order, derivative=True)
+                    W = W.at[..., j, :].set(dW[..., j, :])
+                return poj.evaluate(Cc, base, W, order)
+
+            return _over_regimes(per_regime, (S,), (), batch)
+
+        # within a regime: arguments (m, x_i, IN_i, W_i, S_i, Xc_i, ...) and s
+        axes_n = (None, 0, None, None, 0, 0)
+        axes_k = (None, None, 0, 0, 0, 0)
 
         @jax.jit
         def F_from(s, x, mv, IN, Wt, S, Xc, p):
-            one = lambda m, sn, xn, M, w, Sk, Xk: w * f_pt(m, sn, xn, M, Sk, scatter(Xk), p)
-            return grid_map(one, axes_n, axes_k, axes_i)(mv, s, x, IN, Wt, S, Xc).sum(axis=1)
+            def per_regime(m, x_i, IN_i, W_i, S_i, Xc_i):
+                def one(m, xn, M, w, Sk, Xk, sn):
+                    return w * f_pt(m, sn, xn, M, Sk, scatter(Xk), p)
+
+                r = over_nodes(one, axes_n + (0,), axes_k + (None,))(m, x_i, IN_i, W_i, S_i, Xc_i, s)
+                return r.sum(axis=0)
+
+            return _over_regimes(per_regime, (mv, x, IN, Wt, S, Xc), (), batch)
 
         @jax.jit
-        def F_and_dF_from(s, x, mv, IN, Wt, S, Xc, Gc, p):
-            def one(m, sn, xn, M, w, Sk, Xk, Gk):
-                val, Y = jac_x.value_and_compressed(
-                    lambda u: f_lin(m, sn, u, M, Sk, Xk, Gk, p), xn
-                )
-                return w * val, w * Y
+        def F_and_dF_from(s, x, mv, IN, Wt, S, Xc, Gs, p):
+            def per_regime(m, x_i, IN_i, W_i, S_i, Xc_i, Gs_i):
+                def one(m, xn, M, w, Sk, Xk, Gk, sn):
+                    val, Y = jac_x.value_and_compressed(
+                        lambda u: f_lin(m, sn, u, M, Sk, Xk, Gk, p), xn
+                    )
+                    return w * val, w * Y
 
-            r, Y = grid_map(one, axes_n + (0,), axes_k + (0,), axes_i + (0,))(
-                mv, s, x, IN, Wt, S, Xc, Gc
-            )
-            return r.sum(axis=1), jac_x.expand(Y.sum(axis=1))
+                r, Y = over_nodes(one, axes_n + (0, 0), axes_k + (0, None))(
+                    m, x_i, IN_i, W_i, S_i, Xc_i, Gs_i, s
+                )
+                return r.sum(axis=0), jac_x.expand(Y.sum(axis=0))
+
+            return _over_regimes(per_regime, (mv, x, IN, Wt, S, Xc, Gs), (), batch)
 
         @jax.jit
         def dF_2_from(s, x, mv, IN, Wt, S, Xc, p):
-            def one(m, sn, xn, M, w, Sk, Xk):
-                _, Y = jac_X.value_and_compressed(
-                    lambda u: f_pt(m, sn, xn, M, Sk, scatter(u), p), Xk
-                )
-                return w * Y
+            def per_regime(m, x_i, IN_i, W_i, S_i, Xc_i):
+                def one(m, xn, M, w, Sk, Xk, sn):
+                    _, Y = jac_X.value_and_compressed(
+                        lambda u: f_pt(m, sn, xn, M, Sk, scatter(u), p), Xk
+                    )
+                    return w * Y
 
-            Y = grid_map(one, axes_n, axes_k, axes_i)(mv, s, x, IN, Wt, S, Xc)
-            F_x = jac_X.expand(Y)  # (n_m, K, N, n_x, nc)
-            out = jnp.zeros(F_x.shape[:-1] + (self.n_x,), dtype=F_x.dtype)
-            return out.at[..., xcols].set(F_x)
+                Y = over_nodes(one, axes_n + (0,), axes_k + (None,))(m, x_i, IN_i, W_i, S_i, Xc_i, s)
+                return jac_X.expand(Y)  # (K, N, n_x, nc)
 
-        self._S_all, self._spline, self._spline_grad = S_all, spline, spline_grad
+            return _over_regimes(per_regime, (mv, x, IN, Wt, S, Xc), (), batch)
+
+        self._S_all, self._spline = S_all, spline
         self._F_from, self._F_and_dF_from, self._dF_2_from = F_from, F_and_dF_from, dF_2_from
 
     def _args(self, x):
@@ -357,12 +386,21 @@ class GridKernels:
     def F_and_dF_1(self, x, C):
         """Residuals (n_m, N, n_x) and their Jacobian w.r.t. x (n_m, N, n_x, n_x)."""
         S = self._S_all(*self._args(x), self.parms)
-        Xc, Gc = self._spline_grad(C, S, self.regimes)
-        return self._F_and_dF_from(*self._args(x), self.weights, S, Xc, Gc, self.parms)
+        # value and gradient of the decision rule: one jit each (faster than a single one)
+        Xc = self._spline(C, S, self.regimes)
+        Gs = tuple(self._spline(C, S, self.regimes, j=j) for j in range(self.d))
+        return self._F_and_dF_from(*self._args(x), self.weights, S, Xc, Gs, self.parms)
+
+    def dF_2_compressed(self, x, C):
+        """Columns `xcols` (the others are zero) of the blocks F_x (n_m, K, N, n_x, len(xcols))
+        of the derivative w.r.t. the decision rule, and the next-period states S (n_m, K, N, d)."""
+        S = self._S_all(*self._args(x), self.parms)
+        Xc = self._spline(C, S, self.regimes)
+        return self._dF_2_from(*self._args(x), self.weights, S, Xc, self.parms), S
 
     def dF_2(self, x, C):
         """Blocks F_x (n_m, K, N, n_x, n_x) of the derivative w.r.t. the decision rule, and the
         next-period states S (n_m, K, N, d)."""
-        S = self._S_all(*self._args(x), self.parms)
-        Xc = self._spline(C, S, self.regimes)
-        return self._dF_2_from(*self._args(x), self.weights, S, Xc, self.parms), S
+        F_c, S = self.dF_2_compressed(x, C)
+        F_x = jnp.zeros(F_c.shape[:-1] + (self.n_x,), dtype=F_c.dtype)
+        return F_x.at[..., np.asarray(self.xcols, dtype=np.int32)].set(F_c), S

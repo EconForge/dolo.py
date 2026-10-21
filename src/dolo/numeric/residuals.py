@@ -506,6 +506,9 @@ class PolicyLinearOperator(LinearOperator):
     `dolo.numeric.policy_operator_jax`): the columns of F_x that are not zero everywhere,
     the location of the points S in the grid (cell and basis weights), and a scale factor.
     All regimes are handled as (n_regimes, ...) arrays, with one regime when there is one.
+
+    `cols` (JAX engines): F_x holds only these columns of the blocks, the others being zero
+    (as returned by `CompiledResidual.dF_2_compressed`).
     """
 
     def __init__(
@@ -517,6 +520,7 @@ class PolicyLinearOperator(LinearOperator):
         interp_method: str = "cubic",
         device: Optional[Any] = None,
         cr: Optional[CompiledResidual] = None,
+        cols: Optional[Tuple[int, ...]] = None,
         _compressed: Optional[dict] = None,
     ):
         self.dmodel = dmodel
@@ -541,12 +545,12 @@ class PolicyLinearOperator(LinearOperator):
             if _compressed is not None:
                 self._jx = _compressed
             else:
-                self._jx = self._compress(F_x, S)
+                self._jx = self._compress(F_x, S, cols)
         else:
             self._F_x = F_x
             self._jx = None
 
-    def _compress(self, F_x: Any, S: Any) -> dict:
+    def _compress(self, F_x: Any, S: Any, cols: Optional[Tuple[int, ...]] = None) -> dict:
         """Device representation of the operator from F_x and S (see the class docstring)."""
         import jax
         import jax.numpy as jnp
@@ -569,10 +573,12 @@ class PolicyLinearOperator(LinearOperator):
             (float(a), float(b), int(n))
             for a, b, n in zip(self.endo_grid.min, self.endo_grid.max, self.endo_grid.n)
         )
-        cols = tuple(int(j) for j in np.flatnonzero(np.asarray(poj.compress(F_x))))
+        if cols is None:
+            cols = tuple(int(j) for j in np.flatnonzero(np.asarray(poj.compress(F_x))))
+            F_x = F_x[..., np.asarray(cols, dtype=np.int32)]
         base, weights = poj.locate(S, regimes, grid, order)
         return dict(
-            Fc=F_x[..., np.asarray(cols, dtype=np.int32)],
+            Fc=F_x,
             cols=cols,
             base=base,
             weights=weights,
@@ -1099,7 +1105,7 @@ def dF_2(
             x_vals = jax.device_put(x_vals, target_dev)
             coeffs = jax.device_put(coeffs, target_dev)
 
-        F_x_all, S_all = cr.dF_2(x_vals, coeffs)
+        F_x_all, cols, S_all = cr.dF_2_compressed(x_vals, coeffs)
 
         if target_dev is not None:
             F_x_all.block_until_ready()
@@ -1113,6 +1119,7 @@ def dF_2(
             interp_method=interp_method,
             device=target_dev,
             cr=cr,
+            cols=cols,
         )
 
     elif eng == "vectorized":
