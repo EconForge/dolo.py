@@ -333,7 +333,13 @@ def time_iteration(
 
             fn = lambda x_val: dfn_jax(x_val)[0]
             dfn = dfn_jax
-            res_0, _ = dfn(controls_0)
+            # residual and Jacobian at controls_0, kept on the device: the Jacobian is
+            # reused by the first step of the inner Newton solver
+            x0_jnp = jnp.asarray(controls_0.reshape(sh_c), dtype=jnp.float64)
+            if target_dev is not None:
+                x0_jnp = jax.device_put(x0_jnp, target_dev)
+            r0_jnp, J0_jnp = cr.F_and_dF_1(x0_jnp, coeffs_jax)
+            res_0 = numpy.asarray(r0_jnp).reshape((-1, n_x))
             err_res = abs(res_0).max()
         else:
             fn = (
@@ -365,12 +371,12 @@ def time_iteration(
             if use_jax:
                 inner_maxit = inner_cfg.get("maxit", 20)
                 inner_tol = inner_cfg.get("tol", 1e-10)
-                x_cur = jnp.asarray(controls_0.reshape(sh_c), dtype=jnp.float64)
-                if target_dev is not None:
-                    x_cur = jax.device_put(x_cur, target_dev)
+                x_cur = x0_jnp
+                r_cur, J_cur = r0_jnp, J0_jnp
                 nit = 0
-                for _ in range(inner_maxit):
-                    r_cur, J_cur = cr.F_and_dF_1(x_cur, coeffs_jax)
+                for i_inner in range(inner_maxit):
+                    if i_inner > 0:
+                        r_cur, J_cur = cr.F_and_dF_1(x_cur, coeffs_jax)
                     err_cur = float(jnp.abs(r_cur).max())
                     if err_cur < inner_tol:
                         break

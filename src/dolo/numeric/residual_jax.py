@@ -175,13 +175,24 @@ class CompiledResidual:
         # Point derivative: forward-mode (jacfwd) or reverse-mode (jacrev)
         diff_fn = jax.jacfwd if self.diff_mode == "fwd" else jax.jacrev
 
+        def value_and_jac(f, x):
+            """Value and Jacobian of f at x in one pass (the value is the auxiliary output),
+            instead of evaluating f once more for the value."""
+
+            def f_aux(u):
+                r = f(u)
+                return r, r
+
+            jac, val = diff_fn(f_aux, has_aux=True)(x)
+            return val, jac
+
         if self.n_regimes == 1:
 
             def dF_pt(s, x, coeffs):
                 return diff_fn(lambda u: F_pt(s, u, coeffs))(x)
 
             def F_and_dF_pt(s, x, coeffs):
-                return F_pt(s, x, coeffs), dF_pt(s, x, coeffs)
+                return value_and_jac(lambda u: F_pt(s, u, coeffs), x)
 
             self.F_pt_jit = jax.jit(F_pt)
             self.dF_pt_jit = jax.jit(dF_pt)
@@ -211,9 +222,8 @@ class CompiledResidual:
                     lambda u: F_regime(s, u, coeffs)
                 )(x)
                 F_and_dF_regime = (
-                    lambda s, x, coeffs, F_regime=F_regime, dF_regime=dF_regime: (
-                        F_regime(s, x, coeffs),
-                        dF_regime(s, x, coeffs),
+                    lambda s, x, coeffs, F_regime=F_regime: value_and_jac(
+                        lambda u: F_regime(s, u, coeffs), x
                     )
                 )
 
@@ -248,9 +258,8 @@ class CompiledResidual:
                     )(x)
 
                 def F_and_dF_pt_all(s, x, coeffs, m_val, inodes, weights):
-                    return (
-                        F_pt_all(s, x, coeffs, m_val, inodes, weights),
-                        dF_pt_all(s, x, coeffs, m_val, inodes, weights),
+                    return value_and_jac(
+                        lambda u: F_pt_all(s, u, coeffs, m_val, inodes, weights), x
                     )
 
                 F_regime_v = jax.vmap(F_pt_all, in_axes=(0, 0, None, None, None, None))
