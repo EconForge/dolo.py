@@ -331,7 +331,14 @@ def time_iteration(
                 dr_np = numpy.asarray(dr_jnp).reshape((-1, n_x, n_x))
                 return [r_np, dr_np]
 
-            fn = lambda x_val: dfn_jax(x_val)[0]
+            def fn_jax(x_val):
+                # residual only: no Jacobian (used for err_res and the safeguards)
+                x_jnp = jnp.asarray(x_val.reshape(sh_c), dtype=jnp.float64)
+                if target_dev is not None:
+                    x_jnp = jax.device_put(x_jnp, target_dev)
+                return numpy.asarray(cr.F(x_jnp, coeffs_jax)).reshape((-1, n_x))
+
+            fn = fn_jax
             dfn = dfn_jax
             # residual and Jacobian at controls_0, kept on the device: the Jacobian is
             # reused by the first step of the inner Newton solver
@@ -397,6 +404,8 @@ def time_iteration(
                 if target_dev is not None:
                     x_cur.block_until_ready()
                 controls = numpy.asarray(x_cur).reshape((-1, n_x))
+                # free the device memory of the Jacobians before the next kernels
+                r0_jnp = J0_jnp = r_cur = J_cur = None
             else:
                 [controls, nit] = serial_newton(
                     dfn, controls_0, verbose=verbit, maxit=inner_cfg["maxit"]
@@ -438,6 +447,8 @@ def time_iteration(
                 L_prec = (-1.0) * L_op.preconditioned(J_c)
                 tot = L_prec.solve(d, linsolve=acc_method, tol=acc_tol, maxit=acc_maxit)
                 cand_controls_0 = controls_0 + numpy.asarray(tot).reshape((-1, n_x))
+                # free the device memory of the operators before the next kernels
+                del L_op, L_prec
             else:
                 # Evaluate derivatives at candidate controls
                 mdr.set_values(controls.reshape(sh_c))
