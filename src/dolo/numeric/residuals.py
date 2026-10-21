@@ -828,15 +828,21 @@ class PolicyLinearOperator(LinearOperator):
         self,
         b: Any,
         linsolve: str = "neumann",
-        tol: float = 1e-8,
-        maxit: int = 50,
+        tol: float = 1e-10,
+        maxit: Optional[int] = None,
         verbose: bool = False,
     ) -> Any:
-        """Solve (I - L) x = b using Neumann series or GMRES.
+        """Solve (I - L) x = b using Neumann series or GMRES, as Dolo.jl's `solve_I_minus_L!`.
+
+        - neumann: x = sum_k L^k b, at most `maxit` terms (default 1000), until max|L^k b| < tol;
+        - gmres: from x0 = b, one cycle of at most `maxit` Krylov vectors (default 50), until the
+          2-norm of the residual b - (I - L) x is below tol (absolute).
 
         With a JAX engine, the solve runs on the device (no host round trip per iteration);
         the result has the form of b (GArray, numpy array or device array).
         """
+        if maxit is None:
+            maxit = 1000 if linsolve == "neumann" else 50
         if self._jx is not None:
             return self._solve_device(b, linsolve, tol, maxit)
         if linsolve == "neumann":
@@ -864,14 +870,14 @@ class PolicyLinearOperator(LinearOperator):
                     I_minus_L,
                     b_flat,
                     x0=b_flat,
-                    rtol=tol,
-                    atol=0.0,
+                    rtol=0.0,
+                    atol=tol,
                     restart=maxit,
                     maxiter=1,
                 )
             except TypeError:
                 sol_flat, info = scipy_gmres(
-                    I_minus_L, b_flat, x0=b_flat, tol=tol, restart=maxit, maxiter=1
+                    I_minus_L, b_flat, x0=b_flat, tol=0.0, atol=tol, restart=maxit, maxiter=1
                 )
             sol_reshaped = sol_flat.reshape(b_np.shape)
             if isinstance(b, GArray):

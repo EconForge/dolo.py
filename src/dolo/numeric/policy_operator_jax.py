@@ -212,7 +212,7 @@ def apply(v, Fc, base, weights, scale, grid_n, cols, order):
 )
 def gmres_I_minus_L(b, Fc, base, weights, scale, tol, grid_n, cols, order, restart, maxiter):
     """Solve (I - L) x = b with GMRES on the device, starting from x0 = b. Stops when
-    |b - (I - L) x| <= tol |b| (as scipy's gmres with rtol=tol, atol=0)."""
+    |b - (I - L) x|_2 <= tol (absolute, as Dolo.jl's gmres!)."""
 
     def matvec(x):
         return x - apply(x, Fc, base, weights, scale, grid_n, cols, order)
@@ -221,8 +221,8 @@ def gmres_I_minus_L(b, Fc, base, weights, scale, tol, grid_n, cols, order, resta
         matvec,
         b,
         x0=b,
-        tol=tol,
-        atol=0.0,
+        tol=0.0,
+        atol=tol,
         restart=restart,
         maxiter=maxiter,
         solve_method="incremental",

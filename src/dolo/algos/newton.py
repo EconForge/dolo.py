@@ -267,6 +267,156 @@ def golden_section_search(f_eval, alpha_min=0.0, alpha_max=1.0, maxiter=8, tol=1
     return best_alpha, best_f
 
 
+
+def _newton_device(
+    cr,
+    dmodel,
+    x_init,
+    *,
+    eng,
+    device,
+    interpolation,
+    tol_eps,
+    tol_eta,
+    maxit,
+    linsolve_cfg,
+    linesearch_cfg,
+    itprint,
+    on_iteration=None,
+):
+    """Newton-Krylov on x -> F(x, phi(x)) (phi interpolates x), with the controls, the
+    coefficients and the derivatives kept on the JAX device: only scalars (errors) go to the
+    host. The steps are those of Dolo.jl's `newton`:
+
+    - stop if the residual of x is below tol_eps (or not finite);
+    - dx solves (F_1 + F_2) dx = F, as (I - L) dx = F_1^{-1} F with L = -F_1^{-1} F_2;
+    - x - dx (no globalization), or backtracking (x - 2^-k dx, k = 0..max_backsteps, first
+      decrease of the residual) or golden section search on the step; if no step decreases the
+      residual, back to x and stop;
+    - (optional, not in Dolo.jl) stop if max|dx| < tol_eta.
+
+    Returns the final controls (device array), the number of iterations, the residual of the
+    final controls, the last step and the last preconditioned operator."""
+    import jax
+    import jax.numpy as jnp
+    from dolo.numeric.residual_kernels_jax import axpy, block_solve, max_abs as _max_abs
+
+    fk = cr._fast
+    n_m = dmodel.n_regimes
+
+    def prefilter(u):
+        C = cr.prefilter(u)
+        return C[None] if n_m == 1 else C
+
+    def max_abs(a):
+        return float(_max_abs(a))
+
+    def residual(u):
+        """max|F(u, phi)|, phi interpolating u."""
+        return max_abs(fk.F(u, prefilter(u)))
+
+    x0 = jax.device_put(jnp.asarray(x_init, dtype=jnp.float64), device)
+    eps = residual(x0)
+    eta = numpy.nan
+    L_last = None
+    iterations = 0
+    ls_method = linesearch_cfg["method"]
+    for it in range(1, maxit + 1):
+        if eps < tol_eps or not numpy.isfinite(eps):  # converged, or diverged
+            break
+        iterations = it
+        t1 = time.time()
+        if on_iteration is not None:
+            on_iteration(x0)
+        x1 = x0
+
+        # 1. Jacobians at x1, with the decision rule interpolating x1
+        coeffs = prefilter(x1)
+        R, J = fk.F_and_dF_1(x1, coeffs)
+        F_c, S = fk.dF_2_compressed(x1, coeffs)
+        if n_m == 1:
+            F_c, S = F_c[0], S[0]
+        L_last = None  # free the operator of the previous iteration
+        L_op = PolicyLinearOperator(
+            dmodel,
+            F_c,
+            S,
+            engine=eng,
+            interp_method=interpolation,
+            device=device,
+            cr=cr,
+            cols=fk.xcols,
+        )
+        del F_c
+        t2 = time.time()
+
+        # 2. (I - L) dx = F_1^{-1} F, L = -F_1^{-1} F_2
+        L_prec = (-1.0) * L_op.preconditioned(J)
+        del L_op
+        rhs = block_solve(J, R)
+        del J, R
+        dx = L_prec.solve(
+            rhs, linsolve=linsolve_cfg["method"], tol=linsolve_cfg["tol"], maxit=linsolve_cfg["maxit"]
+        )
+        L_last = L_prec
+        del L_prec, rhs
+        t3 = time.time()
+
+        # 3. Step
+        k = 0
+        stop = False
+        if ls_method is None:
+            x0 = axpy(x1, -1.0, dx)
+            eps = residual(x0)
+        else:
+            eps_prev = eps
+            if ls_method == "backtracking":
+                for k in range(linesearch_cfg["max_backsteps"] + 1):
+                    x0 = axpy(x1, -(0.5**k), dx)
+                    eps_k = residual(x0)
+                    if eps_k < eps:
+                        eps = eps_k
+                        break
+            elif ls_method == "golden_section":
+                eps_1 = residual(axpy(x1, -1.0, dx))
+                if eps_1 < eps:
+                    x0, eps = axpy(x1, -1.0, dx), eps_1
+                else:
+                    best_alpha, _ = golden_section_search(
+                        lambda a: residual(axpy(x1, -a, dx)),
+                        alpha_min=0.0,
+                        alpha_max=1.0,
+                        maxiter=linesearch_cfg["maxiter"],
+                    )
+                    x0 = axpy(x1, -best_alpha, dx)
+                    eps = residual(x0)
+                k = linesearch_cfg["maxiter"]
+            else:
+                raise ValueError(f"Unknown line search method: {ls_method}")
+            if not (eps < eps_prev):
+                # no step decreases the residual: back to the previous point, and stop
+                x0 = x1
+                eps = eps_prev
+                stop = True
+        eta = max_abs(dx)
+        t4 = time.time()
+        itprint.print_iteration(
+            N=it,
+            f_x=eps,
+            d_x=eta,
+            Time_residuals=t2 - t1,
+            Time_inversion=t3 - t2,
+            Time_search=t4 - t3,
+            Lambda_0=0.0,
+            N_invert=linsolve_cfg["maxit"],
+            N_search=k,
+        )
+        if stop or (tol_eta is not None and eta < tol_eta):
+            break
+
+    return x0, iterations, eps, eta, L_last
+
+
 def newton(
     model: Model,
     *,
@@ -275,10 +425,10 @@ def newton(
     device: Optional[Any] = None,
     dr0: DecisionRule = None,
     tol_eps: float = 1e-8,
-    tol_eta: float = 1e-6,
-    maxit: int = 30,
-    linsolve="gmres",
-    linesearch="backtracking",
+    tol_eta: Optional[float] = None,
+    maxit: int = 20,
+    linsolve="neumann",
+    linesearch=None,
     interpolation: str = "cubic",
     verbose: bool = True,
     details: bool = True,
@@ -298,16 +448,23 @@ def newton(
         initial guess for the decision rule
     tol_eps : float (1e-8)
         tolerance on Euler equation residuals ||F(x)||
-    tol_eta : float (1e-6)
-        tolerance on policy update step ||x_{k+1} - x_k||
-    maxit : int (30)
+    tol_eta : float, optional (None)
+        if given, also stop when the Newton step ||x_{k+1} - x_k|| is below it (Dolo.jl stops on
+        the residual only)
+    maxit : int (20)
         maximum number of outer Newton iterations
-    linsolve : str or dict ("gmres")
+    linsolve : str or dict ("neumann")
         linear solver for the preconditioned system (I - L) dx = r.
-        Options: "gmres", "neumann", or a dict(method=..., maxit=..., tol=...)
-    linesearch : str or dict ("backtracking")
-        step size stabilization. Options: "backtracking", "golden_section", False, None,
-        or a dict(method=..., max_backsteps=...)
+        Options: "gmres", "neumann", or a dict(method=..., maxit=..., tol=...). Defaults (as
+        Dolo.jl): tol=1e-10 (absolute: on max|L^k v| for Neumann, on the 2-norm of the residual
+        for GMRES), maxit=1000 terms of the Neumann series or 50 for the dimension of the Krylov
+        space of GMRES.
+    linesearch : str or dict (None)
+        globalization of the Newton step (Dolo.jl's `globalization`). Options: None or False
+        (full steps), "backtracking" (halve the step until the residual decreases, at most
+        max_backsteps=10 times), "golden_section" (maxiter=5 iterations), or a
+        dict(method=..., max_backsteps=..., maxiter=...). If no step decreases the residual,
+        the iterations stop at the previous point.
     interpolation : str ("cubic")
         interpolation method ("cubic" or "linear")
     verbose : bool (True)
@@ -339,49 +496,31 @@ def newton(
     else:
         complementarities = not ignore_constraints
 
-    # Linear solver config
+    # Linear solver config (defaults of Dolo.jl: linsolve=:neumann, linsolve_tol=1e-10, K=1000
+    # terms of the Neumann series, krylov_dim=50 for GMRES)
+    linsolve_cfg = {"method": "neumann", "maxit": None, "tol": 1e-10, "precondition": True}
     if isinstance(linsolve, str):
-        linsolve_cfg = {
-            "method": "neumann" if linsolve == "iti" else linsolve,
-            "maxit": 50,
-            "tol": 1e-8,
-            "precondition": True,
-        }
+        linsolve_cfg["method"] = linsolve
     elif isinstance(linsolve, dict):
-        linsolve_cfg = {
-            "method": "gmres",
-            "maxit": 50,
-            "tol": 1e-8,
-            "precondition": True,
-            **linsolve,
-        }
-        if linsolve_cfg["method"] == "iti":
-            linsolve_cfg["method"] = "neumann"
-    else:
-        linsolve_cfg = {
-            "method": "gmres",
-            "maxit": 50,
-            "tol": 1e-8,
-            "precondition": True,
-        }
-
+        linsolve_cfg.update(linsolve)
+    if linsolve_cfg["method"] == "iti":
+        linsolve_cfg["method"] = "neumann"
     if invmethod is not None:
         linsolve_cfg["method"] = "neumann" if invmethod == "iti" else invmethod
     if smaxit is not None:
         linsolve_cfg["maxit"] = smaxit
     if linear_maxit is not None:
         linsolve_cfg["maxit"] = linear_maxit
+    if linsolve_cfg["maxit"] is None:
+        linsolve_cfg["maxit"] = 1000 if linsolve_cfg["method"] == "neumann" else 50
 
-    # Line search config
-    if linesearch is False or linesearch is None or linesearch == "none":
-        linesearch_cfg = {"method": None, "max_backsteps": 0}
-    elif isinstance(linesearch, str):
-        linesearch_cfg = {"method": linesearch, "max_backsteps": 10}
+    # Line search config (defaults of Dolo.jl: globalization=:none, max_bsteps=10,
+    # linesearch_maxiter=5)
+    linesearch_cfg = {"method": None, "max_backsteps": 10, "maxiter": 5}
+    if isinstance(linesearch, str) and linesearch != "none":
+        linesearch_cfg["method"] = linesearch
     elif isinstance(linesearch, dict):
-        linesearch_cfg = {"method": "backtracking", "max_backsteps": 10, **linesearch}
-    else:
-        linesearch_cfg = {"method": "backtracking", "max_backsteps": 10}
-
+        linesearch_cfg.update({"method": "backtracking", **linesearch})
     if max_backsteps is not None:
         linesearch_cfg["max_backsteps"] = max_backsteps
     elif maxbsteps is not None:
@@ -511,125 +650,30 @@ def newton(
         cr = _get_or_compile_jax_residual(dmodel, interp_method=interpolation)
         cr_fast = cr._fast
     if cr_fast is not None:
-        x_dev = jax.device_put(jnp.asarray(x, dtype=jnp.float64), target_dev)
 
-    for it in range(maxit):
-        if cr_fast is not None:
-            t1 = time.time()
+        def on_iteration(u):
             if trace:
-                ddr.set_values(numpy.asarray(x_dev))
+                ddr.set_values(numpy.asarray(u))
                 trace_details.append({"dr": copy.deepcopy(ddr)})
 
-            def prefilter(u):
-                C = cr.prefilter(u)
-                return C[None] if n_m == 1 else C
+        x_dev, n_iterations, err_0, err_2, L_last = _newton_device(
+            cr,
+            dmodel,
+            x,
+            eng=eng,
+            device=target_dev,
+            interpolation=interpolation,
+            tol_eps=tol_eps,
+            tol_eta=tol_eta,
+            maxit=maxit,
+            linsolve_cfg=linsolve_cfg,
+            linesearch_cfg=linesearch_cfg,
+            itprint=itprint,
+            on_iteration=on_iteration,
+        )
 
-            def max_abs(a):
-                return float(_max_abs(a))
-
-            # 1. Residuals and Jacobian, at x with the decision rule interpolating x
-            coeffs = prefilter(x_dev)
-            R, J = cr_fast.F_and_dF_1(x_dev, coeffs)
-            err_0 = max_abs(R)
-            if err_0 < tol_eps:
-                t2 = time.time()
-                itprint.print_iteration(
-                    N=it,
-                    f_x=err_0,
-                    d_x=0.0,
-                    Time_residuals=t2 - t1,
-                    Time_inversion=0.0,
-                    Time_search=0.0,
-                    Lambda_0=0.0,
-                    N_invert=0,
-                    N_search=0,
-                )
-                break
-            t2 = time.time()
-
-            # 2. Block-diagonal solve: ddx = dres^{-1} * res
-            ddx = block_solve(J, R)
-
-            # 3. Policy linear operator dF_2 and preconditioned inversion
-            solver_method = linsolve_cfg.get("method", "gmres")
-            solver_maxit = linsolve_cfg.get("maxit", 50)
-            solver_tol = linsolve_cfg.get("tol", 1e-8)
-            ttol = max(err_0 / 100, solver_tol)
-            F_c, S = cr_fast.dF_2_compressed(x_dev, coeffs)
-            if n_m == 1:
-                F_c, S = F_c[0], S[0]
-            L_last = None  # free the operator of the previous iteration
-            L_op = PolicyLinearOperator(
-                dmodel,
-                F_c,
-                S,
-                engine=eng,
-                interp_method=interpolation,
-                device=target_dev,
-                cr=cr,
-                cols=cr_fast.xcols,
-            )
-            del F_c, R
-            L_prec = (-1.0) * L_op.preconditioned(J)
-            del L_op, J
-            tot = L_prec.solve(ddx, linsolve=solver_method, tol=ttol, maxit=solver_maxit)
-            L_last = L_prec
-            del L_prec, ddx
-            nn = solver_maxit
-            lam0 = 0.01
-            t3 = time.time()
-
-            # 4. Line search on the residual of the candidate with its own decision rule
-            ls_method = linesearch_cfg.get("method", "backtracking")
-            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
-
-            def eval_res_norm_jax(cand_x):
-                return max_abs(cr_fast.F(cand_x, prefilter(cand_x)))
-
-            if ls_method == "golden_section":
-                cand_1 = eval_res_norm_jax(axpy(x_dev, -1.0, tot))
-                if cand_1 < err_0:
-                    best_alpha = 1.0
-                    i_bckstps = 0
-                else:
-                    best_alpha, _ = golden_section_search(
-                        lambda a: eval_res_norm_jax(axpy(x_dev, -a, tot)),
-                        alpha_min=0.0,
-                        alpha_max=1.0,
-                        maxiter=ls_maxsteps,
-                    )
-                    i_bckstps = ls_maxsteps
-                new_x = axpy(x_dev, -best_alpha, tot)
-            elif ls_method == "backtracking":
-                steps = 0.5 ** numpy.arange(max(ls_maxsteps, 1))
-                new_x = axpy(x_dev, -1.0, tot)
-                i_bckstps = 0
-                for i_bckstps, lam in enumerate(steps):
-                    new_x = axpy(x_dev, -lam, tot)
-                    if eval_res_norm_jax(new_x) < err_0:
-                        break
-            else:
-                new_x = axpy(x_dev, -1.0, tot)
-                i_bckstps = 0
-
-            err_2 = max_abs(tot)
-            t4 = time.time()
-            itprint.print_iteration(
-                N=it,
-                f_x=err_0,
-                d_x=err_2,
-                Time_residuals=t2 - t1,
-                Time_inversion=t3 - t2,
-                Time_search=t4 - t3,
-                Lambda_0=lam0,
-                N_invert=nn,
-                N_search=i_bckstps,
-            )
-            x_dev = new_x
-            if err_0 < tol_eps or err_2 < tol_eta:
-                break
-
-        elif use_jax and not complementarities:
+    for it in range(maxit if cr_fast is None else 0):
+        if use_jax and not complementarities:
             import jax
             import jax.numpy as jnp
 
@@ -657,7 +701,7 @@ def newton(
                     dres_arr = dres_arr[0]
 
             err_0 = abs(res_arr).max()
-            if err_0 < tol_eps:
+            if err_0 < tol_eps or not numpy.isfinite(err_0):  # converged, or diverged
                 t2 = time.time()
                 t3 = t2
                 t4 = t2
@@ -683,9 +727,9 @@ def newton(
 
             # 3. Policy linear operator dF_2 and preconditioned inversion
             solver_method = linsolve_cfg.get("method", "gmres")
-            solver_maxit = linsolve_cfg.get("maxit", 50)
-            solver_tol = linsolve_cfg.get("tol", 1e-8)
-            ttol = max(err_0 / 100, solver_tol)
+            solver_maxit = linsolve_cfg["maxit"]
+            solver_tol = linsolve_cfg["tol"]
+            ttol = solver_tol
 
             L_op = dF_2(
                 dmodel,
@@ -709,8 +753,8 @@ def newton(
             t3 = time.time()
 
             # 4. Line search
-            ls_method = linesearch_cfg.get("method", "backtracking")
-            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
+            ls_method = linesearch_cfg["method"]
+            ls_maxsteps = linesearch_cfg["max_backsteps"]
 
             def eval_res_norm_jax(cand_x):
                 # residual of the candidate with its own decision rule
@@ -736,7 +780,7 @@ def newton(
                         lambda a: eval_res_norm_jax(x - tot * a),
                         alpha_min=0.0,
                         alpha_max=1.0,
-                        maxiter=ls_maxsteps,
+                        maxiter=linesearch_cfg["maxiter"],
                     )
                     i_bckstps = ls_maxsteps
                 new_x = x - tot * best_alpha
@@ -770,7 +814,11 @@ def newton(
             )
 
             x = new_x
-            if err_0 < tol_eps or err_2 < tol_eta:
+            if (
+                err_0 < tol_eps
+                or not numpy.isfinite(err_0)
+                or (tol_eta is not None and err_2 < tol_eta)
+            ):
                 break
 
         else:
@@ -840,22 +888,26 @@ def newton(
 
             # Inversion of (I - L) dx = F_1^{-1} res
             solver_method = linsolve_cfg.get("method", "gmres")
-            solver_maxit = linsolve_cfg.get("maxit", 50)
-            solver_tol = linsolve_cfg.get("tol", 1e-8)
+            solver_maxit = linsolve_cfg["maxit"]
+            solver_tol = linsolve_cfg["tol"]
 
             if solver_method == "gmres":
                 ddx = solve_gu(dres.copy(), res.copy())
                 L = Operator(jres, fut_S, ddr_filt)
                 n0 = L.counter
                 L.addid = True
-                ttol = max(err_0 / 100, solver_tol)
+                ttol = solver_tol
+                # as Dolo.jl: from x0 = ddx, one cycle of at most solver_maxit Krylov vectors,
+                # absolute tolerance on the 2-norm of the residual
                 try:
                     sol, info = scipy.sparse.linalg.gmres(
-                        L, ddx.ravel(), rtol=ttol, atol=0.0, maxiter=solver_maxit
+                        L, ddx.ravel(), x0=ddx.ravel(), rtol=0.0, atol=ttol,
+                        restart=solver_maxit, maxiter=1,
                     )
                 except TypeError:
                     sol, info = scipy.sparse.linalg.gmres(
-                        L, ddx.ravel(), tol=ttol, maxiter=solver_maxit
+                        L, ddx.ravel(), x0=ddx.ravel(), tol=0.0, atol=ttol,
+                        restart=solver_maxit, maxiter=1,
                     )
                 lam0 = 0.01
                 nn = L.counter - n0
@@ -876,8 +928,8 @@ def newton(
             t3 = time.time()
 
             # Step search / Line search
-            ls_method = linesearch_cfg.get("method", "backtracking")
-            ls_maxsteps = linesearch_cfg.get("max_backsteps", 10)
+            ls_method = linesearch_cfg["method"]
+            ls_maxsteps = linesearch_cfg["max_backsteps"]
 
             def eval_residual_norm(cand_x):
                 cand_res = euler_residuals(
@@ -899,7 +951,7 @@ def newton(
                         lambda a: eval_residual_norm(x - tot * a),
                         alpha_min=0.0,
                         alpha_max=1.0,
-                        maxiter=ls_maxsteps,
+                        maxiter=linesearch_cfg["maxiter"],
                     )
                     i_bckstps = ls_maxsteps
                 new_x = x - tot * best_alpha
@@ -932,7 +984,7 @@ def newton(
                 N_search=i_bckstps,
             )
 
-            if err_0 < tol_eps:
+            if err_0 < tol_eps or not numpy.isfinite(err_0):  # converged, or diverged
                 break
 
             x = new_x
@@ -973,9 +1025,13 @@ def newton(
             else:
                 lam = numpy.nan
 
+        if cr_fast is not None:
+            n_it = n_iterations
+        else:
+            n_it = it + 1
         return NewtonResult(
             ddr,
-            it + 1,
+            n_it,
             err_0,
             err_2,
             err_0 < tol_eps,
@@ -1043,4 +1099,7 @@ def euler_residuals(
         return res
 
 
-improved_time_iteration = newton
+def improved_time_iteration(model, *, linsolve="gmres", linesearch="backtracking", **kwargs):
+    """Legacy name of `newton`, with its previous defaults (GMRES and backtracking): `newton`
+    itself has the defaults of Dolo.jl's `newton` (Neumann series, full Newton steps)."""
+    return newton(model, linsolve=linsolve, linesearch=linesearch, **kwargs)

@@ -51,20 +51,52 @@ def test_prefilter_device_and_host(dmodel):
         cr.prefilter(x_dev).block_until_ready()
 
 
-@pytest.mark.parametrize("accelerate", [False, dict(linsolve="gmres", wait=3)], ids=["plain", "accelerated"])
+# rbc_mc has complementarity conditions, which the device loops do not handle (they go through
+# the previous loops): without them, the JAX engine runs the device loops
+
+
+@pytest.mark.parametrize(
+    "accelerate",
+    [False, dict(linsolve="gmres", wait=3), dict(linsolve="neumann", wait=3)],
+    ids=["plain", "accelerated_gmres", "accelerated_neumann"],
+)
 def test_time_iteration_jax_matches_vectorized(dmodel, accelerate):
-    sol_v = dolo.time_iteration(dmodel, engine="vectorized", accelerate=accelerate, verbose=False)
-    sol_j = dolo.time_iteration(dmodel, engine="jax", accelerate=accelerate, verbose=False)
-    assert sol_j.converged
+    kw = dict(accelerate=accelerate, ignore_constraints=True, verbose=False)
+    sol_v = dolo.time_iteration(dmodel, engine="vectorized", **kw)
+    sol_j = dolo.time_iteration(dmodel, engine="jax", **kw)
+    assert sol_j.converged and sol_v.converged
     s = dmodel.endo_grid.nodes
     for i in range(dmodel.n_regimes):
         np.testing.assert_allclose(sol_j.dr(i, s), sol_v.dr(i, s), rtol=1e-5, atol=1e-6)
 
 
-def test_newton_jax_matches_vectorized(dmodel):
-    sol_v = dolo.newton(dmodel, engine="vectorized", verbose=False)
-    sol_j = dolo.newton(dmodel, engine="jax", verbose=False)
-    assert sol_j.converged
+@pytest.mark.parametrize(
+    "options",
+    [dict(), dict(linsolve="gmres", linesearch="backtracking"), dict(linesearch="golden_section")],
+    ids=["defaults", "gmres_backtracking", "golden_section"],
+)
+def test_newton_jax_matches_vectorized(dmodel, options):
+    kw = dict(ignore_constraints=True, verbose=False, **options)
+    sol_v = dolo.newton(dmodel, engine="vectorized", **kw)
+    sol_j = dolo.newton(dmodel, engine="jax", **kw)
+    assert sol_j.converged and sol_v.converged
     s = dmodel.endo_grid.nodes
     for i in range(dmodel.n_regimes):
         np.testing.assert_allclose(sol_j.dr(i, s), sol_v.dr(i, s), rtol=1e-5, atol=1e-6)
+
+
+def test_device_loops_are_used(dmodel, monkeypatch):
+    """Without complementarities, the JAX engine runs the device loops."""
+    import importlib
+
+    ti = importlib.import_module("dolo.algos.time_iteration")
+    nm = importlib.import_module("dolo.algos.newton")
+    calls = []
+    for mod, name in ((ti, "_time_iteration_device"), (nm, "_newton_device")):
+        orig = getattr(mod, name)
+        monkeypatch.setattr(
+            mod, name, lambda *a, _o=orig, _n=name, **k: (calls.append(_n), _o(*a, **k))[1]
+        )
+    dolo.time_iteration(dmodel, engine="jax", ignore_constraints=True, maxit=3, verbose=False)
+    dolo.newton(dmodel, engine="jax", ignore_constraints=True, maxit=2, verbose=False)
+    assert calls == ["_time_iteration_device", "_newton_device"]

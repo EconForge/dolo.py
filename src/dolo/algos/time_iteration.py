@@ -84,10 +84,17 @@ def _time_iteration_device(
 ):
     """Time iteration with the controls, the coefficients of the decision rule and all the
     derivatives kept on the JAX device: only scalars (errors) go to the host during the
-    iterations. Same steps as the loop of `time_iteration`, as in Dolo.jl: per iteration, the
-    decision rule phi_0 interpolates x_0; x_1 solves F(x_1, phi_0) = 0 by Newton steps with
-    backtracking; with acceleration, x_0 + (I - L)^{-1}(x_1 - x_0) with L = -dF_1^{-1} dF_2 at
-    (x_1, phi_0).
+    iterations. The steps are those of Dolo.jl's `_time_iteration`:
+
+    - stop if the residual of x_0 (with the decision rule phi_0 interpolating x_0) is below
+      tol_eps (or not finite);
+    - x_1 solves F(x_1, phi_0) = 0: at most inner maxit Newton steps, each stopping when
+      max|F| < inner tol, with backtracking (steps 2^-k, k = 0..max_backsteps, the last one is
+      taken if none decreases the residual);
+    - with acceleration (after `wait` iterations): x_0 + (I - L)^{-1}(x_1 - x_0), with
+      L = -dF_1^{-1} dF_2 at (x_1, phi_0); with `safeguarded`, damped until the residual
+      decreases enough, else x_1;
+    - stop if max|x_1 - x_0| < tol_eta.
 
     Returns the final controls (device array (n_m, N, n_x)), the number of iterations, the last
     step and the residual of the final controls (with their own decision rule)."""
@@ -106,22 +113,28 @@ def _time_iteration_device(
     def max_abs(a):
         return float(_max_abs(a))
 
+    def residual(x):
+        """max|F(x, phi)|, phi interpolating x."""
+        return max_abs(fk.F(x, prefilter(x)))
+
     x0 = jnp.asarray(x_init, dtype=jnp.float64)
     if device is not None:
         x0 = jax.device_put(x0, device)
 
-    inner_maxit = inner_cfg.get("maxit", 20)
-    inner_tol = inner_cfg.get("tol", 1e-10)
-    err_step = numpy.inf
-    err_res = numpy.inf
+    inner_maxit = inner_cfg["maxit"]
+    inner_tol = inner_cfg["tol"]
+    max_bsteps = inner_cfg["max_backsteps"]
+    err_step = numpy.nan
     err_0 = numpy.nan
-    it = 0
-    while (err_step > tol_eta or err_res > tol_eps) and it < maxit:
-        it += 1
+    iterations = 0
+    for it in range(1, maxit + 1):
         t_start = time.time()
         coeffs = prefilter(x0)
         r_cur, J_cur = fk.F_and_dF_1(x0, coeffs)
         err_res = max_abs(r_cur)
+        if err_res < tol_eps or not numpy.isfinite(err_res):  # converged, or diverged
+            break
+        iterations = it
         if on_iteration is not None:
             on_iteration(x0)
 
@@ -135,16 +148,12 @@ def _time_iteration_device(
             if err_cur < inner_tol:
                 break
             dx = block_solve(J_cur, r_cur)
-            best_x = None
-            for bck in range(25):
+            for bck in range(max_bsteps + 1):
                 cand_x = axpy(x_cur, -(0.5**bck), dx)
                 cand_err = max_abs(fk.F(cand_x, coeffs))
-                if not numpy.isnan(cand_err) and cand_err < err_cur:
-                    best_x = cand_x
+                if cand_err < err_cur:  # False if NaN
                     break
-            if best_x is None:
-                break
-            x_cur = best_x
+            x_cur = cand_x
             nit += 1
         x1 = x_cur
         r_cur = J_cur = None
@@ -174,36 +183,34 @@ def _time_iteration_device(
             del L_op, J_1
             tot = L_prec.solve(
                 axpy(x1, -1.0, x0),
-                linsolve=acc_cfg.get("linsolve", "neumann"),
-                tol=acc_cfg.get("tol", 1e-8),
-                maxit=acc_cfg.get("maxit", 50),
+                linsolve=acc_cfg["linsolve"],
+                tol=acc_cfg["tol"],
+                maxit=acc_cfg["maxit"],
             )
             del L_prec
-            if acc_cfg.get("safeguarded", False):
+            if acc_cfg["safeguarded"]:
+                # Armijo-like condition on the residual
                 c_1, alpha = 1e-4, 0.5
                 lam = numpy.sqrt(1 - 2 * c_1 * alpha)
-                x_new = x1
-                for bck in range(6):
+                x_new = x1  # if no damped step is accepted: the time iteration step
+                for bck in range(max_bsteps + 1):
                     cand = axpy(x0, alpha**bck, tot)
-                    cand_err = max_abs(fk.F(cand, coeffs))
-                    if numpy.isfinite(cand_err) and cand_err < lam * err_res:
+                    if residual(cand) < lam * err_res:
                         x_new = cand
                         break
+                x0 = x_new
             else:
-                x_new = axpy(x0, 1.0, tot)
-            x0 = x_new
-            err_res = max_abs(fk.F(x0, coeffs))
+                x0 = axpy(x0, 1.0, tot)
         else:
             x0 = x1
 
         itprint.print_iteration(
             N=it, Error=err_step, Gain=err_SA, Time=time.time() - t_start, nit=nit
         )
-        if err_step < tol_eta and it > 1:
+        if err_step < tol_eta:
             break
 
-    err_res = max_abs(fk.F(x0, prefilter(x0)))
-    return x0, it, err_step, err_res
+    return x0, iterations, err_step, residual(x0)
 
 
 def time_iteration(
@@ -244,12 +251,15 @@ def time_iteration(
     maxit : int (500)
         maximum number of outer time-iteration loops
     inner : dict, optional
-        options for the inner pointwise Euler solver:
-        dict(maxit=10, max_backsteps=10, tol=1e-8)
+        options for the inner Newton solver of F(x_1, phi_0) = 0 (defaults as Dolo.jl's
+        newton_steps, max_bsteps and tol_ε): dict(maxit=10, max_backsteps=5, tol=tol_eps)
     accelerate : bool or dict (False)
         if True or a dict, accelerates policy iterations using a preconditioned
         Neumann or GMRES step on (I - L) dx = (x_1 - x_0) after a warm-up phase.
-        e.g. dict(wait=10, linsolve="neumann", maxit=50, safeguarded=False)
+        Defaults (as Dolo.jl): dict(wait=10, linsolve="neumann", tol=1e-10, safeguarded=False,
+        maxit=1000 terms of the Neumann series, or 50 for the dimension of the Krylov space of
+        GMRES). The tolerance is absolute: on max|L^k v| for Neumann, on the 2-norm of the
+        residual for GMRES.
     interpolation : str ("cubic")
         interpolation method ("cubic" or "linear")
     verbose : bool (True)
@@ -278,8 +288,9 @@ def time_iteration(
     inner_maxit = kwargs.pop("inner_maxit", None)
     max_backsteps = kwargs.pop("max_backsteps", None)
 
-    # Inner solver configuration
-    inner_cfg = {"maxit": 10, "max_backsteps": 10, "tol": 1e-6}
+    # Inner solver configuration (defaults of Dolo.jl: newton_steps=10, max_bsteps=5, the
+    # tolerance is tol_eps)
+    inner_cfg = {"maxit": 10, "max_backsteps": 5, "tol": tol_eps}
     if inner is not None:
         inner_cfg.update(inner)
     if inner_maxit is not None:
@@ -287,29 +298,25 @@ def time_iteration(
     if max_backsteps is not None:
         inner_cfg["max_backsteps"] = max_backsteps
 
-    # Acceleration configuration
+    # Acceleration configuration (defaults of Dolo.jl: accelerate_wait=10, linsolve=:neumann,
+    # linsolve_tol=1e-10, at most accelerate_K=1000 terms of the Neumann series or a Krylov space
+    # of dimension krylov_dim=50 for GMRES, safeguarded=false)
     acc_flag = accelerate
     if acc_flag is False or acc_flag is None:
         acc_cfg = None
-    elif acc_flag is True:
+    elif acc_flag is True or isinstance(acc_flag, dict):
         acc_cfg = {
             "wait": 10,
             "linsolve": "neumann",
-            "maxit": 50,
-            "tol": 1e-8,
+            "maxit": None,
+            "tol": 1e-10,
             "safeguarded": False,
-        }
-    elif isinstance(acc_flag, dict):
-        acc_cfg = {
-            "wait": 10,
-            "linsolve": "neumann",
-            "maxit": 50,
-            "tol": 1e-8,
-            "safeguarded": False,
-            **acc_flag,
+            **(acc_flag if isinstance(acc_flag, dict) else {}),
         }
         if acc_cfg.get("linsolve") == "iti":
             acc_cfg["linsolve"] = "neumann"
+        if acc_cfg["maxit"] is None:
+            acc_cfg["maxit"] = 1000 if acc_cfg["linsolve"] == "neumann" else 50
     else:
         acc_cfg = None
 
@@ -476,7 +483,9 @@ def time_iteration(
         controls_0 = numpy.asarray(x_final).reshape((-1, n_x))
         controls_ga = controls_ga.unravel(controls_0)
 
-    while not use_device_loop and (err_step > tol_eta or err_res > tol_eps) and it < maxit:
+    # as Dolo.jl: stop when the residual is below tol_eps (before a step) or the step below
+    # tol_eta; `it` counts the steps
+    while not use_device_loop and it < maxit:
         it += 1
         t_start = time.time()
 
@@ -533,6 +542,10 @@ def time_iteration(
             res_0 = fn(controls_0)
             err_res = abs(res_0).max()
 
+        if err_res < tol_eps or not numpy.isfinite(err_res):  # converged, or diverged
+            it -= 1
+            break
+
         if hook:
             hook()
 
@@ -561,7 +574,7 @@ def time_iteration(
                         break
                     dx = jnp.linalg.solve(J_cur, r_cur[..., None])[..., 0]
                     best_x = x_cur
-                    for bck in range(25):
+                    for bck in range(inner_cfg["max_backsteps"] + 1):
                         step = 0.5**bck
                         cand_x = x_cur - dx * step
                         cand_r = cr.F(cand_x, coeffs_jax)
@@ -580,7 +593,11 @@ def time_iteration(
                 r0_jnp = J0_jnp = r_cur = J_cur = None
             else:
                 [controls, nit] = serial_newton(
-                    dfn, controls_0, verbose=verbit, maxit=inner_cfg["maxit"]
+                    dfn,
+                    controls_0,
+                    verbose=verbit,
+                    tol=inner_cfg["tol"],
+                    maxit=inner_cfg["maxit"],
                 )
 
         new_controls_ga = controls_ga.unravel(controls)
@@ -670,13 +687,17 @@ def time_iteration(
                 if acc_method == "gmres":
                     L = Operator(jres, fut_S, mdr_filt)
                     L.addid = True
+                    # as Dolo.jl: from x0 = d, one cycle of at most acc_maxit Krylov vectors,
+                    # absolute tolerance on the 2-norm of the residual
                     try:
                         sol_gmres, info = scipy.sparse.linalg.gmres(
-                            L, d.ravel(), rtol=acc_tol, atol=0.0, maxiter=acc_maxit
+                            L, d.ravel(), x0=d.ravel(), rtol=0.0, atol=acc_tol,
+                            restart=acc_maxit, maxiter=1,
                         )
                     except TypeError:
                         sol_gmres, info = scipy.sparse.linalg.gmres(
-                            L, d.ravel(), tol=acc_tol, maxiter=acc_maxit
+                            L, d.ravel(), x0=d.ravel(), tol=0.0, atol=acc_tol,
+                            restart=acc_maxit, maxiter=1,
                         )
                     tot = sol_gmres.reshape(d.shape)
                 else:
@@ -727,7 +748,7 @@ def time_iteration(
             N=it, Error=err_step, Gain=err_SA, Time=elapsed, nit=nit
         )
 
-        if err_step < tol_eta and it > 1:
+        if err_step < tol_eta:
             break
 
     mdr.set_values(controls_ga)

@@ -74,7 +74,7 @@ def test_unified_result_properties(rbc_model):
     assert isinstance(sol_ti.iterations, int)
     assert sol_ti.error_step is not None
 
-    sol_newton = dolo.newton(rbc_model, verbose=False)
+    sol_newton = dolo.newton(rbc_model, linesearch="backtracking", verbose=False)
     assert isinstance(sol_newton.converged, bool)
     assert isinstance(sol_newton.iterations, int)
     assert sol_newton.error_res is not None
@@ -96,11 +96,15 @@ def test_improved_time_iteration_backward_compatibility(rbc_model):
 def test_newton_engines_parity(rbc_model):
     import numpy as np
 
-    sol_jax = dolo.newton(rbc_model, engine="jax", verbose=False)
+    sol_jax = dolo.newton(
+        rbc_model, engine="jax", linesearch="backtracking", verbose=False
+    )
     assert sol_jax.converged
     assert sol_jax.error_res < 1e-7
 
-    sol_vec = dolo.newton(rbc_model, engine="vectorized", verbose=False)
+    sol_vec = dolo.newton(
+        rbc_model, engine="vectorized", linesearch="backtracking", verbose=False
+    )
     assert sol_vec.converged
 
     s_test = rbc_model.discretize()[0]["endo"].nodes
@@ -114,7 +118,9 @@ def test_newton_gpu_if_available(rbc_model):
     if not gpus:
         pytest.skip("No GPU available.")
 
-    sol_gpu = dolo.newton(rbc_model, engine="gpu", verbose=False)
+    sol_gpu = dolo.newton(
+        rbc_model, engine="gpu", linesearch="backtracking", verbose=False
+    )
     assert sol_gpu.converged
     assert sol_gpu.error_res < 1e-7
 
