@@ -100,3 +100,28 @@ def test_device_loops_are_used(dmodel, monkeypatch):
     dolo.time_iteration(dmodel, engine="jax", ignore_constraints=True, maxit=3, verbose=False)
     dolo.newton(dmodel, engine="jax", ignore_constraints=True, maxit=2, verbose=False)
     assert calls == ["_time_iteration_device", "_newton_device"]
+
+
+def test_gmres_as_dolo_jl():
+    """One cycle of at most m Krylov vectors, absolute tolerance on the 2-norm of the residual."""
+    from dolo.numeric.policy_operator_jax import gmres
+
+    rng = np.random.default_rng(0)
+    n = 40
+    A = np.eye(n) - 0.4 * rng.standard_normal((n, n)) / np.sqrt(n)
+    b = rng.standard_normal(n)
+    A_dev, b_dev = jnp.asarray(A), jnp.asarray(b)
+    matvec = lambda v: A_dev @ v
+
+    x, k = gmres(matvec, b_dev, b_dev, 1e-10, 40)
+    assert np.linalg.norm(b - A @ np.asarray(x)) < 1e-10
+    np.testing.assert_allclose(np.asarray(x), np.linalg.solve(A, b), rtol=1e-8, atol=1e-9)
+    assert 0 < k < 40
+
+    # at most m iterations; the residual decreases
+    x5, k5 = gmres(matvec, b_dev, b_dev, 1e-14, 5)
+    assert k5 == 5
+    assert np.linalg.norm(b - A @ np.asarray(x5)) < np.linalg.norm(b - A @ b)
+    # already solved: no iteration
+    _, k0 = gmres(matvec, b_dev, jnp.asarray(np.linalg.solve(A, b)), 1e-8, 10)
+    assert k0 == 0

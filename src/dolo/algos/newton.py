@@ -358,6 +358,7 @@ def _newton_device(
         dx = L_prec.solve(
             rhs, linsolve=linsolve_cfg["method"], tol=linsolve_cfg["tol"], maxit=linsolve_cfg["maxit"]
         )
+        n_linear = getattr(L_prec, "last_iterations", linsolve_cfg["maxit"])
         L_last = L_prec
         del L_prec, rhs
         t3 = time.time()
@@ -408,7 +409,7 @@ def _newton_device(
             Time_inversion=t3 - t2,
             Time_search=t4 - t3,
             Lambda_0=0.0,
-            N_invert=linsolve_cfg["maxit"],
+            N_invert=n_linear,
             N_search=k,
         )
         if stop or (tol_eta is not None and eta < tol_eta):

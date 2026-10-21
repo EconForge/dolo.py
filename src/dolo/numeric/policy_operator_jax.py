@@ -198,6 +198,12 @@ def densify(Fc, cols, n_x, scale=1.0):
 MAX_BLOCKS = 2**20
 
 
+@jax.jit
+def axmy(x, y):
+    """x - y."""
+    return x - y
+
+
 def apply(v, Fc, base, weights, scale, grid_n, cols, order):
     """L.v for v (n_m, N, n_x)."""
     if len(cols) == 0:
@@ -207,24 +213,91 @@ def apply(v, Fc, base, weights, scale, grid_n, cols, order):
     return contract(Fc, X, scale)
 
 
-@partial(
-    jax.jit, static_argnames=("grid_n", "cols", "order", "restart", "maxiter")
-)
-def gmres_I_minus_L(b, Fc, base, weights, scale, tol, grid_n, cols, order, restart, maxiter):
-    """Solve (I - L) x = b with GMRES on the device, starting from x0 = b. Stops when
-    |b - (I - L) x|_2 <= tol (absolute, as Dolo.jl's gmres!)."""
+# --------------------------------------------------------------------------------------------
+# GMRES as Dolo.jl's `gmres!` (src/algos/linsolve.jl): one cycle of at most m Krylov vectors,
+# modified Gram-Schmidt, Givens rotations, absolute tolerance on the 2-norm of the residual.
+# The Krylov basis and the matrix-vector products stay on the device; the small (m+1) x m
+# Hessenberg problem is solved on the host (one transfer of a column per iteration). As fast
+# as `jax.scipy.sparse.linalg.gmres` here (whose tolerance is relative, with
+# reorthogonalization), with the iterations and the stopping rule of Dolo.jl.
 
-    def matvec(x):
-        return x - apply(x, Fc, base, weights, scale, grid_n, cols, order)
 
-    x, _ = jax.scipy.sparse.linalg.gmres(
-        matvec,
-        b,
-        x0=b,
-        tol=0.0,
-        atol=tol,
-        restart=restart,
-        maxiter=maxiter,
-        solve_method="incremental",
-    )
-    return x
+@partial(jax.jit, donate_argnums=(0,))
+def _arnoldi_step(V, w, j):
+    """Orthogonalize w against V[0..j] (modified Gram-Schmidt), store w / |w| in V[j+1] (when
+    j + 1 < len(V)). Returns V and the column h[0..j+1] (zeros beyond)."""
+
+    def body(i, carry):
+        w, h = carry
+        v_i = jax.lax.dynamic_index_in_dim(V, i, keepdims=False)
+        h_i = jnp.vdot(v_i, w)
+        return w - h_i * v_i, h.at[i].set(h_i)
+
+    h = jnp.zeros(V.shape[0], dtype=w.dtype)
+    w, h = jax.lax.fori_loop(0, j + 1, body, (w, h))
+    h_norm = jnp.linalg.norm(w)
+    h = h.at[j + 1].set(h_norm)
+    V = jax.lax.dynamic_update_index_in_dim(V, w / h_norm, jnp.minimum(j + 1, V.shape[0] - 1), 0)
+    return V, h
+
+
+@partial(jax.jit, donate_argnums=(0,))
+def _krylov_init(V, r, beta):
+    return V.at[0].set(r / beta)
+
+
+@jax.jit
+def _krylov_vector(V, j):
+    return jax.lax.dynamic_index_in_dim(V, j, keepdims=False)
+
+
+@jax.jit
+def _krylov_update(x, V, y):
+    """x + sum_i y_i V[i] (y padded with zeros)."""
+    return x + jnp.tensordot(y, V, axes=1)
+
+
+def gmres(matvec, b, x0, tol, m):
+    """Solve A x = b, A given by `matvec` on flat device vectors, starting from x0: one cycle of
+    at most m Krylov vectors, until |b - A x|_2 < tol. Returns x and the number of iterations."""
+    n = b.shape[0]
+    x = x0
+    r = b - matvec(x)
+    beta = float(jnp.linalg.norm(r))
+    if beta < tol:
+        return x, 0
+    V = _krylov_init(jnp.zeros((m + 1, n), dtype=b.dtype), r, beta)
+    H = np.zeros((m + 1, m))
+    cs = np.zeros(m)
+    sn = np.zeros(m)
+    g = np.zeros(m + 1)
+    g[0] = beta
+    eps = np.finfo(np.float64).eps
+    k = 0
+    for j in range(m):
+        w = matvec(_krylov_vector(V, j))
+        V, h_col = _arnoldi_step(V, w, j)
+        h_col = np.asarray(h_col)
+        H[: j + 2, j] = h_col[: j + 2]
+        h = H[j + 1, j]
+        # previous rotations on the new column
+        for i in range(j):
+            t = cs[i] * H[i, j] + sn[i] * H[i + 1, j]
+            H[i + 1, j] = -sn[i] * H[i, j] + cs[i] * H[i + 1, j]
+            H[i, j] = t
+        # new rotation eliminating H[j+1, j]
+        rho = np.hypot(H[j, j], H[j + 1, j])
+        cs[j] = H[j, j] / rho
+        sn[j] = H[j + 1, j] / rho
+        H[j, j] = rho
+        H[j + 1, j] = 0.0
+        g[j + 1] = -sn[j] * g[j]
+        g[j] = cs[j] * g[j]
+        k = j + 1
+        # converged, or lucky breakdown (the Krylov space is invariant)
+        if abs(g[j + 1]) < tol or h <= eps * beta:
+            break
+    y = np.zeros(m + 1)
+    for i in range(k - 1, -1, -1):
+        y[i] = (g[i] - H[i, i + 1 : k] @ y[i + 1 : k]) / H[i, i]
+    return _krylov_update(x, V, jnp.asarray(y, dtype=b.dtype)), k

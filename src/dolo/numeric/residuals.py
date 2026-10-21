@@ -903,22 +903,18 @@ class PolicyLinearOperator(LinearOperator):
                 x = x + du
                 if float(jnp.abs(du).max()) < tol:
                     break
+            self.last_iterations = it + 1
         elif linsolve == "gmres":
-            # one cycle of at most `maxit` Krylov vectors, as the scipy version
-            jx = self._jx
-            x = poj.gmres_I_minus_L(
-                b_dev,
-                jx["Fc"],
-                jx["base"],
-                jx["weights"],
-                jx["scale"],
-                tol,
-                self.grid_shape,
-                jx["cols"],
-                jx["order"],
-                int(maxit),
-                1,
-            )
+            # as Dolo.jl: from x0 = b, one cycle of at most `maxit` Krylov vectors
+            shape = b_dev.shape
+
+            def matvec(v):
+                u = v.reshape(shape)
+                return poj.axmy(u, self._apply_device(u)).reshape(-1)
+
+            b_flat = b_dev.reshape(-1)
+            x, self.last_iterations = poj.gmres(matvec, b_flat, b_flat, float(tol), int(maxit))
+            x = x.reshape(shape)
         else:
             raise ValueError(
                 f"Unknown linear solver: '{linsolve}'. Use 'neumann' or 'gmres'."
