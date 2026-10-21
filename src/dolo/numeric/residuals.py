@@ -490,6 +490,9 @@ def F_and_dF_1(
     raise ValueError(f"Unsupported engine: {eng}")
 
 
+_JAX_ENGINES = ("jax", "gpu", "cpu")
+
+
 class PolicyLinearOperator(LinearOperator):
     r"""Linear operator representing dF_2 = \partial F / \partial \varphi.
 
@@ -498,6 +501,11 @@ class PolicyLinearOperator(LinearOperator):
     where v(S_k[n]) is the interpolation of v at the next-period state S_k[n].
 
     Mirrors Dolo.jl's LL / LinearOperator struct.
+
+    With a JAX engine, the operator is stored for repeated application (see
+    `dolo.numeric.policy_operator_jax`): the columns of F_x that are not zero everywhere,
+    the location of the points S in the grid (cell and basis weights), and a scale factor.
+    All regimes are handled as (n_regimes, ...) arrays, with one regime when there is one.
     """
 
     def __init__(
@@ -509,9 +517,9 @@ class PolicyLinearOperator(LinearOperator):
         interp_method: str = "cubic",
         device: Optional[Any] = None,
         cr: Optional[CompiledResidual] = None,
+        _compressed: Optional[dict] = None,
     ):
         self.dmodel = dmodel
-        self.F_x = F_x
         self.S = S
         self.engine = engine
         self.interp_method = interp_method
@@ -528,81 +536,113 @@ class PolicyLinearOperator(LinearOperator):
         self.dim = self.n_regimes * self.N * self.n_x
         super().__init__(dtype=np.float64, shape=(self.dim, self.dim))
 
-        if self.engine in ("jax", "gpu", "cpu") and self.cr is not None:
-            import jax
-            import jax.numpy as jnp
-            import functools
-            from dolo.numeric.interpolation_jax import (
-                prefilter_cubic_jax,
-                eval_linear_point_jax,
-                _eval_cubic_batch_jit,
-            )
-
-            a, b, n = self.cr.a, self.cr.b, self.cr.n
-            grid_shape = self.grid_shape
-            interp_method = self.interp_method
-            n_regimes = self.n_regimes
-
-            if n_regimes == 1:
-
-                def _apply_kernel(v_2d, F_x, S):
-                    v_reshaped = v_2d.reshape(grid_shape + (-1,))
-                    if interp_method == "cubic":
-                        v_coeffs = prefilter_cubic_jax(grid_shape, v_reshaped)
-
-                        def eval_branch(fx_k, s_k):
-                            v_S_k = _eval_cubic_batch_jit(v_coeffs, s_k, a, b, n)
-                            return jnp.einsum("nij,nj->ni", fx_k, v_S_k)
-
-                    else:
-                        v_coeffs = v_reshaped
-
-                        def eval_branch(fx_k, s_k):
-                            v_S_k = jax.vmap(
-                                eval_linear_point_jax,
-                                in_axes=(None, 0, None, None, None),
-                            )(v_coeffs, s_k, a, b, n)
-                            return jnp.einsum("nij,nj->ni", fx_k, v_S_k)
-
-                    branch_results = jax.vmap(eval_branch)(F_x, S)
-                    return jnp.sum(branch_results, axis=0)
-
-                self._apply_jit = jax.jit(_apply_kernel)
+        if self.engine in _JAX_ENGINES:
+            self._F_x = None
+            if _compressed is not None:
+                self._jx = _compressed
             else:
-
-                def _apply_kernel_multi(v_3d, F_x, S):
-                    v_reshaped = v_3d.reshape((n_regimes,) + grid_shape + (-1,))
-                    if interp_method == "cubic":
-                        v_coeffs = jax.vmap(
-                            functools.partial(prefilter_cubic_jax, grid_shape)
-                        )(v_reshaped)
-                    else:
-                        v_coeffs = v_reshaped
-
-                    n_inodes = F_x.shape[1]
-                    out = jnp.zeros_like(v_3d)
-                    for k in range(n_inodes):
-                        target_regime = k
-                        if interp_method == "cubic":
-                            v_S_k = jax.vmap(
-                                lambda s_ik: _eval_cubic_batch_jit(
-                                    v_coeffs[target_regime], s_ik, a, b, n
-                                )
-                            )(S[:, k])
-                        else:
-                            v_S_k = jax.vmap(
-                                jax.vmap(
-                                    eval_linear_point_jax,
-                                    in_axes=(None, 0, None, None, None),
-                                ),
-                                in_axes=(None, 0, None, None, None),
-                            )(v_coeffs[target_regime], S[:, k], a, b, n)
-                        out = out + jnp.einsum("rnij,rnj->rni", F_x[:, k], v_S_k)
-                    return out
-
-                self._apply_jit = jax.jit(_apply_kernel_multi)
+                self._jx = self._compress(F_x, S)
         else:
-            self._apply_jit = None
+            self._F_x = F_x
+            self._jx = None
+
+    def _compress(self, F_x: Any, S: Any) -> dict:
+        """Device representation of the operator from F_x and S (see the class docstring)."""
+        import jax
+        import jax.numpy as jnp
+        from dolo.numeric import policy_operator_jax as poj
+
+        F_x = jnp.asarray(F_x, dtype=jnp.float64)
+        S = jnp.asarray(S, dtype=jnp.float64)
+        if self.device is not None:
+            F_x = jax.device_put(F_x, self.device)
+            S = jax.device_put(S, self.device)
+        if self.n_regimes == 1:
+            # (K, N, ...) -> (1, K, N, ...); every node is in regime 0
+            F_x, S = F_x[None], S[None]
+            regimes = jnp.zeros((1, S.shape[1], 1), dtype=jnp.int32)
+        else:
+            # node k of the Markov chain is regime k
+            regimes = jnp.arange(S.shape[1], dtype=jnp.int32)[None, :, None]
+        order = 3 if self.interp_method == "cubic" else 1
+        grid = tuple(
+            (float(a), float(b), int(n))
+            for a, b, n in zip(self.endo_grid.min, self.endo_grid.max, self.endo_grid.n)
+        )
+        cols = tuple(int(j) for j in np.flatnonzero(np.asarray(poj.compress(F_x))))
+        base, weights = poj.locate(S, regimes, grid, order)
+        return dict(
+            Fc=F_x[..., np.asarray(cols, dtype=np.int32)],
+            cols=cols,
+            base=base,
+            weights=weights,
+            scale=1.0,
+            order=order,
+        )
+
+    def _derived(self, **changes) -> PolicyLinearOperator:
+        """Same operator with some fields of the device representation replaced."""
+        return PolicyLinearOperator(
+            self.dmodel,
+            None,
+            self.S,
+            engine=self.engine,
+            interp_method=self.interp_method,
+            device=self.device,
+            cr=self.cr,
+            _compressed={**self._jx, **changes},
+        )
+
+    @property
+    def F_x(self) -> Any:
+        """Blocks F_x: (K, N, n_x, n_x), or (n_regimes, K, N, n_x, n_x) with several regimes."""
+        if self._jx is None:
+            return self._F_x
+        import jax.numpy as jnp
+
+        jx = self._jx
+        Fc = jx["Fc"]
+        F_x = jnp.zeros(Fc.shape[:-1] + (self.n_x,), dtype=Fc.dtype)
+        F_x = F_x.at[..., np.asarray(jx["cols"], dtype=np.int32)].set(jx["scale"] * Fc)
+        return F_x[0] if self.n_regimes == 1 else F_x
+
+    def _apply_device(self, v):
+        """L.v for a device array v (n_regimes, N, n_x)."""
+        from dolo.numeric import policy_operator_jax as poj
+
+        jx = self._jx
+        return poj.apply(
+            v,
+            jx["Fc"],
+            jx["base"],
+            jx["weights"],
+            jx["scale"],
+            self.grid_shape,
+            jx["cols"],
+            jx["order"],
+        )
+
+    def _to_device(self, v: Any):
+        """v (GArray, flat, (N, n_x) or (n_regimes, N, n_x)) as a device array (n_regimes, N, n_x)."""
+        import jax
+        import jax.numpy as jnp
+
+        v_arr = jnp.asarray(v.data if isinstance(v, GArray) else v, dtype=jnp.float64)
+        v_arr = v_arr.reshape((self.n_regimes, self.N, self.n_x))
+        if self.device is not None:
+            v_arr = jax.device_put(v_arr, self.device)
+        return v_arr
+
+    def _from_device(self, out, like: Any) -> Any:
+        """Device result (n_regimes, N, n_x) in the form of the input `like`."""
+        if isinstance(like, GArray):
+            res = GArray.zeros_like(like)
+            res.data[...] = np.asarray(out).reshape(res.data.shape)
+            return res
+        shape = np.shape(like)
+        if isinstance(like, np.ndarray):
+            return np.asarray(out).reshape(shape)
+        return out.reshape(shape)
 
     def _matvec(self, x: np.ndarray) -> np.ndarray:
         if self.n_regimes == 1:
@@ -616,93 +656,11 @@ class PolicyLinearOperator(LinearOperator):
         self, v: Union[GArray, np.ndarray, Any]
     ) -> Union[GArray, np.ndarray, Any]:
         """Apply linear operator to a policy variation v on the grid."""
-        if self.engine in ("jax", "gpu", "cpu"):
-            import jax
-            import jax.numpy as jnp
-            from dolo.numeric.interpolation_jax import (
-                prefilter_cubic_jax,
-                eval_cubic_jax,
-                eval_linear_jax,
-                _eval_cubic_batch_jit,
-            )
-
-            is_garray = isinstance(v, GArray)
-            v_data = v.data if is_garray else v
-            v_arr = jnp.asarray(v_data, dtype=jnp.float64)
-            orig_ndim = v_arr.ndim
-
-            if self.n_regimes == 1:
-                if v_arr.ndim == 1:
-                    v_arr = v_arr.reshape((self.N, self.n_x))
-                elif v_arr.ndim == 3 and v_arr.shape[0] == 1:
-                    v_arr = v_arr[0]
-            else:
-                if v_arr.ndim == 1:
-                    v_arr = v_arr.reshape((self.n_regimes, self.N, self.n_x))
-
-            if self.device is not None:
-                v_arr = jax.device_put(v_arr, self.device)
-
-            if self._apply_jit is not None:
-                out = self._apply_jit(v_arr, self.F_x, self.S)
-            else:
-                if self.n_regimes == 1:
-                    v_reshaped = v_arr.reshape(self.grid_shape + (-1,))
-                    if self.interp_method == "cubic":
-                        v_coeffs = prefilter_cubic_jax(self.endo_grid, v_reshaped)
-                        eval_fn = eval_cubic_jax
-                    else:
-                        v_coeffs = v_reshaped
-                        eval_fn = eval_linear_jax
-
-                    out = jnp.zeros_like(v_arr)
-                    n_branches = self.F_x.shape[0]
-                    for k in range(n_branches):
-                        fx_k = self.F_x[k]
-                        s_k = self.S[k]
-                        v_S_k = eval_fn(self.endo_grid, v_coeffs, s_k)
-                        out = out + jnp.einsum("nij,nj->ni", fx_k, v_S_k)
-                else:
-                    v_reshaped = v_arr.reshape(
-                        (self.n_regimes,) + self.grid_shape + (-1,)
-                    )
-                    if self.interp_method == "cubic":
-                        v_coeffs = jnp.stack(
-                            [
-                                prefilter_cubic_jax(self.grid_shape, v_reshaped[i])
-                                for i in range(self.n_regimes)
-                            ],
-                            axis=0,
-                        )
-                    else:
-                        v_coeffs = v_reshaped
-                    out = jnp.zeros_like(v_arr)
-                    n_branches = self.F_x.shape[1]
-                    for k in range(n_branches):
-                        for i in range(self.n_regimes):
-                            v_S_ik = _eval_cubic_batch_jit(
-                                v_coeffs[k],
-                                self.S[i, k],
-                                self.cr.a,
-                                self.cr.b,
-                                self.cr.n,
-                            )
-                            out = out.at[i].add(
-                                jnp.einsum("nij,nj->ni", self.F_x[i, k], v_S_ik)
-                            )
-
+        if self.engine in _JAX_ENGINES:
+            out = self._apply_device(self._to_device(v))
             if self.device is not None:
                 out.block_until_ready()
-
-            if is_garray:
-                res = GArray.zeros_like(v)
-                res.data[...] = np.asarray(out)
-                return res
-            elif isinstance(v, np.ndarray):
-                if orig_ndim == 1:
-                    return np.asarray(out).ravel()
-                return np.asarray(out)
-            return out
+            return self._from_device(out, v)
 
         else:
             # Vectorized NumPy evaluation
@@ -778,6 +736,8 @@ class PolicyLinearOperator(LinearOperator):
         return self.apply(v)
 
     def __mul__(self, alpha: Union[float, int]) -> PolicyLinearOperator:
+        if self._jx is not None:
+            return self._derived(scale=self._jx["scale"] * alpha)
         return PolicyLinearOperator(
             self.dmodel,
             self.F_x * alpha,
@@ -793,45 +753,34 @@ class PolicyLinearOperator(LinearOperator):
 
     def preconditioned(self, J: Any) -> PolicyLinearOperator:
         """Return preconditioned operator J^{-1} L, where J = dF_1 is block-diagonal."""
-        if self.engine in ("jax", "gpu", "cpu"):
+        if self._jx is not None:
             import jax
             import jax.numpy as jnp
+            from dolo.numeric import policy_operator_jax as poj
 
             J_arr = jnp.asarray(
                 J.data if isinstance(J, GArray) else J, dtype=jnp.float64
-            )
+            ).reshape((self.n_regimes, self.N, self.n_x, self.n_x))
             if self.device is not None:
                 J_arr = jax.device_put(J_arr, self.device)
-            if self.n_regimes == 1:
-                if J_arr.ndim == 4 and J_arr.shape[0] == 1:
-                    J_arr = J_arr[0]
-                new_Fx = jnp.stack(
-                    [
-                        jnp.linalg.solve(J_arr, self.F_x[k])
-                        for k in range(self.F_x.shape[0])
-                    ],
-                    axis=0,
-                )
-            else:
-                if J_arr.ndim == 3:
-                    J_arr = J_arr.reshape((self.n_regimes, self.N, self.n_x, self.n_x))
-                new_Fx = jnp.linalg.solve(J_arr[:, None, :, :, :], self.F_x)
+            # J^{-1} keeps the columns of F_x that are zero
+            return self._derived(Fc=poj.precondition(J_arr, self._jx["Fc"]))
+
+        J_arr = np.asarray(J.data if isinstance(J, GArray) else J, dtype=np.float64)
+        if self.n_regimes == 1:
+            if J_arr.ndim == 4 and J_arr.shape[0] == 1:
+                J_arr = J_arr[0]
+            new_Fx = np.stack(
+                [
+                    np.linalg.solve(J_arr, np.asarray(self.F_x[k]))
+                    for k in range(self.F_x.shape[0])
+                ],
+                axis=0,
+            )
         else:
-            J_arr = np.asarray(J.data if isinstance(J, GArray) else J, dtype=np.float64)
-            if self.n_regimes == 1:
-                if J_arr.ndim == 4 and J_arr.shape[0] == 1:
-                    J_arr = J_arr[0]
-                new_Fx = np.stack(
-                    [
-                        np.linalg.solve(J_arr, np.asarray(self.F_x[k]))
-                        for k in range(self.F_x.shape[0])
-                    ],
-                    axis=0,
-                )
-            else:
-                if J_arr.ndim == 3:
-                    J_arr = J_arr.reshape((self.n_regimes, self.N, self.n_x, self.n_x))
-                new_Fx = np.linalg.solve(J_arr[:, None, :, :, :], np.asarray(self.F_x))
+            if J_arr.ndim == 3:
+                J_arr = J_arr.reshape((self.n_regimes, self.N, self.n_x, self.n_x))
+            new_Fx = np.linalg.solve(J_arr[:, None, :, :, :], np.asarray(self.F_x))
 
         return PolicyLinearOperator(
             self.dmodel,
@@ -863,7 +812,13 @@ class PolicyLinearOperator(LinearOperator):
         maxit: int = 50,
         verbose: bool = False,
     ) -> Any:
-        """Solve (I - L) x = b using Neumann series or GMRES."""
+        """Solve (I - L) x = b using Neumann series or GMRES.
+
+        With a JAX engine, the solve runs on the device (no host round trip per iteration);
+        the result has the form of b (GArray, numpy array or device array).
+        """
+        if self._jx is not None:
+            return self._solve_device(b, linsolve, tol, maxit)
         if linsolve == "neumann":
             x = b.copy()
             du = b.copy()
@@ -908,6 +863,41 @@ class PolicyLinearOperator(LinearOperator):
             raise ValueError(
                 f"Unknown linear solver: '{linsolve}'. Use 'neumann' or 'gmres'."
             )
+
+    def _solve_device(self, b: Any, linsolve: str, tol: float, maxit: int) -> Any:
+        import jax.numpy as jnp
+        from dolo.numeric import policy_operator_jax as poj
+
+        b_dev = self._to_device(b)
+        if linsolve == "neumann":
+            x = b_dev
+            du = b_dev
+            for it in range(maxit):
+                du = self._apply_device(du)
+                x = x + du
+                if float(jnp.abs(du).max()) < tol:
+                    break
+        elif linsolve == "gmres":
+            # one cycle of at most `maxit` Krylov vectors, as the scipy version
+            jx = self._jx
+            x = poj.gmres_I_minus_L(
+                b_dev,
+                jx["Fc"],
+                jx["base"],
+                jx["weights"],
+                jx["scale"],
+                tol,
+                self.grid_shape,
+                jx["cols"],
+                jx["order"],
+                int(maxit),
+                1,
+            )
+        else:
+            raise ValueError(
+                f"Unknown linear solver: '{linsolve}'. Use 'neumann' or 'gmres'."
+            )
+        return self._from_device(x, b)
 
 
 def dF_2(

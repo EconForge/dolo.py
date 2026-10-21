@@ -155,3 +155,73 @@ def test_df_2_gpu_if_available(discretized_rbc):
     out_cpu = L_cpu @ v
 
     np.testing.assert_allclose(out_gpu, out_cpu, rtol=1e-12, atol=1e-12)
+
+
+@pytest.fixture(scope="module")
+def discretized_rbc_mc():
+    model = dolo.yaml_import("examples/models/rbc_mc.yaml")
+    return dolo.numeric.DiscretizedModel(model, grid_options=dict(n=[20]))
+
+
+def _reference_apply(dmodel, F_x, S, v):
+    """L.v from the dense blocks: out[i] = sum_k F_x[i, k] v_k(S[i, k]), v_k cubic spline of v[k]."""
+    from dolo.numeric.interpolation_jax import eval_cubic_jax, prefilter_cubic_jax
+
+    grid = dmodel.endo_grid
+    gs = tuple(int(n) for n in grid.n)
+    F_x, S = np.asarray(F_x), np.asarray(S)
+    out = np.zeros_like(v)
+    for i in range(F_x.shape[0]):
+        for k in range(F_x.shape[1]):
+            coeffs = prefilter_cubic_jax(grid, v[k].reshape(gs + (-1,)))
+            v_S = np.asarray(eval_cubic_jax(grid, coeffs, S[i, k]))
+            out[i] += np.einsum("nij,nj->ni", F_x[i, k], v_S)
+    return out
+
+
+def test_df_2_multi_regime_operator(discretized_rbc_mc):
+    from dolo.numeric.residuals import _get_or_compile_jax_residual
+
+    dmodel = discretized_rbc_mc
+    assert dmodel.n_regimes > 1
+    x0 = dmodel.initial_guess()
+    n_m, N, n_x = x0.data.shape
+
+    L_jax = dF_2(dmodel, x0, x0, engine="jax")
+    L_vec = dF_2(dmodel, x0, x0, engine="vectorized")
+    assert L_jax.shape == (n_m * N * n_x,) * 2
+
+    cr = _get_or_compile_jax_residual(dmodel, interp_method="cubic")
+    F_x, S = cr.dF_2(x0.data, cr.prefilter(x0))
+    np.testing.assert_allclose(np.asarray(L_jax.F_x), np.asarray(F_x), rtol=0, atol=0)
+
+    np.random.seed(3)
+    v = np.random.randn(n_m, N, n_x)
+    out_jax = L_jax @ v
+    assert out_jax.shape == (n_m, N, n_x)
+    np.testing.assert_allclose(out_jax, _reference_apply(dmodel, F_x, S, v), rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(out_jax, L_vec @ v, rtol=1e-4, atol=1e-4)
+    np.testing.assert_allclose((-2.0 * L_jax) @ v, -2.0 * out_jax, rtol=1e-14, atol=1e-14)
+
+
+def test_df_2_multi_regime_preconditioned_and_solve(discretized_rbc_mc):
+    dmodel = discretized_rbc_mc
+    x0 = dmodel.initial_guess()
+    n_m, N, n_x = x0.data.shape
+
+    L = dF_2(dmodel, x0, x0, engine="jax")
+    J = np.asarray(dF_1(dmodel, x0, x0, engine="jax"))
+    L_prec = (-1.0) * L.preconditioned(J)
+
+    # preconditioned blocks: -J^{-1} F_x
+    F_prec = -np.linalg.solve(J[:, None], np.asarray(L.F_x))
+    np.testing.assert_allclose(np.asarray(L_prec.F_x), F_prec, rtol=1e-10, atol=1e-12)
+
+    np.random.seed(11)
+    b = np.random.randn(n_m, N, n_x) * 0.05
+    sol_gmres = L_prec.solve(b, linsolve="gmres", maxit=50, tol=1e-10)
+    sol_neumann = L_prec.solve(b, linsolve="neumann", maxit=200, tol=1e-12)
+    assert sol_gmres.shape == b.shape
+    res_gmres = b - (sol_gmres - L_prec @ sol_gmres)
+    assert np.abs(res_gmres).max() < 1e-8
+    np.testing.assert_allclose(sol_neumann, sol_gmres, atol=1e-6)
