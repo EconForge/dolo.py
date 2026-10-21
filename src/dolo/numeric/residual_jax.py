@@ -71,6 +71,7 @@ class CompiledResidual:
         dmodel: DiscretizedModel,
         interp_method: str = "cubic",
         diff_mode: str = "fwd",
+        fast: bool = True,
     ):
         self.dmodel = dmodel
         self.interp_method = interp_method
@@ -123,6 +124,7 @@ class CompiledResidual:
 
         # Build JAX kernels
         self._build_kernels()
+        self._fast = self._build_fast() if fast else None
 
     def _build_kernels(self):
         f_pt = self.f_pt
@@ -327,6 +329,51 @@ class CompiledResidual:
                     )
                 )
                 self.dF_2_regimes.append((m_val_i, inodes_i, weights_i, bv_i))
+
+    def _build_fast(self):
+        """Staged grid kernels (`residual_kernels_jax.GridKernels`) replacing the vmapped
+        point kernels F_vmap, dF_vmap, F_and_dF_vmap (one regime) and F_all_vmap, dF_all_vmap,
+        F_and_dF_all_vmap (several regimes with the same number of nodes), and used by dF_2.
+        Their derivatives are forward mode whatever `diff_mode`."""
+        from dolo.numeric.residual_kernels_jax import GridKernels
+
+        if self.n_regimes > 1 and not self.same_inodes:
+            return None
+        if self.n_regimes == 1:
+            m_val, inodes, weights = self.regime_data[0]
+            mv, IN, W = m_val[None], inodes[None], weights[None]
+            regimes = np.zeros(inodes.shape[0], dtype=np.int32)
+        else:
+            mv, IN, W = self.m_vals, self.all_inodes, self.all_weights
+            regimes = np.arange(IN.shape[1], dtype=np.int32)
+        fast = GridKernels(
+            self.f_pt,
+            self.g_pt,
+            tuple(zip(self.grid.min, self.grid.max, self.grid.n)),
+            3 if self.interp_method == "cubic" else 1,
+            regimes,
+            mv,
+            IN,
+            W,
+            self.parms,
+            jnp.asarray(self.dmodel.endo_nodes, dtype=jnp.float64),
+            len(self.dmodel.model.symbols["controls"]),
+        )
+
+        if self.n_regimes == 1:
+            self.F_vmap = lambda s, x, c: fast.F(x[None], c[None])[0]
+            self.dF_vmap = lambda s, x, c: fast.F_and_dF_1(x[None], c[None])[1][0]
+
+            def F_and_dF_vmap(s, x, c):
+                r, J = fast.F_and_dF_1(x[None], c[None])
+                return r[0], J[0]
+
+            self.F_and_dF_vmap = F_and_dF_vmap
+        else:
+            self.F_all_vmap = lambda s, x, c, *_: fast.F(x, c)
+            self.dF_all_vmap = lambda s, x, c, *_: fast.F_and_dF_1(x, c)[1]
+            self.F_and_dF_all_vmap = lambda s, x, c, *_: fast.F_and_dF_1(x, c)
+        return fast
 
     def prefilter(
         self, controls: Union[GArray, np.ndarray, jnp.ndarray]
@@ -557,6 +604,21 @@ class CompiledResidual:
             coeffs = self.prefilter(controls)
 
         s_nodes = jnp.asarray(self.dmodel.endo_nodes, dtype=jnp.float64)
+
+        if self._fast is not None:
+            if self.n_regimes == 1:
+                if isinstance(controls, GArray):
+                    x_vals = jnp.asarray(controls[0], dtype=jnp.float64)
+                else:
+                    c_arr = jnp.asarray(controls, dtype=jnp.float64)
+                    x_vals = c_arr[0] if c_arr.ndim == 3 else c_arr
+                F_x, S = self._fast.dF_2(x_vals[None], coeffs[None])
+                return F_x[0], S[0]
+            x_vals = jnp.asarray(
+                controls.data if isinstance(controls, GArray) else controls,
+                dtype=jnp.float64,
+            )
+            return self._fast.dF_2(x_vals, coeffs)
 
         if self.n_regimes == 1:
             if isinstance(controls, GArray):

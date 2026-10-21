@@ -65,8 +65,8 @@ def _strides(shape):
     return tuple(int(np.prod(shape[d + 1 :])) for d in range(len(shape)))
 
 
-@partial(jax.jit, static_argnames=("grid", "order"))
-def locate(S, regimes, grid, order):
+@partial(jax.jit, static_argnames=("grid", "order", "derivative"))
+def locate(S, regimes, grid, order, derivative=False):
     """Locate points S in the grid.
 
     Parameters
@@ -81,6 +81,8 @@ def locate(S, regimes, grid, order):
     base : (...) int32, flat index of the first coefficient of the cell, in the coefficients of
         all regimes stacked (n_regimes, *coeffs_shape).
     weights : (..., d, order + 1) 1-D basis weights.
+    dweights : (..., d, order + 1), only if `derivative`: derivatives of the weights w.r.t. S
+        (the gradient of the spline w.r.t. S_d is the nested sum with dweights in dimension d).
     """
     a = jnp.asarray([g[0] for g in grid], dtype=S.dtype)
     b = jnp.asarray([g[1] for g in grid], dtype=S.dtype)
@@ -97,7 +99,20 @@ def locate(S, regimes, grid, order):
     weights = jnp.stack(
         [jnp.stack(basis(lam[..., d]), axis=-1) for d in range(len(grid))], axis=-2
     )
-    return base, weights
+    if not derivative:
+        return base, weights
+    delta = (n - 1.0) / (b - a)
+    dweights = jnp.stack(
+        [
+            jnp.stack(
+                jax.jvp(basis, (lam[..., d],), (jnp.ones_like(lam[..., d]),))[1], axis=-1
+            )
+            * delta[d]
+            for d in range(len(grid))
+        ],
+        axis=-2,
+    )
+    return base, weights, dweights
 
 
 @partial(jax.jit, static_argnames=("grid_n", "cols", "order"))
