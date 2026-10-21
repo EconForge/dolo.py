@@ -567,6 +567,8 @@ def newton(
                 device=target_dev,
             )
             L_prec = (-1.0) * L_op.preconditioned(J)
+            # free the device memory of the unpreconditioned operator before the solve
+            del L_op
             tot_2d = L_prec.solve(
                 ddx, linsolve=solver_method, tol=ttol, maxit=solver_maxit
             )
